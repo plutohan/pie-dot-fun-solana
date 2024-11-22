@@ -14,19 +14,220 @@ export type Pie = {
   },
   "instructions": [
     {
-      "name": "initialize",
+      "name": "addRebalancer",
       "discriminator": [
-        175,
-        175,
-        109,
-        31,
-        13,
-        152,
-        155,
-        237
+        129,
+        213,
+        114,
+        48,
+        6,
+        140,
+        208,
+        11
       ],
-      "accounts": [],
-      "args": []
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "rebalancerState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rebalancer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rebalancer",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "rebalancer",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "deleteRebalancer",
+      "discriminator": [
+        132,
+        217,
+        124,
+        141,
+        200,
+        18,
+        138,
+        51
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "rebalancerState",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "rebalancer",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "transferAdmin",
+      "discriminator": [
+        42,
+        242,
+        66,
+        106,
+        228,
+        10,
+        111,
+        156
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "adminState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  109,
+                  105,
+                  110,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "newAdmin",
+          "type": "pubkey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "adminState",
+      "discriminator": [
+        190,
+        42,
+        124,
+        96,
+        242,
+        52,
+        141,
+        28
+      ]
+    },
+    {
+      "name": "rebalancerState",
+      "discriminator": [
+        63,
+        210,
+        4,
+        138,
+        3,
+        220,
+        212,
+        209
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "unauthorized",
+      "msg": "You are not authorized to perform this action."
+    }
+  ],
+  "types": [
+    {
+      "name": "adminState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rebalancerState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "balancer",
+            "type": "pubkey"
+          }
+        ]
+      }
     }
   ]
 };
