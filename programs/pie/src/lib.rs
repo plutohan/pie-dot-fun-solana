@@ -23,10 +23,35 @@ pub mod pie {
     }
 
     pub fn add_rebalancer(ctx: Context<AddRebalancerContext>, rebalancer: Pubkey) -> Result<()> {
+        let current_admin = get_current_admin(&ctx.accounts.admin_state)?;
+
+        if ctx.accounts.admin.key() != current_admin {
+            return Err(PieError::Unauthorized.into());
+        }
+
+        ctx.accounts.rebalancer_state.balancer == rebalancer;
+
+        msg!("{} was added as a Rebalancer", rebalancer.key());
         Ok(())
     }
 
     pub fn delete_rebalancer(ctx: Context<DeleteRebalancerContext>, rebalancer: Pubkey) -> Result<()> {
+        let current_admin = get_current_admin(&ctx.accounts.admin_state)?;
+
+        if ctx.accounts.admin.key() != current_admin {
+            return Err(PieError::Unauthorized.into());
+        }
+
+        if ctx.accounts.rebalancer_state.balancer != rebalancer {
+            return Err(PieError::RebalancerNotFound.into());
+        }
+
+        let rebalancer_lamports = ctx.accounts.rebalancer_state.to_account_info().lamports();
+        **ctx.accounts.admin.to_account_info().lamports.borrow_mut() += rebalancer_lamports;
+
+        ctx.accounts.rebalancer_state.close(ctx.accounts.admin)?;
+
+        msg!("Rebalancer {} has been removed and the account closed", rebalancer.key());
         Ok(())
     }
 }
