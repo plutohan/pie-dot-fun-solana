@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use anchor_lang::prelude::*;
 use std::str::FromStr;
 
@@ -30,7 +29,7 @@ pub mod pie {
             return Err(PieError::Unauthorized.into());
         }
 
-        ctx.accounts.rebalancer_state.balancer == rebalancer;
+        ctx.accounts.rebalancer_state.balancer = rebalancer;
 
         msg!("{} was added as a Rebalancer", rebalancer.key());
         Ok(())
@@ -50,7 +49,7 @@ pub mod pie {
         let rebalancer_lamports = ctx.accounts.rebalancer_state.to_account_info().lamports();
         **ctx.accounts.admin.to_account_info().lamports.borrow_mut() += rebalancer_lamports;
 
-        ctx.accounts.rebalancer_state.close(ctx.accounts.admin)?;
+        ctx.accounts.rebalancer_state.close(ctx.accounts.admin.to_account_info())?;
 
         msg!("Rebalancer {} has been removed and the account closed", rebalancer.key());
         Ok(())
@@ -58,7 +57,7 @@ pub mod pie {
 }
 
 fn get_current_admin(program_state: &Account<AdminState>) -> Result<Pubkey> {
-    if program_state.admin == Pubkey::default() {
+    if program_state.to_account_info().data_is_empty() {
         Ok(Pubkey::from_str(INITIALIZE_ADMIN).unwrap())
     } else {
         Ok(program_state.admin)
@@ -73,15 +72,6 @@ pub struct AdminState {
 #[account]
 pub struct RebalancerState {
     pub balancer: Pubkey,
-}
-
-#[account]
-pub struct IndexFundConfig {
-    tokens: vec<Pubkey>,
-    ratios: HashMap<u8, u128>,
-    impermanent_loss: HashMap<u8, u128>,
-    fee_rate: f64,
-    token_count: u8
 }
 
 #[derive(Accounts)]
@@ -100,6 +90,7 @@ pub struct TransferAdminContext<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(rebalancer: Pubkey)]
 pub struct AddRebalancerContext<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
@@ -107,26 +98,38 @@ pub struct AddRebalancerContext<'info> {
         init_if_needed,
         payer = admin,
         space = 8 + 32,
-        seeds = [b"rebalancer_state", rebalancer.key().as_ref()],
+        seeds = [b"rebalancer_state", rebalancer.as_ref()],
         bump
     )]
     pub rebalancer_state: Account<'info, RebalancerState>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(mut)]
-    pub rebalancer: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"admin_state"],
+        bump
+    )]
+    pub admin_state: Account<'info, AdminState>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
+#[instruction(rebalancer: Pubkey)]
 pub struct DeleteRebalancerContext<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
     #[account(
         mut,
-        seeds = [b"rebalancer_state", rebalancer.key().as_ref()],
+        seeds = [b"rebalancer_state", rebalancer.as_ref()],
         bump
     )]
     pub rebalancer_state: Account<'info, RebalancerState>,
+
+    #[account(
+        mut,
+        seeds = [b"admin_state"],
+        bump
+    )]
+    pub admin_state: Account<'info, AdminState>,
 
     pub system_program: Program<'info, System>,
 }
@@ -135,4 +138,7 @@ pub struct DeleteRebalancerContext<'info> {
 pub enum PieError {
     #[msg("You are not authorized to perform this action.")]
     Unauthorized,
+
+    #[msg("Can't found rebalancer info.")]
+    RebalancerNotFound,
 }
