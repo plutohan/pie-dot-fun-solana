@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use anchor_lang::prelude::*;
 use std::str::FromStr;
 
@@ -74,6 +75,15 @@ pub struct RebalancerState {
     pub balancer: Pubkey,
 }
 
+#[account]
+pub struct IndexFundConfig {
+    tokens: vec<Pubkey>,
+    ratios: HashMap<u8, u128>,
+    impermanent_loss: HashMap<u8, u128>,
+    fee_rate: f64,
+    token_count: u8
+}
+
 #[derive(Accounts)]
 pub struct TransferAdminContext<'info> {
     #[account(mut)]
@@ -111,7 +121,11 @@ pub struct AddRebalancerContext<'info> {
 pub struct DeleteRebalancerContext<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"rebalancer_state", rebalancer.key().as_ref()],
+        bump
+    )]
     pub rebalancer_state: Account<'info, RebalancerState>,
 
     pub system_program: Program<'info, System>,
