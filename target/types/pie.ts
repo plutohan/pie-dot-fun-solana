@@ -58,15 +58,35 @@ export type Pie = {
                 ]
               },
               {
-                "kind": "account",
+                "kind": "arg",
                 "path": "rebalancer"
               }
             ]
           }
         },
         {
-          "name": "rebalancer",
-          "writable": true
+          "name": "adminState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  109,
+                  105,
+                  110,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "systemProgram",
@@ -100,7 +120,60 @@ export type Pie = {
         },
         {
           "name": "rebalancerState",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "rebalancer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "adminState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  109,
+                  105,
+                  110,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "systemProgram",
@@ -202,6 +275,11 @@ export type Pie = {
       "code": 6000,
       "name": "unauthorized",
       "msg": "You are not authorized to perform this action."
+    },
+    {
+      "code": 6001,
+      "name": "rebalancerNotFound",
+      "msg": "Can't found rebalancer info."
     }
   ],
   "types": [
