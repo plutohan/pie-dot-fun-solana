@@ -6,7 +6,7 @@ use anchor_spl::token::{Mint, Token};
 use crate::{
     constant::{CONFIG, FUND},
     error::PieError,
-    Config, UnderlyAsset, VaultConfig,
+    Config, UnderlyAsset, IndexFundConfig,
 };
 
 #[derive(Accounts)]
@@ -25,17 +25,17 @@ pub struct CreateIndexFundVault<'info> {
     #[account(
         init,
         payer = admin,
-        space = VaultConfig::INIT_SPACE,
+        space = IndexFundConfig::INIT_SPACE,
         seeds = [FUND, index_fund_mint.key().as_ref()],
         bump
     )]
-    pub vault_config: Account<'info, VaultConfig>,
+    pub index_fund_config: Account<'info, IndexFundConfig>,
 
     #[account(
         init,
         payer = admin,
         mint::decimals = 6,
-        mint::authority = vault_config.key(),
+        mint::authority = index_fund_config.key(),
     )]
     pub index_fund_mint: Account<'info, Mint>,
 
@@ -55,7 +55,7 @@ pub fn create_index_fund_vault(
     ctx: Context<CreateIndexFundVault>,
     underly_assets: Vec<UnderlyAsset>,
 ) -> Result<()> {
-    let vault_config: &mut Account<'_, VaultConfig> = &mut ctx.accounts.vault_config;
+    let index_fund_config: &mut Account<'_, IndexFundConfig> = &mut ctx.accounts.index_fund_config;
     let config = &mut ctx.accounts.config;
 
     create_metadata_accounts_v3(
@@ -64,7 +64,7 @@ pub fn create_index_fund_vault(
             CreateMetadataAccountsV3 {
                 metadata: ctx.accounts.metadata_account.to_account_info(),
                 mint: ctx.accounts.index_fund_mint.to_account_info(),
-                mint_authority: vault_config.to_account_info(),
+                mint_authority: index_fund_config.to_account_info(),
                 update_authority: ctx.accounts.admin.to_account_info(),
                 payer: ctx.accounts.admin.to_account_info(),
                 system_program: ctx.accounts.system_program.to_account_info(),
@@ -85,10 +85,10 @@ pub fn create_index_fund_vault(
         None,
     )?;
 
-    vault_config.bump = ctx.bumps.vault_config;
-    vault_config.id = config.counter;
-    vault_config.mint = ctx.accounts.index_fund_mint.key();
-    vault_config.underly_assets = underly_assets;
+    index_fund_config.bump = ctx.bumps.index_fund_config;
+    index_fund_config.id = config.counter;
+    index_fund_config.mint = ctx.accounts.index_fund_mint.key();
+    index_fund_config.underly_assets = underly_assets;
 
     config.counter += 1;
 

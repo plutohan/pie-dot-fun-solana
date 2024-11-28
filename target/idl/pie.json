@@ -132,7 +132,7 @@
           }
         },
         {
-          "name": "vault_config",
+          "name": "index_fund_config",
           "writable": true,
           "pda": {
             "seeds": [
@@ -361,7 +361,7 @@
               },
               {
                 "kind": "account",
-                "path": "vault_config"
+                "path": "index_fund_config"
               }
             ]
           }
@@ -371,7 +371,7 @@
           "writable": true
         },
         {
-          "name": "vault_config",
+          "name": "index_fund_config",
           "writable": true
         },
         {
@@ -530,6 +530,19 @@
       ]
     },
     {
+      "name": "IndexFundConfig",
+      "discriminator": [
+        222,
+        31,
+        187,
+        7,
+        113,
+        240,
+        222,
+        204
+      ]
+    },
+    {
       "name": "RebalancerState",
       "discriminator": [
         63,
@@ -553,19 +566,6 @@
         65,
         176,
         30
-      ]
-    },
-    {
-      "name": "VaultConfig",
-      "discriminator": [
-        99,
-        86,
-        43,
-        216,
-        184,
-        102,
-        119,
-        77
       ]
     }
   ],
@@ -618,6 +618,36 @@
       }
     },
     {
+      "name": "IndexFundConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "id",
+            "type": "u32"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "underly_assets",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "UnderlyAsset"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "RebalancerState",
       "type": {
         "kind": "struct",
@@ -652,36 +682,6 @@
         "fields": [
           {
             "name": "asset_info",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "UnderlyAsset"
-                }
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "VaultConfig",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "id",
-            "type": "u32"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "underly_assets",
             "type": {
               "vec": {
                 "defined": {

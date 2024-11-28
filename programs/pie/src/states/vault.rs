@@ -7,14 +7,14 @@ pub struct UnderlyAsset {
 }
 
 #[account]
-pub struct VaultConfig {
+pub struct IndexFundConfig {
     pub bump: u8,
     pub id: u32,
     pub mint: Pubkey,
     pub underly_assets: Vec<UnderlyAsset>,
 }
 
-impl Space for VaultConfig {
+impl Space for IndexFundConfig {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
         + 1
         + 4 

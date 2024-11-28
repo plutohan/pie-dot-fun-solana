@@ -138,7 +138,7 @@ export type Pie = {
           }
         },
         {
-          "name": "vaultConfig",
+          "name": "indexFundConfig",
           "writable": true,
           "pda": {
             "seeds": [
@@ -367,7 +367,7 @@ export type Pie = {
               },
               {
                 "kind": "account",
-                "path": "vaultConfig"
+                "path": "indexFundConfig"
               }
             ]
           }
@@ -377,7 +377,7 @@ export type Pie = {
           "writable": true
         },
         {
-          "name": "vaultConfig",
+          "name": "indexFundConfig",
           "writable": true
         },
         {
@@ -536,6 +536,19 @@ export type Pie = {
       ]
     },
     {
+      "name": "indexFundConfig",
+      "discriminator": [
+        222,
+        31,
+        187,
+        7,
+        113,
+        240,
+        222,
+        204
+      ]
+    },
+    {
       "name": "rebalancerState",
       "discriminator": [
         63,
@@ -559,19 +572,6 @@ export type Pie = {
         65,
         176,
         30
-      ]
-    },
-    {
-      "name": "vaultConfig",
-      "discriminator": [
-        99,
-        86,
-        43,
-        216,
-        184,
-        102,
-        119,
-        77
       ]
     }
   ],
@@ -624,6 +624,36 @@ export type Pie = {
       }
     },
     {
+      "name": "indexFundConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "id",
+            "type": "u32"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "underlyAssets",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "underlyAsset"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "rebalancerState",
       "type": {
         "kind": "struct",
@@ -658,36 +688,6 @@ export type Pie = {
         "fields": [
           {
             "name": "assetInfo",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "underlyAsset"
-                }
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "vaultConfig",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "id",
-            "type": "u32"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "underlyAssets",
             "type": {
               "vec": {
                 "defined": {

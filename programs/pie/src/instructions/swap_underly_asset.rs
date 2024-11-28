@@ -9,7 +9,7 @@ use raydium_amm_cpi::*;
 use crate::{
     constant::{MAX_UNDERLY_ASSETS, USER},
     error::PieError,
-    Config, UnderlyAsset, UserFund, VaultConfig,
+    Config, UnderlyAsset, UserFund, IndexFundConfig,
 };
 
 #[derive(Accounts)]
@@ -20,14 +20,14 @@ pub struct SwapUnderlyAsset<'info> {
         init_if_needed,
         payer = user_source_owner,
         space = UserFund::INIT_SPACE,
-        seeds = [USER, &user_source_owner.key().as_ref(), &vault_config.key().as_ref()],
+        seeds = [USER, &user_source_owner.key().as_ref(), &index_fund_config.key().as_ref()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(mut)]
     pub config: Box<Account<'info, Config>>,
     #[account(mut)]
-    pub vault_config: Box<Account<'info, VaultConfig>>,
+    pub index_fund_config: Box<Account<'info, IndexFundConfig>>,
     #[account(mut)]
     pub mint_out: Box<InterfaceAccount<'info, Mint>>,
     /// CHECK: Safe. amm Account

@@ -4,7 +4,7 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER, error::PieError, Config, UserFund, VaultConfig};
+use crate::{constant::USER, error::PieError, Config, UserFund, IndexFundConfig};
 
 #[derive(Accounts)]
 pub struct MintIndexFund<'info> {
@@ -15,11 +15,11 @@ pub struct MintIndexFund<'info> {
     pub config: Box<Account<'info, Config>>,
 
     #[account(mut)]
-    pub vault_config: Box<Account<'info, VaultConfig>>,
+    pub index_fund_config: Box<Account<'info, IndexFundConfig>>,
 
     #[account(
         mut,
-        seeds = [USER, &user.key().as_ref(), &vault_config.id.to_le_bytes()],
+        seeds = [USER, &user.key().as_ref(), &index_fund_config.id.to_le_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
@@ -40,12 +40,12 @@ pub struct MintIndexFund<'info> {
 
 pub fn mint_index_fund(ctx: Context<MintIndexFund>) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
-    let vault_config = &ctx.accounts.vault_config;
+    let index_fund_config = &ctx.accounts.index_fund_config;
 
     let mut mint_amount = u64::MAX;
     let mut can_mint = true;
 
-    for token_config in vault_config.underly_assets.iter() {
+    for token_config in index_fund_config.underly_assets.iter() {
         if let Some(user_asset) = user_fund
             .asset_info
             .iter()
@@ -62,7 +62,7 @@ pub fn mint_index_fund(ctx: Context<MintIndexFund>) -> Result<()> {
     require!(can_mint, PieError::InsufficientBalance);
     require!(mint_amount > 0, PieError::InvalidAmount);
 
-    for token_config in vault_config.underly_assets.iter() {
+    for token_config in index_fund_config.underly_assets.iter() {
         if let Some(asset) = user_fund
             .asset_info
             .iter_mut()
