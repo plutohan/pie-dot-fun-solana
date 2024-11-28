@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use std::str::FromStr;
 
-declare_id!("3DpBbvPMtKaDkHnP3FEKfvWBAYWT9LywfN3g8z27YwNf");
+declare_id!("GkkuKbHCeiUZQX4yGpDqQktfG92WSdjRiP7nqkh9gG9W");
 
 const INITIALIZE_ADMIN: &str = "";
 

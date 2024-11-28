@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "3DpBbvPMtKaDkHnP3FEKfvWBAYWT9LywfN3g8z27YwNf",
+  "address": "GkkuKbHCeiUZQX4yGpDqQktfG92WSdjRiP7nqkh9gG9W",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
