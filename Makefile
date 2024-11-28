@@ -19,7 +19,7 @@ deploy/devnet:
 	anchor deploy --provider.cluster devnet
 
 deploy/mainnet:
-	anchor deploy --provider.cluster mainnet --program-keypair ./.local/mainnet/pie.json -- --max-sign-attemps 1000
+	anchor deploy --provider.cluster mainnet --program-keypair ./.local/mainnet/pie-keypair.json -- --max-sign-attemps 1000
 
 test/devnet:
 	mv ./target/deploy/pie-keypair.json ./target/deploy/pie-keypair.old.json
