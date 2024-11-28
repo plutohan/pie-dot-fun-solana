@@ -65,7 +65,7 @@ export type Pie = {
           }
         },
         {
-          "name": "adminState",
+          "name": "config",
           "writable": true,
           "pda": {
             "seeds": [
@@ -152,24 +152,19 @@ export type Pie = {
           }
         },
         {
-          "name": "adminState",
+          "name": "config",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  97,
-                  100,
-                  109,
-                  105,
+                  99,
+                  111,
                   110,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
+                  102,
+                  105,
+                  103
                 ]
               }
             ]
@@ -184,6 +179,126 @@ export type Pie = {
         {
           "name": "rebalancer",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "openPool",
+      "discriminator": [
+        96,
+        215,
+        110,
+        61,
+        1,
+        246,
+        205,
+        228
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "config.counter",
+                "account": "config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "tokenConfigs",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "tokenConfig"
+              }
+            }
+          }
         }
       ]
     },
@@ -206,24 +321,18 @@ export type Pie = {
           "signer": true
         },
         {
-          "name": "adminState",
-          "writable": true,
+          "name": "config",
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  97,
-                  100,
-                  109,
-                  105,
+                  99,
+                  111,
                   110,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
+                  102,
+                  105,
+                  103
                 ]
               }
             ]
@@ -244,16 +353,29 @@ export type Pie = {
   ],
   "accounts": [
     {
-      "name": "adminState",
+      "name": "config",
       "discriminator": [
-        190,
-        42,
-        124,
-        96,
-        242,
-        52,
-        141,
-        28
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "poolConfig",
+      "discriminator": [
+        26,
+        108,
+        14,
+        123,
+        116,
+        230,
+        129,
+        43
       ]
     },
     {
@@ -284,13 +406,35 @@ export type Pie = {
   ],
   "types": [
     {
-      "name": "adminState",
+      "name": "config",
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "admin",
             "type": "pubkey"
+          },
+          {
+            "name": "counter",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "poolConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tokenConfigs",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "tokenConfig"
+                }
+              }
+            }
           }
         ]
       }
@@ -303,6 +447,22 @@ export type Pie = {
           {
             "name": "balancer",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "tokenConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }

@@ -1,0 +1,10 @@
+{
+  "address": "srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX",
+  "metadata": {
+    "name": "raydium_amm",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "CPI adapter for Raydium AMM"
+  },
+  "instructions": []
+}

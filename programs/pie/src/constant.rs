@@ -1,0 +1,1 @@
+pub const MAX_ASSETS: u8 = 10;
