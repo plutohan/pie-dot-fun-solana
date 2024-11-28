@@ -8,5 +8,6 @@ test-ledger
 .local
 target/*
 !target/idl/
+!target/deploy/
 !target/types/
 test-ledger
