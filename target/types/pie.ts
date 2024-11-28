@@ -101,6 +101,109 @@ export type Pie = {
       ]
     },
     {
+      "name": "createIndexFundVault",
+      "discriminator": [
+        203,
+        243,
+        38,
+        17,
+        100,
+        44,
+        52,
+        174
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vaultConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "indexFundMint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "indexFundMint",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "metadataAccount",
+          "docs": [
+            "To store metaplex metadata"
+          ],
+          "writable": true
+        },
+        {
+          "name": "metadataProgram",
+          "docs": [
+            "Program to create NFT metadata"
+          ],
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "underlyAssets",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "underlyAsset"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "deleteRebalancer",
       "discriminator": [
         132,
@@ -227,78 +330,145 @@ export type Pie = {
       "args": []
     },
     {
-      "name": "openPool",
+      "name": "swapUnderlyAsset",
       "discriminator": [
-        96,
-        215,
-        110,
-        61,
-        1,
-        246,
-        205,
-        228
+        116,
+        173,
+        105,
+        158,
+        132,
+        199,
+        239,
+        76
       ],
       "accounts": [
         {
-          "name": "admin",
+          "name": "userSourceOwner",
           "writable": true,
           "signer": true
         },
         {
-          "name": "config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool",
+          "name": "userFund",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  112,
-                  111,
-                  111,
-                  108
+                  117,
+                  115,
+                  101,
+                  114
                 ]
               },
               {
                 "kind": "account",
-                "path": "config.counter",
-                "account": "config"
+                "path": "userSourceOwner"
+              },
+              {
+                "kind": "account",
+                "path": "vaultConfig"
               }
             ]
           }
         },
         {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "vaultConfig",
+          "writable": true
+        },
+        {
+          "name": "mintOut",
+          "writable": true
+        },
+        {
+          "name": "amm",
+          "writable": true
+        },
+        {
+          "name": "ammAuthority"
+        },
+        {
+          "name": "ammOpenOrders",
+          "writable": true
+        },
+        {
+          "name": "ammCoinVault",
+          "writable": true
+        },
+        {
+          "name": "ammPcVault",
+          "writable": true
+        },
+        {
+          "name": "marketProgram"
+        },
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "marketBids",
+          "writable": true
+        },
+        {
+          "name": "marketAsks",
+          "writable": true
+        },
+        {
+          "name": "marketEventQueue",
+          "writable": true
+        },
+        {
+          "name": "marketCoinVault",
+          "writable": true
+        },
+        {
+          "name": "marketPcVault",
+          "writable": true
+        },
+        {
+          "name": "marketVaultSigner"
+        },
+        {
+          "name": "userTokenSource",
+          "writable": true
+        },
+        {
+          "name": "vaultTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "ammProgram"
+        },
+        {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "indexMint",
+          "writable": true
+        },
+        {
+          "name": "userIndexToken",
+          "writable": true
         }
       ],
       "args": [
         {
-          "name": "tokenConfigs",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "tokenConfig"
-              }
-            }
-          }
+          "name": "amountIn",
+          "type": "u64"
+        },
+        {
+          "name": "minimumAmountOut",
+          "type": "u64"
         }
       ]
     },
@@ -366,19 +536,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "poolConfig",
-      "discriminator": [
-        26,
-        108,
-        14,
-        123,
-        116,
-        230,
-        129,
-        43
-      ]
-    },
-    {
       "name": "rebalancerState",
       "discriminator": [
         63,
@@ -389,6 +546,32 @@ export type Pie = {
         220,
         212,
         209
+      ]
+    },
+    {
+      "name": "userFund",
+      "discriminator": [
+        11,
+        55,
+        142,
+        181,
+        228,
+        65,
+        176,
+        30
+      ]
+    },
+    {
+      "name": "vaultConfig",
+      "discriminator": [
+        99,
+        86,
+        43,
+        216,
+        184,
+        102,
+        119,
+        77
       ]
     }
   ],
@@ -402,6 +585,21 @@ export type Pie = {
       "code": 6001,
       "name": "rebalancerNotFound",
       "msg": "Can't found rebalancer info."
+    },
+    {
+      "code": 6002,
+      "name": "maxAssetsExceeded",
+      "msg": "Max asset exceeded"
+    },
+    {
+      "code": 6003,
+      "name": "insufficientBalance",
+      "msg": "Insufficient Balance"
+    },
+    {
+      "code": 6004,
+      "name": "invalidAmount",
+      "msg": "Invalid Amount"
     }
   ],
   "types": [
@@ -411,30 +609,16 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
             "name": "admin",
             "type": "pubkey"
           },
           {
             "name": "counter",
             "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "poolConfig",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "tokenConfigs",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "tokenConfig"
-                }
-              }
-            }
           }
         ]
       }
@@ -452,7 +636,7 @@ export type Pie = {
       }
     },
     {
-      "name": "tokenConfig",
+      "name": "underlyAsset",
       "type": {
         "kind": "struct",
         "fields": [
@@ -463,6 +647,54 @@ export type Pie = {
           {
             "name": "amount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "userFund",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "assetInfo",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "underlyAsset"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "id",
+            "type": "u32"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "underlyAssets",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "underlyAsset"
+                }
+              }
+            }
           }
         ]
       }

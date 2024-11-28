@@ -95,6 +95,109 @@
       ]
     },
     {
+      "name": "create_index_fund_vault",
+      "discriminator": [
+        203,
+        243,
+        38,
+        17,
+        100,
+        44,
+        52,
+        174
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "index_fund_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "index_fund_mint",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "metadata_account",
+          "docs": [
+            "To store metaplex metadata"
+          ],
+          "writable": true
+        },
+        {
+          "name": "metadata_program",
+          "docs": [
+            "Program to create NFT metadata"
+          ],
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "underly_assets",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "UnderlyAsset"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "delete_rebalancer",
       "discriminator": [
         132,
@@ -221,78 +324,145 @@
       "args": []
     },
     {
-      "name": "open_pool",
+      "name": "swap_underly_asset",
       "discriminator": [
-        96,
-        215,
-        110,
-        61,
-        1,
-        246,
-        205,
-        228
+        116,
+        173,
+        105,
+        158,
+        132,
+        199,
+        239,
+        76
       ],
       "accounts": [
         {
-          "name": "admin",
+          "name": "user_source_owner",
           "writable": true,
           "signer": true
         },
         {
-          "name": "config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool",
+          "name": "user_fund",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  112,
-                  111,
-                  111,
-                  108
+                  117,
+                  115,
+                  101,
+                  114
                 ]
               },
               {
                 "kind": "account",
-                "path": "config.counter",
-                "account": "Config"
+                "path": "user_source_owner"
+              },
+              {
+                "kind": "account",
+                "path": "vault_config"
               }
             ]
           }
         },
         {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "vault_config",
+          "writable": true
+        },
+        {
+          "name": "mint_out",
+          "writable": true
+        },
+        {
+          "name": "amm",
+          "writable": true
+        },
+        {
+          "name": "amm_authority"
+        },
+        {
+          "name": "amm_open_orders",
+          "writable": true
+        },
+        {
+          "name": "amm_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "amm_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_program"
+        },
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "market_bids",
+          "writable": true
+        },
+        {
+          "name": "market_asks",
+          "writable": true
+        },
+        {
+          "name": "market_event_queue",
+          "writable": true
+        },
+        {
+          "name": "market_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "market_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_vault_signer"
+        },
+        {
+          "name": "user_token_source",
+          "writable": true
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "amm_program"
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "index_mint",
+          "writable": true
+        },
+        {
+          "name": "user_index_token",
+          "writable": true
         }
       ],
       "args": [
         {
-          "name": "token_configs",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "TokenConfig"
-              }
-            }
-          }
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_amount_out",
+          "type": "u64"
         }
       ]
     },
@@ -360,19 +530,6 @@
       ]
     },
     {
-      "name": "PoolConfig",
-      "discriminator": [
-        26,
-        108,
-        14,
-        123,
-        116,
-        230,
-        129,
-        43
-      ]
-    },
-    {
       "name": "RebalancerState",
       "discriminator": [
         63,
@@ -383,6 +540,32 @@
         220,
         212,
         209
+      ]
+    },
+    {
+      "name": "UserFund",
+      "discriminator": [
+        11,
+        55,
+        142,
+        181,
+        228,
+        65,
+        176,
+        30
+      ]
+    },
+    {
+      "name": "VaultConfig",
+      "discriminator": [
+        99,
+        86,
+        43,
+        216,
+        184,
+        102,
+        119,
+        77
       ]
     }
   ],
@@ -396,6 +579,21 @@
       "code": 6001,
       "name": "RebalancerNotFound",
       "msg": "Can't found rebalancer info."
+    },
+    {
+      "code": 6002,
+      "name": "MaxAssetsExceeded",
+      "msg": "Max asset exceeded"
+    },
+    {
+      "code": 6003,
+      "name": "InsufficientBalance",
+      "msg": "Insufficient Balance"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidAmount",
+      "msg": "Invalid Amount"
     }
   ],
   "types": [
@@ -405,30 +603,16 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
             "name": "admin",
             "type": "pubkey"
           },
           {
             "name": "counter",
             "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PoolConfig",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "token_configs",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "TokenConfig"
-                }
-              }
-            }
           }
         ]
       }
@@ -446,7 +630,7 @@
       }
     },
     {
-      "name": "TokenConfig",
+      "name": "UnderlyAsset",
       "type": {
         "kind": "struct",
         "fields": [
@@ -457,6 +641,54 @@
           {
             "name": "amount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserFund",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "asset_info",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "UnderlyAsset"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "id",
+            "type": "u32"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "underly_assets",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "UnderlyAsset"
+                }
+              }
+            }
           }
         ]
       }

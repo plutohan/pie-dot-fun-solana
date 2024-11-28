@@ -10,5 +10,5 @@ pub use add_rebalancer::*;
 pub mod delete_rebalancer;
 pub use delete_rebalancer::*;
 
-pub mod open_pool;
-pub use open_pool::*;
+pub mod create_index_fund_vault;
+pub use create_index_fund_vault::*;

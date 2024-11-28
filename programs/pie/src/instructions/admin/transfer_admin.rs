@@ -1,13 +1,13 @@
 use anchor_lang::prelude::*;
 
-use crate::{error::PieError, get_current_admin, Config};
+use crate::{constant::CONFIG, error::PieError, get_current_admin, Config};
 
 #[derive(Accounts)]
 pub struct TransferAdminContext<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
     #[account(
-        seeds = [b"config"],
+        seeds = [CONFIG],
         bump
     )]
     pub config: Account<'info, Config>,

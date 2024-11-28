@@ -12,3 +12,4 @@ pub fn get_current_admin(program_state: &Account<Config>) -> Result<Pubkey> {
       Ok(program_state.admin)
   }
 }
+

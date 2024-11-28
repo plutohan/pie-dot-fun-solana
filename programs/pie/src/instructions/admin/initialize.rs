@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::Config;
+use crate::{constant::CONFIG, Config};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -10,7 +10,7 @@ pub struct Initialize<'info> {
         init,
         payer = admin,
         space = 8 + 32 + 2 + 1,
-        seeds = [b"config"],
+        seeds = [CONFIG],
         bump
     )]
     pub config: Account<'info, Config>,

@@ -1,6 +1,10 @@
 use anchor_lang::prelude::*;
 
-use crate::{error::PieError, get_current_admin, Config, RebalancerState};
+use crate::{
+    constant::{CONFIG, REBALANCER_STATE},
+    error::PieError,
+    get_current_admin, Config, RebalancerState,
+};
 
 #[derive(Accounts)]
 #[instruction(rebalancer: Pubkey)]
@@ -9,15 +13,15 @@ pub struct DeleteRebalancer<'info> {
     pub admin: Signer<'info>,
     #[account(
         mut,
-        seeds = [b"rebalancer_state", rebalancer.as_ref()],
+        seeds = [REBALANCER_STATE, rebalancer.as_ref()],
         bump
     )]
     pub rebalancer_state: Account<'info, RebalancerState>,
 
     #[account(
         mut,
-        seeds = [b"config"],
-        bump
+        seeds = [CONFIG],
+        bump = config.bump
     )]
     pub config: Account<'info, Config>,
 

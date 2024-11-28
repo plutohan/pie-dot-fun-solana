@@ -37,17 +37,17 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn open_pool(ctx: Context<OpenPool>, token_configs: Vec<TokenConfig>) -> Result<()> {
-        instructions::open_pool(ctx, token_configs)?;
+    pub fn create_index_fund_vault(ctx: Context<CreateIndexFundVault>, underly_assets: Vec<UnderlyAsset>) -> Result<()> {
+        instructions::create_index_fund_vault(ctx, underly_assets)?;
         Ok(())
     }
 
-    pub fn mint_fund(
-        ctx: Context<MintFund>,
+    pub fn swap_underly_asset(
+        ctx: Context<SwapUnderlyAsset>,
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
-        instructions::mint_fund(ctx, amount_in, minimum_amount_out)?;
+        instructions::swap_underly_asset(ctx, amount_in, minimum_amount_out)?;
         Ok(())
     }
 }
