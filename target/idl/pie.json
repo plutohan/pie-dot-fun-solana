@@ -190,7 +190,7 @@
           "type": {
             "vec": {
               "defined": {
-                "name": "UnderlyAsset"
+                "name": "Component"
               }
             }
           }
@@ -361,7 +361,7 @@
               },
               {
                 "kind": "account",
-                "path": "index_fund_config"
+                "path": "basket_config"
               }
             ]
           }
@@ -371,7 +371,7 @@
           "writable": true
         },
         {
-          "name": "index_fund_config",
+          "name": "basket_config",
           "writable": true
         },
         {
@@ -517,6 +517,19 @@
   ],
   "accounts": [
     {
+      "name": "BasketConfig",
+      "discriminator": [
+        123,
+        225,
+        246,
+        146,
+        67,
+        165,
+        253,
+        202
+      ]
+    },
+    {
       "name": "Config",
       "discriminator": [
         155,
@@ -527,19 +540,6 @@
         250,
         204,
         130
-      ]
-    },
-    {
-      "name": "IndexFundConfig",
-      "discriminator": [
-        222,
-        31,
-        187,
-        7,
-        113,
-        240,
-        222,
-        204
       ]
     },
     {
@@ -598,27 +598,7 @@
   ],
   "types": [
     {
-      "name": "Config",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "admin",
-            "type": "pubkey"
-          },
-          {
-            "name": "counter",
-            "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "IndexFundConfig",
+      "name": "BasketConfig",
       "type": {
         "kind": "struct",
         "fields": [
@@ -639,10 +619,46 @@
             "type": {
               "vec": {
                 "defined": {
-                  "name": "UnderlyAsset"
+                  "name": "Component"
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Component",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "counter",
+            "type": "u32"
           }
         ]
       }
@@ -660,22 +676,6 @@
       }
     },
     {
-      "name": "UnderlyAsset",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "UserFund",
       "type": {
         "kind": "struct",
@@ -685,7 +685,7 @@
             "type": {
               "vec": {
                 "defined": {
-                  "name": "UnderlyAsset"
+                  "name": "Component"
                 }
               }
             }

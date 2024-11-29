@@ -1,20 +1,20 @@
 use anchor_lang::prelude::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct UnderlyAsset {
+pub struct Component {
     pub mint: Pubkey,
     pub amount: u64,
 }
 
 #[account]
-pub struct IndexFundConfig {
+pub struct BasketConfig {
     pub bump: u8,
     pub id: u32,
     pub mint: Pubkey,
-    pub underly_assets: Vec<UnderlyAsset>,
+    pub underly_assets: Vec<Component>,
 }
 
-impl Space for IndexFundConfig {
+impl Space for BasketConfig {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
         + 1
         + 4 

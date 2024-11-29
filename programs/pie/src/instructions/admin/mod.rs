@@ -10,5 +10,5 @@ pub use add_rebalancer::*;
 pub mod delete_rebalancer;
 pub use delete_rebalancer::*;
 
-pub mod create_index_fund_vault;
-pub use create_index_fund_vault::*;
+pub mod create_basket_vault;
+pub use create_basket_vault::*;

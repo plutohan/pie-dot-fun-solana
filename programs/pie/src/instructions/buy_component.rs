@@ -9,7 +9,7 @@ use raydium_amm_cpi::*;
 use crate::{
     constant::{MAX_UNDERLY_ASSETS, USER},
     error::PieError,
-    Config, UnderlyAsset, UserFund, IndexFundConfig,
+    Config, Component, UserFund, BasketConfig,
 };
 
 #[derive(Accounts)]
@@ -20,14 +20,14 @@ pub struct SwapUnderlyAsset<'info> {
         init_if_needed,
         payer = user_source_owner,
         space = UserFund::INIT_SPACE,
-        seeds = [USER, &user_source_owner.key().as_ref(), &index_fund_config.key().as_ref()],
+        seeds = [USER, &user_source_owner.key().as_ref(), &basket_config.key().as_ref()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(mut)]
     pub config: Box<Account<'info, Config>>,
     #[account(mut)]
-    pub index_fund_config: Box<Account<'info, IndexFundConfig>>,
+    pub basket_config: Box<Account<'info, BasketConfig>>,
     #[account(mut)]
     pub mint_out: Box<InterfaceAccount<'info, Mint>>,
     /// CHECK: Safe. amm Account
@@ -141,7 +141,7 @@ pub fn swap_underly_asset(
             PieError::MaxAssetsExceeded
         );
 
-        user_fund.asset_info.push(UnderlyAsset {
+        user_fund.asset_info.push(Component {
             mint: ctx.accounts.mint_out.key(),
             amount: amount_received,
         });

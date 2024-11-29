@@ -6,7 +6,7 @@ use anchor_spl::token::{Mint, Token};
 use crate::{
     constant::{CONFIG, FUND},
     error::PieError,
-    Config, UnderlyAsset, IndexFundConfig,
+    Config, Component, BasketConfig,
 };
 
 #[derive(Accounts)]
@@ -25,11 +25,11 @@ pub struct CreateIndexFundVault<'info> {
     #[account(
         init,
         payer = admin,
-        space = IndexFundConfig::INIT_SPACE,
+        space = BasketConfig::INIT_SPACE,
         seeds = [FUND, index_fund_mint.key().as_ref()],
         bump
     )]
-    pub index_fund_config: Account<'info, IndexFundConfig>,
+    pub index_fund_config: Account<'info, BasketConfig>,
 
     #[account(
         init,
@@ -53,9 +53,9 @@ pub struct CreateIndexFundVault<'info> {
 
 pub fn create_index_fund_vault(
     ctx: Context<CreateIndexFundVault>,
-    underly_assets: Vec<UnderlyAsset>,
+    underly_assets: Vec<Component>,
 ) -> Result<()> {
-    let index_fund_config: &mut Account<'_, IndexFundConfig> = &mut ctx.accounts.index_fund_config;
+    let index_fund_config: &mut Account<'_, BasketConfig> = &mut ctx.accounts.index_fund_config;
     let config = &mut ctx.accounts.config;
 
     create_metadata_accounts_v3(

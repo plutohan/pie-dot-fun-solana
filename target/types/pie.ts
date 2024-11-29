@@ -196,7 +196,7 @@ export type Pie = {
           "type": {
             "vec": {
               "defined": {
-                "name": "underlyAsset"
+                "name": "component"
               }
             }
           }
@@ -367,7 +367,7 @@ export type Pie = {
               },
               {
                 "kind": "account",
-                "path": "indexFundConfig"
+                "path": "basketConfig"
               }
             ]
           }
@@ -377,7 +377,7 @@ export type Pie = {
           "writable": true
         },
         {
-          "name": "indexFundConfig",
+          "name": "basketConfig",
           "writable": true
         },
         {
@@ -523,6 +523,19 @@ export type Pie = {
   ],
   "accounts": [
     {
+      "name": "basketConfig",
+      "discriminator": [
+        123,
+        225,
+        246,
+        146,
+        67,
+        165,
+        253,
+        202
+      ]
+    },
+    {
       "name": "config",
       "discriminator": [
         155,
@@ -533,19 +546,6 @@ export type Pie = {
         250,
         204,
         130
-      ]
-    },
-    {
-      "name": "indexFundConfig",
-      "discriminator": [
-        222,
-        31,
-        187,
-        7,
-        113,
-        240,
-        222,
-        204
       ]
     },
     {
@@ -604,27 +604,7 @@ export type Pie = {
   ],
   "types": [
     {
-      "name": "config",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "admin",
-            "type": "pubkey"
-          },
-          {
-            "name": "counter",
-            "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "indexFundConfig",
+      "name": "basketConfig",
       "type": {
         "kind": "struct",
         "fields": [
@@ -645,10 +625,46 @@ export type Pie = {
             "type": {
               "vec": {
                 "defined": {
-                  "name": "underlyAsset"
+                  "name": "component"
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "component",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "counter",
+            "type": "u32"
           }
         ]
       }
@@ -666,22 +682,6 @@ export type Pie = {
       }
     },
     {
-      "name": "underlyAsset",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "userFund",
       "type": {
         "kind": "struct",
@@ -691,7 +691,7 @@ export type Pie = {
             "type": {
               "vec": {
                 "defined": {
-                  "name": "underlyAsset"
+                  "name": "component"
                 }
               }
             }

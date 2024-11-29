@@ -37,7 +37,7 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn create_index_fund_vault(ctx: Context<CreateIndexFundVault>, underly_assets: Vec<UnderlyAsset>) -> Result<()> {
+    pub fn create_index_fund_vault(ctx: Context<CreateIndexFundVault>, underly_assets: Vec<Component>) -> Result<()> {
         instructions::create_index_fund_vault(ctx, underly_assets)?;
         Ok(())
     }

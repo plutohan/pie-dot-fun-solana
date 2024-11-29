@@ -1,8 +1,8 @@
 pub mod admin;
 pub use admin::*;
 
-pub mod swap_underly_asset;
-pub use swap_underly_asset::*;
+pub mod buy_component;
+pub use buy_component::*;
 
-pub mod mint_index_fund;
-pub use mint_index_fund::*;
+pub mod mint_basket;
+pub use mint_basket::*;

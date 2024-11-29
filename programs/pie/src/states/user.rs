@@ -2,11 +2,11 @@ use anchor_lang::prelude::*;
 
 use crate::constant::MAX_UNDERLY_ASSETS;
 
-use super::UnderlyAsset;
+use super::Component;
 
 #[account]
 pub struct UserFund {
-    pub asset_info: Vec<UnderlyAsset>,
+    pub asset_info: Vec<Component>,
 }
 
 impl Space for UserFund {

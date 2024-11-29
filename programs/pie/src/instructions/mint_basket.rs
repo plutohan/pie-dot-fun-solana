@@ -4,7 +4,7 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER, error::PieError, Config, UserFund, IndexFundConfig};
+use crate::{constant::USER, error::PieError, Config, UserFund, BasketConfig};
 
 #[derive(Accounts)]
 pub struct MintIndexFund<'info> {
@@ -15,7 +15,7 @@ pub struct MintIndexFund<'info> {
     pub config: Box<Account<'info, Config>>,
 
     #[account(mut)]
-    pub index_fund_config: Box<Account<'info, IndexFundConfig>>,
+    pub index_fund_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
         mut,
