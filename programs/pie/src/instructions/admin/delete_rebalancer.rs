@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constant::{CONFIG, REBALANCER_STATE},
+    constant::{PROGRAM_STATE, REBALANCER_STATE},
     error::PieError,
     get_current_admin, ProgramState, RebalancerState,
 };
@@ -20,16 +20,16 @@ pub struct DeleteRebalancer<'info> {
 
     #[account(
         mut,
-        seeds = [CONFIG],
-        bump = config.bump
+        seeds = [PROGRAM_STATE],
+        bump = program_state.bump
     )]
-    pub config: Account<'info, ProgramState>,
+    pub program_state: Account<'info, ProgramState>,
 
     pub system_program: Program<'info, System>,
 }
 
 pub fn delete_rebalancer(ctx: Context<DeleteRebalancer>, rebalancer: Pubkey) -> Result<()> {
-    let current_admin = get_current_admin(&ctx.accounts.config)?;
+    let current_admin = get_current_admin(&ctx.accounts.program_state)?;
 
     if ctx.accounts.admin.key() != current_admin {
         return Err(PieError::Unauthorized.into());

@@ -37,13 +37,13 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn create_index_fund_vault(ctx: Context<CreateIndexFundVault>, underly_assets: Vec<Component>) -> Result<()> {
-        instructions::create_index_fund_vault(ctx, underly_assets)?;
+    pub fn create_basket(ctx: Context<CreateBasketContext>, components: Vec<Component>) -> Result<()> {
+        instructions::create_basket(ctx, components)?;
         Ok(())
     }
 
     pub fn buy_component(
-        ctx: Context<SwapToComponent>,
+        ctx: Context<BuyComponentContext>,
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {

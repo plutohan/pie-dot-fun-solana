@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{constant::CONFIG, ProgramState};
+use crate::{constant::PROGRAM_STATE, ProgramState};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -10,17 +10,15 @@ pub struct Initialize<'info> {
         init,
         payer = admin,
         space = 8 + 32 + 2 + 1,
-        seeds = [CONFIG],
+        seeds = [PROGRAM_STATE],
         bump
     )]
-    pub config: Account<'info, ProgramState>,
+    pub program_state: Account<'info, ProgramState>,
     pub system_program: Program<'info, System>,
 }
 
 pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-    ctx.accounts.config.bump = ctx.bumps.config;
-    ctx.accounts.config.admin = ctx.accounts.admin.key();
-    ctx.accounts.config.basket_counter = 0;
-
+    ctx.accounts.program_state.bump = ctx.bumps.program_state;
+    ctx.accounts.program_state.basket_counter = 0;
     Ok(())
 }

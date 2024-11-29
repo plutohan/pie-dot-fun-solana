@@ -8,9 +8,7 @@ describe("pie", () => {
 
   const program = anchor.workspace.Pie as Program<Pie>;
 
-  it("Is initialized!", async () => {
-    // Add your test here.
-    const tx = await program.methods.initialize().rpc();
-    console.log("Your transaction signature", tx);
+  it("is success deploy without admin change", async () => {
+
   });
 });

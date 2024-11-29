@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct SwapToComponent<'info> {
+pub struct BuyComponentContext<'info> {
     #[account(mut)]
     pub user_source_owner: Signer<'info>,
     #[account(
@@ -25,7 +25,7 @@ pub struct SwapToComponent<'info> {
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(mut)]
-    pub config: Box<Account<'info, ProgramState>>,
+    pub program_state: Box<Account<'info, ProgramState>>,
     #[account(mut)]
     pub basket_config: Box<Account<'info, BasketConfig>>,
     #[account(mut)]
@@ -78,18 +78,18 @@ pub struct SwapToComponent<'info> {
     pub system_program: Program<'info, System>,
 
     #[account(mut)]
-    pub index_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,
-        token::mint = index_mint,
+        token::mint = basket_mint,
         token::authority = user_source_owner,
     )]
     pub user_index_token: Box<Account<'info, TokenAccount>>,
 }
 
 pub fn buy_component(
-    ctx: Context<SwapToComponent>,
+    ctx: Context<BuyComponentContext>,
     amount_in: u64,
     minimum_amount_out: u64,
 ) -> Result<()> {

@@ -7,45 +7,45 @@ use anchor_spl::{
 use crate::{constant::USER, error::PieError, ProgramState, UserFund, BasketConfig};
 
 #[derive(Accounts)]
-pub struct MintIndexFund<'info> {
+pub struct MintBasketTokenContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
     #[account(mut)]
-    pub config: Box<Account<'info, ProgramState>>,
+    pub program_state: Box<Account<'info, ProgramState>>,
 
     #[account(mut)]
-    pub index_fund_config: Box<Account<'info, BasketConfig>>,
+    pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
         mut,
-        seeds = [USER, &user.key().as_ref(), &index_fund_config.id.to_le_bytes()],
+        seeds = [USER, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
 
     #[account(mut)]
-    pub index_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,
-        token::mint = index_mint,
+        token::mint = basket_mint,
         token::authority = user,
     )]
-    pub user_index_token: Box<Account<'info, TokenAccount>>,
+    pub user_basket_token_account: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
-pub fn mint_index_fund(ctx: Context<MintIndexFund>) -> Result<()> {
+pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
-    let index_fund_config = &ctx.accounts.index_fund_config;
+    let basket_config = &ctx.accounts.basket_config;
 
     let mut mint_amount = u64::MAX;
     let mut can_mint = true;
 
-    for token_config in index_fund_config.components.iter() {
+    for token_config in basket_config.components.iter() {
         if let Some(user_asset) = user_fund
             .components
             .iter()
@@ -62,7 +62,7 @@ pub fn mint_index_fund(ctx: Context<MintIndexFund>) -> Result<()> {
     require!(can_mint, PieError::InsufficientBalance);
     require!(mint_amount > 0, PieError::InvalidAmount);
 
-    for token_config in index_fund_config.components.iter() {
+    for token_config in basket_config.components.iter() {
         if let Some(asset) = user_fund
             .components
             .iter_mut()
@@ -76,13 +76,13 @@ pub fn mint_index_fund(ctx: Context<MintIndexFund>) -> Result<()> {
         }
     }
 
-    let config_seeds = &[b"config".as_ref(), &[ctx.accounts.config.bump]];
+    let config_seeds = &[b"program_state".as_ref(), &[ctx.accounts.program_state.bump]];
     let signer = &[&config_seeds[..]];
 
     let cpi_accounts = MintTo {
-        mint: ctx.accounts.index_mint.to_account_info(),
-        to: ctx.accounts.user_index_token.to_account_info(),
-        authority: ctx.accounts.config.to_account_info(),
+        mint: ctx.accounts.basket_mint.to_account_info(),
+        to: ctx.accounts.user_basket_token_account.to_account_info(),
+        authority: ctx.accounts.program_state.to_account_info(),
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);

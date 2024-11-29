@@ -19,14 +19,14 @@ pub struct AddRebalancer<'info> {
     #[account(
         mut,
         seeds = [ADMIN_STATE],
-        bump = config.bump
+        bump = program_state.bump
     )]
-    pub config: Account<'info, ProgramState>,
+    pub program_state: Account<'info, ProgramState>,
     pub system_program: Program<'info, System>,
 }
 
 pub fn add_rebalancer(ctx: Context<AddRebalancer>, rebalancer: Pubkey) -> Result<()> {
-    let current_admin = get_current_admin(&ctx.accounts.config)?;
+    let current_admin = get_current_admin(&ctx.accounts.program_state)?;
 
     if ctx.accounts.admin.key() != current_admin {
         return Err(PieError::Unauthorized.into());

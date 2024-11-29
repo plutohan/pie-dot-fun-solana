@@ -59,7 +59,7 @@
           }
         },
         {
-          "name": "config",
+          "name": "program_state",
           "writable": true,
           "pda": {
             "seeds": [
@@ -138,7 +138,7 @@
           }
         },
         {
-          "name": "config",
+          "name": "program_state",
           "writable": true
         },
         {
@@ -218,7 +218,7 @@
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "index_mint",
+          "name": "basket_mint",
           "writable": true
         },
         {
@@ -238,16 +238,16 @@
       ]
     },
     {
-      "name": "create_index_fund_vault",
+      "name": "create_basket",
       "discriminator": [
-        203,
-        243,
-        38,
-        17,
-        100,
-        44,
-        52,
-        174
+        47,
+        105,
+        155,
+        148,
+        15,
+        169,
+        202,
+        211
       ],
       "accounts": [
         {
@@ -256,26 +256,33 @@
           "signer": true
         },
         {
-          "name": "config",
+          "name": "program_state",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  99,
+                  112,
+                  114,
                   111,
-                  110,
-                  102,
-                  105,
-                  103
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]
           }
         },
         {
-          "name": "index_fund_config",
+          "name": "basket_config",
           "writable": true,
           "pda": {
             "seeds": [
@@ -290,13 +297,13 @@
               },
               {
                 "kind": "account",
-                "path": "index_fund_mint"
+                "path": "basket_mint"
               }
             ]
           }
         },
         {
-          "name": "index_fund_mint",
+          "name": "basket_mint",
           "writable": true,
           "signer": true
         },
@@ -329,7 +336,7 @@
       ],
       "args": [
         {
-          "name": "underly_assets",
+          "name": "components",
           "type": {
             "vec": {
               "defined": {
@@ -392,19 +399,26 @@
           }
         },
         {
-          "name": "config",
+          "name": "program_state",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  99,
+                  112,
+                  114,
                   111,
-                  110,
-                  102,
-                  105,
-                  103
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]
@@ -441,19 +455,26 @@
           "signer": true
         },
         {
-          "name": "config",
+          "name": "program_state",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  99,
+                  112,
+                  114,
                   111,
-                  110,
-                  102,
-                  105,
-                  103
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]
@@ -485,18 +506,25 @@
           "signer": true
         },
         {
-          "name": "config",
+          "name": "program_state",
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  99,
+                  112,
+                  114,
                   111,
-                  110,
-                  102,
-                  105,
-                  103
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]

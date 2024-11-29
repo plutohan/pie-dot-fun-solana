@@ -65,7 +65,7 @@ export type Pie = {
           }
         },
         {
-          "name": "config",
+          "name": "programState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -144,7 +144,7 @@ export type Pie = {
           }
         },
         {
-          "name": "config",
+          "name": "programState",
           "writable": true
         },
         {
@@ -224,7 +224,7 @@ export type Pie = {
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "indexMint",
+          "name": "basketMint",
           "writable": true
         },
         {
@@ -244,16 +244,16 @@ export type Pie = {
       ]
     },
     {
-      "name": "createIndexFundVault",
+      "name": "createBasket",
       "discriminator": [
-        203,
-        243,
-        38,
-        17,
-        100,
-        44,
-        52,
-        174
+        47,
+        105,
+        155,
+        148,
+        15,
+        169,
+        202,
+        211
       ],
       "accounts": [
         {
@@ -262,26 +262,33 @@ export type Pie = {
           "signer": true
         },
         {
-          "name": "config",
+          "name": "programState",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  99,
+                  112,
+                  114,
                   111,
-                  110,
-                  102,
-                  105,
-                  103
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]
           }
         },
         {
-          "name": "indexFundConfig",
+          "name": "basketConfig",
           "writable": true,
           "pda": {
             "seeds": [
@@ -296,13 +303,13 @@ export type Pie = {
               },
               {
                 "kind": "account",
-                "path": "indexFundMint"
+                "path": "basketMint"
               }
             ]
           }
         },
         {
-          "name": "indexFundMint",
+          "name": "basketMint",
           "writable": true,
           "signer": true
         },
@@ -335,7 +342,7 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "underlyAssets",
+          "name": "components",
           "type": {
             "vec": {
               "defined": {
@@ -398,19 +405,26 @@ export type Pie = {
           }
         },
         {
-          "name": "config",
+          "name": "programState",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  99,
+                  112,
+                  114,
                   111,
-                  110,
-                  102,
-                  105,
-                  103
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]
@@ -447,19 +461,26 @@ export type Pie = {
           "signer": true
         },
         {
-          "name": "config",
+          "name": "programState",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  99,
+                  112,
+                  114,
                   111,
-                  110,
-                  102,
-                  105,
-                  103
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]
@@ -491,18 +512,25 @@ export type Pie = {
           "signer": true
         },
         {
-          "name": "config",
+          "name": "programState",
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  99,
+                  112,
+                  114,
                   111,
-                  110,
-                  102,
-                  105,
-                  103
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]
