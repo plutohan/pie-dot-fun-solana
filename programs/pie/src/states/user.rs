@@ -6,7 +6,7 @@ use super::Component;
 
 #[account]
 pub struct UserFund {
-    pub asset_info: Vec<Component>,
+    pub components: Vec<Component>,
 }
 
 impl Space for UserFund {

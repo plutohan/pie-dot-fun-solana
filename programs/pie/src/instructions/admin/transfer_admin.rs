@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{constant::CONFIG, error::PieError, get_current_admin, Config};
+use crate::{constant::CONFIG, error::PieError, get_current_admin, ProgramState};
 
 #[derive(Accounts)]
 pub struct TransferAdminContext<'info> {
@@ -10,7 +10,7 @@ pub struct TransferAdminContext<'info> {
         seeds = [CONFIG],
         bump
     )]
-    pub config: Account<'info, Config>,
+    pub config: Account<'info, ProgramState>,
     pub system_program: Program<'info, System>,
 }
 

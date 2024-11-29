@@ -95,6 +95,149 @@
       ]
     },
     {
+      "name": "buy_component",
+      "discriminator": [
+        179,
+        47,
+        64,
+        136,
+        27,
+        7,
+        40,
+        189
+      ],
+      "accounts": [
+        {
+          "name": "user_source_owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user_fund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user_source_owner"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "basket_config",
+          "writable": true
+        },
+        {
+          "name": "mint_out",
+          "writable": true
+        },
+        {
+          "name": "amm",
+          "writable": true
+        },
+        {
+          "name": "amm_authority"
+        },
+        {
+          "name": "amm_open_orders",
+          "writable": true
+        },
+        {
+          "name": "amm_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "amm_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_program"
+        },
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "market_bids",
+          "writable": true
+        },
+        {
+          "name": "market_asks",
+          "writable": true
+        },
+        {
+          "name": "market_event_queue",
+          "writable": true
+        },
+        {
+          "name": "market_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "market_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_vault_signer"
+        },
+        {
+          "name": "user_token_source",
+          "writable": true
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "amm_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "index_mint",
+          "writable": true
+        },
+        {
+          "name": "user_index_token",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_amount_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "create_index_fund_vault",
       "discriminator": [
         203,
@@ -324,149 +467,6 @@
       "args": []
     },
     {
-      "name": "swap_underly_asset",
-      "discriminator": [
-        116,
-        173,
-        105,
-        158,
-        132,
-        199,
-        239,
-        76
-      ],
-      "accounts": [
-        {
-          "name": "user_source_owner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "user_fund",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  117,
-                  115,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "user_source_owner"
-              },
-              {
-                "kind": "account",
-                "path": "basket_config"
-              }
-            ]
-          }
-        },
-        {
-          "name": "config",
-          "writable": true
-        },
-        {
-          "name": "basket_config",
-          "writable": true
-        },
-        {
-          "name": "mint_out",
-          "writable": true
-        },
-        {
-          "name": "amm",
-          "writable": true
-        },
-        {
-          "name": "amm_authority"
-        },
-        {
-          "name": "amm_open_orders",
-          "writable": true
-        },
-        {
-          "name": "amm_coin_vault",
-          "writable": true
-        },
-        {
-          "name": "amm_pc_vault",
-          "writable": true
-        },
-        {
-          "name": "market_program"
-        },
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "market_bids",
-          "writable": true
-        },
-        {
-          "name": "market_asks",
-          "writable": true
-        },
-        {
-          "name": "market_event_queue",
-          "writable": true
-        },
-        {
-          "name": "market_coin_vault",
-          "writable": true
-        },
-        {
-          "name": "market_pc_vault",
-          "writable": true
-        },
-        {
-          "name": "market_vault_signer"
-        },
-        {
-          "name": "user_token_source",
-          "writable": true
-        },
-        {
-          "name": "vault_token_account",
-          "writable": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "amm_program"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "index_mint",
-          "writable": true
-        },
-        {
-          "name": "user_index_token",
-          "writable": true
-        }
-      ],
-      "args": [
-        {
-          "name": "amount_in",
-          "type": "u64"
-        },
-        {
-          "name": "minimum_amount_out",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "transfer_admin",
       "discriminator": [
         42,
@@ -530,16 +530,16 @@
       ]
     },
     {
-      "name": "Config",
+      "name": "ProgramState",
       "discriminator": [
-        155,
-        12,
-        170,
-        224,
-        30,
-        250,
-        204,
-        130
+        77,
+        209,
+        137,
+        229,
+        149,
+        67,
+        167,
+        230
       ]
     },
     {
@@ -615,7 +615,7 @@
             "type": "pubkey"
           },
           {
-            "name": "underly_assets",
+            "name": "components",
             "type": {
               "vec": {
                 "defined": {
@@ -644,7 +644,7 @@
       }
     },
     {
-      "name": "Config",
+      "name": "ProgramState",
       "type": {
         "kind": "struct",
         "fields": [
@@ -657,7 +657,7 @@
             "type": "pubkey"
           },
           {
-            "name": "counter",
+            "name": "basket_counter",
             "type": "u32"
           }
         ]
@@ -681,7 +681,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "asset_info",
+            "name": "components",
             "type": {
               "vec": {
                 "defined": {

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{constant::{ADMIN_STATE, REBALANCER_STATE}, error::PieError, get_current_admin, Config, RebalancerState};
+use crate::{constant::{ADMIN_STATE, REBALANCER_STATE}, error::PieError, get_current_admin, ProgramState, RebalancerState};
 
 #[derive(Accounts)]
 #[instruction(rebalancer: Pubkey)]
@@ -21,7 +21,7 @@ pub struct AddRebalancer<'info> {
         seeds = [ADMIN_STATE],
         bump = config.bump
     )]
-    pub config: Account<'info, Config>,
+    pub config: Account<'info, ProgramState>,
     pub system_program: Program<'info, System>,
 }
 

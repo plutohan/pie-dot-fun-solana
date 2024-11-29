@@ -4,7 +4,7 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER, error::PieError, Config, UserFund, BasketConfig};
+use crate::{constant::USER, error::PieError, ProgramState, UserFund, BasketConfig};
 
 #[derive(Accounts)]
 pub struct MintIndexFund<'info> {
@@ -12,7 +12,7 @@ pub struct MintIndexFund<'info> {
     pub user: Signer<'info>,
 
     #[account(mut)]
-    pub config: Box<Account<'info, Config>>,
+    pub config: Box<Account<'info, ProgramState>>,
 
     #[account(mut)]
     pub index_fund_config: Box<Account<'info, BasketConfig>>,
@@ -45,9 +45,9 @@ pub fn mint_index_fund(ctx: Context<MintIndexFund>) -> Result<()> {
     let mut mint_amount = u64::MAX;
     let mut can_mint = true;
 
-    for token_config in index_fund_config.underly_assets.iter() {
+    for token_config in index_fund_config.components.iter() {
         if let Some(user_asset) = user_fund
-            .asset_info
+            .components
             .iter()
             .find(|a| a.mint == token_config.mint)
         {
@@ -62,9 +62,9 @@ pub fn mint_index_fund(ctx: Context<MintIndexFund>) -> Result<()> {
     require!(can_mint, PieError::InsufficientBalance);
     require!(mint_amount > 0, PieError::InvalidAmount);
 
-    for token_config in index_fund_config.underly_assets.iter() {
+    for token_config in index_fund_config.components.iter() {
         if let Some(asset) = user_fund
-            .asset_info
+            .components
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {

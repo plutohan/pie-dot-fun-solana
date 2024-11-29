@@ -101,6 +101,149 @@ export type Pie = {
       ]
     },
     {
+      "name": "buyComponent",
+      "discriminator": [
+        179,
+        47,
+        64,
+        136,
+        27,
+        7,
+        40,
+        189
+      ],
+      "accounts": [
+        {
+          "name": "userSourceOwner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "userSourceOwner"
+              },
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "mintOut",
+          "writable": true
+        },
+        {
+          "name": "amm",
+          "writable": true
+        },
+        {
+          "name": "ammAuthority"
+        },
+        {
+          "name": "ammOpenOrders",
+          "writable": true
+        },
+        {
+          "name": "ammCoinVault",
+          "writable": true
+        },
+        {
+          "name": "ammPcVault",
+          "writable": true
+        },
+        {
+          "name": "marketProgram"
+        },
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "marketBids",
+          "writable": true
+        },
+        {
+          "name": "marketAsks",
+          "writable": true
+        },
+        {
+          "name": "marketEventQueue",
+          "writable": true
+        },
+        {
+          "name": "marketCoinVault",
+          "writable": true
+        },
+        {
+          "name": "marketPcVault",
+          "writable": true
+        },
+        {
+          "name": "marketVaultSigner"
+        },
+        {
+          "name": "userTokenSource",
+          "writable": true
+        },
+        {
+          "name": "vaultTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "ammProgram"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "indexMint",
+          "writable": true
+        },
+        {
+          "name": "userIndexToken",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amountIn",
+          "type": "u64"
+        },
+        {
+          "name": "minimumAmountOut",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "createIndexFundVault",
       "discriminator": [
         203,
@@ -330,149 +473,6 @@ export type Pie = {
       "args": []
     },
     {
-      "name": "swapUnderlyAsset",
-      "discriminator": [
-        116,
-        173,
-        105,
-        158,
-        132,
-        199,
-        239,
-        76
-      ],
-      "accounts": [
-        {
-          "name": "userSourceOwner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "userFund",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  117,
-                  115,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "userSourceOwner"
-              },
-              {
-                "kind": "account",
-                "path": "basketConfig"
-              }
-            ]
-          }
-        },
-        {
-          "name": "config",
-          "writable": true
-        },
-        {
-          "name": "basketConfig",
-          "writable": true
-        },
-        {
-          "name": "mintOut",
-          "writable": true
-        },
-        {
-          "name": "amm",
-          "writable": true
-        },
-        {
-          "name": "ammAuthority"
-        },
-        {
-          "name": "ammOpenOrders",
-          "writable": true
-        },
-        {
-          "name": "ammCoinVault",
-          "writable": true
-        },
-        {
-          "name": "ammPcVault",
-          "writable": true
-        },
-        {
-          "name": "marketProgram"
-        },
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "marketBids",
-          "writable": true
-        },
-        {
-          "name": "marketAsks",
-          "writable": true
-        },
-        {
-          "name": "marketEventQueue",
-          "writable": true
-        },
-        {
-          "name": "marketCoinVault",
-          "writable": true
-        },
-        {
-          "name": "marketPcVault",
-          "writable": true
-        },
-        {
-          "name": "marketVaultSigner"
-        },
-        {
-          "name": "userTokenSource",
-          "writable": true
-        },
-        {
-          "name": "vaultTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "ammProgram"
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "indexMint",
-          "writable": true
-        },
-        {
-          "name": "userIndexToken",
-          "writable": true
-        }
-      ],
-      "args": [
-        {
-          "name": "amountIn",
-          "type": "u64"
-        },
-        {
-          "name": "minimumAmountOut",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "transferAdmin",
       "discriminator": [
         42,
@@ -536,16 +536,16 @@ export type Pie = {
       ]
     },
     {
-      "name": "config",
+      "name": "programState",
       "discriminator": [
-        155,
-        12,
-        170,
-        224,
-        30,
-        250,
-        204,
-        130
+        77,
+        209,
+        137,
+        229,
+        149,
+        67,
+        167,
+        230
       ]
     },
     {
@@ -621,7 +621,7 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "underlyAssets",
+            "name": "components",
             "type": {
               "vec": {
                 "defined": {
@@ -650,7 +650,7 @@ export type Pie = {
       }
     },
     {
-      "name": "config",
+      "name": "programState",
       "type": {
         "kind": "struct",
         "fields": [
@@ -663,7 +663,7 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "counter",
+            "name": "basketCounter",
             "type": "u32"
           }
         ]
@@ -687,7 +687,7 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
-            "name": "assetInfo",
+            "name": "components",
             "type": {
               "vec": {
                 "defined": {

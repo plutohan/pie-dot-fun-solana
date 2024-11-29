@@ -2,8 +2,8 @@
 use anchor_lang::prelude::*;
 
 #[account]
-pub struct Config {
+pub struct ProgramState {
     pub bump: u8,
     pub admin: Pubkey,
-    pub counter: u32
+    pub basket_counter: u32
 }

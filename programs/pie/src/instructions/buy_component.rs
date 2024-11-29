@@ -9,11 +9,11 @@ use raydium_amm_cpi::*;
 use crate::{
     constant::{MAX_UNDERLY_ASSETS, USER},
     error::PieError,
-    Config, Component, UserFund, BasketConfig,
+    ProgramState, Component, UserFund, BasketConfig,
 };
 
 #[derive(Accounts)]
-pub struct SwapUnderlyAsset<'info> {
+pub struct SwapToComponent<'info> {
     #[account(mut)]
     pub user_source_owner: Signer<'info>,
     #[account(
@@ -25,7 +25,7 @@ pub struct SwapUnderlyAsset<'info> {
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(mut)]
-    pub config: Box<Account<'info, Config>>,
+    pub config: Box<Account<'info, ProgramState>>,
     #[account(mut)]
     pub basket_config: Box<Account<'info, BasketConfig>>,
     #[account(mut)]
@@ -88,8 +88,8 @@ pub struct SwapUnderlyAsset<'info> {
     pub user_index_token: Box<Account<'info, TokenAccount>>,
 }
 
-pub fn swap_underly_asset(
-    ctx: Context<SwapUnderlyAsset>,
+pub fn buy_component(
+    ctx: Context<SwapToComponent>,
     amount_in: u64,
     minimum_amount_out: u64,
 ) -> Result<()> {
@@ -129,7 +129,7 @@ pub fn swap_underly_asset(
     let user_fund = &mut ctx.accounts.user_fund;
 
     if let Some(asset) = user_fund
-        .asset_info
+        .components
         .iter_mut()
         .find(|a| a.mint == ctx.accounts.mint_out.key())
     {
@@ -137,11 +137,11 @@ pub fn swap_underly_asset(
     } else {
         //TODO: check if the user has enough space to add the new asset
         require!(
-            user_fund.asset_info.len() < MAX_UNDERLY_ASSETS.into(),
+            user_fund.components.len() < MAX_UNDERLY_ASSETS.into(),
             PieError::MaxAssetsExceeded
         );
 
-        user_fund.asset_info.push(Component {
+        user_fund.components.push(Component {
             mint: ctx.accounts.mint_out.key(),
             amount: amount_received,
         });

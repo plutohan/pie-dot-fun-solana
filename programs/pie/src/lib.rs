@@ -42,12 +42,12 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn swap_underly_asset(
-        ctx: Context<SwapUnderlyAsset>,
+    pub fn buy_component(
+        ctx: Context<SwapToComponent>,
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
-        instructions::swap_underly_asset(ctx, amount_in, minimum_amount_out)?;
+        instructions::buy_component(ctx, amount_in, minimum_amount_out)?;
         Ok(())
     }
 }

@@ -11,7 +11,7 @@ pub struct BasketConfig {
     pub bump: u8,
     pub id: u32,
     pub mint: Pubkey,
-    pub underly_assets: Vec<Component>,
+    pub components: Vec<Component>,
 }
 
 impl Space for BasketConfig {

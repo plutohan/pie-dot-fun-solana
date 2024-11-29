@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constant::{CONFIG, REBALANCER_STATE},
     error::PieError,
-    get_current_admin, Config, RebalancerState,
+    get_current_admin, ProgramState, RebalancerState,
 };
 
 #[derive(Accounts)]
@@ -23,7 +23,7 @@ pub struct DeleteRebalancer<'info> {
         seeds = [CONFIG],
         bump = config.bump
     )]
-    pub config: Account<'info, Config>,
+    pub config: Account<'info, ProgramState>,
 
     pub system_program: Program<'info, System>,
 }

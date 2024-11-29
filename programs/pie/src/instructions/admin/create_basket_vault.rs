@@ -6,7 +6,7 @@ use anchor_spl::token::{Mint, Token};
 use crate::{
     constant::{CONFIG, FUND},
     error::PieError,
-    Config, Component, BasketConfig,
+    ProgramState, Component, BasketConfig,
 };
 
 #[derive(Accounts)]
@@ -20,7 +20,7 @@ pub struct CreateIndexFundVault<'info> {
         seeds = [CONFIG],
         bump = config.bump
     )]
-    pub config: Account<'info, Config>,
+    pub config: Account<'info, ProgramState>,
 
     #[account(
         init,
@@ -86,11 +86,11 @@ pub fn create_index_fund_vault(
     )?;
 
     index_fund_config.bump = ctx.bumps.index_fund_config;
-    index_fund_config.id = config.counter;
+    index_fund_config.id = config.basket_counter;
     index_fund_config.mint = ctx.accounts.index_fund_mint.key();
-    index_fund_config.underly_assets = underly_assets;
+    index_fund_config.components = underly_assets;
 
-    config.counter += 1;
+    config.basket_counter += 1;
 
     Ok(())
 }
