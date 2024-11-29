@@ -6,30 +6,29 @@ use anchor_spl::{
 
 use raydium_amm_cpi::*;
 
-use crate::{
-    constant::{MAX_COMPONENTS, USER},
-    error::PieError,
-    BasketConfig, Component, ProgramState, UserFund,
-};
+use crate::{constant::USER, error::PieError, BasketConfig, ProgramState, UserFund};
 
 #[derive(Accounts)]
-pub struct BuyComponentContext<'info> {
+pub struct SellComponentContext<'info> {
     #[account(mut)]
     pub user_source_owner: Signer<'info>,
+
     #[account(
-        init_if_needed,
-        payer = user_source_owner,
-        space = UserFund::INIT_SPACE,
+        mut,
         seeds = [USER, &user_source_owner.key().as_ref(), &basket_config.key().as_ref()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
+
     #[account(mut)]
     pub program_state: Box<Account<'info, ProgramState>>,
+
     #[account(mut)]
     pub basket_config: Box<Account<'info, BasketConfig>>,
+
     #[account(mut)]
-    pub mint_out: Box<InterfaceAccount<'info, Mint>>,
+    pub mint_in: Box<InterfaceAccount<'info, Mint>>,
+
     /// CHECK: Safe. amm Account
     #[account(mut)]
     pub amm: AccountInfo<'info>,
@@ -66,9 +65,10 @@ pub struct BuyComponentContext<'info> {
     pub market_pc_vault: AccountInfo<'info>,
     /// CHECK: Safe. vault_signer Account
     pub market_vault_signer: AccountInfo<'info>,
-    /// CHECK: Safe. user source token Account
+
     #[account(mut)]
-    pub user_token_source: AccountInfo<'info>,
+    pub user_token_destination: Box<Account<'info, TokenAccount>>,
+
     #[account(mut)]
     pub vault_token_account: Box<Account<'info, TokenAccount>>,
 
@@ -76,29 +76,28 @@ pub struct BuyComponentContext<'info> {
     /// CHECK: Safe. amm_program
     pub amm_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
-
-    #[account(mut)]
-    pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    #[account(
-        mut,
-        token::mint = basket_mint,
-        token::authority = user_source_owner,
-    )]
-    pub user_index_token: Box<Account<'info, TokenAccount>>,
 }
 
-pub fn buy_component(
-    ctx: Context<BuyComponentContext>,
+pub fn sell_component(
+    ctx: Context<SellComponentContext>,
     amount_in: u64,
     minimum_amount_out: u64,
 ) -> Result<()> {
     // Verify amount is not zero
     require!(amount_in > 0, PieError::InvalidAmount);
 
-    let balance_before = ctx.accounts.vault_token_account.amount;
+    // Verify user has enough tokens in their fund
+    let user_fund = &mut ctx.accounts.user_fund;
+    let component = user_fund
+        .components
+        .iter_mut()
+        .find(|a| a.mint == ctx.accounts.mint_in.key())
+        .ok_or(PieError::ComponentNotFound)?;
 
-    let cpi_accounts = SwapBaseOut {
+    require!(component.amount >= amount_in, PieError::InsufficientBalance);
+
+    // Perform the swap
+    let cpi_accounts = SwapBaseIn {
         amm: ctx.accounts.amm.to_account_info(),
         amm_authority: ctx.accounts.amm_authority.to_account_info(),
         amm_open_orders: ctx.accounts.amm_open_orders.to_account_info(),
@@ -112,39 +111,23 @@ pub fn buy_component(
         market_coin_vault: ctx.accounts.market_coin_vault.to_account_info(),
         market_pc_vault: ctx.accounts.market_pc_vault.to_account_info(),
         market_vault_signer: ctx.accounts.market_vault_signer.to_account_info(),
-        user_token_source: ctx.accounts.user_token_source.to_account_info(),
-        user_token_destination: ctx.accounts.vault_token_account.to_account_info(),
+        user_token_source: ctx.accounts.vault_token_account.to_account_info(),
+        user_token_destination: ctx.accounts.user_token_destination.to_account_info(),
         user_source_owner: ctx.accounts.user_source_owner.clone(),
         token_program: ctx.accounts.token_program.clone(),
     };
 
     let cpi_context = CpiContext::new(ctx.accounts.amm_program.to_account_info(), cpi_accounts);
-    raydium_amm_cpi::instructions::swap_base_out(cpi_context, amount_in, minimum_amount_out)?;
+    raydium_amm_cpi::instructions::swap_base_in(cpi_context, amount_in, minimum_amount_out)?;
 
-    ctx.accounts.vault_token_account.reload()?;
+    // Update user's component balance
+    component.amount = component.amount.checked_sub(amount_in).unwrap();
 
-    let balance_after = ctx.accounts.vault_token_account.amount;
-    let amount_received = balance_after.checked_sub(balance_before).unwrap();
-
-    let user_fund = &mut ctx.accounts.user_fund;
-
-    if let Some(asset) = user_fund
-        .components
-        .iter_mut()
-        .find(|a| a.mint == ctx.accounts.mint_out.key())
-    {
-        asset.amount = asset.amount.checked_add(amount_received).unwrap();
-    } else {
-        //TODO: check if the user has enough space to add the new asset
-        require!(
-            user_fund.components.len() < MAX_COMPONENTS as usize,
-            PieError::MaxAssetsExceeded
-        );
-
-        user_fund.components.push(Component {
-            mint: ctx.accounts.mint_out.key(),
-            amount: amount_received,
-        });
+    // Remove component if balance is zero
+    if component.amount == 0 {
+        user_fund
+            .components
+            .retain(|c| c.mint != ctx.accounts.mint_in.key());
     }
 
     Ok(())
