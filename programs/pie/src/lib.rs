@@ -37,8 +37,21 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn create_basket(ctx: Context<CreateBasketContext>, components: Vec<Component>) -> Result<()> {
+    pub fn create_basket(
+        ctx: Context<CreateBasketContext>,
+        components: Vec<Component>,
+    ) -> Result<()> {
         instructions::create_basket(ctx, components)?;
+        Ok(())
+    }
+
+    pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
+        instructions::mint_basket_token(ctx)?;
+        Ok(())
+    }
+
+    pub fn burn_basket_token(ctx: Context<BurnBasketTokenContext>, amount: u64) -> Result<()> {
+        instructions::burn_basket_token(ctx, amount)?;
         Ok(())
     }
 
@@ -48,6 +61,15 @@ pub mod pie {
         minimum_amount_out: u64,
     ) -> Result<()> {
         instructions::buy_component(ctx, amount_in, minimum_amount_out)?;
+        Ok(())
+    }
+
+    pub fn sell_component(
+        ctx: Context<SellComponentContext>,
+        amount_in: u64,
+        minimum_amount_out: u64,
+    ) -> Result<()> {
+        instructions::sell_component(ctx, amount_in, minimum_amount_out)?;
         Ok(())
     }
 }

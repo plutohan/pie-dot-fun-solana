@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::constant::MAX_UNDERLY_ASSETS;
+use crate::constant::MAX_COMPONENTS;
 
 use super::Component;
 
@@ -12,5 +12,5 @@ pub struct UserFund {
 impl Space for UserFund {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
         + 4 // vec length
-        + (32 + 8) * MAX_UNDERLY_ASSETS as usize; // vec items
+        + (32 + 8) * MAX_COMPONENTS as usize; // vec items
 }
