@@ -101,6 +101,82 @@ export type Pie = {
       ]
     },
     {
+      "name": "burnBasketToken",
+      "discriminator": [
+        215,
+        177,
+        156,
+        113,
+        9,
+        184,
+        69,
+        97
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketMint",
+          "writable": true
+        },
+        {
+          "name": "userBasketTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "buyComponent",
       "discriminator": [
         179,
@@ -494,6 +570,212 @@ export type Pie = {
       "args": []
     },
     {
+      "name": "mintBasketToken",
+      "discriminator": [
+        190,
+        65,
+        196,
+        32,
+        108,
+        156,
+        87,
+        42
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketMint",
+          "writable": true
+        },
+        {
+          "name": "userBasketTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "sellComponent",
+      "discriminator": [
+        160,
+        26,
+        212,
+        127,
+        72,
+        245,
+        31,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "userSourceOwner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "userSourceOwner"
+              },
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "programState",
+          "writable": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "mintIn",
+          "writable": true
+        },
+        {
+          "name": "amm",
+          "writable": true
+        },
+        {
+          "name": "ammAuthority"
+        },
+        {
+          "name": "ammOpenOrders",
+          "writable": true
+        },
+        {
+          "name": "ammCoinVault",
+          "writable": true
+        },
+        {
+          "name": "ammPcVault",
+          "writable": true
+        },
+        {
+          "name": "marketProgram"
+        },
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "marketBids",
+          "writable": true
+        },
+        {
+          "name": "marketAsks",
+          "writable": true
+        },
+        {
+          "name": "marketEventQueue",
+          "writable": true
+        },
+        {
+          "name": "marketCoinVault",
+          "writable": true
+        },
+        {
+          "name": "marketPcVault",
+          "writable": true
+        },
+        {
+          "name": "marketVaultSigner"
+        },
+        {
+          "name": "userTokenDestination",
+          "writable": true
+        },
+        {
+          "name": "vaultTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "ammProgram"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amountIn",
+          "type": "u64"
+        },
+        {
+          "name": "minimumAmountOut",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "transferAdmin",
       "discriminator": [
         42,
@@ -628,6 +910,11 @@ export type Pie = {
       "code": 6004,
       "name": "invalidAmount",
       "msg": "Invalid Amount"
+    },
+    {
+      "code": 6005,
+      "name": "componentNotFound",
+      "msg": "Component not found"
     }
   ],
   "types": [
