@@ -59,7 +59,7 @@
           }
         },
         {
-          "name": "admin_state",
+          "name": "config",
           "writable": true,
           "pda": {
             "seeds": [
@@ -91,6 +91,109 @@
         {
           "name": "rebalancer",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "create_index_fund_vault",
+      "discriminator": [
+        203,
+        243,
+        38,
+        17,
+        100,
+        44,
+        52,
+        174
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "index_fund_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "index_fund_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "index_fund_mint",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "metadata_account",
+          "docs": [
+            "To store metaplex metadata"
+          ],
+          "writable": true
+        },
+        {
+          "name": "metadata_program",
+          "docs": [
+            "Program to create NFT metadata"
+          ],
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "underly_assets",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "UnderlyAsset"
+              }
+            }
+          }
         }
       ]
     },
@@ -146,24 +249,19 @@
           }
         },
         {
-          "name": "admin_state",
+          "name": "config",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  97,
-                  100,
-                  109,
-                  105,
+                  99,
+                  111,
                   110,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
+                  102,
+                  105,
+                  103
                 ]
               }
             ]
@@ -178,6 +276,193 @@
         {
           "name": "rebalancer",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "swap_underly_asset",
+      "discriminator": [
+        116,
+        173,
+        105,
+        158,
+        132,
+        199,
+        239,
+        76
+      ],
+      "accounts": [
+        {
+          "name": "user_source_owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user_fund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user_source_owner"
+              },
+              {
+                "kind": "account",
+                "path": "index_fund_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "index_fund_config",
+          "writable": true
+        },
+        {
+          "name": "mint_out",
+          "writable": true
+        },
+        {
+          "name": "amm",
+          "writable": true
+        },
+        {
+          "name": "amm_authority"
+        },
+        {
+          "name": "amm_open_orders",
+          "writable": true
+        },
+        {
+          "name": "amm_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "amm_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_program"
+        },
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "market_bids",
+          "writable": true
+        },
+        {
+          "name": "market_asks",
+          "writable": true
+        },
+        {
+          "name": "market_event_queue",
+          "writable": true
+        },
+        {
+          "name": "market_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "market_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_vault_signer"
+        },
+        {
+          "name": "user_token_source",
+          "writable": true
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "amm_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "index_mint",
+          "writable": true
+        },
+        {
+          "name": "user_index_token",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_amount_out",
+          "type": "u64"
         }
       ]
     },
@@ -200,24 +485,18 @@
           "signer": true
         },
         {
-          "name": "admin_state",
-          "writable": true,
+          "name": "config",
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  97,
-                  100,
-                  109,
-                  105,
+                  99,
+                  111,
                   110,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
+                  102,
+                  105,
+                  103
                 ]
               }
             ]
@@ -238,16 +517,29 @@
   ],
   "accounts": [
     {
-      "name": "AdminState",
+      "name": "Config",
       "discriminator": [
-        190,
-        42,
-        124,
-        96,
-        242,
-        52,
-        141,
-        28
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "IndexFundConfig",
+      "discriminator": [
+        222,
+        31,
+        187,
+        7,
+        113,
+        240,
+        222,
+        204
       ]
     },
     {
@@ -262,6 +554,19 @@
         212,
         209
       ]
+    },
+    {
+      "name": "UserFund",
+      "discriminator": [
+        11,
+        55,
+        142,
+        181,
+        228,
+        65,
+        176,
+        30
+      ]
     }
   ],
   "errors": [
@@ -274,17 +579,70 @@
       "code": 6001,
       "name": "RebalancerNotFound",
       "msg": "Can't found rebalancer info."
+    },
+    {
+      "code": 6002,
+      "name": "MaxAssetsExceeded",
+      "msg": "Max asset exceeded"
+    },
+    {
+      "code": 6003,
+      "name": "InsufficientBalance",
+      "msg": "Insufficient Balance"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidAmount",
+      "msg": "Invalid Amount"
     }
   ],
   "types": [
     {
-      "name": "AdminState",
+      "name": "Config",
       "type": {
         "kind": "struct",
         "fields": [
           {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
             "name": "admin",
             "type": "pubkey"
+          },
+          {
+            "name": "counter",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IndexFundConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "id",
+            "type": "u32"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "underly_assets",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "UnderlyAsset"
+                }
+              }
+            }
           }
         ]
       }
@@ -297,6 +655,40 @@
           {
             "name": "balancer",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UnderlyAsset",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserFund",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "asset_info",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "UnderlyAsset"
+                }
+              }
+            }
           }
         ]
       }
