@@ -9,7 +9,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = admin,
-        space = 8 + 32 + 2 + 1,
+        space = ProgramState::INIT_SPACE,
         seeds = [PROGRAM_STATE],
         bump
     )]
@@ -19,6 +19,7 @@ pub struct Initialize<'info> {
 
 pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
     ctx.accounts.program_state.bump = ctx.bumps.program_state;
+    ctx.accounts.program_state.admin = ctx.accounts.admin.key();
     ctx.accounts.program_state.basket_counter = 0;
     Ok(())
 }

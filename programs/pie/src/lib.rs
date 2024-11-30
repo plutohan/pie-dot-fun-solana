@@ -37,6 +37,16 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn add_creator(ctx: Context<AddCreator>, creator: Pubkey) -> Result<()> {
+        instructions::add_creator(ctx, creator)?;
+        Ok(())
+    }
+
+    pub fn delete_creator(ctx: Context<DeleteCreator>, creator: Pubkey) -> Result<()> {
+        instructions::delete_creator(ctx, creator)?;
+        Ok(())
+    }
+
     pub fn create_basket(
         ctx: Context<CreateBasketContext>,
         components: Vec<Component>,

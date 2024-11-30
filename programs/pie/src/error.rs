@@ -20,4 +20,7 @@ pub enum PieError {
 
     #[msg("Component not found")]
     ComponentNotFound,
+
+    #[msg("Creator state not provided")]
+    CreatorStateNotProvided,
 }

@@ -4,27 +4,33 @@ use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3
 use anchor_spl::token::{Mint, Token};
 
 use crate::{
-    constant::{PROGRAM_STATE, FUND},
+    constant::{PROGRAM_STATE, FUND, CREATOR_STATE},
     error::PieError,
-    ProgramState, Component, BasketConfig,
+    ProgramState, Component, BasketConfig, CreatorState,
 };
 
 #[derive(Accounts)]
 pub struct CreateBasketContext<'info> {
     #[account(mut)]
-    pub admin: Signer<'info>,
+    pub creator: Signer<'info>,
 
     #[account(
         mut,
-        constraint = program_state.admin.key() == admin.key() @PieError::Unauthorized,
         seeds = [PROGRAM_STATE],
         bump = program_state.bump
     )]
     pub program_state: Account<'info, ProgramState>,
+    
+    /// Optional creator state account, only needed when creator mode is enabled
+    #[account(
+        seeds = [CREATOR_STATE, creator.key().as_ref()],
+        bump,
+    )]
+    pub creator_state: Option<Account<'info, CreatorState>>,
 
     #[account(
         init,
-        payer = admin,
+        payer = creator,
         space = BasketConfig::INIT_SPACE,
         seeds = [FUND, basket_mint.key().as_ref()],
         bump
@@ -33,7 +39,7 @@ pub struct CreateBasketContext<'info> {
 
     #[account(
         init,
-        payer = admin,
+        payer = creator,
         mint::decimals = 6,
         mint::authority = basket_config.key(),
     )]
@@ -55,7 +61,27 @@ pub fn create_basket(
     ctx: Context<CreateBasketContext>,
     components: Vec<Component>,
 ) -> Result<()> {
-    let basket_config: &mut Account<'_, BasketConfig> = &mut ctx.accounts.basket_config;
+    let program_state = &ctx.accounts.program_state;
+    
+    // Check if creator is authorized
+    if program_state.enable_creator {
+        // Creator mode is enabled, require creator state account
+        let creator_state = ctx.accounts.creator_state.as_ref()
+            .ok_or(PieError::CreatorStateNotProvided)?;
+            
+        require!(
+            creator_state.creator == ctx.accounts.creator.key(),
+            PieError::Unauthorized
+        );
+    } else {
+        // Creator mode is disabled, only admin can create baskets
+        require!(
+            program_state.admin == ctx.accounts.creator.key(),
+            PieError::Unauthorized
+        );
+    }
+
+    let basket_config = &mut ctx.accounts.basket_config;
     let config = &mut ctx.accounts.program_state;
 
     create_metadata_accounts_v3(
@@ -65,8 +91,8 @@ pub fn create_basket(
                 metadata: ctx.accounts.metadata_account.to_account_info(),
                 mint: ctx.accounts.basket_mint.to_account_info(),
                 mint_authority: basket_config.to_account_info(),
-                update_authority: ctx.accounts.admin.to_account_info(),
-                payer: ctx.accounts.admin.to_account_info(),
+                update_authority: ctx.accounts.creator.to_account_info(),
+                payer: ctx.accounts.creator.to_account_info(),
                 system_program: ctx.accounts.system_program.to_account_info(),
                 rent: ctx.accounts.rent.to_account_info(),
             },
