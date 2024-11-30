@@ -4,9 +4,9 @@ use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3
 use anchor_spl::token::{Mint, Token};
 
 use crate::{
-    constant::{PROGRAM_STATE, FUND, CREATOR_STATE},
+    constant::{FUND, PROGRAM_STATE},
     error::PieError,
-    ProgramState, Component, BasketConfig, CreatorState,
+    BasketConfig, Component, ProgramState,
 };
 
 #[derive(Accounts)]
@@ -20,13 +20,6 @@ pub struct CreateBasketContext<'info> {
         bump = program_state.bump
     )]
     pub program_state: Account<'info, ProgramState>,
-    
-    /// Optional creator state account, only needed when creator mode is enabled
-    #[account(
-        seeds = [CREATOR_STATE, creator.key().as_ref()],
-        bump,
-    )]
-    pub creator_state: Option<Account<'info, CreatorState>>,
 
     #[account(
         init,
@@ -57,30 +50,23 @@ pub struct CreateBasketContext<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn create_basket(
-    ctx: Context<CreateBasketContext>,
-    components: Vec<Component>,
-) -> Result<()> {
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct CreateBasketArgs {
+    pub components: Vec<Component>,
+    pub name: String,
+    pub symbol: String,
+    pub uri: String,
+}
+
+pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
     let program_state = &ctx.accounts.program_state;
-    
-    // Check if creator is authorized
-    if program_state.enable_creator {
-        // Creator mode is enabled, require creator state account
-        let creator_state = ctx.accounts.creator_state.as_ref()
-            .ok_or(PieError::CreatorStateNotProvided)?;
-            
-        require!(
-            creator_state.creator == ctx.accounts.creator.key(),
-            PieError::Unauthorized
-        );
-    } else {
-        // Creator mode is disabled, only admin can create baskets
+
+    if !program_state.enable_creator {
         require!(
             program_state.admin == ctx.accounts.creator.key(),
             PieError::Unauthorized
         );
     }
-
     let basket_config = &mut ctx.accounts.basket_config;
     let config = &mut ctx.accounts.program_state;
 
@@ -98,9 +84,9 @@ pub fn create_basket(
             },
         ),
         DataV2 {
-            name: String::from("Pie Dot Index Fund Token"),
-            symbol: String::from("PDI"),
-            uri: String::from("https:"), //TODO add uri
+            name: args.name,
+            symbol: args.symbol,
+            uri: args.uri,
             seller_fee_basis_points: 0,
             creators: None,
             collection: None,
@@ -112,9 +98,10 @@ pub fn create_basket(
     )?;
 
     basket_config.bump = ctx.bumps.basket_config;
+    basket_config.creator = ctx.accounts.creator.key();
     basket_config.id = config.basket_counter;
     basket_config.mint = ctx.accounts.basket_mint.key();
-    basket_config.components = components;
+    basket_config.components = args.components;
 
     config.basket_counter += 1;
 
