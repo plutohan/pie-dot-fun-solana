@@ -3,6 +3,7 @@ use anchor_spl::metadata::mpl_token_metadata::types::DataV2;
 use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3, Metadata};
 use anchor_spl::token::{Mint, Token};
 
+use crate::get_current_admin;
 use crate::{
     constant::{FUND, PROGRAM_STATE},
     error::PieError,
@@ -62,10 +63,11 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     let program_state = &ctx.accounts.program_state;
 
     if !program_state.enable_creator {
-        require!(
-            program_state.admin == ctx.accounts.creator.key(),
-            PieError::Unauthorized
-        );
+        let current_admin = get_current_admin(&ctx.accounts.program_state)?;
+
+        if ctx.accounts.creator.key() != current_admin {
+            return Err(PieError::Unauthorized.into());
+        }
     }
     let basket_config = &mut ctx.accounts.basket_config;
     let config = &mut ctx.accounts.program_state;
