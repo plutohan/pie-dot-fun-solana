@@ -11,4 +11,24 @@ describe("pie", () => {
   it("is success deploy without admin change", async () => {
 
   });
+
+  describe("add_rebalancer", () => {
+    it("should add a rebalancer", async () => {
+
+    });
+
+    it("should fail if the admin is unauthorized", async () => {
+
+    });
+  });
+
+  describe("delete_rebalancer", () => {
+    it("should add a rebalancer", async () => {
+
+    });
+
+    it("should fail if the admin is unauthorized", async () => {
+
+    });
+  });
 });
