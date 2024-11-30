@@ -9,7 +9,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = admin,
-        space = 8 + 32 + 2 + 1,
+        space = ProgramState::INIT_SPACE,
         seeds = [PROGRAM_STATE],
         bump
     )]

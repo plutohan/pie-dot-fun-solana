@@ -39,9 +39,9 @@ pub mod pie {
 
     pub fn create_basket(
         ctx: Context<CreateBasketContext>,
-        components: Vec<Component>,
+        args: CreateBasketArgs,
     ) -> Result<()> {
-        instructions::create_basket(ctx, components)?;
+        instructions::create_basket(ctx, args)?;
         Ok(())
     }
 

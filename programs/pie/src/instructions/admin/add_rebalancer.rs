@@ -10,7 +10,7 @@ pub struct AddRebalancer<'info> {
     #[account(
         init_if_needed,
         payer = admin,
-        space = 8 + 32,
+        space = RebalancerState::INIT_SPACE,
         seeds = [REBALANCER_STATE, rebalancer.as_ref()],
         bump
     )]

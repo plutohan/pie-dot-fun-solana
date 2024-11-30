@@ -3,20 +3,20 @@ use anchor_spl::metadata::mpl_token_metadata::types::DataV2;
 use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3, Metadata};
 use anchor_spl::token::{Mint, Token};
 
+use crate::get_current_admin;
 use crate::{
-    constant::{PROGRAM_STATE, FUND},
+    constant::{FUND, PROGRAM_STATE},
     error::PieError,
-    ProgramState, Component, BasketConfig,
+    BasketConfig, Component, ProgramState,
 };
 
 #[derive(Accounts)]
 pub struct CreateBasketContext<'info> {
     #[account(mut)]
-    pub admin: Signer<'info>,
+    pub creator: Signer<'info>,
 
     #[account(
         mut,
-        constraint = program_state.admin.key() == admin.key() @PieError::Unauthorized,
         seeds = [PROGRAM_STATE],
         bump = program_state.bump
     )]
@@ -24,7 +24,7 @@ pub struct CreateBasketContext<'info> {
 
     #[account(
         init,
-        payer = admin,
+        payer = creator,
         space = BasketConfig::INIT_SPACE,
         seeds = [FUND, basket_mint.key().as_ref()],
         bump
@@ -33,7 +33,7 @@ pub struct CreateBasketContext<'info> {
 
     #[account(
         init,
-        payer = admin,
+        payer = creator,
         mint::decimals = 6,
         mint::authority = basket_config.key(),
     )]
@@ -51,11 +51,25 @@ pub struct CreateBasketContext<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn create_basket(
-    ctx: Context<CreateBasketContext>,
-    components: Vec<Component>,
-) -> Result<()> {
-    let basket_config: &mut Account<'_, BasketConfig> = &mut ctx.accounts.basket_config;
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct CreateBasketArgs {
+    pub components: Vec<Component>,
+    pub name: String,
+    pub symbol: String,
+    pub uri: String,
+}
+
+pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
+    let program_state = &ctx.accounts.program_state;
+
+    if !program_state.enable_creator {
+        let current_admin = get_current_admin(&ctx.accounts.program_state)?;
+
+        if ctx.accounts.creator.key() != current_admin {
+            return Err(PieError::Unauthorized.into());
+        }
+    }
+    let basket_config = &mut ctx.accounts.basket_config;
     let config = &mut ctx.accounts.program_state;
 
     create_metadata_accounts_v3(
@@ -65,16 +79,16 @@ pub fn create_basket(
                 metadata: ctx.accounts.metadata_account.to_account_info(),
                 mint: ctx.accounts.basket_mint.to_account_info(),
                 mint_authority: basket_config.to_account_info(),
-                update_authority: ctx.accounts.admin.to_account_info(),
-                payer: ctx.accounts.admin.to_account_info(),
+                update_authority: ctx.accounts.creator.to_account_info(),
+                payer: ctx.accounts.creator.to_account_info(),
                 system_program: ctx.accounts.system_program.to_account_info(),
                 rent: ctx.accounts.rent.to_account_info(),
             },
         ),
         DataV2 {
-            name: String::from("Pie Dot Index Fund Token"),
-            symbol: String::from("PDI"),
-            uri: String::from("https:"), //TODO add uri
+            name: args.name,
+            symbol: args.symbol,
+            uri: args.uri,
             seller_fee_basis_points: 0,
             creators: None,
             collection: None,
@@ -86,9 +100,10 @@ pub fn create_basket(
     )?;
 
     basket_config.bump = ctx.bumps.basket_config;
+    basket_config.creator = ctx.accounts.creator.key();
     basket_config.id = config.basket_counter;
     basket_config.mint = ctx.accounts.basket_mint.key();
-    basket_config.components = components;
+    basket_config.components = args.components;
 
     config.basket_counter += 1;
 
