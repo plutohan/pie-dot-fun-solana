@@ -1,5 +1,5 @@
 {
-  "address": "GkkuKbHCeiUZQX4yGpDqQktfG92WSdjRiP7nqkh9gG9W",
+  "address": "DE3snahjq5c6mZuTeQyvW8VEqj1m2zk9Cv7YLqGE3Tia",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -327,7 +327,7 @@
       ],
       "accounts": [
         {
-          "name": "admin",
+          "name": "creator",
           "writable": true,
           "signer": true
         },
@@ -386,15 +386,12 @@
         {
           "name": "metadata_account",
           "docs": [
-            "To store metaplex metadata"
+            "To store Metaplex metadata"
           ],
           "writable": true
         },
         {
           "name": "metadata_program",
-          "docs": [
-            "Program to create NFT metadata"
-          ],
           "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
         },
         {
@@ -412,12 +409,10 @@
       ],
       "args": [
         {
-          "name": "components",
+          "name": "args",
           "type": {
-            "vec": {
-              "defined": {
-                "name": "Component"
-              }
+            "defined": {
+              "name": "CreateBasketArgs"
             }
           }
         }
@@ -789,6 +784,7 @@
         },
         {
           "name": "program_state",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -909,6 +905,16 @@
       "code": 6005,
       "name": "ComponentNotFound",
       "msg": "Component not found"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidInitializeAdminAddress",
+      "msg": "Invalid initialize admin address"
+    },
+    {
+      "code": 6007,
+      "name": "ProgramInitialized",
+      "msg": "Program already initialized"
     }
   ],
   "types": [
@@ -920,6 +926,10 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
           },
           {
             "name": "id",
@@ -959,6 +969,36 @@
       }
     },
     {
+      "name": "CreateBasketArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "Component"
+                }
+              }
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
       "name": "ProgramState",
       "type": {
         "kind": "struct",
@@ -974,6 +1014,18 @@
           {
             "name": "basket_counter",
             "type": "u32"
+          },
+          {
+            "name": "is_rebalancing",
+            "type": "bool"
+          },
+          {
+            "name": "enable_creator",
+            "type": "bool"
+          },
+          {
+            "name": "is_initialized",
+            "type": "bool"
           }
         ]
       }

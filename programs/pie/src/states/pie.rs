@@ -7,6 +7,7 @@ pub struct ProgramState {
     pub basket_counter: u32,
     pub is_rebalancing: bool,
     pub enable_creator: bool,
+    pub is_initialized: bool
 }
 
 impl Space for ProgramState {
@@ -15,5 +16,6 @@ impl Space for ProgramState {
         + 32  // admin (Pubkey)
         + 4   // basket_counter (u32)
         + 1   // is_rebalancing (bool)
-        + 1; // enable_creator (bool)
+        + 1   // enable_creator (bool)
+        + 1;  // is_initialized (bool)
 }

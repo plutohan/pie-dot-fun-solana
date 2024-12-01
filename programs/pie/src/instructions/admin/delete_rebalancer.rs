@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constant::{PROGRAM_STATE, REBALANCER_STATE},
     error::PieError,
-    get_current_admin, ProgramState, RebalancerState,
+    ProgramState, RebalancerState,
 };
 
 #[derive(Accounts)]
@@ -29,9 +29,7 @@ pub struct DeleteRebalancer<'info> {
 }
 
 pub fn delete_rebalancer(ctx: Context<DeleteRebalancer>, rebalancer: Pubkey) -> Result<()> {
-    let current_admin = get_current_admin(&ctx.accounts.program_state)?;
-
-    if ctx.accounts.admin.key() != current_admin {
+    if ctx.accounts.admin.key() != ctx.accounts.program_state.admin {
         return Err(PieError::Unauthorized.into());
     }
 

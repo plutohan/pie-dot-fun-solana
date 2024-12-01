@@ -3,7 +3,6 @@ use anchor_spl::metadata::mpl_token_metadata::types::DataV2;
 use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3, Metadata};
 use anchor_spl::token::{Mint, Token};
 
-use crate::get_current_admin;
 use crate::{
     constant::{FUND, PROGRAM_STATE},
     error::PieError,
@@ -23,7 +22,7 @@ pub struct CreateBasketContext<'info> {
     pub program_state: Account<'info, ProgramState>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = creator,
         space = BasketConfig::INIT_SPACE,
         seeds = [FUND, basket_mint.key().as_ref()],
@@ -32,18 +31,17 @@ pub struct CreateBasketContext<'info> {
     pub basket_config: Account<'info, BasketConfig>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = creator,
         mint::decimals = 6,
         mint::authority = basket_config.key(),
     )]
     pub basket_mint: Account<'info, Mint>,
 
-    /// To store metaplex metadata
+    /// To store Metaplex metadata
     /// CHECK: Safety check performed inside function body
     #[account(mut)]
     pub metadata_account: UncheckedAccount<'info>,
-    /// Program to create NFT metadata
     /// CHECK: Metadata program address constraint applied
     pub metadata_program: Program<'info, Metadata>,
     pub token_program: Program<'info, Token>,
@@ -63,12 +61,13 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     let program_state = &ctx.accounts.program_state;
 
     if !program_state.enable_creator {
-        let current_admin = get_current_admin(&ctx.accounts.program_state)?;
+        let current_admin = program_state.admin;
 
         if ctx.accounts.creator.key() != current_admin {
             return Err(PieError::Unauthorized.into());
         }
     }
+
     let basket_config = &mut ctx.accounts.basket_config;
     let config = &mut ctx.accounts.program_state;
 

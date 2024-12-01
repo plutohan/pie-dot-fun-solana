@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "GkkuKbHCeiUZQX4yGpDqQktfG92WSdjRiP7nqkh9gG9W",
+  "address": "DE3snahjq5c6mZuTeQyvW8VEqj1m2zk9Cv7YLqGE3Tia",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -333,7 +333,7 @@ export type Pie = {
       ],
       "accounts": [
         {
-          "name": "admin",
+          "name": "creator",
           "writable": true,
           "signer": true
         },
@@ -392,15 +392,12 @@ export type Pie = {
         {
           "name": "metadataAccount",
           "docs": [
-            "To store metaplex metadata"
+            "To store Metaplex metadata"
           ],
           "writable": true
         },
         {
           "name": "metadataProgram",
-          "docs": [
-            "Program to create NFT metadata"
-          ],
           "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
         },
         {
@@ -418,12 +415,10 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "components",
+          "name": "args",
           "type": {
-            "vec": {
-              "defined": {
-                "name": "component"
-              }
+            "defined": {
+              "name": "createBasketArgs"
             }
           }
         }
@@ -795,6 +790,7 @@ export type Pie = {
         },
         {
           "name": "programState",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -915,6 +911,16 @@ export type Pie = {
       "code": 6005,
       "name": "componentNotFound",
       "msg": "Component not found"
+    },
+    {
+      "code": 6006,
+      "name": "invalidInitializeAdminAddress",
+      "msg": "Invalid initialize admin address"
+    },
+    {
+      "code": 6007,
+      "name": "programInitialized",
+      "msg": "Program already initialized"
     }
   ],
   "types": [
@@ -926,6 +932,10 @@ export type Pie = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
           },
           {
             "name": "id",
@@ -965,6 +975,36 @@ export type Pie = {
       }
     },
     {
+      "name": "createBasketArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "component"
+                }
+              }
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
       "name": "programState",
       "type": {
         "kind": "struct",
@@ -980,6 +1020,18 @@ export type Pie = {
           {
             "name": "basketCounter",
             "type": "u32"
+          },
+          {
+            "name": "isRebalancing",
+            "type": "bool"
+          },
+          {
+            "name": "enableCreator",
+            "type": "bool"
+          },
+          {
+            "name": "isInitialized",
+            "type": "bool"
           }
         ]
       }

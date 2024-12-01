@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{constant::{ADMIN_STATE, REBALANCER_STATE}, error::PieError, get_current_admin, ProgramState, RebalancerState};
+use crate::{constant::{ADMIN_STATE, REBALANCER_STATE}, error::PieError, ProgramState, RebalancerState};
 
 #[derive(Accounts)]
 #[instruction(rebalancer: Pubkey)]
@@ -26,9 +26,7 @@ pub struct AddRebalancer<'info> {
 }
 
 pub fn add_rebalancer(ctx: Context<AddRebalancer>, rebalancer: Pubkey) -> Result<()> {
-    let current_admin = get_current_admin(&ctx.accounts.program_state)?;
-
-    if ctx.accounts.admin.key() != current_admin {
+    if ctx.accounts.admin.key() != ctx.accounts.program_state.admin {
         return Err(PieError::Unauthorized.into());
     }
 

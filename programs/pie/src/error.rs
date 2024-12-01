@@ -20,4 +20,10 @@ pub enum PieError {
 
     #[msg("Component not found")]
     ComponentNotFound,
+
+    #[msg("Invalid initialize admin address")]
+    InvalidInitializeAdminAddress,
+
+    #[msg("Program already initialized")]
+    ProgramInitialized,
 }

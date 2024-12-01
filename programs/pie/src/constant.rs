@@ -8,3 +8,5 @@ pub const ADMIN_STATE: &[u8] = b"admin_state";
 
 pub const INDEX_TOKEN_DECIMALS: u8 = 6;
 pub const MAX_COMPONENTS: u8 = 50;
+
+pub const INITIALIZE_ADMIN: &str = "DjCDT99HEZyZuq48wugooYNGBnrB5Nhe93VgAKKBAPDV";
