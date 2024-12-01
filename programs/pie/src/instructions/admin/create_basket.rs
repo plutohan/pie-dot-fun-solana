@@ -4,7 +4,7 @@ use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3
 use anchor_spl::token::{Mint, Token};
 
 use crate::{
-    constant::{FUND, PROGRAM_STATE},
+    constant::{PROGRAM_STATE, BASKET_CONFIG},
     error::PieError,
     BasketConfig, Component, ProgramState,
 };
@@ -25,7 +25,7 @@ pub struct CreateBasketContext<'info> {
         init_if_needed,
         payer = creator,
         space = BasketConfig::INIT_SPACE,
-        seeds = [FUND, basket_mint.key().as_ref()],
+        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
         bump
     )]
     pub basket_config: Account<'info, BasketConfig>,

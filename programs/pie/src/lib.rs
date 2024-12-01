@@ -6,7 +6,9 @@ pub mod constant;
 pub mod error;
 pub mod instructions;
 pub mod states;
+pub mod utils;
 
+use constant::*;
 use instructions::*;
 use states::*;
 
@@ -35,10 +37,7 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn create_basket(
-        ctx: Context<CreateBasketContext>,
-        args: CreateBasketArgs,
-    ) -> Result<()> {
+    pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
         instructions::create_basket(ctx, args)?;
         Ok(())
     }
@@ -55,10 +54,10 @@ pub mod pie {
 
     pub fn buy_component(
         ctx: Context<BuyComponentContext>,
-        amount_in: u64,
-        minimum_amount_out: u64,
+        max_amount_in: u64,
+        amount_out: u64,
     ) -> Result<()> {
-        instructions::buy_component(ctx, amount_in, minimum_amount_out)?;
+        instructions::buy_component(ctx, max_amount_in, amount_out)?;
         Ok(())
     }
 
@@ -68,6 +67,25 @@ pub mod pie {
         minimum_amount_out: u64,
     ) -> Result<()> {
         instructions::sell_component(ctx, amount_in, minimum_amount_out)?;
+        Ok(())
+    }
+    pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
+        instructions::start_rebalancing(ctx)?;
+        Ok(())
+    }
+
+    pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
+        amount: u64,
+        is_buy: bool,
+        minimum_amount_out: u64,
+    ) -> Result<()> {
+        instructions::execute_rebalancing(ctx, amount, is_buy, minimum_amount_out)?;
+        Ok(())
+    }
+
+    pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
+        instructions::stop_rebalancing(ctx)?;
         Ok(())
     }
 }

@@ -1,6 +1,9 @@
 pub mod admin;
 pub use admin::*;
 
+pub mod rebalancer;
+pub use rebalancer::*;
+
 pub mod buy_component;
 pub use buy_component::*;
 
