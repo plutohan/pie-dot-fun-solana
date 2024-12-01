@@ -78,7 +78,13 @@ describe("pie", () => {
     });
 
     it("should fail if the admin is unauthorized", async () => {
-
+      try {
+        await defaultProgram.methods.transferAdmin(newAdmin.publicKey).accounts({
+          admin: newAdmin.publicKey,
+        }).signers([newAdmin]).rpc()
+      } catch (e){
+        assert.equal(e.error.errorCode.code,"Unauthorized")
+      }
     });
   });
 

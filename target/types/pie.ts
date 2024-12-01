@@ -66,7 +66,6 @@ export type Pie = {
         },
         {
           "name": "programState",
-          "writable": true,
           "pda": {
             "seeds": [
               {

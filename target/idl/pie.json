@@ -60,7 +60,6 @@
         },
         {
           "name": "program_state",
-          "writable": true,
           "pda": {
             "seeds": [
               {

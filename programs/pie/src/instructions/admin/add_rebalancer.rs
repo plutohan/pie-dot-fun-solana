@@ -17,7 +17,6 @@ pub struct AddRebalancer<'info> {
     pub rebalancer_state: Account<'info, RebalancerState>,
 
     #[account(
-        mut,
         seeds = [ADMIN_STATE],
         bump = program_state.bump
     )]
