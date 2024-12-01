@@ -1,14 +1,13 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program};
 use anchor_spl::{
     token::{Token, TokenAccount},
     token_interface::Mint,
 };
 
-use raydium_amm_cpi::*;
-
 use crate::{
     constant::{MAX_COMPONENTS, USER},
     error::PieError,
+    utils::{swap_base_out, SwapBaseOut},
     BasketConfig, Component, ProgramState, UserFund,
 };
 
@@ -69,12 +68,18 @@ pub struct BuyComponentContext<'info> {
     /// CHECK: Safe. user source token Account
     #[account(mut)]
     pub user_token_source: AccountInfo<'info>,
-    #[account(mut)]
-    pub vault_token_account: Box<Account<'info, TokenAccount>>,
+    
+    #[account(
+        mut,
+        token::mint = amm_pc_vault,
+        token::authority = basket_config
+    )]
+    pub vault_token_destination: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     /// CHECK: Safe. amm_program
     pub amm_program: AccountInfo<'info>,
+
     pub system_program: Program<'info, System>,
 
     #[account(mut)]
@@ -90,40 +95,66 @@ pub struct BuyComponentContext<'info> {
 
 pub fn buy_component(
     ctx: Context<BuyComponentContext>,
-    amount_in: u64,
-    minimum_amount_out: u64,
+    max_amount_in: u64,
+    amount_out: u64,
 ) -> Result<()> {
     // Verify amount is not zero
-    require!(amount_in > 0, PieError::InvalidAmount);
+    require!(max_amount_in > 0, PieError::InvalidAmount);
 
-    let balance_before = ctx.accounts.vault_token_account.amount;
+    let balance_before = ctx.accounts.vault_token_destination.amount;
 
-    let cpi_accounts = SwapBaseOut {
-        amm: ctx.accounts.amm.to_account_info(),
-        amm_authority: ctx.accounts.amm_authority.to_account_info(),
-        amm_open_orders: ctx.accounts.amm_open_orders.to_account_info(),
-        amm_coin_vault: ctx.accounts.amm_coin_vault.to_account_info(),
-        amm_pc_vault: ctx.accounts.amm_pc_vault.to_account_info(),
-        market_program: ctx.accounts.market_program.to_account_info(),
-        market: ctx.accounts.market.to_account_info(),
-        market_bids: ctx.accounts.market_bids.to_account_info(),
-        market_asks: ctx.accounts.market_asks.to_account_info(),
-        market_event_queue: ctx.accounts.market_event_queue.to_account_info(),
-        market_coin_vault: ctx.accounts.market_coin_vault.to_account_info(),
-        market_pc_vault: ctx.accounts.market_pc_vault.to_account_info(),
-        market_vault_signer: ctx.accounts.market_vault_signer.to_account_info(),
-        user_token_source: ctx.accounts.user_token_source.to_account_info(),
-        user_token_destination: ctx.accounts.vault_token_account.to_account_info(),
-        user_source_owner: ctx.accounts.user_source_owner.clone(),
-        token_program: ctx.accounts.token_program.clone(),
-    };
+    let swap_base_in_inx = swap_base_out(
+        &ctx.accounts.amm_program.key(),
+        &ctx.accounts.amm.key(),
+        &ctx.accounts.amm_authority.key(),
+        &ctx.accounts.amm_open_orders.key(),
+        &ctx.accounts.amm_coin_vault.key(),
+        &ctx.accounts.amm_pc_vault.key(),
+        &ctx.accounts.market_program.key(),
+        &ctx.accounts.market.key(),
+        &ctx.accounts.market_bids.key(),
+        &ctx.accounts.market_asks.key(),
+        &ctx.accounts.market_event_queue.key(),
+        &ctx.accounts.market_coin_vault.key(),
+        &ctx.accounts.market_pc_vault.key(),
+        &ctx.accounts.market_vault_signer.key(),
+        &ctx.accounts.user_token_source.key(),
+        &ctx.accounts.vault_token_destination.key(),
+        &ctx.accounts.user_source_owner.key(),
+        max_amount_in,
+        amount_out,
+    )?;
 
-    let cpi_context = CpiContext::new(ctx.accounts.amm_program.to_account_info(), cpi_accounts);
-    raydium_amm_cpi::instructions::swap_base_out(cpi_context, amount_in, minimum_amount_out)?;
+    let cpi_context = CpiContext::new(
+        ctx.accounts.amm_program.to_account_info(),
+        SwapBaseOut {
+            amm: ctx.accounts.amm.to_account_info(),
+            amm_authority: ctx.accounts.amm_authority.to_account_info(),
+            amm_open_orders: ctx.accounts.amm_open_orders.to_account_info(),
+            amm_coin_vault: ctx.accounts.amm_coin_vault.to_account_info(),
+            amm_pc_vault: ctx.accounts.amm_pc_vault.to_account_info(),
+            market_program: ctx.accounts.market_program.to_account_info(),
+            market: ctx.accounts.market.to_account_info(),
+            market_bids: ctx.accounts.market_bids.to_account_info(),
+            market_asks: ctx.accounts.market_asks.to_account_info(),
+            market_event_queue: ctx.accounts.market_event_queue.to_account_info(),
+            market_coin_vault: ctx.accounts.market_coin_vault.to_account_info(),
+            market_pc_vault: ctx.accounts.market_pc_vault.to_account_info(),
+            market_vault_signer: ctx.accounts.market_vault_signer.to_account_info(),
+            user_token_source: ctx.accounts.user_token_source.to_account_info(),
+            user_token_destination: ctx.accounts.vault_token_destination.to_account_info(),
+            user_source_owner: ctx.accounts.user_source_owner.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
+        },
+    );
 
-    ctx.accounts.vault_token_account.reload()?;
+    solana_program::program::invoke(
+        &swap_base_in_inx,
+        &ToAccountInfos::to_account_infos(&cpi_context),
+    )?;
+    ctx.accounts.vault_token_destination.reload()?;
 
-    let balance_after = ctx.accounts.vault_token_account.amount;
+    let balance_after = ctx.accounts.vault_token_destination.amount;
     let amount_received = balance_after.checked_sub(balance_before).unwrap();
 
     let user_fund = &mut ctx.accounts.user_fund;

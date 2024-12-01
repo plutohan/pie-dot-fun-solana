@@ -7,7 +7,7 @@ use anchor_spl::{
 use crate::{
     constant::{MAX_COMPONENTS, USER},
     error::PieError,
-    BasketConfig, Component, ProgramState, UserFund,
+    BasketConfig, Component, ProgramState, UserFund, BASKET_CONFIG,
 };
 
 #[derive(Accounts)]
@@ -18,7 +18,11 @@ pub struct BurnBasketTokenContext<'info> {
     #[account(mut)]
     pub program_state: Box<Account<'info, ProgramState>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
+        bump
+    )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(

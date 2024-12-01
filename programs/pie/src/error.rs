@@ -1,10 +1,15 @@
-
 use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum PieError {
     #[msg("You are not authorized to perform this action.")]
     Unauthorized,
+
+    #[msg("Program initialized")]
+    ProgramInitialized,
+
+    #[msg("Invalid initialized admin address")]
+    InvalidInitializeAdminAddress,
 
     #[msg("Can't found rebalancer info.")]
     RebalancerNotFound,
@@ -21,9 +26,9 @@ pub enum PieError {
     #[msg("Component not found")]
     ComponentNotFound,
 
-    #[msg("Invalid initialize admin address")]
-    InvalidInitializeAdminAddress,
+    #[msg("Not in rebalancing")]
+    NotInRebalancing,
 
-    #[msg("Program already initialized")]
-    ProgramInitialized,
+    #[msg("Already rebalancing")]
+    AlreadyRebalancing
 }

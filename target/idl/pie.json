@@ -118,7 +118,34 @@
         },
         {
           "name": "basket_config",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  116,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_mint"
+              }
+            ]
+          }
         },
         {
           "name": "user_fund",
@@ -279,7 +306,7 @@
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "vault_token_destination",
           "writable": true
         },
         {
@@ -304,11 +331,11 @@
       ],
       "args": [
         {
-          "name": "amount_in",
+          "name": "max_amount_in",
           "type": "u64"
         },
         {
-          "name": "minimum_amount_out",
+          "name": "amount_out",
           "type": "u64"
         }
       ]
@@ -365,10 +392,20 @@
               {
                 "kind": "const",
                 "value": [
-                  102,
-                  117,
+                  98,
+                  97,
+                  115,
+                  116,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
                   110,
-                  100
+                  102,
+                  105,
+                  103
                 ]
               },
               {
@@ -508,6 +545,194 @@
       ]
     },
     {
+      "name": "execute_rebalancing",
+      "discriminator": [
+        98,
+        179,
+        1,
+        85,
+        246,
+        199,
+        227,
+        164
+      ],
+      "accounts": [
+        {
+          "name": "rebalancer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "rebalancer_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rebalancer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "basket_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_mint",
+          "writable": true
+        },
+        {
+          "name": "amm",
+          "writable": true
+        },
+        {
+          "name": "amm_authority"
+        },
+        {
+          "name": "amm_open_orders",
+          "writable": true
+        },
+        {
+          "name": "amm_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "amm_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_program"
+        },
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "market_bids",
+          "writable": true
+        },
+        {
+          "name": "market_asks",
+          "writable": true
+        },
+        {
+          "name": "market_event_queue",
+          "writable": true
+        },
+        {
+          "name": "market_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "market_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_vault_signer"
+        },
+        {
+          "name": "vault_token_source",
+          "writable": true
+        },
+        {
+          "name": "vault_token_destination",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "amm_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "basket_mint",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "is_buy",
+          "type": "bool"
+        },
+        {
+          "name": "minimum_amount_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -643,7 +868,7 @@
       ],
       "accounts": [
         {
-          "name": "user_source_owner",
+          "name": "user",
           "writable": true,
           "signer": true
         },
@@ -663,7 +888,7 @@
               },
               {
                 "kind": "account",
-                "path": "user_source_owner"
+                "path": "user"
               },
               {
                 "kind": "account",
@@ -681,7 +906,214 @@
           "writable": true
         },
         {
-          "name": "mint_in",
+          "name": "basket_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  116,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "amm",
+          "writable": true
+        },
+        {
+          "name": "amm_authority"
+        },
+        {
+          "name": "amm_open_orders",
+          "writable": true
+        },
+        {
+          "name": "amm_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "amm_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_program"
+        },
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "market_bids",
+          "writable": true
+        },
+        {
+          "name": "market_asks",
+          "writable": true
+        },
+        {
+          "name": "market_event_queue",
+          "writable": true
+        },
+        {
+          "name": "market_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "market_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_vault_signer"
+        },
+        {
+          "name": "vault_token_source",
+          "writable": true
+        },
+        {
+          "name": "user_token_destination",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "amm_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_amount_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "start_rebalancing",
+      "discriminator": [
+        146,
+        134,
+        168,
+        104,
+        170,
+        132,
+        60,
+        112
+      ],
+      "accounts": [
+        {
+          "name": "rebalancer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "rebalancer_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rebalancer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "basket_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_mint",
           "writable": true
         },
         {
@@ -734,11 +1166,11 @@
           "name": "market_vault_signer"
         },
         {
-          "name": "user_token_destination",
+          "name": "vault_token_source",
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "vault_token_destination",
           "writable": true
         },
         {
@@ -751,12 +1183,204 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "basket_mint",
+          "writable": true
         }
       ],
       "args": [
         {
           "name": "amount_in",
           "type": "u64"
+        },
+        {
+          "name": "is_buy",
+          "type": "bool"
+        },
+        {
+          "name": "amount_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "stop_rebalancing",
+      "discriminator": [
+        41,
+        2,
+        239,
+        161,
+        123,
+        114,
+        189,
+        181
+      ],
+      "accounts": [
+        {
+          "name": "rebalancer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "rebalancer_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rebalancer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "basket_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_mint",
+          "writable": true
+        },
+        {
+          "name": "amm",
+          "writable": true
+        },
+        {
+          "name": "amm_authority"
+        },
+        {
+          "name": "amm_open_orders",
+          "writable": true
+        },
+        {
+          "name": "amm_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "amm_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_program"
+        },
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "market_bids",
+          "writable": true
+        },
+        {
+          "name": "market_asks",
+          "writable": true
+        },
+        {
+          "name": "market_event_queue",
+          "writable": true
+        },
+        {
+          "name": "market_coin_vault",
+          "writable": true
+        },
+        {
+          "name": "market_pc_vault",
+          "writable": true
+        },
+        {
+          "name": "market_vault_signer"
+        },
+        {
+          "name": "vault_token_source",
+          "writable": true
+        },
+        {
+          "name": "vault_token_destination",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "amm_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "basket_mint",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "is_buy",
+          "type": "bool"
         },
         {
           "name": "minimum_amount_out",
@@ -883,38 +1507,48 @@
     },
     {
       "code": 6001,
+      "name": "ProgramInitialized",
+      "msg": "Program initialized"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidInitializeAdminAddress",
+      "msg": "Invalid initialized admin address"
+    },
+    {
+      "code": 6003,
       "name": "RebalancerNotFound",
       "msg": "Can't found rebalancer info."
     },
     {
-      "code": 6002,
+      "code": 6004,
       "name": "MaxAssetsExceeded",
       "msg": "Max asset exceeded"
     },
     {
-      "code": 6003,
+      "code": 6005,
       "name": "InsufficientBalance",
       "msg": "Insufficient Balance"
     },
     {
-      "code": 6004,
+      "code": 6006,
       "name": "InvalidAmount",
       "msg": "Invalid Amount"
     },
     {
-      "code": 6005,
+      "code": 6007,
       "name": "ComponentNotFound",
       "msg": "Component not found"
     },
     {
-      "code": 6006,
-      "name": "InvalidInitializeAdminAddress",
-      "msg": "Invalid initialize admin address"
+      "code": 6008,
+      "name": "NotInRebalancing",
+      "msg": "Not in rebalancing"
     },
     {
-      "code": 6007,
-      "name": "ProgramInitialized",
-      "msg": "Program already initialized"
+      "code": 6009,
+      "name": "AlreadyRebalancing",
+      "msg": "Already rebalancing"
     }
   ],
   "types": [
