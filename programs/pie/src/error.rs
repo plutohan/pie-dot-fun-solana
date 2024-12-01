@@ -30,5 +30,8 @@ pub enum PieError {
     NotInRebalancing,
 
     #[msg("Already rebalancing")]
-    AlreadyRebalancing
+    AlreadyRebalancing,
+
+    #[msg("Invalid margin value")]
+    InvalidMargin,
 }

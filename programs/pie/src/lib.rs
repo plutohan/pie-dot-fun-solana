@@ -69,13 +69,8 @@ pub mod pie {
         instructions::sell_component(ctx, amount_in, minimum_amount_out)?;
         Ok(())
     }
-    pub fn start_rebalancing<'a, 'b, 'c: 'info, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, StartRebalancing<'info>>,
-        amount_in: u64,
-        is_buy: bool,
-        amount_out: u64,
-    ) -> Result<()> {
-        instructions::start_rebalancing(ctx, amount_in, is_buy, amount_out)?;
+    pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
+        instructions::start_rebalancing(ctx)?;
         Ok(())
     }
 
@@ -89,13 +84,8 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn stop_rebalancing<'a, 'b, 'c: 'info, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, StopRebalancing<'info>>,
-        is_buy: bool,
-        minimum_amount_out: u64,
-    ) -> Result<()> {
-        instructions::stop_rebalancing(ctx, is_buy, minimum_amount_out)?;
-
+    pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
+        instructions::stop_rebalancing(ctx)?;
         Ok(())
     }
 }

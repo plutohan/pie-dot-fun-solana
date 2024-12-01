@@ -1093,116 +1093,11 @@
           }
         },
         {
-          "name": "basket_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  117,
-                  110,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "basket_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "token_mint",
-          "writable": true
-        },
-        {
-          "name": "amm",
-          "writable": true
-        },
-        {
-          "name": "amm_authority"
-        },
-        {
-          "name": "amm_open_orders",
-          "writable": true
-        },
-        {
-          "name": "amm_coin_vault",
-          "writable": true
-        },
-        {
-          "name": "amm_pc_vault",
-          "writable": true
-        },
-        {
-          "name": "market_program"
-        },
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "market_bids",
-          "writable": true
-        },
-        {
-          "name": "market_asks",
-          "writable": true
-        },
-        {
-          "name": "market_event_queue",
-          "writable": true
-        },
-        {
-          "name": "market_coin_vault",
-          "writable": true
-        },
-        {
-          "name": "market_pc_vault",
-          "writable": true
-        },
-        {
-          "name": "market_vault_signer"
-        },
-        {
-          "name": "vault_token_source",
-          "writable": true
-        },
-        {
-          "name": "vault_token_destination",
-          "writable": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "amm_program"
-        },
-        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "basket_mint",
-          "writable": true
         }
       ],
-      "args": [
-        {
-          "name": "amount_in",
-          "type": "u64"
-        },
-        {
-          "name": "is_buy",
-          "type": "bool"
-        },
-        {
-          "name": "amount_out",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "stop_rebalancing",
@@ -1221,6 +1116,32 @@
           "name": "rebalancer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "rebalancer_state",
@@ -1255,138 +1176,19 @@
           }
         },
         {
-          "name": "program_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
+          "name": "vault_wrapped_sol",
+          "writable": true
+        },
+        {
+          "name": "wrapped_sol_mint",
+          "writable": true
         },
         {
           "name": "basket_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  117,
-                  110,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "basket_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "token_mint",
-          "writable": true
-        },
-        {
-          "name": "amm",
-          "writable": true
-        },
-        {
-          "name": "amm_authority"
-        },
-        {
-          "name": "amm_open_orders",
-          "writable": true
-        },
-        {
-          "name": "amm_coin_vault",
-          "writable": true
-        },
-        {
-          "name": "amm_pc_vault",
-          "writable": true
-        },
-        {
-          "name": "market_program"
-        },
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "market_bids",
-          "writable": true
-        },
-        {
-          "name": "market_asks",
-          "writable": true
-        },
-        {
-          "name": "market_event_queue",
-          "writable": true
-        },
-        {
-          "name": "market_coin_vault",
-          "writable": true
-        },
-        {
-          "name": "market_pc_vault",
-          "writable": true
-        },
-        {
-          "name": "market_vault_signer"
-        },
-        {
-          "name": "vault_token_source",
-          "writable": true
-        },
-        {
-          "name": "vault_token_destination",
-          "writable": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "amm_program"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "basket_mint",
           "writable": true
         }
       ],
-      "args": [
-        {
-          "name": "is_buy",
-          "type": "bool"
-        },
-        {
-          "name": "minimum_amount_out",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "transfer_admin",
@@ -1499,6 +1301,34 @@
       ]
     }
   ],
+  "events": [
+    {
+      "name": "RebalancingStarted",
+      "discriminator": [
+        71,
+        117,
+        120,
+        42,
+        85,
+        186,
+        77,
+        52
+      ]
+    },
+    {
+      "name": "RebalancingStopped",
+      "discriminator": [
+        211,
+        119,
+        41,
+        89,
+        196,
+        150,
+        81,
+        107
+      ]
+    }
+  ],
   "errors": [
     {
       "code": 6000,
@@ -1549,6 +1379,11 @@
       "code": 6009,
       "name": "AlreadyRebalancing",
       "msg": "Already rebalancing"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidMargin",
+      "msg": "Invalid margin value"
     }
   ],
   "types": [
@@ -1660,6 +1495,10 @@
           {
             "name": "is_initialized",
             "type": "bool"
+          },
+          {
+            "name": "max_rebalance_margin_lamports",
+            "type": "u64"
           }
         ]
       }
@@ -1672,6 +1511,30 @@
           {
             "name": "balancer",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalancingStarted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalancingStopped",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }

@@ -7,7 +7,8 @@ pub struct ProgramState {
     pub basket_counter: u32,
     pub is_rebalancing: bool,
     pub enable_creator: bool,
-    pub is_initialized: bool
+    pub is_initialized: bool,
+    pub max_rebalance_margin_lamports: u64,
 }
 
 impl Space for ProgramState {
@@ -17,5 +18,6 @@ impl Space for ProgramState {
         + 4   // basket_counter (u32)
         + 1   // is_rebalancing (bool)
         + 1   // enable_creator (bool)
-        + 1;  // is_initialized (bool)
+        + 1  // is_initialized (bool)
+        + 8; // max_rebalance_margin_lamports (u64)
 }

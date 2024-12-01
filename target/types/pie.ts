@@ -1099,116 +1099,11 @@ export type Pie = {
           }
         },
         {
-          "name": "basketConfig",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  117,
-                  110,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "basketMint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "tokenMint",
-          "writable": true
-        },
-        {
-          "name": "amm",
-          "writable": true
-        },
-        {
-          "name": "ammAuthority"
-        },
-        {
-          "name": "ammOpenOrders",
-          "writable": true
-        },
-        {
-          "name": "ammCoinVault",
-          "writable": true
-        },
-        {
-          "name": "ammPcVault",
-          "writable": true
-        },
-        {
-          "name": "marketProgram"
-        },
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "marketBids",
-          "writable": true
-        },
-        {
-          "name": "marketAsks",
-          "writable": true
-        },
-        {
-          "name": "marketEventQueue",
-          "writable": true
-        },
-        {
-          "name": "marketCoinVault",
-          "writable": true
-        },
-        {
-          "name": "marketPcVault",
-          "writable": true
-        },
-        {
-          "name": "marketVaultSigner"
-        },
-        {
-          "name": "vaultTokenSource",
-          "writable": true
-        },
-        {
-          "name": "vaultTokenDestination",
-          "writable": true
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "ammProgram"
-        },
-        {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "basketMint",
-          "writable": true
         }
       ],
-      "args": [
-        {
-          "name": "amountIn",
-          "type": "u64"
-        },
-        {
-          "name": "isBuy",
-          "type": "bool"
-        },
-        {
-          "name": "amountOut",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "stopRebalancing",
@@ -1227,6 +1122,32 @@ export type Pie = {
           "name": "rebalancer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "rebalancerState",
@@ -1261,138 +1182,19 @@ export type Pie = {
           }
         },
         {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
+          "name": "vaultWrappedSol",
+          "writable": true
+        },
+        {
+          "name": "wrappedSolMint",
+          "writable": true
         },
         {
           "name": "basketConfig",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  117,
-                  110,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "basketMint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "tokenMint",
-          "writable": true
-        },
-        {
-          "name": "amm",
-          "writable": true
-        },
-        {
-          "name": "ammAuthority"
-        },
-        {
-          "name": "ammOpenOrders",
-          "writable": true
-        },
-        {
-          "name": "ammCoinVault",
-          "writable": true
-        },
-        {
-          "name": "ammPcVault",
-          "writable": true
-        },
-        {
-          "name": "marketProgram"
-        },
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "marketBids",
-          "writable": true
-        },
-        {
-          "name": "marketAsks",
-          "writable": true
-        },
-        {
-          "name": "marketEventQueue",
-          "writable": true
-        },
-        {
-          "name": "marketCoinVault",
-          "writable": true
-        },
-        {
-          "name": "marketPcVault",
-          "writable": true
-        },
-        {
-          "name": "marketVaultSigner"
-        },
-        {
-          "name": "vaultTokenSource",
-          "writable": true
-        },
-        {
-          "name": "vaultTokenDestination",
-          "writable": true
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "ammProgram"
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "basketMint",
           "writable": true
         }
       ],
-      "args": [
-        {
-          "name": "isBuy",
-          "type": "bool"
-        },
-        {
-          "name": "minimumAmountOut",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "transferAdmin",
@@ -1505,6 +1307,34 @@ export type Pie = {
       ]
     }
   ],
+  "events": [
+    {
+      "name": "rebalancingStarted",
+      "discriminator": [
+        71,
+        117,
+        120,
+        42,
+        85,
+        186,
+        77,
+        52
+      ]
+    },
+    {
+      "name": "rebalancingStopped",
+      "discriminator": [
+        211,
+        119,
+        41,
+        89,
+        196,
+        150,
+        81,
+        107
+      ]
+    }
+  ],
   "errors": [
     {
       "code": 6000,
@@ -1555,6 +1385,11 @@ export type Pie = {
       "code": 6009,
       "name": "alreadyRebalancing",
       "msg": "Already rebalancing"
+    },
+    {
+      "code": 6008,
+      "name": "invalidMargin",
+      "msg": "Invalid margin value"
     }
   ],
   "types": [
@@ -1666,6 +1501,10 @@ export type Pie = {
           {
             "name": "isInitialized",
             "type": "bool"
+          },
+          {
+            "name": "maxRebalanceMarginLamports",
+            "type": "u64"
           }
         ]
       }
@@ -1678,6 +1517,30 @@ export type Pie = {
           {
             "name": "balancer",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rebalancingStarted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rebalancingStopped",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
