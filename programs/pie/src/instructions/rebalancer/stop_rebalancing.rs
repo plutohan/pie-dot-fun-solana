@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[event]
-pub struct RebalancingStopped {
+pub struct StopRebalancingEvent {
     pub timestamp: i64,
 }
 
@@ -51,7 +51,7 @@ pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
 
     if wrapped_sol_balance < program_state.max_rebalance_margin_lamports {
         program_state.is_rebalancing = false;
-        emit!(RebalancingStopped {
+        emit!(StopRebalancingEvent {
             timestamp: Clock::get()?.unix_timestamp,
         });
     }

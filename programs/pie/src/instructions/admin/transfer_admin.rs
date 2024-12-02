@@ -15,6 +15,12 @@ pub struct TransferAdminContext<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct TransferAdminEvent {
+    pub old_admin: Pubkey,
+    pub new_admin: Pubkey,
+}
+
 pub fn transfer_admin(ctx: Context<TransferAdminContext>, new_admin: Pubkey) -> Result<()> {
     if ctx.accounts.admin.key() != ctx.accounts.program_state.admin {
         return Err(PieError::Unauthorized.into());
@@ -22,6 +28,9 @@ pub fn transfer_admin(ctx: Context<TransferAdminContext>, new_admin: Pubkey) -> 
 
     ctx.accounts.program_state.admin = new_admin;
 
-    msg!("Admin privileges transferred to: {}", new_admin.key());
+    emit!(TransferAdminEvent {
+        old_admin: ctx.accounts.admin.key(),
+        new_admin: new_admin,
+    });
     Ok(())
 }

@@ -38,6 +38,13 @@ pub struct MintBasketTokenContext<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct MintBasketTokenEvent {
+    pub user: Pubkey,
+    pub basket_mint: Pubkey,
+    pub amount: u64,
+}
+
 pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
     let basket_config = &ctx.accounts.basket_config;
@@ -87,6 +94,12 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
     mint_to(cpi_ctx, mint_amount)?;
+
+    emit!(MintBasketTokenEvent {
+        user: ctx.accounts.user.key(),
+        basket_mint: ctx.accounts.basket_mint.key(),
+        amount: mint_amount,
+    });
 
     Ok(())
 }

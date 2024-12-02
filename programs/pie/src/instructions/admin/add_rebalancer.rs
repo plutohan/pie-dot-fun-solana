@@ -25,12 +25,23 @@ pub struct AddRebalancer<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct AddRebalancerEvent {
+    pub rebalancer: Pubkey,
+    pub admin: Pubkey,
+}
+
 pub fn add_rebalancer(ctx: Context<AddRebalancer>, rebalancer: Pubkey) -> Result<()> {
     if ctx.accounts.admin.key() != ctx.accounts.program_state.admin {
         return Err(PieError::Unauthorized.into());
     }
 
     ctx.accounts.rebalancer_state.balancer = rebalancer;
+
+    emit!(AddRebalancerEvent {
+        rebalancer: rebalancer,
+        admin: ctx.accounts.admin.key(),
+    });
 
     msg!("{} was added as a Rebalancer", rebalancer.key());
     Ok(())

@@ -49,6 +49,13 @@ pub struct BurnBasketTokenContext<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct BurnBasketTokenEvent {
+    pub user: Pubkey,
+    pub basket_mint: Pubkey,
+    pub amount: u64,
+}
+
 pub fn burn_basket_token(ctx: Context<BurnBasketTokenContext>, amount: u64) -> Result<()> {
     // Validate amount
     require!(amount > 0, PieError::InvalidAmount);
@@ -94,6 +101,12 @@ pub fn burn_basket_token(ctx: Context<BurnBasketTokenContext>, amount: u64) -> R
             });
         }
     }
+
+    emit!(BurnBasketTokenEvent {
+        user: ctx.accounts.user.key(),
+        basket_mint: ctx.accounts.basket_mint.key(),
+        amount,
+    });
 
     Ok(())
 }

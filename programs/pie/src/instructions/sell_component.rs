@@ -89,6 +89,13 @@ pub struct SellComponentContext<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct SellComponentEvent {
+    pub user: Pubkey,
+    pub mint: Pubkey,
+    pub amount: u64,
+}
+
 pub fn sell_component(
     ctx: Context<SellComponentContext>,
     amount_in: u64,
@@ -175,6 +182,12 @@ pub fn sell_component(
             .components
             .retain(|c| c.mint != ctx.accounts.amm_coin_vault.key());
     }
+
+    emit!(SellComponentEvent {
+        user: ctx.accounts.user.key(),
+        mint: ctx.accounts.amm_coin_vault.key(),
+        amount: amount_in,
+    });
 
     Ok(())
 }

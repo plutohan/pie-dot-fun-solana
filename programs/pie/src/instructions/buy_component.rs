@@ -93,6 +93,13 @@ pub struct BuyComponentContext<'info> {
     pub user_index_token: Box<Account<'info, TokenAccount>>,
 }
 
+#[event]
+pub struct BuyComponentEvent {
+    pub user: Pubkey,
+    pub mint: Pubkey,
+    pub amount: u64,
+}
+
 pub fn buy_component(
     ctx: Context<BuyComponentContext>,
     max_amount_in: u64,
@@ -177,6 +184,12 @@ pub fn buy_component(
             amount: amount_received,
         });
     }
+
+    emit!(BuyComponentEvent {
+        user: ctx.accounts.user_source_owner.key(),
+        mint: ctx.accounts.mint_out.key(),
+        amount: amount_received,
+    });
 
     Ok(())
 }
