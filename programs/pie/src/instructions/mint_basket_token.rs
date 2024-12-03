@@ -108,11 +108,5 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
         amount: mint_amount,
     });
 
-    emit!(BasketTokenMintedEvent {
-        basket_mint: ctx.accounts.basket_config.mint,
-        recipient: ctx.accounts.user.key(),
-        amount: mint_amount,
-    });
-
     Ok(())
 }

@@ -62,7 +62,6 @@ pub struct CreateBasketEvent {
     pub name: String,
     pub symbol: String,
     pub uri: String,
-    pub bump: u8,
     pub creator: Pubkey,
     pub id: u32,
     pub mint: Pubkey,
@@ -83,10 +82,6 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     let basket_config = &mut ctx.accounts.basket_config;
     let config = &mut ctx.accounts.program_state;
 
-    let name = args.name.clone();
-    let symbol = args.symbol.clone();
-    let uri = args.uri.clone();
-
     create_metadata_accounts_v3(
         CpiContext::new(
             ctx.accounts.metadata_program.to_account_info(),
@@ -101,9 +96,9 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
             },
         ),
         DataV2 {
-            name: args.name,
-            symbol: args.symbol,
-            uri: args.uri,
+            name: args.name.clone(),
+            symbol: args.symbol.clone(),
+            uri: args.uri.clone(),
             seller_fee_basis_points: 0,
             creators: None,
             collection: None,
@@ -123,10 +118,9 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     config.basket_counter += 1;
 
     emit!(CreateBasketEvent {
-        name,
-        symbol,
-        uri,
-        bump: basket_config.bump,
+        name: args.name,
+        symbol: args.symbol,
+        uri: args.uri,
         creator: basket_config.creator,
         id: basket_config.id,
         mint: basket_config.mint,
