@@ -45,6 +45,13 @@ pub struct MintBasketTokenEvent {
     pub amount: u64,
 }
 
+#[event]
+pub struct BasketTokenMintedEvent {
+    pub basket_mint: Pubkey,
+    pub recipient: Pubkey,
+    pub amount: u64,
+}
+
 pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
     let basket_config = &ctx.accounts.basket_config;
@@ -98,6 +105,12 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
     emit!(MintBasketTokenEvent {
         user: ctx.accounts.user.key(),
         basket_mint: ctx.accounts.basket_mint.key(),
+        amount: mint_amount,
+    });
+
+    emit!(BasketTokenMintedEvent {
+        basket_mint: ctx.accounts.basket_config.mint,
+        recipient: ctx.accounts.user.key(),
         amount: mint_amount,
     });
 
