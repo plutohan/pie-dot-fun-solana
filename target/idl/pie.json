@@ -1,5 +1,5 @@
 {
-  "address": "Cy12bgjZuJ4dkwfybQCSGhEomzysdBEyv8iihjqp7Ynb",
+  "address": "CE2dwUBUhDMJ3pt4dFcyPpuw8n56mMZxRt4SwQtWKmMC",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -129,7 +129,6 @@
                   98,
                   97,
                   115,
-                  116,
                   107,
                   101,
                   116,
@@ -160,7 +159,12 @@
                   117,
                   115,
                   101,
-                  114
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
                 ]
               },
               {
@@ -169,8 +173,7 @@
               },
               {
                 "kind": "account",
-                "path": "basket_config.id",
-                "account": "BasketConfig"
+                "path": "basket_config"
               }
             ]
           }
@@ -228,7 +231,12 @@
                   117,
                   115,
                   101,
-                  114
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
                 ]
               },
               {
@@ -321,14 +329,6 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "basket_mint",
-          "writable": true
-        },
-        {
-          "name": "user_index_token",
-          "writable": true
         }
       ],
       "args": [
@@ -397,7 +397,6 @@
                   98,
                   97,
                   115,
-                  116,
                   107,
                   101,
                   116,
@@ -602,10 +601,19 @@
               {
                 "kind": "const",
                 "value": [
-                  102,
-                  117,
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
                   110,
-                  100
+                  102,
+                  105,
+                  103
                 ]
               },
               {
@@ -777,12 +785,34 @@
           "signer": true
         },
         {
-          "name": "program_state",
-          "writable": true
-        },
-        {
           "name": "basket_config",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_mint"
+              }
+            ]
+          }
         },
         {
           "name": "user_fund",
@@ -795,7 +825,12 @@
                   117,
                   115,
                   101,
-                  114
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
                 ]
               },
               {
@@ -804,8 +839,7 @@
               },
               {
                 "kind": "account",
-                "path": "basket_config.id",
-                "account": "BasketConfig"
+                "path": "basket_config"
               }
             ]
           }
@@ -827,7 +861,12 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "amount_to_mint",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "sell_component",
@@ -858,7 +897,12 @@
                   117,
                   115,
                   101,
-                  114
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
                 ]
               },
               {
@@ -882,34 +926,11 @@
         },
         {
           "name": "basket_mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  97,
-                  115,
-                  116,
-                  107,
-                  101,
-                  116,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "basket_mint"
-              }
-            ]
-          }
+          "writable": true
+        },
+        {
+          "name": "mint_out",
+          "writable": true
         },
         {
           "name": "amm",
@@ -1538,10 +1559,6 @@
             "type": "u8"
           },
           {
-            "name": "id",
-            "type": "u32"
-          },
-          {
             "name": "creator",
             "type": "pubkey"
           },
@@ -1656,10 +1673,6 @@
           {
             "name": "creator",
             "type": "pubkey"
-          },
-          {
-            "name": "id",
-            "type": "u32"
           },
           {
             "name": "mint",

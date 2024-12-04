@@ -7,7 +7,7 @@ use anchor_spl::{
 use crate::{
     error::PieError,
     utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut},
-    BasketConfig, RebalancerState, BASKET_CONFIG, FUND,
+    BasketConfig, RebalancerState, BASKET_CONFIG,
     BasketComponent,
     REBALANCER_STATE
 };
@@ -25,7 +25,7 @@ pub struct ExecuteRebalancing<'info> {
     pub rebalancer_state: Box<Account<'info, RebalancerState>>,
 
     #[account(
-        seeds = [FUND, basket_mint.key().as_ref()],
+        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
         bump
     )]
     pub basket_config: Account<'info, BasketConfig>,

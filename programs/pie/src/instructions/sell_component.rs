@@ -5,7 +5,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER,
+    constant::USER_FUND,
     error::PieError,
     utils::{swap_base_in, SwapBaseIn},
     BasketConfig, ProgramState, UserFund, BASKET_CONFIG,
@@ -18,7 +18,7 @@ pub struct SellComponentContext<'info> {
 
     #[account(
         mut,
-        seeds = [USER, &user.key().as_ref(), &basket_config.key().as_ref()],
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.key().as_ref()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
@@ -29,14 +29,11 @@ pub struct SellComponentContext<'info> {
     #[account(mut)]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
-    #[account(
-        mut,
-        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
-        bump
-
-    )]
+    #[account(mut)]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
+    #[account(mut)]
+    pub mint_out: Box<InterfaceAccount<'info, Mint>>,
     /// CHECK: Safe. amm Account
     #[account(mut)]
     pub amm: AccountInfo<'info>,
@@ -73,7 +70,6 @@ pub struct SellComponentContext<'info> {
     pub market_pc_vault: AccountInfo<'info>,
     /// CHECK: Safe. vault_signer Account
     pub market_vault_signer: AccountInfo<'info>,
-
     #[account(mut,
         token::mint = amm_coin_vault,
         token::authority = basket_config

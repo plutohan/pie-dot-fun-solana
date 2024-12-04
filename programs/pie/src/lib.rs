@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Cy12bgjZuJ4dkwfybQCSGhEomzysdBEyv8iihjqp7Ynb");
+declare_id!("CE2dwUBUhDMJ3pt4dFcyPpuw8n56mMZxRt4SwQtWKmMC");
 
 pub mod constant;
 pub mod error;
@@ -42,8 +42,8 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
-        instructions::mint_basket_token(ctx)?;
+    pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount_to_mint: u64) -> Result<()> {
+        instructions::mint_basket_token(ctx, amount_to_mint)?;
         Ok(())
     }
 

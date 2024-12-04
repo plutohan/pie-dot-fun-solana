@@ -4,7 +4,7 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER, error::PieError, BasketConfig, ProgramState, UserFund, BASKET_CONFIG};
+use crate::{constant::USER_FUND, error::PieError, BasketConfig, ProgramState, UserFund, BASKET_CONFIG};
 
 #[derive(Accounts)]
 pub struct RedeemContext<'info> {
@@ -15,15 +15,15 @@ pub struct RedeemContext<'info> {
     pub program_state: Box<Account<'info, ProgramState>>,
 
     #[account(
-            mut,
-            seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
-            bump
-        )]
+        mut,
+        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
+        bump
+    )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
             mut,
-            seeds = [USER, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
+            seeds = [USER_FUND, &user.key().as_ref(), &basket_config.key().as_ref()],
             bump
         )]
     pub user_fund: Box<Account<'info, UserFund>>,

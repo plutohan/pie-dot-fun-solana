@@ -2,10 +2,12 @@
   "license": "ISC",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "test-devnet": "ts-node scripts/test_devnet.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",
+    "@raydium-io/raydium-sdk-v2": "0.1.79-alpha",
     "@solana/spl-token": "^0.4.9",
     "@solana/web3.js": "^1.95.5",
     "bs58": "^6.0.0"

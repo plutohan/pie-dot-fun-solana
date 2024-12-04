@@ -4,34 +4,28 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER, error::PieError, BasketConfig, ProgramState, UserFund, PROGRAM_STATE};
+use crate::{constant::USER_FUND, error::PieError, BasketConfig, UserFund, BASKET_CONFIG};
 
 #[derive(Accounts)]
 pub struct MintBasketTokenContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
-    #[account(mut)]
-    pub program_state: Box<Account<'info, ProgramState>>,
-
-    #[account(mut)]
+    #[account(mut,
+        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
+        bump=basket_config.bump)]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
         mut,
-        seeds = [USER, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.key().as_ref()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
-
     #[account(mut)]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(
-        mut,
-        token::mint = basket_mint,
-        token::authority = user,
-    )]
+    #[account(mut)]
     pub user_basket_token_account: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
@@ -52,12 +46,11 @@ pub struct BasketTokenMintedEvent {
     pub amount: u64,
 }
 
-pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
+pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount_to_mint: u64) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
     let basket_config = &mut ctx.accounts.basket_config;
 
-    let mut mint_amount = u64::MAX;
-    let mut can_mint = true;
+    let mut amount_can_mint = u64::MAX;
 
     for token_config in basket_config.components.iter() {
         if let Some(user_asset) = user_fund
@@ -69,15 +62,11 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
                 .amount
                 .checked_div(token_config.ratio as u64)
                 .unwrap();
-            mint_amount = mint_amount.min(possible_mint);
-        } else {
-            can_mint = false;
-            break;
+            amount_can_mint = amount_can_mint.min(possible_mint);
         }
     }
 
-    require!(can_mint, PieError::InsufficientBalance);
-    require!(mint_amount > 0, PieError::InvalidAmount);
+    require!(amount_can_mint >= amount_to_mint, PieError::InvalidAmount);
 
     for token_config in basket_config.components.iter() {
         if let Some(asset) = user_fund
@@ -86,7 +75,7 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
             .find(|a| a.mint == token_config.mint)
         {
             let amount_to_deduct = (token_config.ratio as u64)
-                .checked_mul(mint_amount)
+                .checked_mul(amount_to_mint)
                 .ok_or(PieError::InsufficientBalance)?;
             asset.amount = asset
                 .amount
@@ -95,22 +84,26 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
         }
     }
 
-    let config_seeds = &[PROGRAM_STATE.as_ref(), &[ctx.accounts.program_state.bump]];
-    let signer = &[&config_seeds[..]];
+    let binding = ctx.accounts.basket_mint.key();
+    let signer: &[&[&[u8]]] = &[&[
+        BASKET_CONFIG,
+        binding.as_ref(),
+        &[ctx.accounts.basket_config.bump],
+    ]];
 
     let cpi_accounts = MintTo {
         mint: ctx.accounts.basket_mint.to_account_info(),
         to: ctx.accounts.user_basket_token_account.to_account_info(),
-        authority: ctx.accounts.program_state.to_account_info(),
+        authority: ctx.accounts.basket_config.to_account_info(),
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-    mint_to(cpi_ctx, mint_amount)?;
+    mint_to(cpi_ctx, amount_to_mint)?;
 
     emit!(MintBasketTokenEvent {
         user: ctx.accounts.user.key(),
         basket_mint: ctx.accounts.basket_mint.key(),
-        amount: mint_amount,
+        amount: amount_to_mint,
     });
 
     Ok(())

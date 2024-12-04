@@ -11,7 +11,6 @@ pub struct BasketComponent {
 #[account]
 pub struct BasketConfig {
     pub bump: u8,
-    pub id: u32,
     pub creator: Pubkey,
     pub mint: Pubkey,
     pub components: Vec<BasketComponent>,

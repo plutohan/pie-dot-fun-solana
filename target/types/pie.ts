@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "Cy12bgjZuJ4dkwfybQCSGhEomzysdBEyv8iihjqp7Ynb",
+  "address": "CE2dwUBUhDMJ3pt4dFcyPpuw8n56mMZxRt4SwQtWKmMC",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -135,7 +135,6 @@ export type Pie = {
                   98,
                   97,
                   115,
-                  116,
                   107,
                   101,
                   116,
@@ -166,7 +165,12 @@ export type Pie = {
                   117,
                   115,
                   101,
-                  114
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
                 ]
               },
               {
@@ -175,8 +179,7 @@ export type Pie = {
               },
               {
                 "kind": "account",
-                "path": "basket_config.id",
-                "account": "basketConfig"
+                "path": "basketConfig"
               }
             ]
           }
@@ -234,7 +237,12 @@ export type Pie = {
                   117,
                   115,
                   101,
-                  114
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
                 ]
               },
               {
@@ -327,14 +335,6 @@ export type Pie = {
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "basketMint",
-          "writable": true
-        },
-        {
-          "name": "userIndexToken",
-          "writable": true
         }
       ],
       "args": [
@@ -403,7 +403,6 @@ export type Pie = {
                   98,
                   97,
                   115,
-                  116,
                   107,
                   101,
                   116,
@@ -608,10 +607,19 @@ export type Pie = {
               {
                 "kind": "const",
                 "value": [
-                  102,
-                  117,
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
                   110,
-                  100
+                  102,
+                  105,
+                  103
                 ]
               },
               {
@@ -783,12 +791,34 @@ export type Pie = {
           "signer": true
         },
         {
-          "name": "programState",
-          "writable": true
-        },
-        {
           "name": "basketConfig",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basketMint"
+              }
+            ]
+          }
         },
         {
           "name": "userFund",
@@ -801,7 +831,12 @@ export type Pie = {
                   117,
                   115,
                   101,
-                  114
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
                 ]
               },
               {
@@ -810,8 +845,7 @@ export type Pie = {
               },
               {
                 "kind": "account",
-                "path": "basket_config.id",
-                "account": "basketConfig"
+                "path": "basketConfig"
               }
             ]
           }
@@ -833,7 +867,12 @@ export type Pie = {
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "amountToMint",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "sellComponent",
@@ -864,7 +903,12 @@ export type Pie = {
                   117,
                   115,
                   101,
-                  114
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
                 ]
               },
               {
@@ -888,34 +932,11 @@ export type Pie = {
         },
         {
           "name": "basketMint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  97,
-                  115,
-                  116,
-                  107,
-                  101,
-                  116,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "basketMint"
-              }
-            ]
-          }
+          "writable": true
+        },
+        {
+          "name": "mintOut",
+          "writable": true
         },
         {
           "name": "amm",
@@ -1544,10 +1565,6 @@ export type Pie = {
             "type": "u8"
           },
           {
-            "name": "id",
-            "type": "u32"
-          },
-          {
             "name": "creator",
             "type": "pubkey"
           },
@@ -1662,10 +1679,6 @@ export type Pie = {
           {
             "name": "creator",
             "type": "pubkey"
-          },
-          {
-            "name": "id",
-            "type": "u32"
           },
           {
             "name": "mint",

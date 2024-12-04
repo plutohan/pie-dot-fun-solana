@@ -5,7 +5,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::{MAX_COMPONENTS, USER},
+    constant::{MAX_COMPONENTS, USER_FUND},
     error::PieError,
     utils::{swap_base_out, SwapBaseOut},
     BasketConfig, ProgramState, UserComponent, UserFund,
@@ -19,7 +19,7 @@ pub struct BuyComponentContext<'info> {
         init_if_needed,
         payer = user_source_owner,
         space = UserFund::INIT_SPACE,
-        seeds = [USER, &user_source_owner.key().as_ref(), &basket_config.key().as_ref()],
+        seeds = [USER_FUND, &user_source_owner.key().as_ref(), &basket_config.key().as_ref()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
@@ -71,7 +71,7 @@ pub struct BuyComponentContext<'info> {
 
     #[account(
         mut,
-        token::mint = amm_pc_vault,
+        token::mint = mint_out,
         token::authority = basket_config
     )]
     pub vault_token_destination: Box<Account<'info, TokenAccount>>,
@@ -81,16 +81,6 @@ pub struct BuyComponentContext<'info> {
     pub amm_program: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
-
-    #[account(mut)]
-    pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    #[account(
-        mut,
-        token::mint = basket_mint,
-        token::authority = user_source_owner,
-    )]
-    pub user_index_token: Box<Account<'info, TokenAccount>>,
 }
 
 #[event]
