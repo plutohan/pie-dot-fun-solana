@@ -1,12 +1,13 @@
 use anchor_lang::prelude::*;
 use anchor_spl::metadata::mpl_token_metadata::types::DataV2;
 use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3, Metadata};
-use anchor_spl::token::{Mint, Token};
+use anchor_spl::token::spl_token::instruction::AuthorityType;
+use anchor_spl::token::{set_authority, Mint, SetAuthority, Token};
 
 use crate::{
-    constant::{PROGRAM_STATE, BASKET_CONFIG},
+    constant::{BASKET_CONFIG, PROGRAM_STATE},
     error::PieError,
-    BasketConfig, Component, ProgramState,
+    BasketComponent, BasketConfig, ProgramState,
 };
 
 #[derive(Accounts)]
@@ -29,15 +30,8 @@ pub struct CreateBasketContext<'info> {
         bump
     )]
     pub basket_config: Account<'info, BasketConfig>,
-
-    #[account(
-        init_if_needed,
-        payer = creator,
-        mint::decimals = 6,
-        mint::authority = basket_config.key(),
-    )]
+    #[account(mut)]
     pub basket_mint: Account<'info, Mint>,
-
     /// To store Metaplex metadata
     /// CHECK: Safety check performed inside function body
     #[account(mut)]
@@ -51,7 +45,7 @@ pub struct CreateBasketContext<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct CreateBasketArgs {
-    pub components: Vec<Component>,
+    pub components: Vec<BasketComponent>,
     pub name: String,
     pub symbol: String,
     pub uri: String,
@@ -65,7 +59,7 @@ pub struct CreateBasketEvent {
     pub creator: Pubkey,
     pub id: u32,
     pub mint: Pubkey,
-    pub components: Vec<Component>,
+    pub components: Vec<BasketComponent>,
 }
 
 pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
@@ -88,7 +82,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
             CreateMetadataAccountsV3 {
                 metadata: ctx.accounts.metadata_account.to_account_info(),
                 mint: ctx.accounts.basket_mint.to_account_info(),
-                mint_authority: basket_config.to_account_info(),
+                mint_authority: ctx.accounts.creator.to_account_info(),
                 update_authority: ctx.accounts.creator.to_account_info(),
                 payer: ctx.accounts.creator.to_account_info(),
                 system_program: ctx.accounts.system_program.to_account_info(),
@@ -107,6 +101,18 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
         false,
         true,
         None,
+    )?;
+
+    set_authority(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            SetAuthority {
+                current_authority: ctx.accounts.creator.to_account_info(),
+                account_or_mint: ctx.accounts.basket_mint.to_account_info(),
+            },
+        ),
+        AuthorityType::MintTokens,
+        Some(basket_config.key()),
     )?;
 
     basket_config.bump = ctx.bumps.basket_config;

@@ -4,7 +4,7 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER, error::PieError, ProgramState, UserFund, BasketConfig};
+use crate::{constant::USER, error::PieError, BasketConfig, ProgramState, UserFund, PROGRAM_STATE};
 
 #[derive(Accounts)]
 pub struct MintBasketTokenContext<'info> {
@@ -54,7 +54,7 @@ pub struct BasketTokenMintedEvent {
 
 pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
-    let basket_config = &ctx.accounts.basket_config;
+    let basket_config = &mut ctx.accounts.basket_config;
 
     let mut mint_amount = u64::MAX;
     let mut can_mint = true;
@@ -65,7 +65,10 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
             .iter()
             .find(|a| a.mint == token_config.mint)
         {
-            let possible_mint = user_asset.amount.checked_div(token_config.amount).unwrap();
+            let possible_mint = user_asset
+                .amount
+                .checked_div(token_config.ratio as u64)
+                .unwrap();
             mint_amount = mint_amount.min(possible_mint);
         } else {
             can_mint = false;
@@ -82,7 +85,9 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {
-            let amount_to_deduct = token_config.amount.checked_mul(mint_amount).unwrap();
+            let amount_to_deduct = (token_config.ratio as u64)
+                .checked_mul(mint_amount)
+                .ok_or(PieError::InsufficientBalance)?;
             asset.amount = asset
                 .amount
                 .checked_sub(amount_to_deduct)
@@ -90,7 +95,7 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
         }
     }
 
-    let config_seeds = &[b"program_state".as_ref(), &[ctx.accounts.program_state.bump]];
+    let config_seeds = &[PROGRAM_STATE.as_ref(), &[ctx.accounts.program_state.bump]];
     let signer = &[&config_seeds[..]];
 
     let cpi_accounts = MintTo {

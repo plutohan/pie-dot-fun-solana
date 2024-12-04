@@ -177,12 +177,6 @@ pub fn sell_component(
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount_in).unwrap();
 
-    if component.amount == 0 {
-        user_fund
-            .components
-            .retain(|c| c.mint != ctx.accounts.amm_coin_vault.key());
-    }
-
     emit!(SellComponentEvent {
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.amm_coin_vault.key(),

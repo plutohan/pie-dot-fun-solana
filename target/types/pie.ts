@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "DE3snahjq5c6mZuTeQyvW8VEqj1m2zk9Cv7YLqGE3Tia",
+  "address": "Cy12bgjZuJ4dkwfybQCSGhEomzysdBEyv8iihjqp7Ynb",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -66,16 +66,19 @@ export type Pie = {
         },
         {
           "name": "programState",
+          "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
                   97,
-                  100,
                   109,
-                  105,
-                  110,
                   95,
                   115,
                   116,
@@ -422,8 +425,7 @@ export type Pie = {
         },
         {
           "name": "basketMint",
-          "writable": true,
-          "signer": true
+          "writable": true
         },
         {
           "name": "metadataAccount",
@@ -1517,6 +1519,22 @@ export type Pie = {
       }
     },
     {
+      "name": "basketComponent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "ratio",
+            "type": "f32"
+          }
+        ]
+      }
+    },
+    {
       "name": "basketConfig",
       "type": {
         "kind": "struct",
@@ -1526,12 +1544,12 @@ export type Pie = {
             "type": "u8"
           },
           {
-            "name": "creator",
-            "type": "pubkey"
-          },
-          {
             "name": "id",
             "type": "u32"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
           },
           {
             "name": "mint",
@@ -1542,7 +1560,7 @@ export type Pie = {
             "type": {
               "vec": {
                 "defined": {
-                  "name": "component"
+                  "name": "basketComponent"
                 }
               }
             }
@@ -1595,22 +1613,6 @@ export type Pie = {
       }
     },
     {
-      "name": "component",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "createBasketArgs",
       "type": {
         "kind": "struct",
@@ -1620,7 +1622,7 @@ export type Pie = {
             "type": {
               "vec": {
                 "defined": {
-                  "name": "component"
+                  "name": "basketComponent"
                 }
               }
             }
@@ -1674,7 +1676,7 @@ export type Pie = {
             "type": {
               "vec": {
                 "defined": {
-                  "name": "component"
+                  "name": "basketComponent"
                 }
               }
             }
@@ -1891,6 +1893,22 @@ export type Pie = {
       }
     },
     {
+      "name": "userComponent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "userFund",
       "type": {
         "kind": "struct",
@@ -1900,7 +1918,7 @@ export type Pie = {
             "type": {
               "vec": {
                 "defined": {
-                  "name": "component"
+                  "name": "userComponent"
                 }
               }
             }

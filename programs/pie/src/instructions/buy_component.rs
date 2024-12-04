@@ -8,7 +8,7 @@ use crate::{
     constant::{MAX_COMPONENTS, USER},
     error::PieError,
     utils::{swap_base_out, SwapBaseOut},
-    BasketConfig, Component, ProgramState, UserFund,
+    BasketConfig, ProgramState, UserComponent, UserFund,
 };
 
 #[derive(Accounts)]
@@ -68,7 +68,7 @@ pub struct BuyComponentContext<'info> {
     /// CHECK: Safe. user source token Account
     #[account(mut)]
     pub user_token_source: AccountInfo<'info>,
-    
+
     #[account(
         mut,
         token::mint = amm_pc_vault,
@@ -179,7 +179,7 @@ pub fn buy_component(
             PieError::MaxAssetsExceeded
         );
 
-        user_fund.components.push(Component {
+        user_fund.components.push(UserComponent {
             mint: ctx.accounts.mint_out.key(),
             amount: amount_received,
         });

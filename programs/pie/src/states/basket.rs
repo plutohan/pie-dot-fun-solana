@@ -3,18 +3,18 @@ use anchor_lang::prelude::*;
 use crate::constant::MAX_COMPONENTS;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct Component {
+pub struct BasketComponent {
     pub mint: Pubkey,
-    pub amount: u64,
+    pub ratio: f32,
 }
 
 #[account]
 pub struct BasketConfig {
     pub bump: u8,
-    pub creator: Pubkey,
     pub id: u32,
+    pub creator: Pubkey,
     pub mint: Pubkey,
-    pub components: Vec<Component>,
+    pub components: Vec<BasketComponent>,
     pub is_rebalancing: bool,
 }
 

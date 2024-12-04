@@ -1,5 +1,5 @@
 {
-  "address": "DE3snahjq5c6mZuTeQyvW8VEqj1m2zk9Cv7YLqGE3Tia",
+  "address": "Cy12bgjZuJ4dkwfybQCSGhEomzysdBEyv8iihjqp7Ynb",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -60,16 +60,19 @@
         },
         {
           "name": "program_state",
+          "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
                   97,
-                  100,
                   109,
-                  105,
-                  110,
                   95,
                   115,
                   116,
@@ -416,8 +419,7 @@
         },
         {
           "name": "basket_mint",
-          "writable": true,
-          "signer": true
+          "writable": true
         },
         {
           "name": "metadata_account",
@@ -1511,6 +1513,22 @@
       }
     },
     {
+      "name": "BasketComponent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "ratio",
+            "type": "f32"
+          }
+        ]
+      }
+    },
+    {
       "name": "BasketConfig",
       "type": {
         "kind": "struct",
@@ -1520,12 +1538,12 @@
             "type": "u8"
           },
           {
-            "name": "creator",
-            "type": "pubkey"
-          },
-          {
             "name": "id",
             "type": "u32"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
           },
           {
             "name": "mint",
@@ -1536,7 +1554,7 @@
             "type": {
               "vec": {
                 "defined": {
-                  "name": "Component"
+                  "name": "BasketComponent"
                 }
               }
             }
@@ -1589,22 +1607,6 @@
       }
     },
     {
-      "name": "Component",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "CreateBasketArgs",
       "type": {
         "kind": "struct",
@@ -1614,7 +1616,7 @@
             "type": {
               "vec": {
                 "defined": {
-                  "name": "Component"
+                  "name": "BasketComponent"
                 }
               }
             }
@@ -1668,7 +1670,7 @@
             "type": {
               "vec": {
                 "defined": {
-                  "name": "Component"
+                  "name": "BasketComponent"
                 }
               }
             }
@@ -1885,6 +1887,22 @@
       }
     },
     {
+      "name": "UserComponent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "UserFund",
       "type": {
         "kind": "struct",
@@ -1894,7 +1912,7 @@
             "type": {
               "vec": {
                 "defined": {
-                  "name": "Component"
+                  "name": "UserComponent"
                 }
               }
             }

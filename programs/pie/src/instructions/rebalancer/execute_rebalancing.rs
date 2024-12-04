@@ -8,7 +8,8 @@ use crate::{
     error::PieError,
     utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut},
     BasketConfig, RebalancerState, BASKET_CONFIG, FUND,
-    REBALANCER_STATE,
+    BasketComponent,
+    REBALANCER_STATE
 };
 
 #[derive(Accounts)]
@@ -101,7 +102,7 @@ pub struct ExecuteRebalancingEvent {
 }
 
 pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
+    mut ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
     amount: u64,
     is_buy: bool,
     minimum_amount_out: u64,
@@ -114,11 +115,17 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     let basket_config_seeds = &[
         BASKET_CONFIG,
         &basket_mint_key.as_ref(),
-        &[ctx.accounts.basket_config.bump],
+        &[basket_config.bump],
     ];
     let signer = &[&basket_config_seeds[..]];
 
-    execute_swap(ctx.accounts, amount, is_buy, minimum_amount_out, signer)?;
+    execute_swap(
+        &mut ctx.accounts,
+        amount,
+        is_buy,
+        minimum_amount_out,
+        signer,
+    )?;
 
     //@TODO: Add parameters for the actual amount of tokens swapped
     emit!(ExecuteRebalancingEvent {
@@ -130,12 +137,15 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
 }
 
 pub fn execute_swap<'a: 'info, 'info>(
-    accounts: &ExecuteRebalancing<'info>,
+    accounts: &mut ExecuteRebalancing<'info>,
     amount: u64,
     is_buy: bool,
     minimum_amount_out: u64,
     signer: &[&[&[u8]]],
 ) -> Result<()> {
+    let basket_config = &mut accounts.basket_config;
+    let total_supply = accounts.basket_mint.supply;
+
     if is_buy {
         let swap_base_in_inx = swap_base_in(
             &accounts.amm_program.key(),
@@ -177,7 +187,7 @@ pub fn execute_swap<'a: 'info, 'info>(
                 market_vault_signer: accounts.market_vault_signer.to_account_info(),
                 user_token_source: accounts.vault_token_source.to_account_info(),
                 user_token_destination: accounts.vault_token_destination.to_account_info(),
-                user_source_owner: accounts.basket_config.to_account_info(),
+                user_source_owner: basket_config.to_account_info(),
                 token_program: accounts.token_program.to_account_info(),
             },
             signer,
@@ -188,6 +198,24 @@ pub fn execute_swap<'a: 'info, 'info>(
             &ToAccountInfos::to_account_infos(&cpi_context),
             signer,
         )?;
+
+        accounts.vault_token_destination.reload()?;
+
+        // Update basket components for buy
+        let token_mint = accounts.token_mint.key();
+        if let Some(component) = basket_config
+            .components
+            .iter_mut()
+            .find(|c| c.mint == token_mint)
+        {
+            component.ratio = component.ratio
+                + accounts.vault_token_destination.amount as f32 / total_supply as f32;
+        } else {
+            basket_config.components.push(BasketComponent {
+                mint: token_mint,
+                ratio: accounts.vault_token_destination.amount as f32 / total_supply as f32,
+            });
+        }
     } else {
         let swap_base_out_inx = swap_base_out(
             &accounts.amm_program.key(),
@@ -206,7 +234,7 @@ pub fn execute_swap<'a: 'info, 'info>(
             &accounts.market_vault_signer.key(),
             &accounts.vault_token_source.key(),
             &accounts.vault_token_destination.key(),
-            &accounts.basket_config.key(),
+            &basket_config.key(),
             amount,
             minimum_amount_out,
         )?;
@@ -229,7 +257,7 @@ pub fn execute_swap<'a: 'info, 'info>(
                 market_vault_signer: accounts.market_vault_signer.to_account_info(),
                 user_token_source: accounts.vault_token_source.to_account_info(),
                 user_token_destination: accounts.vault_token_destination.to_account_info(),
-                user_source_owner: accounts.basket_config.to_account_info(),
+                user_source_owner: basket_config.to_account_info(),
                 token_program: accounts.token_program.to_account_info(),
             },
             signer,
@@ -240,6 +268,22 @@ pub fn execute_swap<'a: 'info, 'info>(
             &ToAccountInfos::to_account_infos(&cpi_context),
             signer,
         )?;
+        accounts.vault_token_destination.reload()?;
+
+        let token_mint = accounts.token_mint.key();
+        let token_amount = accounts.vault_token_destination.amount;
+
+        if token_amount == 0 {
+            basket_config.components.retain(|c| c.mint != token_mint);
+        } else {
+            if let Some(component) = basket_config
+                .components
+                .iter_mut()
+                .find(|c| c.mint == token_mint)
+            {
+                component.ratio = component.ratio - token_amount as f32 / total_supply as f32;
+            }
+        }
     }
 
     Ok(())
