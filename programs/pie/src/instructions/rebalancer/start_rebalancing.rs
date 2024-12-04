@@ -3,7 +3,7 @@ use anchor_lang::{prelude::*, solana_program::clock::Clock};
 use crate::{error::PieError, ProgramState, RebalancerState, PROGRAM_STATE, REBALANCER_STATE};
 
 #[event]
-pub struct RebalancingStarted {
+pub struct StartRebalancingEvent {
     pub timestamp: i64,
 }
 
@@ -40,8 +40,7 @@ pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
     // Get current timestamp
     let clock = Clock::get()?;
 
-    // Emit the RebalancingStarted event
-    emit!(RebalancingStarted {
+    emit!(StartRebalancingEvent {
         timestamp: clock.unix_timestamp,
     });
 

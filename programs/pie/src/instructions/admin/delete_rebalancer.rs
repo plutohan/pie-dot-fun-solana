@@ -28,6 +28,12 @@ pub struct DeleteRebalancer<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct DeleteRebalancerEvent {
+    pub rebalancer: Pubkey,
+    pub admin: Pubkey,
+}
+
 pub fn delete_rebalancer(ctx: Context<DeleteRebalancer>, rebalancer: Pubkey) -> Result<()> {
     if ctx.accounts.admin.key() != ctx.accounts.program_state.admin {
         return Err(PieError::Unauthorized.into());
@@ -43,6 +49,11 @@ pub fn delete_rebalancer(ctx: Context<DeleteRebalancer>, rebalancer: Pubkey) -> 
     ctx.accounts
         .rebalancer_state
         .close(ctx.accounts.admin.to_account_info())?;
+
+    emit!(DeleteRebalancerEvent {
+        rebalancer: ctx.accounts.rebalancer_state.key(),
+        admin: ctx.accounts.admin.key(),
+    });
 
     msg!(
         "Rebalancer {} has been removed and the account closed",

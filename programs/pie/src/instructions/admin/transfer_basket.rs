@@ -16,16 +16,22 @@ pub struct TransferBasket<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct TransferBasketEvent {
+    pub basket_mint: Pubkey,
+    pub old_creator: Pubkey,
+    pub new_creator: Pubkey,
+}
+
 pub fn transfer_basket(ctx: Context<TransferBasket>, new_creator: Pubkey) -> Result<()> {
     // Update the creator field
     ctx.accounts.basket_config.creator = new_creator;
 
-    msg!(
-        "Basket {} ownership transferred from {} to {}",
-        ctx.accounts.basket_config.mint,
-        ctx.accounts.current_creator.key(),
-        new_creator
-    );
+    emit!(TransferBasketEvent {
+        basket_mint: ctx.accounts.basket_config.mint,
+        old_creator: ctx.accounts.current_creator.key(),
+        new_creator: new_creator,
+    });
 
     Ok(())
 }

@@ -1309,29 +1309,172 @@ export type Pie = {
   ],
   "events": [
     {
-      "name": "rebalancingStarted",
+      "name": "addRebalancerEvent",
       "discriminator": [
-        71,
-        117,
-        120,
-        42,
-        85,
+        197,
+        41,
+        101,
+        39,
         186,
-        77,
-        52
+        114,
+        11,
+        246
       ]
     },
     {
-      "name": "rebalancingStopped",
+      "name": "burnBasketTokenEvent",
       "discriminator": [
-        211,
-        119,
-        41,
-        89,
-        196,
-        150,
+        214,
+        86,
+        70,
+        38,
+        63,
+        57,
+        173,
+        209
+      ]
+    },
+    {
+      "name": "buyComponentEvent",
+      "discriminator": [
+        106,
+        51,
+        6,
+        122,
+        76,
+        188,
+        216,
+        61
+      ]
+    },
+    {
+      "name": "createBasketEvent",
+      "discriminator": [
+        131,
+        144,
+        156,
+        230,
         81,
-        107
+        139,
+        96,
+        55
+      ]
+    },
+    {
+      "name": "deleteRebalancerEvent",
+      "discriminator": [
+        147,
+        215,
+        112,
+        160,
+        123,
+        209,
+        89,
+        166
+      ]
+    },
+    {
+      "name": "executeRebalancingEvent",
+      "discriminator": [
+        140,
+        52,
+        83,
+        126,
+        197,
+        196,
+        44,
+        246
+      ]
+    },
+    {
+      "name": "mintBasketTokenEvent",
+      "discriminator": [
+        169,
+        147,
+        57,
+        132,
+        213,
+        205,
+        138,
+        248
+      ]
+    },
+    {
+      "name": "sellComponentEvent",
+      "discriminator": [
+        132,
+        30,
+        110,
+        172,
+        201,
+        76,
+        229,
+        226
+      ]
+    },
+    {
+      "name": "startRebalancingEvent",
+      "discriminator": [
+        72,
+        89,
+        161,
+        96,
+        70,
+        251,
+        141,
+        44
+      ]
+    },
+    {
+      "name": "stopRebalancingEvent",
+      "discriminator": [
+        148,
+        220,
+        225,
+        189,
+        239,
+        78,
+        244,
+        112
+      ]
+    },
+    {
+      "name": "transferAdminEvent",
+      "discriminator": [
+        183,
+        79,
+        12,
+        111,
+        236,
+        250,
+        14,
+        10
+      ]
+    },
+    {
+      "name": "transferBasketEvent",
+      "discriminator": [
+        82,
+        4,
+        62,
+        5,
+        36,
+        38,
+        192,
+        114
+      ]
+    },
+    {
+      "name": "updateMaxRebalanceMarginEvent",
+      "discriminator": [
+        5,
+        89,
+        213,
+        109,
+        67,
+        201,
+        59,
+        195
       ]
     }
   ],
@@ -1387,12 +1530,28 @@ export type Pie = {
       "msg": "Already rebalancing"
     },
     {
-      "code": 6008,
+      "code": 6010,
       "name": "invalidMargin",
       "msg": "Invalid margin value"
     }
   ],
   "types": [
+    {
+      "name": "addRebalancerEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rebalancer",
+            "type": "pubkey"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
     {
       "name": "basketConfig",
       "type": {
@@ -1423,6 +1582,46 @@ export type Pie = {
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "burnBasketTokenEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "buyComponentEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
@@ -1469,6 +1668,104 @@ export type Pie = {
           {
             "name": "uri",
             "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "createBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "id",
+            "type": "u32"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "component"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "deleteRebalancerEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rebalancer",
+            "type": "pubkey"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "executeRebalancingEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "isBuy",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "mintBasketTokenEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
@@ -1522,7 +1819,27 @@ export type Pie = {
       }
     },
     {
-      "name": "rebalancingStarted",
+      "name": "sellComponentEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "startRebalancingEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1534,13 +1851,61 @@ export type Pie = {
       }
     },
     {
-      "name": "rebalancingStopped",
+      "name": "stopRebalancingEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "transferAdminEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oldAdmin",
+            "type": "pubkey"
+          },
+          {
+            "name": "newAdmin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "transferBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "oldCreator",
+            "type": "pubkey"
+          },
+          {
+            "name": "newCreator",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "updateMaxRebalanceMarginEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newMargin",
+            "type": "u64"
           }
         ]
       }

@@ -101,6 +101,12 @@ pub struct ExecuteRebalancing<'info> {
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 }
 
+#[event]
+pub struct ExecuteRebalancingEvent {
+    pub basket_mint: Pubkey,
+    pub is_buy: bool,
+}
+
 pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
     amount: u64,
@@ -120,6 +126,13 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     let signer = &[&basket_config_seeds[..]];
 
     execute_swap(ctx.accounts, amount, is_buy, minimum_amount_out, signer)?;
+
+    //@TODO: Add parameters for the actual amount of tokens swapped
+    emit!(ExecuteRebalancingEvent {
+        basket_mint: basket_mint_key,
+        is_buy,
+    });
+
     Ok(())
 }
 

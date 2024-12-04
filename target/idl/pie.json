@@ -1303,29 +1303,172 @@
   ],
   "events": [
     {
-      "name": "RebalancingStarted",
+      "name": "AddRebalancerEvent",
       "discriminator": [
-        71,
-        117,
-        120,
-        42,
-        85,
+        197,
+        41,
+        101,
+        39,
         186,
-        77,
-        52
+        114,
+        11,
+        246
       ]
     },
     {
-      "name": "RebalancingStopped",
+      "name": "BurnBasketTokenEvent",
       "discriminator": [
-        211,
-        119,
-        41,
-        89,
-        196,
-        150,
+        214,
+        86,
+        70,
+        38,
+        63,
+        57,
+        173,
+        209
+      ]
+    },
+    {
+      "name": "BuyComponentEvent",
+      "discriminator": [
+        106,
+        51,
+        6,
+        122,
+        76,
+        188,
+        216,
+        61
+      ]
+    },
+    {
+      "name": "CreateBasketEvent",
+      "discriminator": [
+        131,
+        144,
+        156,
+        230,
         81,
-        107
+        139,
+        96,
+        55
+      ]
+    },
+    {
+      "name": "DeleteRebalancerEvent",
+      "discriminator": [
+        147,
+        215,
+        112,
+        160,
+        123,
+        209,
+        89,
+        166
+      ]
+    },
+    {
+      "name": "ExecuteRebalancingEvent",
+      "discriminator": [
+        140,
+        52,
+        83,
+        126,
+        197,
+        196,
+        44,
+        246
+      ]
+    },
+    {
+      "name": "MintBasketTokenEvent",
+      "discriminator": [
+        169,
+        147,
+        57,
+        132,
+        213,
+        205,
+        138,
+        248
+      ]
+    },
+    {
+      "name": "SellComponentEvent",
+      "discriminator": [
+        132,
+        30,
+        110,
+        172,
+        201,
+        76,
+        229,
+        226
+      ]
+    },
+    {
+      "name": "StartRebalancingEvent",
+      "discriminator": [
+        72,
+        89,
+        161,
+        96,
+        70,
+        251,
+        141,
+        44
+      ]
+    },
+    {
+      "name": "StopRebalancingEvent",
+      "discriminator": [
+        148,
+        220,
+        225,
+        189,
+        239,
+        78,
+        244,
+        112
+      ]
+    },
+    {
+      "name": "TransferAdminEvent",
+      "discriminator": [
+        183,
+        79,
+        12,
+        111,
+        236,
+        250,
+        14,
+        10
+      ]
+    },
+    {
+      "name": "TransferBasketEvent",
+      "discriminator": [
+        82,
+        4,
+        62,
+        5,
+        36,
+        38,
+        192,
+        114
+      ]
+    },
+    {
+      "name": "UpdateMaxRebalanceMarginEvent",
+      "discriminator": [
+        5,
+        89,
+        213,
+        109,
+        67,
+        201,
+        59,
+        195
       ]
     }
   ],
@@ -1381,12 +1524,28 @@
       "msg": "Already rebalancing"
     },
     {
-      "code": 6008,
+      "code": 6010,
       "name": "InvalidMargin",
       "msg": "Invalid margin value"
     }
   ],
   "types": [
+    {
+      "name": "AddRebalancerEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rebalancer",
+            "type": "pubkey"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
     {
       "name": "BasketConfig",
       "type": {
@@ -1417,6 +1576,46 @@
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "BurnBasketTokenEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BuyComponentEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
@@ -1463,6 +1662,104 @@
           {
             "name": "uri",
             "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "id",
+            "type": "u32"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "Component"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "DeleteRebalancerEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rebalancer",
+            "type": "pubkey"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ExecuteRebalancingEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "is_buy",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MintBasketTokenEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
@@ -1516,7 +1813,27 @@
       }
     },
     {
-      "name": "RebalancingStarted",
+      "name": "SellComponentEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StartRebalancingEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1528,13 +1845,61 @@
       }
     },
     {
-      "name": "RebalancingStopped",
+      "name": "StopRebalancingEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferAdminEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "old_creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_creator",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateMaxRebalanceMarginEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "new_margin",
+            "type": "u64"
           }
         ]
       }

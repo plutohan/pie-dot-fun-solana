@@ -15,6 +15,11 @@ pub struct UpdateMaxRebalanceMargin<'info> {
     pub program_state: Account<'info, ProgramState>,
 }
 
+#[event]
+pub struct UpdateMaxRebalanceMarginEvent {
+    pub new_margin: u64,
+}
+
 pub fn update_max_rebalance_margin(
     ctx: Context<UpdateMaxRebalanceMargin>,
     new_margin: u64,
@@ -27,6 +32,8 @@ pub fn update_max_rebalance_margin(
 
     // Update the margin
     program_state.max_rebalance_margin_lamports = new_margin;
+
+    emit!(UpdateMaxRebalanceMarginEvent { new_margin });
 
     Ok(())
 }

@@ -57,6 +57,17 @@ pub struct CreateBasketArgs {
     pub uri: String,
 }
 
+#[event]
+pub struct CreateBasketEvent {
+    pub name: String,
+    pub symbol: String,
+    pub uri: String,
+    pub creator: Pubkey,
+    pub id: u32,
+    pub mint: Pubkey,
+    pub components: Vec<Component>,
+}
+
 pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
     let program_state = &ctx.accounts.program_state;
 
@@ -85,9 +96,9 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
             },
         ),
         DataV2 {
-            name: args.name,
-            symbol: args.symbol,
-            uri: args.uri,
+            name: args.name.clone(),
+            symbol: args.symbol.clone(),
+            uri: args.uri.clone(),
             seller_fee_basis_points: 0,
             creators: None,
             collection: None,
@@ -105,6 +116,16 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     basket_config.components = args.components;
 
     config.basket_counter += 1;
+
+    emit!(CreateBasketEvent {
+        name: args.name,
+        symbol: args.symbol,
+        uri: args.uri,
+        creator: basket_config.creator,
+        id: basket_config.id,
+        mint: basket_config.mint,
+        components: basket_config.components.clone(),
+    });
 
     Ok(())
 }
