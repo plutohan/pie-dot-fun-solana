@@ -4,25 +4,31 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER_FUND, error::PieError, BasketConfig, UserFund, BASKET_CONFIG};
+use crate::{constant::USER_FUND, error::PieError, BasketConfig, UserFund, BASKET_CONFIG, BASKET_MINT};
 
 #[derive(Accounts)]
 pub struct MintBasketTokenContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
-    #[account(mut,
-        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
-        bump=basket_config.bump)]
+    #[account(
+        mut,
+        seeds = [BASKET_CONFIG, &basket_config.id.to_le_bytes()],
+        bump    
+    )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
         mut,
-        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.key().as_ref()],
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [BASKET_MINT, &basket_config.id.to_le_bytes()],
+        bump  
+    )]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(mut)]
@@ -46,7 +52,7 @@ pub struct BasketTokenMintedEvent {
     pub amount: u64,
 }
 
-pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount_to_mint: u64) -> Result<()> {
+pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
     let basket_config = &mut ctx.accounts.basket_config;
 
@@ -66,7 +72,7 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount_to_mint: u
         }
     }
 
-    require!(amount_can_mint >= amount_to_mint, PieError::InvalidAmount);
+    require!(amount_can_mint >= amount, PieError::InvalidAmount);
 
     for token_config in basket_config.components.iter() {
         if let Some(asset) = user_fund
@@ -75,7 +81,7 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount_to_mint: u
             .find(|a| a.mint == token_config.mint)
         {
             let amount_to_deduct = (token_config.ratio as u64)
-                .checked_mul(amount_to_mint)
+                .checked_mul(amount)
                 .ok_or(PieError::InsufficientBalance)?;
             asset.amount = asset
                 .amount
@@ -84,10 +90,9 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount_to_mint: u
         }
     }
 
-    let binding = ctx.accounts.basket_mint.key();
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
-        binding.as_ref(),
+        &basket_config.id.to_be_bytes(),
         &[ctx.accounts.basket_config.bump],
     ]];
 
@@ -98,12 +103,12 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount_to_mint: u
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-    mint_to(cpi_ctx, amount_to_mint)?;
+    mint_to(cpi_ctx, amount)?;
 
     emit!(MintBasketTokenEvent {
         user: ctx.accounts.user.key(),
         basket_mint: ctx.accounts.basket_mint.key(),
-        amount: amount_to_mint,
+        amount,
     });
 
     Ok(())

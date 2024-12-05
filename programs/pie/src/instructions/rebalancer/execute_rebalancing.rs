@@ -7,9 +7,7 @@ use anchor_spl::{
 use crate::{
     error::PieError,
     utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut},
-    BasketConfig, RebalancerState, BASKET_CONFIG,
-    BasketComponent,
-    REBALANCER_STATE
+    BasketComponent, BasketConfig, RebalancerState, BASKET_CONFIG, REBALANCER_STATE,
 };
 
 #[derive(Accounts)]
@@ -25,14 +23,16 @@ pub struct ExecuteRebalancing<'info> {
     pub rebalancer_state: Box<Account<'info, RebalancerState>>,
 
     #[account(
-        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
-        bump
+        mut,
+        constraint = basket_config.mint == basket_mint.key() @ PieError::InvalidBasket
     )]
     pub basket_config: Account<'info, BasketConfig>,
     // Required token accounts
     #[account(mut)]
     pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 
+    #[account(mut)]
+    pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
     // Raydium AMM accounts
     /// CHECK: Raydium AMM account
     #[account(mut)]
@@ -71,27 +71,16 @@ pub struct ExecuteRebalancing<'info> {
     /// CHECK: vault_signer Account
     pub market_vault_signer: AccountInfo<'info>,
     /// CHECK: user source token Account
-    #[account(
-        mut,
-        token::mint = token_mint,
-        token::authority = basket_config,
-    )]
+    #[account(mut)]
     pub vault_token_source: Box<Account<'info, TokenAccount>>,
 
-    #[account(
-        mut,
-        token::mint = token_mint,
-        token::authority = basket_config,
-    )]
+    #[account(mut)]
     pub vault_token_destination: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     /// CHECK: amm_program
     pub amm_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
-
-    #[account(mut)]
-    pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 }
 
 #[event]
@@ -102,33 +91,24 @@ pub struct ExecuteRebalancingEvent {
 
 pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     mut ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
-    amount: u64,
     is_buy: bool,
-    minimum_amount_out: u64,
+    amount_in: u64,
+    amount_out: u64,
 ) -> Result<()> {
     let basket_config = &ctx.accounts.basket_config;
     require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
 
-    let basket_mint_key = ctx.accounts.basket_mint.key();
-
-    let basket_config_seeds = &[
+    let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
-        &basket_mint_key.as_ref(),
-        &[basket_config.bump],
-    ];
-    let signer = &[&basket_config_seeds[..]];
+        &ctx.accounts.basket_config.id.to_be_bytes(),
+        &[ctx.accounts.basket_config.bump],
+    ]];
 
-    execute_swap(
-        &mut ctx.accounts,
-        amount,
-        is_buy,
-        minimum_amount_out,
-        signer,
-    )?;
+    execute_swap(&mut ctx.accounts, is_buy, amount_in, amount_out, signer)?;
 
     //@TODO: Add parameters for the actual amount of tokens swapped
     emit!(ExecuteRebalancingEvent {
-        basket_mint: basket_mint_key,
+        basket_mint: ctx.accounts.basket_mint.key(),
         is_buy,
     });
 
@@ -137,9 +117,9 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
 
 pub fn execute_swap<'a: 'info, 'info>(
     accounts: &mut ExecuteRebalancing<'info>,
-    amount: u64,
     is_buy: bool,
-    minimum_amount_out: u64,
+    amount_in: u64,
+    amount_out: u64,
     signer: &[&[&[u8]]],
 ) -> Result<()> {
     let basket_config = &mut accounts.basket_config;
@@ -164,8 +144,8 @@ pub fn execute_swap<'a: 'info, 'info>(
             &accounts.vault_token_source.key(),
             &accounts.vault_token_destination.key(),
             &accounts.vault_token_destination.key(),
-            amount,
-            minimum_amount_out,
+            amount_in,
+            amount_out,
         )?;
 
         let cpi_context = CpiContext::new_with_signer(
@@ -234,8 +214,8 @@ pub fn execute_swap<'a: 'info, 'info>(
             &accounts.vault_token_source.key(),
             &accounts.vault_token_destination.key(),
             &basket_config.key(),
-            amount,
-            minimum_amount_out,
+            amount_in,
+            amount_out,
         )?;
 
         let cpi_context = CpiContext::new_with_signer(

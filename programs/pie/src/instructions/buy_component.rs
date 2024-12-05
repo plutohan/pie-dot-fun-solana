@@ -19,7 +19,7 @@ pub struct BuyComponentContext<'info> {
         init_if_needed,
         payer = user_source_owner,
         space = UserFund::INIT_SPACE,
-        seeds = [USER_FUND, &user_source_owner.key().as_ref(), &basket_config.key().as_ref()],
+        seeds = [USER_FUND, &user_source_owner.key().as_ref(), &basket_config.id.to_le_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,

@@ -14,6 +14,7 @@ import {
 import devnetAdmin from "../public/devnet-admin.json";
 import { tokens } from "../tests/utils/token_test";
 import { initSdk } from "../tests/utils/config";
+import { BN } from "@coral-xyz/anchor";
 
 async function main() {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -22,7 +23,7 @@ async function main() {
   const pieProgram = new PieProgram(connection);
   const raydium = await initSdk(connection, "devnet");
 
-  const programState = await pieProgram.getProgramState();
+  let programState = await pieProgram.getProgramState();
   if (!programState) {
     const initializeTx = await pieProgram.initialize(admin.publicKey);
     const initializeTxResult = await sendAndConfirmTransaction(
@@ -36,6 +37,23 @@ async function main() {
     );
     console.log(
       `Program initialized at tx: https://explorer.solana.com/tx/${initializeTxResult}?cluster=devnet`
+    );
+  }
+
+  let rebalancer = await pieProgram.getRebalancerState(admin.publicKey);
+  if (!rebalancer) {
+    const createRebalancerTx = await pieProgram.addRebalancer(
+      admin.publicKey,
+      admin.publicKey
+    );
+    const createRebalancerTxResult = await sendAndConfirmTransaction(
+      connection,
+      createRebalancerTx,
+      [admin],
+      { skipPreflight: true, commitment: "confirmed" }
+    );
+    console.log(
+      `Rebalancer created at tx: https://explorer.solana.com/tx/${createRebalancerTxResult}?cluster=devnet`
     );
   }
 
@@ -59,42 +77,43 @@ async function main() {
     symbol: "BNS",
     uri: "test",
     components: components,
+    decimals: 6,
   };
 
-  const { tx, basketMint } = await pieProgram.createBasket(
-    admin.publicKey,
-    createBasketArgs,
-    6
-  );
+  programState = await pieProgram.getProgramState();
+  const basketId = new BN(0);
 
-  const createBasketTxResult = await sendAndConfirmTransaction(
-    connection,
-    tx,
-    [admin, basketMint],
-    {
-      skipPreflight: true,
-      commitment: "confirmed",
-    }
-  );
+  // const createBasketTx = await pieProgram.createBasket(
+  //   admin.publicKey,
+  //   createBasketArgs,
+  //   basketId
+  // );
 
-  console.log(
-    `Basket created at tx: https://explorer.solana.com/tx/${createBasketTxResult}?cluster=devnet`
-  );
+  // const createBasketTxResult = await sendAndConfirmTransaction(
+  //   connection,
+  //   createBasketTx,
+  //   [admin],
+  //   {
+  //     skipPreflight: true,
+  //     commitment: "confirmed",
+  //   }
+  // );
 
-  const basketConfig = pieProgram.basketConfigPDA(basketMint.publicKey);
+  // console.log(
+  //   `Basket created at tx: https://explorer.solana.com/tx/${createBasketTxResult}?cluster=devnet`
+  // );
+  const basketConfigData = await pieProgram.getBasketConfig(basketId);
 
-  const basketConfigData = await pieProgram.getBasketConfig(
-    basketMint.publicKey
-  );
-
-  for (const component of basketConfigData.components) {
+  for (let i = 0; i < basketConfigData.components.length; i++) {
+    const component = basketConfigData.components[i];
+    console.log('component: ', component.ratio)
     const buyComponentTx = await pieProgram.buyComponent(
       admin.publicKey,
-      basketConfig,
+      basketId,
       (component.ratio * LAMPORTS_PER_SOL) / 100,
-      0.1 * LAMPORTS_PER_SOL,
+      0.01 * LAMPORTS_PER_SOL,
       raydium,
-      tokens[1].ammId
+      tokens[i].ammId
     );
 
     const buyComponentTxResult = await sendAndConfirmTransaction(
@@ -111,12 +130,10 @@ async function main() {
       `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
     );
   }
-
   const mintBasketTokenTx = await pieProgram.mintBasketToken(
     admin.publicKey,
-    basketConfig,
-    basketMint.publicKey,
-    0.01 * 10 ** 6
+    basketId,
+    1000
   );
 
   const mintBasketTokenTxResult = await sendAndConfirmTransaction(
@@ -133,16 +150,15 @@ async function main() {
     `Mint basket token at tx: https://explorer.solana.com/tx/${mintBasketTokenTxResult}?cluster=devnet`
   );
 
-  const burnBasketTokenTx = await pieProgram.burnBasketToken(
+  const redeemBasketTokenTx = await pieProgram.redeemBasketToken(
     admin.publicKey,
-    basketConfig,
-    basketMint.publicKey,
-    0.01 * 10 ** 6
+    basketId,
+    1000
   );
 
-  const burnBasketTokenTxResult = await sendAndConfirmTransaction(
+  const redeemBasketTokenTxResult = await sendAndConfirmTransaction(
     connection,
-    burnBasketTokenTx,
+    redeemBasketTokenTx,
     [admin],
     {
       skipPreflight: true,
@@ -151,14 +167,13 @@ async function main() {
   );
 
   console.log(
-    `Burn basket token at tx: https://explorer.solana.com/tx/${burnBasketTokenTxResult}?cluster=devnet`
+    `Redeem basket token at tx: https://explorer.solana.com/tx/${redeemBasketTokenTxResult}?cluster=devnet`
   );
 
   const sellComponentTx = await pieProgram.sellComponent(
     admin.publicKey,
     new PublicKey(tokens[1].mint),
-    basketConfig,
-    basketMint.publicKey,
+    basketId,
     0.1 * LAMPORTS_PER_SOL,
     0,
     raydium,
@@ -176,6 +191,64 @@ async function main() {
 
   console.log(
     `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
+  );
+
+  //start rebalancing
+  const startRebalancingTx = await pieProgram.startRebalancing(
+    admin.publicKey,
+    basketId
+  );
+  if (startRebalancingTx) {
+    const startRebalancingTxResult = await sendAndConfirmTransaction(
+      connection,
+      startRebalancingTx,
+      [admin],
+      { skipPreflight: true, commitment: "confirmed" }
+    );
+
+    console.log(
+      `Start rebalancing at tx: https://explorer.solana.com/tx/${startRebalancingTxResult}?cluster=devnet`
+    );
+  }
+
+  //execute rebalancing
+  const executeRebalancingTx = await pieProgram.executeRebalancing(
+    admin.publicKey,
+    false,
+    0.0001 * LAMPORTS_PER_SOL,
+    100,
+    tokens[2].ammId,
+    basketId,
+    new PublicKey(tokens[2].mint),
+    raydium
+  );
+
+  const executeRebalancingTxResult = await sendAndConfirmTransaction(
+    connection,
+    executeRebalancingTx,
+    [admin],
+    { skipPreflight: true, commitment: "confirmed" }
+  );
+
+  console.log(
+    `Execute rebalancing at tx: https://explorer.solana.com/tx/${executeRebalancingTxResult}?cluster=devnet`
+  );
+
+  //stop rebalancing
+  const stopRebalancingTx = await pieProgram.stopRebalancing(
+    admin.publicKey,
+    basketId
+  );
+
+  const stopRebalancingTxResult = await sendAndConfirmTransaction(
+    connection,
+    stopRebalancingTx,
+    [admin],
+    { skipPreflight: true, commitment: "confirmed" }
+  );
+
+  console.log(
+    `Stop rebalancing at tx: https://explorer.solana.com/tx/${stopRebalancingTxResult}?cluster=devnet`
   );
 }
 

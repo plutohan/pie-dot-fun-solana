@@ -222,7 +222,6 @@ export async function wrappedSOLInstruction(
   recipient: PublicKey,
   amount: number
 ) {
-  let instructions: TransactionInstruction[] = [];
 
   let { tokenAccount: ata, tx: tx } = await getOrCreateTokenAccountTx(
     connection,
@@ -231,6 +230,7 @@ export async function wrappedSOLInstruction(
     recipient // payer
   );
 
+  console.log('amount: ', amount)
   tx.add(
     SystemProgram.transfer({
       fromPubkey: recipient,

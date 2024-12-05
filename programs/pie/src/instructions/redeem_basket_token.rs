@@ -4,12 +4,10 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{
-    constant::USER_FUND, error::PieError, BasketConfig, ProgramState, UserFund, BASKET_CONFIG,
-};
+use crate::{constant::USER_FUND, error::PieError, BasketConfig, ProgramState, UserFund};
 
 #[derive(Accounts)]
-pub struct RedeemContext<'info> {
+pub struct RedeemBasketTokenContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
@@ -18,14 +16,13 @@ pub struct RedeemContext<'info> {
 
     #[account(
         mut,
-        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
-        bump
+        constraint = basket_config.mint == basket_mint.key() @PieError::InvalidBasket
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
         mut,
-        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.key().as_ref()],
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
@@ -48,13 +45,13 @@ pub struct RedeemContext<'info> {
 }
 
 #[event]
-pub struct RedeemEvent {
+pub struct RedeemBasketTokenEvent {
     pub user: Pubkey,
     pub basket_mint: Pubkey,
     pub amount: u64,
 }
 
-pub fn redeem(ctx: Context<RedeemContext>, amount: u64) -> Result<()> {
+pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) -> Result<()> {
     // Validate amount
     require!(amount > 0, PieError::InvalidAmount);
     let user_fund = &mut ctx.accounts.user_fund;
@@ -88,7 +85,7 @@ pub fn redeem(ctx: Context<RedeemContext>, amount: u64) -> Result<()> {
         }
     }
 
-    emit!(RedeemEvent {
+    emit!(RedeemBasketTokenEvent {
         user: ctx.accounts.user.key(),
         basket_mint: ctx.accounts.basket_mint.key(),
         amount,

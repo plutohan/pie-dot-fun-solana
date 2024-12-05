@@ -19,10 +19,10 @@ export const tokens: TokenInfo[] = [
     ammId: "BdWKgVNQxgVbTPMiQqyCczZxDcAgioWPpWFNWQn3Xc7A",
   },
   {
-    name: "EXO",
-    mint: "H3p3yQHovyxScckQqhkv1JP4z5CLFGdpYBK3ev8Sny4u",
-    lut: new PublicKey("5sn4smqth5AnvL2C3uStcBSEhYNCmG5D25qYMSfV1man"),
-    ammId: "E6So4qxyABvxNt9XHxDpvJQJhn4pida1viyhju5hRFCG",
+    name: "DOOM",
+    mint: "7RVCJ4G4jXoSftvaJaGA3amKPAdwbbJWTcPWLFrbHcEn",
+    lut: new PublicKey("9AThUzZRti6zaf9RDguSSzDiXfVsyDfXvQDMjqCWZPgb"),
+    ammId: "F9yAGLqScH6iA95kFJxTjRuqoK69TPbvGrAKBKzKHjSa",
   },
   {
     name: "DEVTMAC",
@@ -30,6 +30,13 @@ export const tokens: TokenInfo[] = [
     lut: new PublicKey("Cx4ePwkwmByBH2NVWVHEhJ3kFN394QCvVXc8X5gAvU73"),
     ammId: "59kw9y3WfL38tCE47trcEBEc5JktUJiKMaVAhxowuTjy",
   },
+  {
+    name: "EXO",
+    mint: "H3p3yQHovyxScckQqhkv1JP4z5CLFGdpYBK3ev8Sny4u",
+    lut: new PublicKey("5sn4smqth5AnvL2C3uStcBSEhYNCmG5D25qYMSfV1man"),
+    ammId: "E6So4qxyABvxNt9XHxDpvJQJhn4pida1viyhju5hRFCG",
+  },
+
   {
     name: "SOLYMPICS",
     mint: "C4FpfMhVQ4a9zXjTNgNzxhoXbgG18boeQcijw2TZF8nG",
@@ -42,12 +49,7 @@ export const tokens: TokenInfo[] = [
     lut: new PublicKey("8RFSW2MdSj3uNnWvjf1jbBcitgZ7y4SVDBiDdXWsHn81"),
     ammId: "6Sk1FWnhkhSWTmhUpbFxTdpy5nxtL4WLwP1QiRzSz5fX",
   },
-  {
-    name: "DOOM",
-    mint: "7RVCJ4G4jXoSftvaJaGA3amKPAdwbbJWTcPWLFrbHcEn",
-    lut: new PublicKey("9AThUzZRti6zaf9RDguSSzDiXfVsyDfXvQDMjqCWZPgb"),
-    ammId: "F9yAGLqScH6iA95kFJxTjRuqoK69TPbvGrAKBKzKHjSa",
-  },
+
   {
     name: "disperse",
     mint: "5QiDKfdEHAqAMEDMEs48izW8WFKdGnMA3BmoHrQgyhcw",

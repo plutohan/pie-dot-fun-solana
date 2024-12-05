@@ -11,6 +11,7 @@ pub struct BasketComponent {
 #[account]
 pub struct BasketConfig {
     pub bump: u8,
+    pub id: u64,
     pub creator: Pubkey,
     pub mint: Pubkey,
     pub components: Vec<BasketComponent>,
@@ -21,7 +22,7 @@ impl Space for BasketConfig {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
         + 1 // bump
         + 32 // creator
-        + 4 // id
+        + 8 // id
         + 32 // mint
         + 4 // vec length
         + 1   // is_rebalancing (bool)

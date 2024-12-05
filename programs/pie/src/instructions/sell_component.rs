@@ -18,7 +18,7 @@ pub struct SellComponentContext<'info> {
 
     #[account(
         mut,
-        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.key().as_ref()],
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
@@ -105,15 +105,12 @@ pub fn sell_component(
 
     require!(component.amount >= amount_in, PieError::InsufficientBalance);
 
-    let basket_mint_key = ctx.accounts.basket_mint.key();
 
-    let basket_config_seeds = &[
+    let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
-        &basket_mint_key.as_ref(),
+        &ctx.accounts.basket_config.id.to_be_bytes(),
         &[ctx.accounts.basket_config.bump],
-    ];
-
-    let signer = &[&basket_config_seeds[..]];
+    ]];
 
     let swap_base_in_inx = swap_base_in(
         &ctx.accounts.amm_program.key(),

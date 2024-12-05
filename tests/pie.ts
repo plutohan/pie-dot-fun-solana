@@ -40,25 +40,15 @@ describe("pie", () => {
   const pieProgram = new PieProgram(connection);
 
   it("is success deploy without admin change", async () => {
-<<<<<<< HEAD
-    const program = anchor.workspace.Pie as Program<Pie>;
-    try {
-      await program.methods.initialize().rpc({
-        skipPreflight: true
-      })
-    } catch (e) {}
-=======
     await Promise.all([
       connection.requestAirdrop(admin.publicKey, LAMPORTS_PER_SOL),
       connection.requestAirdrop(defaultProvider.publicKey, LAMPORTS_PER_SOL),
       connection.requestAirdrop(newAdmin.publicKey, LAMPORTS_PER_SOL),
       connection.requestAirdrop(rebalancer.publicKey, LAMPORTS_PER_SOL),
     ]);
->>>>>>> fbcf75d (add test mint/burn basket token)
     await sleep(1);
 
     const initTx = await pieProgram.initialize(admin.publicKey);
-    console.log("admin: ", admin.publicKey);
 
     await sendAndConfirmTransaction(connection, initTx, [admin]);
 
@@ -69,26 +59,9 @@ describe("pie", () => {
 
   describe("transfer_admin", () => {
     it("should be transfer with new admin", async () => {
-<<<<<<< HEAD
-      try {
-        await defaultProgram.methods.transferAdmin(newAdmin.publicKey).accounts({
-          admin: admin.publicKey,
-        }).signers([admin]).rpc({
-          commitment: "confirmed"
-        })
-      } catch (e){}
-      await sleep(1);
-      const [programStateKey] = anchor.web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("program_state")],
-        defaultProgram.programId
-      );
-      let programState = await defaultProgram.account.programState.fetch(
-        programStateKey
-=======
       const transferTx = await pieProgram.transferAdmin(
         admin.publicKey,
         newAdmin.publicKey
->>>>>>> fbcf75d (add test mint/burn basket token)
       );
       await sendAndConfirmTransaction(connection, transferTx, [admin]);
 
@@ -111,12 +84,12 @@ describe("pie", () => {
 
     it("should fail if the admin is unauthorized", async () => {
       try {
-        await defaultProgram.methods.transferAdmin(newAdmin.publicKey).accounts({
-          admin: newAdmin.publicKey,
-        }).signers([newAdmin]).rpc()
-      } catch (e){
-        assert.equal(e.error.errorCode.code,"Unauthorized")
-      }
+        const transferTx = await pieProgram.transferAdmin(
+          newAdmin.publicKey,
+          admin.publicKey
+        );
+        await sendAndConfirmTransaction(connection, transferTx, [newAdmin]);
+      } catch (e) {}
     });
   });
 
@@ -186,38 +159,42 @@ describe("pie", () => {
           symbol: "BNS",
           uri: "test",
           components: basketComponents,
+          decimals: 6
         };
-
-        const { tx, basketMint } = await pieProgram.createBasket(
+        const programState = await pieProgram.getProgramState();
+        const basketId = programState.basketCounter;
+        const createBasketTx = await pieProgram.createBasket(
           admin.publicKey,
           createBasketArgs,
-          6
+          basketId
         );
 
-        await sendAndConfirmTransaction(connection, tx, [admin, basketMint]);
+        await sendAndConfirmTransaction(connection, createBasketTx, [admin]);
 
-        const basketConfig = pieProgram.basketConfigPDA(basketMint.publicKey);
-        const basketConfigData = await pieProgram.getBasketConfig(
-          basketMint.publicKey
-        );
-
+        const basketConfig = pieProgram.basketConfigPDA(basketId);
+        const basketMint = pieProgram.basketMintPDA(basketId);
+        const basketConfigData = await pieProgram.getBasketConfig(basketId);
         assert.equal(
           basketConfigData.creator.toBase58(),
           admin.publicKey.toBase58()
         );
-        assert.equal(
-          basketConfigData.mint.toBase58(),
-          basketMint.publicKey.toBase58()
-        );
+        assert.equal(basketConfigData.mint.toBase58(), basketMint.toBase58());
         assert.equal(basketConfigData.components.length, 3);
 
-        const mintData = await getMint(connection, basketMint.publicKey);
+        const mintData = await getMint(connection, basketMint);
         assert.equal(mintData.supply.toString(), "0");
         assert.equal(mintData.decimals, 6);
         assert.equal(
           mintData.mintAuthority?.toBase58(),
           basketConfig.toBase58()
         );
+
+              const mintBasketTx = await pieProgram.mintBasketToken(
+        admin.publicKey,
+        basketId,
+        1000
+      );
+      await sendAndConfirmTransaction(connection, mintBasketTx, [admin]);
       });
 
       it("should fail if the creator is unauthorized", async () => {});
@@ -231,7 +208,35 @@ describe("pie", () => {
   });
 
   describe("mint_basket", () => {
-    it("should mint a basket token", async () => {});
+    it("should mint a basket token", async () => {
+      const basketComponents = await createBasketComponents(
+        connection,
+        admin,
+        [1, 2, 3]
+      );
+      const createBasketArgs: CreateBasketArgs = {
+        name: "Basket Name Test",
+        symbol: "BNS",
+        uri: "test",
+        components: basketComponents,
+        decimals: 6
+      };
+      const programState = await pieProgram.getProgramState();
+      const basketId = programState.basketCounter;
+      const createBasketTx = await pieProgram.createBasket(
+        admin.publicKey,
+        createBasketArgs,
+        basketId
+      );
+      await sendAndConfirmTransaction(connection, createBasketTx, [admin]);
+
+      const mintBasketTx = await pieProgram.mintBasketToken(
+        admin.publicKey,
+        basketId,
+        1000
+      );
+      await sendAndConfirmTransaction(connection, mintBasketTx, [admin]);
+    });
 
     it("should raise error if creator not right", async () => {});
   });
