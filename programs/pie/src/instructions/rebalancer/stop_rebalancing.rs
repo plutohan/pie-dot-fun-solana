@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::{token::TokenAccount, token_interface::Mint};
 
 use crate::{
-    error::PieError, BasketConfig, ProgramState, RebalancerState, PROGRAM_STATE, REBALANCER_STATE,
+    error::PieError, BasketConfig, Component, ProgramState, RebalancerState, PROGRAM_STATE,
+    REBALANCER_STATE,
 };
 
 #[event]
@@ -45,12 +46,13 @@ pub struct StopRebalancing<'info> {
 
 pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
     let program_state = &mut ctx.accounts.program_state;
-    require!(!program_state.is_rebalancing, PieError::AlreadyRebalancing);
+    let basket_config = &mut ctx.accounts.basket_config;
+    require!(!basket_config.is_rebalancing, PieError::AlreadyRebalancing);
 
     let wrapped_sol_balance = ctx.accounts.vault_wrapped_sol.amount;
 
     if wrapped_sol_balance < program_state.max_rebalance_margin_lamports {
-        program_state.is_rebalancing = false;
+        basket_config.is_rebalancing = false;
         emit!(StopRebalancingEvent {
             timestamp: Clock::get()?.unix_timestamp,
         });

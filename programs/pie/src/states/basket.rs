@@ -15,6 +15,7 @@ pub struct BasketConfig {
     pub id: u32,
     pub mint: Pubkey,
     pub components: Vec<Component>,
+    pub is_rebalancing: bool,
 }
 
 impl Space for BasketConfig {
@@ -24,5 +25,6 @@ impl Space for BasketConfig {
         + 4 // id
         + 32 // mint
         + 4 // vec length
+        + 1   // is_rebalancing (bool)
         + (32 + 8) * MAX_COMPONENTS as usize; // vec items
 }
