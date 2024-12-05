@@ -24,13 +24,6 @@ pub struct ExecuteRebalancing<'info> {
     pub rebalancer_state: Box<Account<'info, RebalancerState>>,
 
     #[account(
-        mut,
-        seeds = [PROGRAM_STATE],
-        bump = program_state.bump
-    )]
-    pub program_state: Account<'info, ProgramState>,
-
-    #[account(
         seeds = [FUND, basket_mint.key().as_ref()],
         bump
     )]
@@ -113,8 +106,8 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     is_buy: bool,
     minimum_amount_out: u64,
 ) -> Result<()> {
-    let program_state = &ctx.accounts.program_state;
-    require!(program_state.is_rebalancing, PieError::NotInRebalancing);
+    let basket_config = &ctx.accounts.basket_config;
+    require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
 
     let basket_mint_key = ctx.accounts.basket_mint.key();
 

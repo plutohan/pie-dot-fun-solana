@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::clock::Clock};
 
-use crate::{error::PieError, ProgramState, RebalancerState, PROGRAM_STATE, REBALANCER_STATE};
+use crate::{error::PieError, BasketConfig, RebalancerState, PROGRAM_STATE, REBALANCER_STATE};
 
 #[event]
 pub struct StartRebalancingEvent {
@@ -19,23 +19,19 @@ pub struct StartRebalancing<'info> {
     )]
     pub rebalancer_state: Box<Account<'info, RebalancerState>>,
 
-    #[account(
-        mut,
-        seeds = [PROGRAM_STATE],
-        bump = program_state.bump
-    )]
-    pub program_state: Account<'info, ProgramState>,
+    #[account(mut)]
+    pub basket_config: Box<Account<'info, BasketConfig>>,
 
     pub system_program: Program<'info, System>,
 }
 
 pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
     // Check if already rebalancing
-    let program_state = &mut ctx.accounts.program_state;
-    require!(!program_state.is_rebalancing, PieError::AlreadyRebalancing);
+    let basket_config = &mut ctx.accounts.basket_config;
+    require!(!basket_config.is_rebalancing, PieError::AlreadyRebalancing);
 
     // Set rebalancing state to true
-    program_state.is_rebalancing = true;
+    basket_config.is_rebalancing = true;
 
     // Get current timestamp
     let clock = Clock::get()?;
