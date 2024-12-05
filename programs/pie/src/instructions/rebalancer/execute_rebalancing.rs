@@ -7,7 +7,7 @@ use anchor_spl::{
 use crate::{
     error::PieError,
     utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut},
-    BasketConfig, ProgramState, RebalancerState, BASKET_CONFIG, FUND, PROGRAM_STATE,
+    BasketConfig, RebalancerState, BASKET_CONFIG, FUND,
     REBALANCER_STATE,
 };
 

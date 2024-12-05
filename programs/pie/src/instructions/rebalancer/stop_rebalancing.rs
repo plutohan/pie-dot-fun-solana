@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{token::TokenAccount, token_interface::Mint};
 
 use crate::{
-    error::PieError, BasketConfig, Component, ProgramState, RebalancerState, PROGRAM_STATE,
+    error::PieError, BasketConfig, ProgramState, RebalancerState, PROGRAM_STATE,
     REBALANCER_STATE,
 };
 

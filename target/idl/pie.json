@@ -594,32 +594,6 @@
           }
         },
         {
-          "name": "program_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "basket_config",
           "pda": {
             "seeds": [
@@ -1066,30 +1040,8 @@
           }
         },
         {
-          "name": "program_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
+          "name": "basket_config",
+          "writable": true
         },
         {
           "name": "system_program",
@@ -1312,6 +1264,19 @@
         114,
         11,
         246
+      ]
+    },
+    {
+      "name": "BasketTokenMintedEvent",
+      "discriminator": [
+        120,
+        158,
+        240,
+        147,
+        105,
+        53,
+        89,
+        119
       ]
     },
     {
@@ -1575,6 +1540,30 @@
                 }
               }
             }
+          },
+          {
+            "name": "is_rebalancing",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BasketTokenMintedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
@@ -1683,10 +1672,6 @@
             "type": "string"
           },
           {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
             "name": "creator",
             "type": "pubkey"
           },
@@ -1779,10 +1764,6 @@
           {
             "name": "basket_counter",
             "type": "u32"
-          },
-          {
-            "name": "is_rebalancing",
-            "type": "bool"
           },
           {
             "name": "enable_creator",

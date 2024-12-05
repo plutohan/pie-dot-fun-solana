@@ -600,32 +600,6 @@ export type Pie = {
           }
         },
         {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "basketConfig",
           "pda": {
             "seeds": [
@@ -1072,30 +1046,8 @@ export type Pie = {
           }
         },
         {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
+          "name": "basketConfig",
+          "writable": true
         },
         {
           "name": "systemProgram",
@@ -1318,6 +1270,19 @@ export type Pie = {
         114,
         11,
         246
+      ]
+    },
+    {
+      "name": "basketTokenMintedEvent",
+      "discriminator": [
+        120,
+        158,
+        240,
+        147,
+        105,
+        53,
+        89,
+        119
       ]
     },
     {
@@ -1581,6 +1546,30 @@ export type Pie = {
                 }
               }
             }
+          },
+          {
+            "name": "isRebalancing",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "basketTokenMintedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
@@ -1689,10 +1678,6 @@ export type Pie = {
             "type": "string"
           },
           {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
             "name": "creator",
             "type": "pubkey"
           },
@@ -1785,10 +1770,6 @@ export type Pie = {
           {
             "name": "basketCounter",
             "type": "u32"
-          },
-          {
-            "name": "isRebalancing",
-            "type": "bool"
           },
           {
             "name": "enableCreator",

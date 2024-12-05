@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::clock::Clock};
 
-use crate::{error::PieError, BasketConfig, RebalancerState, PROGRAM_STATE, REBALANCER_STATE};
+use crate::{error::PieError, BasketConfig, RebalancerState, REBALANCER_STATE};
 
 #[event]
 pub struct StartRebalancingEvent {
