@@ -98,6 +98,10 @@ pub struct ExecuteRebalancing<'info> {
 pub struct ExecuteRebalancingEvent {
     pub basket_mint: Pubkey,
     pub is_buy: bool,
+    pub initial_source_balance: u64,
+    pub initial_destination_balance: u64,
+    pub final_source_balance: u64,
+    pub final_destination_balance: u64,
 }
 
 pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
@@ -118,12 +122,22 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     ];
     let signer = &[&basket_config_seeds[..]];
 
+    let initial_source_balance = ctx.accounts.vault_token_source.amount;
+    let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
+
     execute_swap(ctx.accounts, amount, is_buy, minimum_amount_out, signer)?;
 
-    //@TODO: Add parameters for the actual amount of tokens swapped
+    // Fetch final balances
+    let final_source_balance = ctx.accounts.vault_token_source.amount;
+    let final_destination_balance = ctx.accounts.vault_token_destination.amount;
+
     emit!(ExecuteRebalancingEvent {
         basket_mint: basket_mint_key,
         is_buy,
+        initial_source_balance,
+        initial_destination_balance,
+        final_source_balance,
+        final_destination_balance,
     });
 
     Ok(())
