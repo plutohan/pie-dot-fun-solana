@@ -306,7 +306,9 @@ export class PieProgram {
 
   async sellComponent(
     user: PublicKey,
+    inputMint: PublicKey,
     basketConfig: PublicKey,
+    basketMint: PublicKey,
     amountIn: number,
     minimumAmountOut: number,
     raydium: Raydium,
@@ -316,7 +318,6 @@ export class PieProgram {
     const data = await raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
-    const inputMint = NATIVE_MINT;
 
     const poolKeys = data.poolKeys;
     const baseIn = inputMint.toString() === poolKeys.mintA.address;
@@ -327,8 +328,8 @@ export class PieProgram {
 
     const inputTokenAccount = getAssociatedTokenAddressSync(
       new PublicKey(mintIn),
-      user,
-      false
+      basketConfig,
+      true
     );
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
@@ -336,7 +337,7 @@ export class PieProgram {
         this.connection,
         new PublicKey(mintOut),
         user,
-        basketConfig
+        user
       );
 
     tx.add(outputTx);
@@ -346,8 +347,9 @@ export class PieProgram {
         user: user,
         programState: this.programStatePDA,
         basketConfig: basketConfig,
-        mintOut: mintOut,
+        basketMint: basketMint,
         amm: new PublicKey(ammId),
+        mintIn: new PublicKey(mintIn),
         userFund: this.userFundPDA(user, basketConfig),
         ammAuthority: new PublicKey(poolKeys.authority),
         ammOpenOrders: new PublicKey(poolKeys.openOrders),
@@ -362,8 +364,8 @@ export class PieProgram {
         marketPcVault: new PublicKey(poolKeys.marketQuoteVault),
         marketVaultSigner: new PublicKey(poolKeys.marketAuthority),
         ammProgram: new PublicKey(poolKeys.programId),
-        userTokenSource: inputTokenAccount,
-        vaultTokenDestination: outputTokenAccount,
+        userTokenDestination: outputTokenAccount,
+        vaultTokenSource: inputTokenAccount,
       })
       .transaction();
 
@@ -402,13 +404,20 @@ export class PieProgram {
     basketMint: PublicKey,
     amount: number
   ): Promise<Transaction> {
+    const userBasketTokenAccount = getAssociatedTokenAddressSync(
+      basketMint,
+      user,
+      false
+    );
     const burnBasketTokenTx = await this.program.methods
       .burnBasketToken(new BN(amount))
       .accountsPartial({
+        programState: this.programStatePDA,
         user,
         basketConfig,
         userFund: this.userFundPDA(user, basketConfig),
         basketMint,
+        userBasketTokenAccount: userBasketTokenAccount,
       })
       .transaction();
     return burnBasketTokenTx;

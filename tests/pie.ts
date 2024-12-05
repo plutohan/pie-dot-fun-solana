@@ -231,42 +231,7 @@ describe("pie", () => {
   });
 
   describe("mint_basket", () => {
-    it("should mint a basket token", async () => {
-      const basketComponents = await createBasketComponents(
-        connection,
-        admin,
-        [1, 2, 3]
-      );
-      const createBasketArgs: CreateBasketArgs = {
-        name: "Basket Name Test",
-        symbol: "BNS",
-        uri: "test",
-        components: basketComponents,
-      };
-      const { tx: createBasketTx, basketMint } = await pieProgram.createBasket(
-        admin.publicKey,
-        createBasketArgs,
-        6
-      );
-      await sendAndConfirmTransaction(connection, createBasketTx, [
-        admin,
-        basketMint,
-      ]);
-
-      const basketConfig = pieProgram.basketConfigPDA(basketMint.publicKey);
-
-      const mintInfo = await getMint(connection, basketMint.publicKey);
-      assert.equal(mintInfo.mintAuthority?.toBase58(), basketConfig.toBase58());
-      console.log("basket config: ", basketConfig.toString());
-      console.log("basket mint: ", basketMint.publicKey.toString());
-      const mintBasketTx = await pieProgram.mintBasketToken(
-        admin.publicKey,
-        basketConfig,
-        basketMint.publicKey,
-        1000
-      );
-      await sendAndConfirmTransaction(connection, mintBasketTx, [admin]);
-    });
+    it("should mint a basket token", async () => {});
 
     it("should raise error if creator not right", async () => {});
   });

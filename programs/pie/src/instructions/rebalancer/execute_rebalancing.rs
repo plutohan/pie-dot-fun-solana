@@ -29,7 +29,6 @@ pub struct ExecuteRebalancing<'info> {
         bump
     )]
     pub basket_config: Account<'info, BasketConfig>,
-
     // Required token accounts
     #[account(mut)]
     pub token_mint: Box<InterfaceAccount<'info, Mint>>,

@@ -91,7 +91,7 @@ async function main() {
     const buyComponentTx = await pieProgram.buyComponent(
       admin.publicKey,
       basketConfig,
-      component.ratio * LAMPORTS_PER_SOL / 100,
+      (component.ratio * LAMPORTS_PER_SOL) / 100,
       0.1 * LAMPORTS_PER_SOL,
       raydium,
       tokens[1].ammId
@@ -112,12 +112,11 @@ async function main() {
     );
   }
 
-  console.log('basketMint.publicKey: ', basketMint.publicKey)
   const mintBasketTokenTx = await pieProgram.mintBasketToken(
     admin.publicKey,
     basketConfig,
     basketMint.publicKey,
-    0.01 * 10** 6
+    0.01 * 10 ** 6
   );
 
   const mintBasketTokenTxResult = await sendAndConfirmTransaction(
@@ -132,6 +131,51 @@ async function main() {
 
   console.log(
     `Mint basket token at tx: https://explorer.solana.com/tx/${mintBasketTokenTxResult}?cluster=devnet`
+  );
+
+  const burnBasketTokenTx = await pieProgram.burnBasketToken(
+    admin.publicKey,
+    basketConfig,
+    basketMint.publicKey,
+    0.01 * 10 ** 6
+  );
+
+  const burnBasketTokenTxResult = await sendAndConfirmTransaction(
+    connection,
+    burnBasketTokenTx,
+    [admin],
+    {
+      skipPreflight: true,
+      commitment: "confirmed",
+    }
+  );
+
+  console.log(
+    `Burn basket token at tx: https://explorer.solana.com/tx/${burnBasketTokenTxResult}?cluster=devnet`
+  );
+
+  const sellComponentTx = await pieProgram.sellComponent(
+    admin.publicKey,
+    new PublicKey(tokens[1].mint),
+    basketConfig,
+    basketMint.publicKey,
+    0.1 * LAMPORTS_PER_SOL,
+    0,
+    raydium,
+    tokens[1].ammId
+  );
+  const sellComponentTxResult = await sendAndConfirmTransaction(
+    connection,
+    sellComponentTx,
+    [admin],
+    {
+      skipPreflight: true,
+      commitment: "confirmed",
+    }
+  );
+
+  console.log(
+    `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
   );
 }
 

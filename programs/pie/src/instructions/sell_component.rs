@@ -33,7 +33,7 @@ pub struct SellComponentContext<'info> {
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(mut)]
-    pub mint_out: Box<InterfaceAccount<'info, Mint>>,
+    pub mint_in: Box<InterfaceAccount<'info, Mint>>,
     /// CHECK: Safe. amm Account
     #[account(mut)]
     pub amm: AccountInfo<'info>,
@@ -70,10 +70,7 @@ pub struct SellComponentContext<'info> {
     pub market_pc_vault: AccountInfo<'info>,
     /// CHECK: Safe. vault_signer Account
     pub market_vault_signer: AccountInfo<'info>,
-    #[account(mut,
-        token::mint = amm_coin_vault,
-        token::authority = basket_config
-    )]
+    #[account(mut)]
     pub vault_token_source: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
@@ -103,7 +100,7 @@ pub fn sell_component(
     let component = user_fund
         .components
         .iter_mut()
-        .find(|a| a.mint == ctx.accounts.amm_coin_vault.key())
+        .find(|a| a.mint == ctx.accounts.mint_in.key())
         .ok_or(PieError::ComponentNotFound)?;
 
     require!(component.amount >= amount_in, PieError::InsufficientBalance);
