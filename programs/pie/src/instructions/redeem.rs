@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct BurnBasketTokenContext<'info> {
+pub struct RedeemContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
@@ -50,13 +50,13 @@ pub struct BurnBasketTokenContext<'info> {
 }
 
 #[event]
-pub struct BurnBasketTokenEvent {
+pub struct RedeemEvent {
     pub user: Pubkey,
     pub basket_mint: Pubkey,
     pub amount: u64,
 }
 
-pub fn burn_basket_token(ctx: Context<BurnBasketTokenContext>, amount: u64) -> Result<()> {
+pub fn redeem(ctx: Context<RedeemContext>, amount: u64) -> Result<()> {
     // Validate amount
     require!(amount > 0, PieError::InvalidAmount);
     require!(
@@ -64,8 +64,8 @@ pub fn burn_basket_token(ctx: Context<BurnBasketTokenContext>, amount: u64) -> R
         PieError::InsufficientBalance
     );
 
-    // Burn the index tokens
-    let burn_ctx = CpiContext::new(
+    // Burn the basket tokens
+    let burn_basket_ctx = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         Burn {
             mint: ctx.accounts.basket_mint.to_account_info(),
@@ -73,7 +73,7 @@ pub fn burn_basket_token(ctx: Context<BurnBasketTokenContext>, amount: u64) -> R
             authority: ctx.accounts.user.to_account_info(),
         },
     );
-    burn(burn_ctx, amount)?;
+    burn(burn_basket_ctx, amount)?;
 
     // Credit underlying tokens back to user's fund
     let user_fund = &mut ctx.accounts.user_fund;
@@ -102,7 +102,7 @@ pub fn burn_basket_token(ctx: Context<BurnBasketTokenContext>, amount: u64) -> R
         }
     }
 
-    emit!(BurnBasketTokenEvent {
+    emit!(RedeemEvent {
         user: ctx.accounts.user.key(),
         basket_mint: ctx.accounts.basket_mint.key(),
         amount,

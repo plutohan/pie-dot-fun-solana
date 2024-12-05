@@ -32,7 +32,7 @@ describe("pie", () => {
   it("is success deploy without admin change", async () => {
     const program = anchor.workspace.Pie as Program<Pie>;
     try {
-      const tx = await program.methods.initialize().rpc({
+      await program.methods.initialize().rpc({
         skipPreflight: true
       })
     } catch (e) {}
@@ -48,7 +48,7 @@ describe("pie", () => {
   describe("transfer_admin", () => {
     it("should be transfer with new admin", async () => {
       try {
-        const tx = await defaultProgram.methods.transferAdmin(newAdmin.publicKey).accounts({
+        await defaultProgram.methods.transferAdmin(newAdmin.publicKey).accounts({
           admin: admin.publicKey,
         }).signers([admin]).rpc({
           commitment: "confirmed"

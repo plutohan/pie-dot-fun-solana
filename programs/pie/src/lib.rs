@@ -47,8 +47,8 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn burn_basket_token(ctx: Context<BurnBasketTokenContext>, amount: u64) -> Result<()> {
-        instructions::burn_basket_token(ctx, amount)?;
+    pub fn burn_basket_token(ctx: Context<RedeemContext>, amount: u64) -> Result<()> {
+        instructions::redeem(ctx, amount)?;
         Ok(())
     }
 

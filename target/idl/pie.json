@@ -1280,19 +1280,6 @@
       ]
     },
     {
-      "name": "BurnBasketTokenEvent",
-      "discriminator": [
-        214,
-        86,
-        70,
-        38,
-        63,
-        57,
-        173,
-        209
-      ]
-    },
-    {
       "name": "BuyComponentEvent",
       "discriminator": [
         106,
@@ -1355,6 +1342,19 @@
         205,
         138,
         248
+      ]
+    },
+    {
+      "name": "RedeemEvent",
+      "discriminator": [
+        90,
+        114,
+        83,
+        146,
+        212,
+        26,
+        217,
+        59
       ]
     },
     {
@@ -1569,26 +1569,6 @@
       }
     },
     {
-      "name": "BurnBasketTokenEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "basket_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "BuyComponentEvent",
       "type": {
         "kind": "struct",
@@ -1788,6 +1768,26 @@
           {
             "name": "balancer",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RedeemEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }

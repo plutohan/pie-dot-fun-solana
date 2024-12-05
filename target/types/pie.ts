@@ -1286,19 +1286,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "burnBasketTokenEvent",
-      "discriminator": [
-        214,
-        86,
-        70,
-        38,
-        63,
-        57,
-        173,
-        209
-      ]
-    },
-    {
       "name": "buyComponentEvent",
       "discriminator": [
         106,
@@ -1361,6 +1348,19 @@ export type Pie = {
         205,
         138,
         248
+      ]
+    },
+    {
+      "name": "redeemEvent",
+      "discriminator": [
+        90,
+        114,
+        83,
+        146,
+        212,
+        26,
+        217,
+        59
       ]
     },
     {
@@ -1575,26 +1575,6 @@ export type Pie = {
       }
     },
     {
-      "name": "burnBasketTokenEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "buyComponentEvent",
       "type": {
         "kind": "struct",
@@ -1794,6 +1774,26 @@ export type Pie = {
           {
             "name": "balancer",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "redeemEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
