@@ -128,6 +128,8 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     execute_swap(ctx.accounts, amount, is_buy, minimum_amount_out, signer)?;
 
     // Fetch final balances
+    ctx.accounts.vault_token_source.reload()?;
+    ctx.accounts.vault_token_destination.reload()?;
     let final_source_balance = ctx.accounts.vault_token_source.amount;
     let final_destination_balance = ctx.accounts.vault_token_destination.amount;
 
