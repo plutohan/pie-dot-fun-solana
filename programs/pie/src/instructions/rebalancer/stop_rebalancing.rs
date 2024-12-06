@@ -7,6 +7,8 @@ use crate::{
 
 #[event]
 pub struct StopRebalancingEvent {
+    pub mint: Pubkey,
+    pub components: Vec<Component>,
     pub timestamp: i64,
 }
 
@@ -53,6 +55,8 @@ pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
     if wrapped_sol_balance < program_state.max_rebalance_margin_lamports {
         basket_config.is_rebalancing = false;
         emit!(StopRebalancingEvent {
+            mint: ctx.accounts.basket_config.mint,
+            components: ctx.accounts.basket_config.components.clone(),
             timestamp: Clock::get()?.unix_timestamp,
         });
     }
