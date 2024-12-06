@@ -27,13 +27,13 @@ pub struct CreateBasketContext<'info> {
         init_if_needed,
         payer = creator,
         space = BasketConfig::INIT_SPACE,
-        seeds = [BASKET_CONFIG, &program_state.basket_counter.to_le_bytes()],
+        seeds = [BASKET_CONFIG, &program_state.basket_counter.to_be_bytes()],
         bump
     )]
     pub basket_config: Account<'info, BasketConfig>,
     #[account(
         init,
-        seeds = [BASKET_MINT, &program_state.basket_counter.to_le_bytes()],
+        seeds = [BASKET_MINT, &program_state.basket_counter.to_be_bytes()],
         bump,
         payer = creator,
         mint::decimals = args.decimals,

@@ -15,20 +15,20 @@ pub struct MintBasketTokenContext<'info> {
 
     #[account(
         mut,
-        seeds = [BASKET_CONFIG, &basket_config.id.to_le_bytes()],
+        seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
         bump    
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
         mut,
-        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(
         mut,
-        seeds = [BASKET_MINT, &basket_config.id.to_le_bytes()],
+        seeds = [BASKET_MINT, &basket_config.id.to_be_bytes()],
         bump  
     )]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
