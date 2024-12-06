@@ -3,13 +3,15 @@ use anchor_spl::metadata::mpl_token_metadata::types::DataV2;
 use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3, Metadata};
 use anchor_spl::token::{Mint, Token};
 
+use crate::BASKET_MINT;
 use crate::{
-    constant::{PROGRAM_STATE, BASKET_CONFIG},
+    constant::{BASKET_CONFIG, PROGRAM_STATE},
     error::PieError,
-    BasketConfig, Component, ProgramState,
+    BasketComponent, BasketConfig, ProgramState,
 };
 
 #[derive(Accounts)]
+#[instruction(args: CreateBasketArgs)]
 pub struct CreateBasketContext<'info> {
     #[account(mut)]
     pub creator: Signer<'info>,
@@ -17,7 +19,7 @@ pub struct CreateBasketContext<'info> {
     #[account(
         mut,
         seeds = [PROGRAM_STATE],
-        bump = program_state.bump
+        bump
     )]
     pub program_state: Account<'info, ProgramState>,
 
@@ -25,19 +27,19 @@ pub struct CreateBasketContext<'info> {
         init_if_needed,
         payer = creator,
         space = BasketConfig::INIT_SPACE,
-        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
+        seeds = [BASKET_CONFIG, &program_state.basket_counter.to_le_bytes()],
         bump
     )]
     pub basket_config: Account<'info, BasketConfig>,
-
     #[account(
-        init_if_needed,
+        init,
+        seeds = [BASKET_MINT, &program_state.basket_counter.to_le_bytes()],
+        bump,
         payer = creator,
-        mint::decimals = 6,
-        mint::authority = basket_config.key(),
+        mint::decimals = args.decimals,
+        mint::authority = basket_config,
     )]
     pub basket_mint: Account<'info, Mint>,
-
     /// To store Metaplex metadata
     /// CHECK: Safety check performed inside function body
     #[account(mut)]
@@ -51,10 +53,11 @@ pub struct CreateBasketContext<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct CreateBasketArgs {
-    pub components: Vec<Component>,
+    pub components: Vec<BasketComponent>,
     pub name: String,
     pub symbol: String,
     pub uri: String,
+    pub decimals: u8
 }
 
 #[event]
@@ -63,9 +66,9 @@ pub struct CreateBasketEvent {
     pub symbol: String,
     pub uri: String,
     pub creator: Pubkey,
-    pub id: u32,
+    pub id: u64,
     pub mint: Pubkey,
-    pub components: Vec<Component>,
+    pub components: Vec<BasketComponent>,
 }
 
 pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
@@ -82,18 +85,34 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     let basket_config = &mut ctx.accounts.basket_config;
     let config = &mut ctx.accounts.program_state;
 
+
+    basket_config.bump = ctx.bumps.basket_config;
+    basket_config.creator = ctx.accounts.creator.key();
+    basket_config.id = config.basket_counter;
+    basket_config.mint = ctx.accounts.basket_mint.key();
+    basket_config.components = args.components;
+
+    config.basket_counter += 1;
+
+    let signer: &[&[&[u8]]] = &[&[
+        BASKET_CONFIG,
+        & basket_config.id.to_be_bytes(),
+        &[ basket_config.bump],
+    ]];
+
     create_metadata_accounts_v3(
-        CpiContext::new(
+        CpiContext::new_with_signer(
             ctx.accounts.metadata_program.to_account_info(),
             CreateMetadataAccountsV3 {
                 metadata: ctx.accounts.metadata_account.to_account_info(),
                 mint: ctx.accounts.basket_mint.to_account_info(),
                 mint_authority: basket_config.to_account_info(),
-                update_authority: ctx.accounts.creator.to_account_info(),
+                update_authority: basket_config.to_account_info(),
                 payer: ctx.accounts.creator.to_account_info(),
                 system_program: ctx.accounts.system_program.to_account_info(),
                 rent: ctx.accounts.rent.to_account_info(),
             },
+            signer,
         ),
         DataV2 {
             name: args.name.clone(),
@@ -108,14 +127,6 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
         true,
         None,
     )?;
-
-    basket_config.bump = ctx.bumps.basket_config;
-    basket_config.creator = ctx.accounts.creator.key();
-    basket_config.id = config.basket_counter;
-    basket_config.mint = ctx.accounts.basket_mint.key();
-    basket_config.components = args.components;
-
-    config.basket_counter += 1;
 
     emit!(CreateBasketEvent {
         name: args.name,

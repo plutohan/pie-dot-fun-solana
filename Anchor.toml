@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-pie = "DE3snahjq5c6mZuTeQyvW8VEqj1m2zk9Cv7YLqGE3Tia"
+pie = "DLCFGsz23ThUDVTbekWhoUvVWeraXRK1Q1jC8s7yWFVK"
 
 [registry]
 url = "https://api.apr.dev"
@@ -18,12 +18,16 @@ wallet = ".config/solana/id.json"
 members = ["programs/pie"]
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/*.ts"
 
 [test]
 startup_wait = 5000
 shutdown_wait = 2000
 upgradeable = false
+
+[[test.genesis]]
+address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+program = "tests/metaplex_token_metadata_program.so"
 
 [test.validator]
 bind_address = "0.0.0.0"

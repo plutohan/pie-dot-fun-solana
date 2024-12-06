@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("DE3snahjq5c6mZuTeQyvW8VEqj1m2zk9Cv7YLqGE3Tia");
+declare_id!("DLCFGsz23ThUDVTbekWhoUvVWeraXRK1Q1jC8s7yWFVK");
 
 pub mod constant;
 pub mod error;
@@ -42,13 +42,13 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
-        instructions::mint_basket_token(ctx)?;
+    pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> Result<()> {
+        instructions::mint_basket_token(ctx, amount)?;
         Ok(())
     }
 
-    pub fn burn_basket_token(ctx: Context<RedeemContext>, amount: u64) -> Result<()> {
-        instructions::redeem(ctx, amount)?;
+    pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) -> Result<()> {
+        instructions::redeem_basket_token(ctx, amount)?;
         Ok(())
     }
 
@@ -76,11 +76,11 @@ pub mod pie {
 
     pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
-        amount: u64,
         is_buy: bool,
-        minimum_amount_out: u64,
+        amount_in: u64,
+        amount_out: u64,
     ) -> Result<()> {
-        instructions::execute_rebalancing(ctx, amount, is_buy, minimum_amount_out)?;
+        instructions::execute_rebalancing(ctx, is_buy, amount_in, amount_out)?;
         Ok(())
     }
 

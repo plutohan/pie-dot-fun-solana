@@ -5,7 +5,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER,
+    constant::USER_FUND,
     error::PieError,
     utils::{swap_base_in, SwapBaseIn},
     BasketConfig, ProgramState, UserFund, BASKET_CONFIG,
@@ -18,7 +18,7 @@ pub struct SellComponentContext<'info> {
 
     #[account(
         mut,
-        seeds = [USER, &user.key().as_ref(), &basket_config.key().as_ref()],
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
@@ -29,14 +29,11 @@ pub struct SellComponentContext<'info> {
     #[account(mut)]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
-    #[account(
-        mut,
-        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
-        bump
-
-    )]
+    #[account(mut)]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
+    #[account(mut)]
+    pub mint_in: Box<InterfaceAccount<'info, Mint>>,
     /// CHECK: Safe. amm Account
     #[account(mut)]
     pub amm: AccountInfo<'info>,
@@ -73,11 +70,7 @@ pub struct SellComponentContext<'info> {
     pub market_pc_vault: AccountInfo<'info>,
     /// CHECK: Safe. vault_signer Account
     pub market_vault_signer: AccountInfo<'info>,
-
-    #[account(mut,
-        token::mint = amm_coin_vault,
-        token::authority = basket_config
-    )]
+    #[account(mut)]
     pub vault_token_source: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
@@ -107,20 +100,17 @@ pub fn sell_component(
     let component = user_fund
         .components
         .iter_mut()
-        .find(|a| a.mint == ctx.accounts.amm_coin_vault.key())
+        .find(|a| a.mint == ctx.accounts.mint_in.key())
         .ok_or(PieError::ComponentNotFound)?;
 
     require!(component.amount >= amount_in, PieError::InsufficientBalance);
 
-    let basket_mint_key = ctx.accounts.basket_mint.key();
 
-    let basket_config_seeds = &[
+    let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
-        &basket_mint_key.as_ref(),
+        &ctx.accounts.basket_config.id.to_be_bytes(),
         &[ctx.accounts.basket_config.bump],
-    ];
-
-    let signer = &[&basket_config_seeds[..]];
+    ]];
 
     let swap_base_in_inx = swap_base_in(
         &ctx.accounts.amm_program.key(),
@@ -176,12 +166,6 @@ pub fn sell_component(
 
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount_in).unwrap();
-
-    if component.amount == 0 {
-        user_fund
-            .components
-            .retain(|c| c.mint != ctx.accounts.amm_coin_vault.key());
-    }
 
     emit!(SellComponentEvent {
         user: ctx.accounts.user.key(),

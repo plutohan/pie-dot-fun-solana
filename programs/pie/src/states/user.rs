@@ -1,12 +1,15 @@
 use anchor_lang::prelude::*;
 
 use crate::constant::MAX_COMPONENTS;
-
-use super::Component;
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct UserComponent {
+    pub mint: Pubkey,
+    pub amount: u64,
+}
 
 #[account]
 pub struct UserFund {
-    pub components: Vec<Component>,
+    pub components: Vec<UserComponent>,
 }
 
 impl Space for UserFund {

@@ -4,14 +4,10 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{
-    constant::{MAX_COMPONENTS, USER},
-    error::PieError,
-    BasketConfig, Component, ProgramState, UserFund, BASKET_CONFIG,
-};
+use crate::{constant::USER_FUND, error::PieError, BasketConfig, ProgramState, UserFund};
 
 #[derive(Accounts)]
-pub struct RedeemContext<'info> {
+pub struct RedeemBasketTokenContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
@@ -20,14 +16,13 @@ pub struct RedeemContext<'info> {
 
     #[account(
         mut,
-        seeds = [BASKET_CONFIG, basket_mint.key().as_ref()],
-        bump
+        constraint = basket_config.mint == basket_mint.key() @PieError::InvalidBasket
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
         mut,
-        seeds = [USER, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
@@ -50,15 +45,19 @@ pub struct RedeemContext<'info> {
 }
 
 #[event]
-pub struct RedeemEvent {
+pub struct RedeemBasketTokenEvent {
     pub user: Pubkey,
     pub basket_mint: Pubkey,
     pub amount: u64,
 }
 
-pub fn redeem(ctx: Context<RedeemContext>, amount: u64) -> Result<()> {
+pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) -> Result<()> {
     // Validate amount
     require!(amount > 0, PieError::InvalidAmount);
+    let user_fund = &mut ctx.accounts.user_fund;
+    let basket_config = &mut ctx.accounts.basket_config;
+
+    // Validate that the user has enough tokens to burn
     require!(
         ctx.accounts.user_basket_token_account.amount >= amount,
         PieError::InsufficientBalance
@@ -75,34 +74,18 @@ pub fn redeem(ctx: Context<RedeemContext>, amount: u64) -> Result<()> {
     );
     burn(burn_basket_ctx, amount)?;
 
-    // Credit underlying tokens back to user's fund
-    let user_fund = &mut ctx.accounts.user_fund;
-
-    for token_config in ctx.accounts.basket_config.components.iter() {
-        let return_amount = token_config.amount.checked_mul(amount).unwrap();
-
+    for token_config in basket_config.components.iter() {
         if let Some(asset) = user_fund
             .components
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {
-            // Update existing asset amount
-            asset.amount = asset.amount.checked_add(return_amount).unwrap();
-        } else {
-            // Add new asset if it doesn't exist
-            require!(
-                user_fund.components.len() < MAX_COMPONENTS as usize,
-                PieError::MaxAssetsExceeded
-            );
-
-            user_fund.components.push(Component {
-                mint: token_config.mint,
-                amount: return_amount,
-            });
+            let amount_return = amount.checked_mul(token_config.ratio as u64).unwrap();
+            asset.amount = asset.amount.checked_add(amount_return).unwrap();
         }
     }
 
-    emit!(RedeemEvent {
+    emit!(RedeemBasketTokenEvent {
         user: ctx.accounts.user.key(),
         basket_mint: ctx.accounts.basket_mint.key(),
         amount,

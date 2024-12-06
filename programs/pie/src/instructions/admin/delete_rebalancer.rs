@@ -14,7 +14,8 @@ pub struct DeleteRebalancer<'info> {
     #[account(
         mut,
         seeds = [REBALANCER_STATE, rebalancer.as_ref()],
-        bump
+        bump,
+        close = admin
     )]
     pub rebalancer_state: Account<'info, RebalancerState>,
 
@@ -44,11 +45,8 @@ pub fn delete_rebalancer(ctx: Context<DeleteRebalancer>, rebalancer: Pubkey) -> 
     }
 
     let rebalancer_lamports = ctx.accounts.rebalancer_state.to_account_info().lamports();
-    **ctx.accounts.admin.to_account_info().lamports.borrow_mut() += rebalancer_lamports;
-
-    ctx.accounts
-        .rebalancer_state
-        .close(ctx.accounts.admin.to_account_info())?;
+    ctx.accounts.admin.add_lamports(rebalancer_lamports)?;
+    ctx.accounts.rebalancer_state.sub_lamports(rebalancer_lamports)?;
 
     emit!(DeleteRebalancerEvent {
         rebalancer: ctx.accounts.rebalancer_state.key(),
