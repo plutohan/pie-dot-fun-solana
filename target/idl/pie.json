@@ -1741,6 +1741,22 @@
           {
             "name": "is_buy",
             "type": "bool"
+          },
+          {
+            "name": "initial_source_balance",
+            "type": "u64"
+          },
+          {
+            "name": "initial_destination_balance",
+            "type": "u64"
+          },
+          {
+            "name": "final_source_balance",
+            "type": "u64"
+          },
+          {
+            "name": "final_destination_balance",
+            "type": "u64"
           }
         ]
       }
@@ -1855,6 +1871,10 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
             "name": "timestamp",
             "type": "i64"
           }
@@ -1866,6 +1886,20 @@
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "BasketComponent"
+                }
+              }
+            }
+          },
           {
             "name": "timestamp",
             "type": "i64"

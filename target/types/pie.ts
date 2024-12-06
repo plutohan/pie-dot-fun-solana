@@ -1747,6 +1747,22 @@ export type Pie = {
           {
             "name": "isBuy",
             "type": "bool"
+          },
+          {
+            "name": "initialSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "initialDestinationBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalDestinationBalance",
+            "type": "u64"
           }
         ]
       }
@@ -1861,6 +1877,10 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
             "name": "timestamp",
             "type": "i64"
           }
@@ -1872,6 +1892,20 @@ export type Pie = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "basketComponent"
+                }
+              }
+            }
+          },
           {
             "name": "timestamp",
             "type": "i64"
