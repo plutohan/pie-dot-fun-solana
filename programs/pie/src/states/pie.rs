@@ -7,7 +7,7 @@ pub struct ProgramState {
     pub basket_counter: u64,
     pub enable_creator: bool,
     pub is_initialized: bool,
-    pub max_rebalance_margin_lamports: u64,
+    pub min_rebalance_margin_lamports: u64,
 }
 
 impl Space for ProgramState {
