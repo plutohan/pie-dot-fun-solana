@@ -138,7 +138,7 @@ export async function createBasketComponents(
     const mint = await createNewMint(connection, creator, 6);
     const component: BasketComponent = {
       mint: mint,
-      ratio: ratios[i],
+      ratio: new BN(ratios[i]),
     };
     components.push(component);
   }

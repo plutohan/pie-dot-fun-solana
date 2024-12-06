@@ -22,6 +22,21 @@ export type UserFund = IdlAccounts<Pie>["userFund"];
 export type BasketComponent = IdlTypes<Pie>["basketComponent"];
 export type CreateBasketArgs = IdlTypes<Pie>["createBasketArgs"];
 
+export type AddRebalancerEvent = IdlEvents<Pie>["addRebalancerEvent"];
+export type CreateBasketEvent = IdlEvents<Pie>["createBasketEvent"];
+export type DeleteRebalancerEvent = IdlEvents<Pie>["deleteRebalancerEvent"];
+export type TransferAdminEvent = IdlEvents<Pie>["transferAdminEvent"];
+export type TransferBasketEvent = IdlEvents<Pie>["transferBasketEvent"];
+export type UpdateRebalanceMarginEvent =
+  IdlEvents<Pie>["updateMaxRebalanceMarginEvent"];
+export type ExecuteRebalancingEvent = IdlEvents<Pie>["executeRebalancingEvent"];
+export type StartRebalancingEvent = IdlEvents<Pie>["startRebalancingEvent"];
+export type StopRebalancingEvent = IdlEvents<Pie>["stopRebalancingEvent"];
+export type BuyComponentEvent = IdlEvents<Pie>["buyComponentEvent"];
+export type SellComponentEvent = IdlEvents<Pie>["sellComponentEvent"];
+export type MintBasketTokenEvent = IdlEvents<Pie>["mintBasketTokenEvent"];
+export type RedeemBasketTokenEvent = IdlEvents<Pie>["redeemBasketTokenEvent"];
+
 const PROGRAM_STATE = "program_state";
 const USER_FUND = "user_fund";
 const BASKET_CONFIG = "basket_config";
@@ -52,21 +67,21 @@ export class PieProgram {
 
   basketConfigPDA(basketId: BN): PublicKey {
     return PublicKey.findProgramAddressSync(
-      [Buffer.from(BASKET_CONFIG), basketId.toBuffer("le", 8)],
+      [Buffer.from(BASKET_CONFIG), basketId.toBuffer("be", 8)],
       this.program.programId
     )[0];
   }
 
   basketMintPDA(basketId: BN): PublicKey {
     return PublicKey.findProgramAddressSync(
-      [Buffer.from(BASKET_MINT), basketId.toBuffer("le", 8)],
+      [Buffer.from(BASKET_MINT), basketId.toBuffer("be", 8)],
       this.program.programId
     )[0];
   }
 
   userFundPDA(user: PublicKey, basketId: BN): PublicKey {
     return PublicKey.findProgramAddressSync(
-      [Buffer.from(USER_FUND), user.toBuffer(), basketId.toBuffer("le", 8)],
+      [Buffer.from(USER_FUND), user.toBuffer(), basketId.toBuffer("be", 8)],
       this.program.programId
     )[0];
   }
@@ -126,6 +141,11 @@ export class PieProgram {
     }
   }
 
+  /**
+   * Initializes the program.
+   * @param admin - The admin account.
+   * @returns A promise that resolves to a transaction.
+   */
   async initialize(admin: PublicKey): Promise<Transaction> {
     const tx = await this.program.methods
       .initialize()
@@ -134,6 +154,12 @@ export class PieProgram {
     return tx;
   }
 
+  /**
+   * Transfers the admin role to a new account.
+   * @param admin - The current admin account.
+   * @param newAdmin - The new admin account.
+   * @returns A promise that resolves to a transaction.
+   */
   async transferAdmin(
     admin: PublicKey,
     newAdmin: PublicKey
@@ -144,6 +170,12 @@ export class PieProgram {
       .transaction();
   }
 
+  /**
+   * Adds a rebalancer to the program.
+   * @param admin - The admin account.
+   * @param rebalancer - The rebalancer account.
+   * @returns A promise that resolves to a transaction.
+   */
   async addRebalancer(
     admin: PublicKey,
     rebalancer: PublicKey
@@ -154,6 +186,12 @@ export class PieProgram {
       .transaction();
   }
 
+  /**
+   * Deletes a rebalancer from the program.
+   * @param admin - The admin account.
+   * @param rebalancer - The rebalancer account.
+   * @returns A promise that resolves to a transaction.
+   */
   async deleteRebalancer(
     admin: PublicKey,
     rebalancer: PublicKey
@@ -164,6 +202,13 @@ export class PieProgram {
       .transaction();
   }
 
+  /**
+   * Creates a basket.
+   * @param creator - The creator account.
+   * @param args - The basket arguments.
+   * @param basketId - The basket ID.
+   * @returns A promise that resolves to a transaction.
+   */
   async createBasket(
     creator: PublicKey,
     args: CreateBasketArgs,
@@ -185,6 +230,16 @@ export class PieProgram {
     return createBasketTx;
   }
 
+  /**
+   * Buys a component.
+   * @param userSourceOwner - The user source owner account.
+   * @param basketId - The basket ID.
+   * @param maxAmountIn - The maximum amount in.
+   * @param amountOut - The amount out.
+   * @param raydium - The Raydium instance.
+   * @param ammId - The AMM ID.
+   * @returns A promise that resolves to a transaction.
+   */
   async buyComponent(
     userSourceOwner: PublicKey,
     basketId: BN,
@@ -259,6 +314,17 @@ export class PieProgram {
     return tx;
   }
 
+  /**
+   * Sells a component.
+   * @param user - The user account.
+   * @param inputMint - The input mint.
+   * @param basketId - The basket ID.
+   * @param amountIn - The amount in.
+   * @param minimumAmountOut - The minimum amount out.
+   * @param raydium - The Raydium instance.
+   * @param ammId - The AMM ID.
+   * @returns A promise that resolves to a transaction.
+   */
   async sellComponent(
     user: PublicKey,
     inputMint: PublicKey,
@@ -329,6 +395,13 @@ export class PieProgram {
     return tx;
   }
 
+  /**
+   * Mints a basket token.
+   * @param user - The user account.
+   * @param basketId - The basket ID.
+   * @param amount - The amount.
+   * @returns A promise that resolves to a transaction.
+   */
   async mintBasketToken(
     user: PublicKey,
     basketId: BN,
@@ -356,6 +429,13 @@ export class PieProgram {
     return tx;
   }
 
+  /**
+   * Redeems a basket token.
+   * @param user - The user account.
+   * @param basketId - The basket ID.
+   * @param amount - The amount.
+   * @returns A promise that resolves to a transaction.
+   */
   async redeemBasketToken(
     user: PublicKey,
     basketId: BN,
@@ -382,6 +462,12 @@ export class PieProgram {
     return burnBasketTokenTx;
   }
 
+  /**
+   * Starts rebalancing.
+   * @param rebalancer - The rebalancer account.
+   * @param basketId - The basket ID.
+   * @returns A promise that resolves to a transaction.
+   */
   async startRebalancing(
     rebalancer: PublicKey,
     basketId: BN
@@ -405,6 +491,12 @@ export class PieProgram {
     }
   }
 
+  /**
+   * Stops rebalancing.
+   * @param rebalancer - The rebalancer account.
+   * @param basketId - The basket ID.
+   * @returns A promise that resolves to a transaction.
+   */
   async stopRebalancing(
     rebalancer: PublicKey,
     basketId: BN
@@ -420,6 +512,18 @@ export class PieProgram {
       .transaction();
   }
 
+  /**
+   * Executes rebalancing.
+   * @param rebalancer - The rebalancer account.
+   * @param isBuy - Whether to buy or sell.
+   * @param amountIn - The amount in.
+   * @param amountOut - The amount out.
+   * @param ammId - The AMM ID.
+   * @param basketId - The basket ID.
+   * @param tokenMint - The token mint.
+   * @param raydium - The Raydium instance.
+   * @returns A promise that resolves to a transaction or null.
+   */
   async executeRebalancing(
     rebalancer: PublicKey,
     isBuy: boolean,
@@ -483,5 +587,111 @@ export class PieProgram {
       .transaction();
     tx.add(executeRebalancingTx);
     return tx;
+  }
+
+  /**
+   * Adds an event listener for the 'AddRebalancer' event.
+   * @param handler - The function to handle the event.
+   */
+  onAddRebalancer(handler: (event: AddRebalancerEvent) => void) {
+    this.program.addEventListener("addRebalancer", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'CreateBasket' event.
+   * @param handler - The function to handle the event.
+   */
+  onCreateBasket(handler: (event: CreateBasketEvent) => void) {
+    this.program.addEventListener("createBasket", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'DeleteRebalancer' event.
+   * @param handler - The function to handle the event.
+   */
+  onDeleteRebalancer(handler: (event: DeleteRebalancerEvent) => void) {
+    this.program.addEventListener("deleteRebalancer", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'TransferAdmin' event.
+   * @param handler - The function to handle the event.
+   */
+  onTransferAdmin(handler: (event: TransferAdminEvent) => void) {
+    this.program.addEventListener("transferAdmin", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'TransferBasket' event.
+   * @param handler - The function to handle the event.
+   */
+  onTransferBasket(handler: (event: TransferBasketEvent) => void) {
+    this.program.addEventListener("transferBasket", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'UpdateRebalanceMargin' event.
+   * @param handler - The function to handle the event.
+   */
+  onUpdateRebalanceMargin(
+    handler: (event: UpdateRebalanceMarginEvent) => void
+  ) {
+    this.program.addEventListener("updateMaxRebalanceMargin", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'ExecuteRebalancing' event.
+   * @param handler - The function to handle the event.
+   */
+  onExecuteRebalancing(handler: (event: ExecuteRebalancingEvent) => void) {
+    this.program.addEventListener("executeRebalancing", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'StartRebalancing' event.
+   * @param handler - The function to handle the event.
+   */
+  onStartRebalancing(handler: (event: StartRebalancingEvent) => void) {
+    this.program.addEventListener("startRebalancing", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'StopRebalancing' event.
+   * @param handler - The function to handle the event.
+   */
+  onStopRebalancing(handler: (event: StopRebalancingEvent) => void) {
+    this.program.addEventListener("stopRebalancing", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'BuyComponent' event.
+   * @param handler - The function to handle the event.
+   */
+  onBuyComponent(handler: (event: BuyComponentEvent) => void) {
+    this.program.addEventListener("buyComponent", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'SellComponent' event.
+   * @param handler - The function to handle the event.
+   */
+  onSellComponent(handler: (event: SellComponentEvent) => void) {
+    this.program.addEventListener("sellComponent", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'MintBasketToken' event.
+   * @param handler - The function to handle the event.
+   */
+  onMintBasketToken(handler: (event: MintBasketTokenEvent) => void) {
+    this.program.addEventListener("mintBasketToken", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'RedeemBasketToken' event.
+   * @param handler - The function to handle the event.
+   */
+  onRedeemBasketToken(handler: (event: RedeemBasketTokenEvent) => void) {
+    this.program.addEventListener("redeemBasketToken", handler);
   }
 }

@@ -60,15 +60,15 @@ async function main() {
   const components: BasketComponent[] = [
     {
       mint: new PublicKey(tokens[0].mint),
-      ratio: 1,
+      ratio: new BN(1),
     },
     {
       mint: new PublicKey(tokens[1].mint),
-      ratio: 2,
+      ratio: new BN(2),
     },
     {
       mint: new PublicKey(tokens[2].mint),
-      ratio: 3,
+      ratio: new BN(3),
     },
   ];
 
@@ -110,7 +110,7 @@ async function main() {
     const buyComponentTx = await pieProgram.buyComponent(
       admin.publicKey,
       basketId,
-      (component.ratio * LAMPORTS_PER_SOL) / 100,
+      (component.ratio.toNumber() * LAMPORTS_PER_SOL) / 100,
       0.01 * LAMPORTS_PER_SOL,
       raydium,
       tokens[i].ammId

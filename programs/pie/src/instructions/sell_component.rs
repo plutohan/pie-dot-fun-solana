@@ -18,7 +18,7 @@ pub struct SellComponentContext<'info> {
 
     #[account(
         mut,
-        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_le_bytes()],
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
