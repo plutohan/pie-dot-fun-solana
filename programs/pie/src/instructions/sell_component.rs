@@ -105,7 +105,6 @@ pub fn sell_component(
 
     require!(component.amount >= amount_in, PieError::InsufficientBalance);
 
-
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
         &ctx.accounts.basket_config.id.to_be_bytes(),

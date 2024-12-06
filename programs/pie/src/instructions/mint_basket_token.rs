@@ -4,7 +4,9 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER_FUND, error::PieError, BasketConfig, UserFund, BASKET_CONFIG, BASKET_MINT};
+use crate::{
+    constant::USER_FUND, error::PieError, BasketConfig, UserFund, BASKET_CONFIG, BASKET_MINT,
+};
 
 #[derive(Accounts)]
 pub struct MintBasketTokenContext<'info> {

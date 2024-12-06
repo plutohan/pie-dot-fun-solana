@@ -57,7 +57,7 @@ pub struct CreateBasketArgs {
     pub name: String,
     pub symbol: String,
     pub uri: String,
-    pub decimals: u8
+    pub decimals: u8,
 }
 
 #[event]
@@ -85,7 +85,6 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     let basket_config = &mut ctx.accounts.basket_config;
     let config = &mut ctx.accounts.program_state;
 
-
     basket_config.bump = ctx.bumps.basket_config;
     basket_config.creator = ctx.accounts.creator.key();
     basket_config.id = config.basket_counter;
@@ -96,8 +95,8 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
 
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
-        & basket_config.id.to_be_bytes(),
-        &[ basket_config.bump],
+        &basket_config.id.to_be_bytes(),
+        &[basket_config.bump],
     ]];
 
     create_metadata_accounts_v3(

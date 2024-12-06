@@ -1560,7 +1560,7 @@ export type Pie = {
           },
           {
             "name": "ratio",
-            "type": "f32"
+            "type": "u64"
           }
         ]
       }

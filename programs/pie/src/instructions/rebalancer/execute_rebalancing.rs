@@ -110,7 +110,7 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
 
     let initial_source_balance = ctx.accounts.vault_token_source.amount;
     let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
-  
+
     execute_swap(&mut ctx.accounts, is_buy, amount_in, amount_out, signer)?;
 
     // Fetch final balances
@@ -203,12 +203,24 @@ pub fn execute_swap<'a: 'info, 'info>(
             .iter_mut()
             .find(|c| c.mint == token_mint)
         {
-            component.ratio = component.ratio
-                + accounts.vault_token_destination.amount as f32 / total_supply as f32;
+            component.ratio = component
+                .ratio
+                .checked_add(
+                    accounts
+                        .vault_token_destination
+                        .amount
+                        .checked_div(total_supply)
+                        .unwrap(),
+                )
+                .unwrap();
         } else {
             basket_config.components.push(BasketComponent {
                 mint: token_mint,
-                ratio: accounts.vault_token_destination.amount as f32 / total_supply as f32,
+                ratio: accounts
+                    .vault_token_destination
+                    .amount
+                    .checked_div(total_supply)
+                    .unwrap(),
             });
         }
     } else {
@@ -276,7 +288,10 @@ pub fn execute_swap<'a: 'info, 'info>(
                 .iter_mut()
                 .find(|c| c.mint == token_mint)
             {
-                component.ratio = component.ratio - token_amount as f32 / total_supply as f32;
+                component.ratio = component
+                    .ratio
+                    .checked_sub(token_amount.checked_div(total_supply).unwrap())
+                    .unwrap();
             }
         }
     }

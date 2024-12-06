@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-    
+
 use crate::BasketConfig;
 
 #[derive(Accounts)]
@@ -30,7 +30,7 @@ pub fn transfer_basket(ctx: Context<TransferBasket>, new_creator: Pubkey) -> Res
     emit!(TransferBasketEvent {
         basket_mint: ctx.accounts.basket_config.mint,
         old_creator: ctx.accounts.current_creator.key(),
-        new_creator: new_creator,
+        new_creator,
     });
 
     Ok(())

@@ -46,7 +46,9 @@ pub fn delete_rebalancer(ctx: Context<DeleteRebalancer>, rebalancer: Pubkey) -> 
 
     let rebalancer_lamports = ctx.accounts.rebalancer_state.to_account_info().lamports();
     ctx.accounts.admin.add_lamports(rebalancer_lamports)?;
-    ctx.accounts.rebalancer_state.sub_lamports(rebalancer_lamports)?;
+    ctx.accounts
+        .rebalancer_state
+        .sub_lamports(rebalancer_lamports)?;
 
     emit!(DeleteRebalancerEvent {
         rebalancer: ctx.accounts.rebalancer_state.key(),

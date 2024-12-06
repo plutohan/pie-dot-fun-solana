@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 
-
 #[derive(Accounts, Clone)]
 pub struct SwapBaseIn<'info> {
     /// CHECK: Safe. amm Account
@@ -53,8 +52,6 @@ pub struct SwapBaseIn<'info> {
     /// CHECK: Safe. The spl token program
     pub token_program: AccountInfo<'info>,
 }
-
-
 
 #[derive(Accounts, Clone)]
 pub struct SwapBaseOut<'info> {

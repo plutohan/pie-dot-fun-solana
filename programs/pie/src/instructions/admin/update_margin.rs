@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{error::PieError, ProgramState, PROGRAM_STATE};
 
 #[derive(Accounts)]
-pub struct UpdateMaxRebalanceMargin<'info> {
+pub struct UpdateRebalanceMarginContext<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
 
@@ -11,6 +11,7 @@ pub struct UpdateMaxRebalanceMargin<'info> {
         mut,
         seeds = [PROGRAM_STATE],
         bump = program_state.bump,
+        constraint = program_state.admin == admin.key() @ PieError::Unauthorized
     )]
     pub program_state: Account<'info, ProgramState>,
 }
@@ -20,8 +21,8 @@ pub struct UpdateMaxRebalanceMarginEvent {
     pub new_margin: u64,
 }
 
-pub fn update_max_rebalance_margin(
-    ctx: Context<UpdateMaxRebalanceMargin>,
+pub fn update_rebalance_margin(
+    ctx: Context<UpdateRebalanceMarginContext>,
     new_margin: u64,
 ) -> Result<()> {
     // Update the margin value
