@@ -53,14 +53,15 @@ pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
 
     let wrapped_sol_balance = ctx.accounts.vault_wrapped_sol.amount;
 
-    if wrapped_sol_balance < program_state.max_rebalance_margin_lamports {
-        basket_config.is_rebalancing = false;
-        emit!(StopRebalancingEvent {
-            mint: ctx.accounts.basket_config.mint,
-            components: ctx.accounts.basket_config.components.clone(),
-            timestamp: Clock::get()?.unix_timestamp,
-        });
-    }
+    require!(wrapped_sol_balance > program_state.min_rebalance_margin_lamports, PieError::InvalidMarginBottom);
+
+    basket_config.is_rebalancing = false;
+
+    emit!(StopRebalancingEvent {
+        mint: ctx.accounts.basket_config.mint,
+        components: ctx.accounts.basket_config.components.clone(),
+        timestamp: Clock::get()?.unix_timestamp,
+    });
 
     Ok(())
 }

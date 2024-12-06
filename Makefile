@@ -13,7 +13,7 @@ build:
 	anchor build
 
 deploy/local:
-	anchor deploy --provider.cluster local
+	anchor deploy --provider.cluster localnet
 
 deploy/devnet:
 	anchor deploy --provider.cluster devnet
@@ -30,3 +30,5 @@ test/devnet:
 	mv ./target/deploy/pie-keypair.old.json ./target/deploy/pie-keypair.json
 	anchor keys sync
 	anchor test --skip-deploy --provider.cluster devnet
+test-validator/local:
+	solana-test-validator --clone 675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8 --url devnet --bpf-program metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s ./tests/programs/metaplex_token_metadata_program.so --reset

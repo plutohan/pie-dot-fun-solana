@@ -37,4 +37,7 @@ pub enum PieError {
 
     #[msg("Invalid margin value")]
     InvalidMargin,
+
+    #[msg("Margin value for bottom exceeds the allowed limit")]
+    InvalidMarginBottom,
 }

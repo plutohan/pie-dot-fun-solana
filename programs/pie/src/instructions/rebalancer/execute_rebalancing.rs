@@ -203,16 +203,12 @@ pub fn execute_swap<'a: 'info, 'info>(
             .iter_mut()
             .find(|c| c.mint == token_mint)
         {
-            component.ratio = component
-                .ratio
-                .checked_add(
+            component.ratio =
                     accounts
                         .vault_token_destination
                         .amount
                         .checked_div(total_supply)
-                        .unwrap(),
-                )
-                .unwrap();
+                        .unwrap();
         } else {
             basket_config.components.push(BasketComponent {
                 mint: token_mint,
@@ -288,10 +284,7 @@ pub fn execute_swap<'a: 'info, 'info>(
                 .iter_mut()
                 .find(|c| c.mint == token_mint)
             {
-                component.ratio = component
-                    .ratio
-                    .checked_sub(token_amount.checked_div(total_supply).unwrap())
-                    .unwrap();
+                component.ratio = token_amount.checked_div(total_supply).unwrap();
             }
         }
     }
