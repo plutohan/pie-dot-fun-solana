@@ -81,16 +81,16 @@ impl AmmInstruction {
                 minimum_amount_out,
             }) => {
                 buf.push(9);
-                buf.extend_from_slice(&amount_in.to_be_bytes());
-                buf.extend_from_slice(&minimum_amount_out.to_be_bytes());
+                buf.extend_from_slice(&amount_in.to_le_bytes());
+                buf.extend_from_slice(&minimum_amount_out.to_le_bytes());
             }
             Self::SwapBaseOut(SwapInstructionBaseOut {
                 max_amount_in,
                 amount_out,
             }) => {
                 buf.push(11);
-                buf.extend_from_slice(&max_amount_in.to_be_bytes());
-                buf.extend_from_slice(&amount_out.to_be_bytes());
+                buf.extend_from_slice(&max_amount_in.to_le_bytes());
+                buf.extend_from_slice(&amount_out.to_le_bytes());
             }
         }
         Ok(buf)
@@ -176,7 +176,6 @@ pub fn swap_base_out(
     user_token_source: &Pubkey,
     user_token_destination: &Pubkey,
     user_source_owner: &Pubkey,
-
     max_amount_in: u64,
     amount_out: u64,
 ) -> Result<Instruction, ProgramError> {

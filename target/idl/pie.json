@@ -1,5 +1,5 @@
 {
-  "address": "DLCFGsz23ThUDVTbekWhoUvVWeraXRK1Q1jC8s7yWFVK",
+  "address": "EBDAsk22CjiUXt53XgCkmEGCdiCkL4ExcL8Qn2RfCjwT",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -1609,7 +1609,7 @@
             "type": "bool"
           },
           {
-            "name": "rebalance_margin_lamports",
+            "name": "min_rebalance_margin_lamports",
             "type": "u64"
           }
         ]

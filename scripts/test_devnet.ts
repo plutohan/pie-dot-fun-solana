@@ -81,55 +81,60 @@ async function main() {
   };
 
   programState = await pieProgram.getProgramState();
-  const basketId = new BN(0);
+  const basketId = programState.basketCounter;
 
-  // const createBasketTx = await pieProgram.createBasket(
-  //   admin.publicKey,
-  //   createBasketArgs,
-  //   basketId
-  // );
+  const createBasketTx = await pieProgram.createBasket(
+    admin.publicKey,
+    createBasketArgs,
+    basketId
+  );
 
-  // const createBasketTxResult = await sendAndConfirmTransaction(
-  //   connection,
-  //   createBasketTx,
-  //   [admin],
-  //   {
-  //     skipPreflight: true,
-  //     commitment: "confirmed",
-  //   }
-  // );
+  const createBasketTxResult = await sendAndConfirmTransaction(
+    connection,
+    createBasketTx,
+    [admin],
+    {
+      skipPreflight: true,
+      commitment: "confirmed",
+    }
+  );
 
-  // console.log(
-  //   `Basket created at tx: https://explorer.solana.com/tx/${createBasketTxResult}?cluster=devnet`
-  // );
+  console.log(
+    `Basket created at tx: https://explorer.solana.com/tx/${createBasketTxResult}?cluster=devnet`
+  );
   const basketConfigData = await pieProgram.getBasketConfig(basketId);
 
-  for (let i = 0; i < basketConfigData.components.length; i++) {
-    const component = basketConfigData.components[i];
-    console.log('component: ', component.ratio)
-    const buyComponentTx = await pieProgram.buyComponent(
-      admin.publicKey,
-      basketId,
-      (component.ratio.toNumber() * LAMPORTS_PER_SOL) / 100,
-      0.01 * LAMPORTS_PER_SOL,
-      raydium,
-      tokens[i].ammId
-    );
+  const buyComponentTx = await pieProgram.buyComponent(
+    admin.publicKey,
+    basketId,
+    0.1 * LAMPORTS_PER_SOL,
+    20000000,
+    raydium,
+    tokens[0].ammId
+  );
 
-    const buyComponentTxResult = await sendAndConfirmTransaction(
-      connection,
-      buyComponentTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
+  const buyComponentTxResult = await sendAndConfirmTransaction(
+    connection,
+    buyComponentTx,
+    [admin],
+    {
+      skipPreflight: true,
+      commitment: "confirmed",
+    }
+  );
 
-    console.log(
-      `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
-    );
-  }
+  console.log(
+    `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
+  );
+
+  // for (let i = 0; i < basketConfigData.components.length; i++) {
+  //   const component = basketConfigData.components[i];
+  //   console.log(      tokens[i].mint.toString())
+  //   console.log(      component.mint.toString())
+
+
+  // }
+
   const mintBasketTokenTx = await pieProgram.mintBasketToken(
     admin.publicKey,
     basketId,
