@@ -101,7 +101,7 @@ pub fn buy_component(
 
     let balance_before = ctx.accounts.vault_token_destination.amount;
 
-    let swap_base_in_inx = swap_base_out(
+    let swap_base_out_inx = swap_base_out(
         &ctx.accounts.amm_program.key(),
         &ctx.accounts.amm.key(),
         &ctx.accounts.amm_authority.key(),
@@ -147,7 +147,7 @@ pub fn buy_component(
     );
 
     solana_program::program::invoke(
-        &swap_base_in_inx,
+        &swap_base_out_inx,
         &ToAccountInfos::to_account_infos(&cpi_context),
     )?;
     ctx.accounts.vault_token_destination.reload()?;

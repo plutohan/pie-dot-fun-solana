@@ -104,36 +104,36 @@ async function main() {
   );
   const basketConfigData = await pieProgram.getBasketConfig(basketId);
 
-  const buyComponentTx = await pieProgram.buyComponent(
-    admin.publicKey,
-    basketId,
-    0.1 * LAMPORTS_PER_SOL,
-    20000000,
-    raydium,
-    tokens[0].ammId
-  );
+  const basketDisplay = [];
+  for(let i = 0; i < basketConfigData.components.length; i ++) {
+    
+  }
 
-  const buyComponentTxResult = await sendAndConfirmTransaction(
-    connection,
-    buyComponentTx,
-    [admin],
-    {
-      skipPreflight: true,
-      commitment: "confirmed",
-    }
-  );
-
-  console.log(
-    `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
-  );
-
-  // for (let i = 0; i < basketConfigData.components.length; i++) {
-  //   const component = basketConfigData.components[i];
-  //   console.log(      tokens[i].mint.toString())
-  //   console.log(      component.mint.toString())
-
-
-  // }
+  for (let i = 0; i < basketConfigData.components.length; i++) {
+    const component = basketConfigData.components[i];
+    const buyComponentTx = await pieProgram.buyComponent(
+      admin.publicKey,
+      basketId,
+      0.1 * LAMPORTS_PER_SOL,
+      20000000,
+      raydium,
+      tokens[0].ammId
+    );
+  
+    const buyComponentTxResult = await sendAndConfirmTransaction(
+      connection,
+      buyComponentTx,
+      [admin],
+      {
+        skipPreflight: true,
+        commitment: "confirmed",
+      }
+    );
+  
+    console.log(
+      `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
+    );
+  }
 
   const mintBasketTokenTx = await pieProgram.mintBasketToken(
     admin.publicKey,

@@ -6,5 +6,6 @@ pub const BASKET_CONFIG: &[u8] = b"basket_config";
 
 pub const INDEX_TOKEN_DECIMALS: u8 = 6;
 pub const MAX_COMPONENTS: u8 = 50;
+pub const EXPONENT: u64 = 1_000_000_000;
 
 pub const INITIALIZE_ADMIN: &str = "DjCDT99HEZyZuq48wugooYNGBnrB5Nhe93VgAKKBAPDV";
