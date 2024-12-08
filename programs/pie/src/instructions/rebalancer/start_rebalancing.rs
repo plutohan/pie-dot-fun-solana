@@ -4,6 +4,7 @@ use crate::{error::PieError, BasketConfig, RebalancerState, REBALANCER_STATE};
 
 #[event]
 pub struct StartRebalancingEvent {
+    pub basket_id: u64,
     pub mint: Pubkey,
     pub timestamp: i64,
 }
@@ -38,6 +39,7 @@ pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
     let clock = Clock::get()?;
 
     emit!(StartRebalancingEvent {
+        basket_id: basket_config.id,
         mint: ctx.accounts.basket_config.mint,
         timestamp: clock.unix_timestamp,
     });

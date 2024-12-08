@@ -85,6 +85,7 @@ pub struct ExecuteRebalancing<'info> {
 
 #[event]
 pub struct ExecuteRebalancingEvent {
+    pub basket_id: u64,
     pub basket_mint: Pubkey,
     pub is_buy: bool,
     pub initial_source_balance: u64,
@@ -120,6 +121,7 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     let final_destination_balance = ctx.accounts.vault_token_destination.amount;
 
     emit!(ExecuteRebalancingEvent {
+        basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
         is_buy,
         initial_source_balance,
@@ -203,12 +205,11 @@ pub fn execute_swap<'a: 'info, 'info>(
             .iter_mut()
             .find(|c| c.mint == token_mint)
         {
-            component.ratio =
-                    accounts
-                        .vault_token_destination
-                        .amount
-                        .checked_div(total_supply)
-                        .unwrap();
+            component.ratio = accounts
+                .vault_token_destination
+                .amount
+                .checked_div(total_supply)
+                .unwrap();
         } else {
             basket_config.components.push(BasketComponent {
                 mint: token_mint,

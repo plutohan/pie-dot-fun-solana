@@ -18,18 +18,21 @@ pub struct TransferBasket<'info> {
 
 #[event]
 pub struct TransferBasketEvent {
+    pub basket_id: u64,
     pub basket_mint: Pubkey,
     pub old_creator: Pubkey,
     pub new_creator: Pubkey,
 }
 
 pub fn transfer_basket(ctx: Context<TransferBasket>, new_creator: Pubkey) -> Result<()> {
-    // Update the creator field
-    ctx.accounts.basket_config.creator = new_creator;
+    let basket_config = &mut ctx.accounts.basket_config;
+    let old_creator = basket_config.creator;
+    basket_config.creator = new_creator;
 
     emit!(TransferBasketEvent {
-        basket_mint: ctx.accounts.basket_config.mint,
-        old_creator: ctx.accounts.current_creator.key(),
+        basket_id: basket_config.id,
+        basket_mint: basket_config.mint,
+        old_creator,
         new_creator,
     });
 
