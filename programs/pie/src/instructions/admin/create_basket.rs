@@ -31,6 +31,7 @@ pub struct CreateBasketContext<'info> {
         bump
     )]
     pub basket_config: Account<'info, BasketConfig>,
+
     #[account(
         init,
         seeds = [BASKET_MINT, &program_state.basket_counter.to_be_bytes()],
@@ -62,11 +63,11 @@ pub struct CreateBasketArgs {
 
 #[event]
 pub struct CreateBasketEvent {
+    pub basket_id: u64,
     pub name: String,
     pub symbol: String,
     pub uri: String,
     pub creator: Pubkey,
-    pub id: u64,
     pub mint: Pubkey,
     pub components: Vec<BasketComponent>,
 }
@@ -128,11 +129,11 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     )?;
 
     emit!(CreateBasketEvent {
+        basket_id: basket_config.id,
         name: args.name,
         symbol: args.symbol,
         uri: args.uri,
         creator: basket_config.creator,
-        id: basket_config.id,
         mint: basket_config.mint,
         components: basket_config.components.clone(),
     });

@@ -8,6 +8,7 @@ use crate::{
 
 #[event]
 pub struct StopRebalancingEvent {
+    pub basket_id: u64,
     pub mint: Pubkey,
     pub components: Vec<BasketComponent>,
     pub timestamp: i64,
@@ -58,6 +59,7 @@ pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
     basket_config.is_rebalancing = false;
 
     emit!(StopRebalancingEvent {
+        basket_id: ctx.accounts.basket_config.id,
         mint: ctx.accounts.basket_config.mint,
         components: ctx.accounts.basket_config.components.clone(),
         timestamp: Clock::get()?.unix_timestamp,

@@ -85,6 +85,7 @@ pub struct BuyComponentContext<'info> {
 
 #[event]
 pub struct BuyComponentEvent {
+    pub basket_id: u64,
     pub user: Pubkey,
     pub mint: Pubkey,
     pub amount: u64,
@@ -176,6 +177,7 @@ pub fn buy_component(
     }
 
     emit!(BuyComponentEvent {
+        basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user_source_owner.key(),
         mint: ctx.accounts.mint_out.key(),
         amount: amount_received,

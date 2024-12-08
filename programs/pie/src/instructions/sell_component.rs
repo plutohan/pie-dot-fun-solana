@@ -84,6 +84,7 @@ pub struct SellComponentContext<'info> {
 
 #[event]
 pub struct SellComponentEvent {
+    pub basket_id: u64,
     pub user: Pubkey,
     pub mint: Pubkey,
     pub amount: u64,
@@ -167,6 +168,7 @@ pub fn sell_component(
     component.amount = component.amount.checked_sub(amount_in).unwrap();
 
     emit!(SellComponentEvent {
+        basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.amm_coin_vault.key(),
         amount: amount_in,

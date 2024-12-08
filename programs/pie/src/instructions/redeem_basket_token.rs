@@ -46,6 +46,7 @@ pub struct RedeemBasketTokenContext<'info> {
 
 #[event]
 pub struct RedeemBasketTokenEvent {
+    pub basket_id: u64,
     pub user: Pubkey,
     pub basket_mint: Pubkey,
     pub amount: u64,
@@ -86,6 +87,7 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
     }
 
     emit!(RedeemBasketTokenEvent {
+        basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
         basket_mint: ctx.accounts.basket_mint.key(),
         amount,
