@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-pie = "CJ4L9gszH5TxzXPJ7QBNwtgzJQhz2gDZPhvEKutfBjHS"
+pie = "6dHbF8idAmSpgJ3VPFYcX1EsT67u5TCt5qaAbbhPADSH"
 
 [registry]
 url = "https://api.apr.dev"

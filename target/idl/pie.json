@@ -1,5 +1,5 @@
 {
-  "address": "CJ4L9gszH5TxzXPJ7QBNwtgzJQhz2gDZPhvEKutfBjHS",
+  "address": "6dHbF8idAmSpgJ3VPFYcX1EsT67u5TCt5qaAbbhPADSH",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -1137,6 +1137,19 @@
   ],
   "events": [
     {
+      "name": "AddRebalancerEvent",
+      "discriminator": [
+        197,
+        41,
+        101,
+        39,
+        186,
+        114,
+        11,
+        246
+      ]
+    },
+    {
       "name": "BuyComponentEvent",
       "discriminator": [
         106,
@@ -1609,7 +1622,7 @@
             "type": "bool"
           },
           {
-            "name": "min_rebalance_margin_lamports",
+            "name": "rebalance_margin_lamports",
             "type": "u64"
           }
         ]

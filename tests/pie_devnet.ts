@@ -1,6 +1,4 @@
-import * as anchor from "@coral-xyz/anchor";
-import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
-import { Pie } from "../target/types/pie";
+import { BN } from "@coral-xyz/anchor";
 import {
   clusterApiUrl,
   Connection,
@@ -14,6 +12,7 @@ import { assert } from "chai";
 import {
   BasketComponent,
   CreateBasketArgs,
+  EXPONENT,
   PieProgram,
 } from "../sdk/pie-program";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
@@ -21,10 +20,6 @@ import { tokens } from "./utils/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-
-function sleep(s: number) {
-  return new Promise((resolve) => setTimeout(resolve, s * 1000));
-}
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -76,15 +71,15 @@ describe("pie", () => {
     const components: BasketComponent[] = [
       {
         mint: new PublicKey(tokens[0].mint),
-        ratio: new BN(1),
+        ratio: new BN(1 * EXPONENT),
       },
       {
         mint: new PublicKey(tokens[1].mint),
-        ratio: new BN(2),
+        ratio: new BN(2 * EXPONENT),
       },
       {
         mint: new PublicKey(tokens[2].mint),
-        ratio: new BN(3),
+        ratio: new BN(3 * EXPONENT),
       },
     ];
 
@@ -248,7 +243,7 @@ describe("pie", () => {
       raydium,
       tokens[1].ammId
     );
-    
+
     const sellComponentTxResult = await sendAndConfirmTransaction(
       connection,
       sellComponentTx,
@@ -388,6 +383,4 @@ describe("pie", () => {
     }
     table.printTable();
   });
-
-  
 });

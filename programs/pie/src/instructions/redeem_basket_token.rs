@@ -4,7 +4,7 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER_FUND, error::PieError, BasketConfig, ProgramState, UserFund};
+use crate::{constant::USER_FUND, error::PieError, BasketConfig, ProgramState, UserFund, EXPONENT};
 
 #[derive(Accounts)]
 pub struct RedeemBasketTokenContext<'info> {
@@ -81,7 +81,11 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {
-            let amount_return = amount.checked_mul(token_config.ratio as u64).unwrap();
+            let amount_return = amount
+                .checked_mul(token_config.ratio)
+                .unwrap()
+                .checked_div(EXPONENT)
+                .unwrap();
             asset.amount = asset.amount.checked_add(amount_return).unwrap();
         }
     }

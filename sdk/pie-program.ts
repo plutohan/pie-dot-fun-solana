@@ -33,6 +33,8 @@ const BASKET_CONFIG = "basket_config";
 const BASKET_MINT = "basket_mint";
 const REBALANCER_STATE = "rebalancer_state";
 
+export const EXPONENT = 1_000_000_000;
+
 const MPL_TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 );

@@ -5,7 +5,9 @@ use anchor_spl::{
 };
 
 use crate::{
-    error::PieError, utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut}, BasketComponent, BasketConfig, BASKET_CONFIG, EXPONENT
+    error::PieError,
+    utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut},
+    BasketComponent, BasketConfig, BASKET_CONFIG, EXPONENT,
 };
 
 #[derive(Accounts)]
@@ -266,14 +268,6 @@ pub fn execute_swap<'a: 'info, 'info>(
             .iter_mut()
             .find(|c| c.mint == token_mint)
         {
-            msg!("component.ratio: {}", component.ratio);
-            msg!("accounts.vault_token_destination.amount: {}", accounts.vault_token_destination.amount);
-            msg!("total_supply: {}", total_supply);
-            msg!("atestt: {}", accounts
-            .vault_token_destination
-                .amount
-                .checked_mul(EXPONENT)
-                .unwrap());
             component.ratio = accounts
                 .vault_token_destination
                 .amount
