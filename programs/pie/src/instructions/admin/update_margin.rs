@@ -32,7 +32,7 @@ pub fn update_rebalance_margin(
     require!(new_margin > 0, PieError::InvalidMargin);
 
     // Update the margin
-    program_state.min_rebalance_margin_lamports = new_margin;
+    program_state.max_rebalance_margin_lamports = new_margin;
 
     emit!(UpdateMaxRebalanceMarginEvent { new_margin });
 
