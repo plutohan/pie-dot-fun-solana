@@ -1807,7 +1807,7 @@
             "type": "bool"
           },
           {
-            "name": "max_rebalance_margin_lamports",
+            "name": "rebalance_margin_lamports",
             "type": "u64"
           }
         ]
