@@ -86,9 +86,9 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
                 .unwrap();
 
             amount_return = Calculator::to_u64(Calculator::restore_decimal(
-                amount_return as u128, 
-                token_config.decimals as u64,
-                SYS_DECIMALS as u64,
+                amount_return.try_into().unwrap(), 
+                token_config.decimals.try_into().unwrap(),
+                SYS_DECIMALS.try_into().unwrap(),
             )).unwrap();
 
             asset.amount = asset

@@ -199,8 +199,8 @@ pub fn execute_swap<'a: 'info, 'info>(
         let ratio = Calculator::to_u64(
             Calculator::normalize_decimal_v2(
                 accounts.vault_token_destination.amount,
-                accounts.token_mint.decimals as u64,
-                SYS_DECIMALS as u64,
+                accounts.token_mint.decimals.try_into().unwrap(),
+                SYS_DECIMALS.try_into().unwrap(),
             )
             .checked_div(Calculator::to_u128(total_supply).unwrap())
             .unwrap(),
@@ -289,11 +289,11 @@ pub fn execute_swap<'a: 'info, 'info>(
             {
                 component.ratio = Calculator::normalize_decimal_v2(
                     token_amount,
-                    accounts.token_mint.decimals as u64,
-                    SYS_DECIMALS as u64,
+                    accounts.token_mint.decimals.try_into().unwrap(),
+                    SYS_DECIMALS.try_into().unwrap(),
                 )
                 .checked_div(total_supply as u128)
-                .unwrap() as u64;
+                .unwrap().try_into().unwrap();
             }
         }
     }
