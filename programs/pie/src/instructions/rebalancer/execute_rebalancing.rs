@@ -9,6 +9,8 @@ use crate::{
     utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut},
     BasketComponent, BasketConfig, BASKET_CONFIG,
 };
+use crate::constant::SYS_DECIMALS;
+use crate::utils::Calculator;
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancing<'info> {
@@ -203,7 +205,7 @@ pub fn execute_swap<'a: 'info, 'info>(
                 .iter_mut()
                 .find(|c| c.mint == token_mint)
             {
-                component.ratio = token_amount.checked_div(total_supply).unwrap();
+                component.ratio = Calculator::normalize_decimal_v2(token_amount, accounts.token_mint.decimals as u64, SYS_DECIMALS as u64).checked_div(total_supply as u128).unwrap() as u64;
             }
         }
     } else {
@@ -268,11 +270,11 @@ pub fn execute_swap<'a: 'info, 'info>(
             .iter_mut()
             .find(|c| c.mint == token_mint)
         {
-            component.ratio = accounts
+            component.ratio = Calculator::normalize_decimal_v2(accounts
                 .vault_token_destination
-                .amount
-                .checked_div(total_supply)
-                .unwrap();
+                .amount, accounts.token_mint.decimals as u64, SYS_DECIMALS as u64)
+                .checked_div(total_supply as u128)
+                .unwrap() as u64;
         } else {
             basket_config.components.push(BasketComponent {
                 mint: token_mint,
