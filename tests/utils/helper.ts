@@ -230,7 +230,6 @@ export async function wrappedSOLInstruction(
     recipient // payer
   );
 
-  console.log('amount: ', amount)
   tx.add(
     SystemProgram.transfer({
       fromPubkey: recipient,

@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-pie = "DLCFGsz23ThUDVTbekWhoUvVWeraXRK1Q1jC8s7yWFVK"
+pie = "2N7M3F1BzS2mU58hcPrtd2kQT5vYRV3ggfNneb9mpCYH"
 
 [registry]
 url = "https://api.apr.dev"
@@ -18,7 +18,7 @@ wallet = ".config/solana/id.json"
 members = ["programs/pie"]
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/*.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie.ts"
 
 [test]
 startup_wait = 5000

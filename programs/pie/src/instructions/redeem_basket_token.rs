@@ -81,8 +81,13 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {
-            let amount_return = amount.checked_mul(token_config.ratio as u64).unwrap();
-            asset.amount = asset.amount.checked_add(amount_return).unwrap();
+            let amount_return: u64 = amount
+                .checked_mul(token_config.ratio)
+                .unwrap();
+            asset.amount = asset
+                .amount
+                .checked_add(amount_return)
+                .unwrap();
         }
     }
 

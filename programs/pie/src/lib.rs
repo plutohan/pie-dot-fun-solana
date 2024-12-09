@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("DLCFGsz23ThUDVTbekWhoUvVWeraXRK1Q1jC8s7yWFVK");
+declare_id!("2N7M3F1BzS2mU58hcPrtd2kQT5vYRV3ggfNneb9mpCYH");
 
 pub mod constant;
 pub mod error;
@@ -29,6 +29,11 @@ pub mod pie {
 
     pub fn update_rebalancer(ctx: Context<UpdateRebalancerContext>, new_rebalancer: Pubkey) -> Result<()> {
         instructions::update_rebalancer(ctx, new_rebalancer)?;
+        Ok(())
+    }
+
+    pub fn update_rebalance_margin(ctx: Context<UpdateRebalanceMarginContext>, new_margin: u64) -> Result<()> {
+        instructions::update_rebalance_margin(ctx, new_margin)?;
         Ok(())
     }
 

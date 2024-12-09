@@ -9,12 +9,9 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import devnetAdmin from "../public/devnet-admin.json";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { assert } from "chai";
-import { createBasketComponents, createNewMint } from "./utils/helper";
+import { createBasketComponents } from "./utils/helper";
 import { PieProgram } from "../sdk/pie-program";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { initSdk } from "./utils/config";
 import { getMint } from "@solana/spl-token";
 
 export type BasketComponent = anchor.IdlTypes<Pie>["basketComponent"];

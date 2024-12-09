@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "DLCFGsz23ThUDVTbekWhoUvVWeraXRK1Q1jC8s7yWFVK",
+  "address": "2N7M3F1BzS2mU58hcPrtd2kQT5vYRV3ggfNneb9mpCYH",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -1035,6 +1035,58 @@ export type Pie = {
         {
           "name": "newAdmin",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "updateRebalanceMargin",
+      "discriminator": [
+        230,
+        223,
+        85,
+        5,
+        40,
+        87,
+        87,
+        193
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "newMargin",
+          "type": "u64"
         }
       ]
     },
