@@ -18,8 +18,8 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens } from "./utils/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
-import { getAssociatedTokenAddress, getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
-import { sleep } from "./utils/helper";
+import { getAssociatedTokenAddress, getAssociatedTokenAddressSync, getMint, NATIVE_MINT } from "@solana/spl-token";
+import { showBasketConfigTable, sleep } from "./utils/helper";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -204,10 +204,6 @@ describe("pie", () => {
     console.log(
       `Mint basket token at tx: https://explorer.solana.com/tx/${mintBasketTokenTxResult}?cluster=devnet`
     );
-
-    const totalSupply = await connection.getTokenSupply(
-      pieProgram.basketMintPDA(basketId)
-    );
   });
 
   it("Redeem Basket Token", async () => {
@@ -301,32 +297,8 @@ describe("pie", () => {
       `Start rebalance at tx: https://explorer.solana.com/tx/${startRebalanceTxResult}?cluster=devnet`
     );
 
-    const basketConfig = await pieProgram.getBasketConfig(basketId);
-    assert.equal(basketConfig.isRebalancing, true);
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "balance", alignment: "right", color: "green" },
-        { name: "ratio", alignment: "right", color: "yellow" },
-      ],
-    });
-
-    for (let i = 0; i < basketConfig.components.length; i++) {
-      const vaultTokenPDA = getAssociatedTokenAddressSync(
-        basketConfig.components[i].mint,
-        pieProgram.basketConfigPDA(basketId),
-        true
-      );
-      const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
-
-      let component = basketConfig.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        balance: balance.value.amount,
-        ratio: component.ratio.toString(),
-      });
-    }
-    table.printTable();
+    const basketMintTable = await showBasketConfigTable(connection, pieProgram, basketId);
+    basketMintTable.printTable();
   });
 
   it("Executing rebalance basket by selling component last component", async () => {
@@ -338,7 +310,6 @@ describe("pie", () => {
 
     const vaultComponentAccount = await getAssociatedTokenAddress(component.mint, basketConfigPDA, true);
     const vaultComponentsBalance = await connection.getTokenAccountBalance(vaultComponentAccount, 'confirmed');
-    console.log('vaultComponentsBalance: ', vaultComponentsBalance)
     const executeRebalanceTx = await pieProgram.executeRebalancing(
       admin.publicKey,
       false,
@@ -362,32 +333,9 @@ describe("pie", () => {
     console.log(
       `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
     );
-
-    const basketConfig = await pieProgram.getBasketConfig(basketId);
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "balance", alignment: "right", color: "green" },
-        { name: "ratio", alignment: "right", color: "yellow" },
-      ],
-    });
-
-    for (let i = 0; i < basketConfig.components.length; i++) {
-      const vaultTokenPDA = getAssociatedTokenAddressSync(
-        basketConfig.components[i].mint,
-        pieProgram.basketConfigPDA(basketId),
-        true
-      );
-      const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
-
-      let component = basketConfig.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        balance: balance.value.amount,
-        ratio: component.ratio.toString(),
-      });
-    }
-    table.printTable();
+    console.log(`Basket config ${basketId.toString()} data: `)
+    const basketMintTable = await showBasketConfigTable(connection, pieProgram, basketId);
+    basketMintTable.printTable();
   });
 
   it("Executing rebalance basket by buying component 4", async () => {
@@ -421,31 +369,9 @@ describe("pie", () => {
       `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
     );
 
-    const basketConfig = await pieProgram.getBasketConfig(basketId);
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "balance", alignment: "right", color: "green" },
-        { name: "ratio", alignment: "right", color: "yellow" },
-      ],
-    });
-
-    for (let i = 0; i < basketConfig.components.length; i++) {
-      const vaultTokenPDA = getAssociatedTokenAddressSync(
-        basketConfig.components[i].mint,
-        pieProgram.basketConfigPDA(basketId),
-        true
-      );
-      const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
-
-      let component = basketConfig.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        balance: balance.value.amount,
-        ratio: component.ratio.toString(),
-      });
-    }
-    table.printTable();
+    console.log(`Basket config ${basketId.toString()} data: `)
+    const basketMintTable = await showBasketConfigTable(connection, pieProgram, basketId);
+    basketMintTable.printTable();
   });
 
   it("Stop rebalance basket", async () => {
@@ -469,6 +395,7 @@ describe("pie", () => {
     );
 
     const basketConfig = await pieProgram.getBasketConfig(basketId);
+    console.log(basketConfig.components)
     assert.equal(basketConfig.isRebalancing, false);
   });
 });

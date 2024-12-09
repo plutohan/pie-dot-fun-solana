@@ -26,6 +26,8 @@ import {
 import { BasketComponent } from "../pie";
 import { BN } from "@coral-xyz/anchor";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
+import { PieProgram } from "../../sdk/pie-program";
+import { Table } from "console-table-printer";
 
 export async function createUserWithLamports(
   connection: Connection,
@@ -222,7 +224,6 @@ export async function wrappedSOLInstruction(
   recipient: PublicKey,
   amount: number
 ) {
-
   let { tokenAccount: ata, tx: tx } = await getOrCreateTokenAccountTx(
     connection,
     NATIVE_MINT, // mint
@@ -240,4 +241,44 @@ export async function wrappedSOLInstruction(
   );
 
   return tx;
+}
+
+export async function showBasketConfigTable(
+  connection: Connection,
+  pieProgram: PieProgram,
+  basketId: BN
+) {
+  const basketConfig = await pieProgram.getBasketConfig(basketId);
+  const basketMintInfo = await getMint(
+    connection,
+    pieProgram.basketMintPDA(basketId)
+  );
+
+  const table = new Table({
+    columns: [
+      { name: "mint", alignment: "left", color: "cyan" },
+      { name: "basketSupply", alignment: "left", color: "blue" },
+      { name: "balance", alignment: "right", color: "green" },
+      { name: "ratio", alignment: "right", color: "yellow" },
+    ],
+  });
+
+  for (let i = 0; i < basketConfig.components.length; i++) {
+    const vaultTokenPDA = getAssociatedTokenAddressSync(
+      basketConfig.components[i].mint,
+      pieProgram.basketConfigPDA(basketId),
+      true
+    );
+    const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
+
+    let component = basketConfig.components[i];
+    table.addRow({
+      mint: component.mint.toBase58(),
+      basketSupply: basketMintInfo.supply,
+      balance: balance.value.amount,
+      ratio: component.ratio.toString(),
+    });
+  }
+
+  return table;
 }
