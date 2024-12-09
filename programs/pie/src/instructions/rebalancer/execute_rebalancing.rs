@@ -268,13 +268,13 @@ pub fn execute_swap<'a: 'info, 'info>(
             .iter_mut()
             .find(|c| c.mint == token_mint)
         {
-            component.ratio = accounts
+            component.ratio = (accounts
                 .vault_token_destination
-                .amount
-                .checked_mul(EXPONENT)
+                .amount as u128)
+                .checked_mul(EXPONENT as u128)
                 .unwrap()
-                .checked_div(total_supply)
-                .unwrap();
+                .checked_div(total_supply as u128)
+                .unwrap() as u64;
         } else {
             basket_config.components.push(BasketComponent {
                 mint: token_mint,

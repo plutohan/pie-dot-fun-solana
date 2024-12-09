@@ -19,7 +19,7 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens } from "./utils/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -326,7 +326,7 @@ describe("pie", () => {
     table.printTable();
   });
 
-  it("Executing rebalance basket", async () => {
+  it("Executing rebalance basket by selling component 1", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const totalSupply = await connection.getTokenSupply(
@@ -382,5 +382,93 @@ describe("pie", () => {
       });
     }
     table.printTable();
+  });
+
+  it("Executing rebalance basket by buying component new component 4", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const vaultWrapSolAddress = getAssociatedTokenAddressSync(
+      NATIVE_MINT,
+      pieProgram.basketConfigPDA(basketId),
+      true
+    );
+
+    const vaultWrapSolBalanc = await connection.getTokenAccountBalance(
+      vaultWrapSolAddress
+    );
+
+    const executeRebalanceTx = await pieProgram.executeRebalancing(
+      admin.publicKey,
+      true,
+      Number(vaultWrapSolBalanc.value.amount),
+      20000000,
+      tokens[3].ammId,
+      basketId,
+      new PublicKey(tokens[3].mint),
+      raydium
+    );
+    const executeRebalanceTxResult = await sendAndConfirmTransaction(
+      connection,
+      executeRebalanceTx,
+      [admin],
+      {
+        skipPreflight: true,
+        commitment: "confirmed",
+      }
+    );
+
+    console.log(
+      `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
+    );
+
+    const basketConfig = await pieProgram.getBasketConfig(basketId);
+    const table = new Table({
+      columns: [
+        { name: "mint", alignment: "left", color: "cyan" },
+        { name: "balance", alignment: "right", color: "green" },
+        { name: "ratio", alignment: "right", color: "yellow" },
+      ],
+    });
+
+    for (let i = 0; i < basketConfig.components.length; i++) {
+      const vaultTokenPDA = getAssociatedTokenAddressSync(
+        basketConfig.components[i].mint,
+        pieProgram.basketConfigPDA(basketId),
+        true
+      );
+      const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
+
+      let component = basketConfig.components[i];
+      table.addRow({
+        mint: component.mint.toBase58(),
+        balance: balance.value.amount,
+        ratio: component.ratio.toString(),
+      });
+    }
+    table.printTable();
+  });
+
+  it("Stop rebalance basket by selling component 1", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const stopRebalanceTx = await pieProgram.stopRebalancing(
+      admin.publicKey,
+      basketId
+    );
+    const stopRebalanceTxResult = await sendAndConfirmTransaction(
+      connection,
+      stopRebalanceTx,
+      [admin],
+      {
+        skipPreflight: true,
+        commitment: "confirmed",
+      }
+    );
+    console.log(
+      `Stop rebalance at tx: https://explorer.solana.com/tx/${stopRebalanceTxResult}?cluster=devnet`
+    );
+
+    const basketConfig = await pieProgram.getBasketConfig(basketId);
+    assert.equal(basketConfig.isRebalancing, false);
   });
 });

@@ -545,20 +545,40 @@ export class PieProgram {
     const basketMint = this.basketMintPDA(basketId);
     const basketConfig = this.basketConfigPDA(basketId);
 
-    const inputTokenAccount = getAssociatedTokenAddressSync(
-      tokenMint,
-      basketConfig,
-      true
-    );
-
-    const { tokenAccount: outputTokenAccount, tx: outputTx } =
-      await getOrCreateTokenAccountTx(
-        this.connection,
-        NATIVE_MINT,
-        rebalancer,
-        basketConfig
+    let inputTokenAccount: PublicKey;
+    let outputTokenAccount: PublicKey;
+    if (isBuy) {
+      inputTokenAccount = getAssociatedTokenAddressSync(
+        tokenMint,
+        basketConfig,
+        true
       );
-    tx.add(outputTx);
+  
+      const { tokenAccount, tx: outputTx } =
+        await getOrCreateTokenAccountTx(
+          this.connection,
+          NATIVE_MINT,
+          rebalancer,
+          basketConfig
+        );
+      outputTokenAccount = tokenAccount;
+      tx.add(outputTx);
+    } else {
+      inputTokenAccount = getAssociatedTokenAddressSync(
+        NATIVE_MINT,
+        basketConfig,
+        true
+      );
+      const { tokenAccount, tx: outputTx } =
+        await getOrCreateTokenAccountTx(
+          this.connection,
+          tokenMint,
+          rebalancer,
+          basketConfig
+        );
+      outputTokenAccount = tokenAccount;
+      tx.add(outputTx);
+    }
 
     const executeRebalancingTx = await this.program.methods
       .executeRebalancing(isBuy, new BN(amountIn), new BN(amountOut))
