@@ -1416,6 +1416,11 @@ export type Pie = {
       "code": 6012,
       "name": "invalidMarginBottom",
       "msg": "Margin value for bottom exceeds the allowed limit"
+    },
+    {
+      "code": 6013,
+      "name": "conversionFailure",
+      "msg": "Conversion to u64 failed with an overflow or underflow"
     }
   ],
   "types": [
