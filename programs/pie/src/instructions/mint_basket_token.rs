@@ -5,7 +5,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER_FUND, error::PieError, BasketConfig, UserFund, BASKET_CONFIG, BASKET_MINT,
+    constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, UserFund, BASKET_CONFIG, BASKET_MINT, SYS_DECIMALS
 };
 
 #[derive(Accounts)]
@@ -60,8 +60,17 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .iter()
             .find(|a| a.mint == token_config.mint)
         {
-            let possible_mint = user_asset
-            .amount
+            let user_amount_normalized = Calculator::to_u64(Calculator::normalize_decimal_v2(
+                user_asset
+            .amount,
+            token_config.decimals as u64,
+                SYS_DECIMALS as u64,
+            )).unwrap();
+            msg!("user_asset.amount {}", user_asset.amount);
+            msg!("user_amount_normalized is {}", user_amount_normalized);
+            msg!("token_config.ratio is {}", token_config.ratio);
+            
+            let possible_mint = user_amount_normalized
                 .checked_div(token_config.ratio)
                 .unwrap();
             amount_can_mint = amount_can_mint.min(possible_mint);
@@ -76,12 +85,19 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {
-            let amount_to_deduct = token_config.ratio 
+            let mut amount_to_deduct = token_config.ratio 
                 .checked_mul(amount)
-                .ok_or(PieError::InsufficientBalance)?;
+                .unwrap();
+            
+            amount_to_deduct = Calculator::to_u64(Calculator::restore_decimal(
+                amount_to_deduct as u128, 
+                token_config.decimals as u64,
+                SYS_DECIMALS as u64,
+            )).unwrap();
+
             asset.amount = asset
                 .amount
-                .checked_sub(amount_to_deduct as u64)
+                .checked_sub(amount_to_deduct)
                 .ok_or(PieError::InsufficientBalance)?;
         }
     }

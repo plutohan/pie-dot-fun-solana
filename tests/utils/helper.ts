@@ -5,7 +5,6 @@ import {
   Signer,
   LAMPORTS_PER_SOL,
   Transaction,
-  TransactionInstruction,
   SystemProgram,
 } from "@solana/web3.js";
 import {
@@ -135,12 +134,13 @@ export async function createBasketComponents(
   ratios: Array<number>
 ): Promise<BasketComponent[]> {
   let components: BasketComponent[] = [];
-
+  const decimals = 6;
   for (let i = 0; i < ratios.length; i++) {
-    const mint = await createNewMint(connection, creator, 6);
+    const mint = await createNewMint(connection, creator, decimals);
     const component: BasketComponent = {
       mint: mint,
       ratio: new BN(ratios[i]),
+      decimals: decimals
     };
     components.push(component);
   }
@@ -258,6 +258,7 @@ export async function showBasketConfigTable(
     columns: [
       { name: "mint", alignment: "left", color: "cyan" },
       { name: "basketSupply", alignment: "left", color: "blue" },
+      { name: "decimals", alignment: "left", color: "purple" },
       { name: "balance", alignment: "right", color: "green" },
       { name: "ratio", alignment: "right", color: "yellow" },
     ],
@@ -275,6 +276,7 @@ export async function showBasketConfigTable(
     table.addRow({
       mint: component.mint.toBase58(),
       basketSupply: basketMintInfo.supply,
+      decimals: component.decimals.toString(),
       balance: balance.value.amount,
       ratio: component.ratio.toString(),
     });

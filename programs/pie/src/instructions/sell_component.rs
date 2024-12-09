@@ -7,8 +7,8 @@ use anchor_spl::{
 use crate::{
     constant::USER_FUND,
     error::PieError,
-    utils::{swap_base_in, Calculator, SwapBaseIn},
-    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, SYS_DECIMALS,
+    utils::{swap_base_in, SwapBaseIn},
+    BasketConfig, ProgramState, UserFund, BASKET_CONFIG,
 };
 
 #[derive(Accounts)]
@@ -164,15 +164,8 @@ pub fn sell_component(
         signer,
     )?;
 
-    let amount_to_deduct = Calculator::to_u64(Calculator::normalize_decimal_v2(
-        amount_in,
-        ctx.accounts.mint_in.decimals as u64,
-        SYS_DECIMALS as u64,
-    ))
-    .unwrap();
-
     // Update user's component balance
-    component.amount = component.amount.checked_sub(amount_to_deduct).unwrap();
+    component.amount = component.amount.checked_sub(amount_in).unwrap();
 
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

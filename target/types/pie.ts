@@ -1436,6 +1436,10 @@ export type Pie = {
           {
             "name": "ratio",
             "type": "u64"
+          },
+          {
+            "name": "decimals",
+            "type": "u8"
           }
         ]
       }

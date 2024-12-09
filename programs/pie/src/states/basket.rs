@@ -6,6 +6,7 @@ use crate::constant::MAX_COMPONENTS;
 pub struct BasketComponent {
     pub mint: Pubkey,
     pub ratio: u64,
+    pub decimals: u8,
 }
 
 #[account]
@@ -28,11 +29,12 @@ impl Space for BasketConfig {
         + 32 // mint
         + 4 // vec length
         + 1   // is_rebalancing (bool)
-        + (32 + 8) * MAX_COMPONENTS as usize; // vec items
+        + BasketComponent::INIT_SPACE * MAX_COMPONENTS as usize; // vec items
 }
 
 impl Space for BasketComponent {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
-        + 32 // bump
-        + 8; // vec items
+        + 32 // mint
+        + 8 // ratio
+        + 1; // decimals
 }

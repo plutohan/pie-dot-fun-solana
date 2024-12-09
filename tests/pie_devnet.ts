@@ -75,14 +75,18 @@ describe("pie", () => {
       {
         mint: new PublicKey(tokens[0].mint),
         ratio: new BN(1 * 10 **6 ),
+        decimals: (await getMint(connection, new PublicKey(tokens[0].mint))).decimals
       },
       {
         mint: new PublicKey(tokens[1].mint),
         ratio: new BN(2 * 10 **6 ),
+        decimals: (await getMint(connection, new PublicKey(tokens[1].mint))).decimals
+
       },
       {
         mint: new PublicKey(tokens[2].mint),
         ratio: new BN(3 * 10 **6 ),
+        decimals: (await getMint(connection, new PublicKey(tokens[2].mint))).decimals
       },
     ];
 

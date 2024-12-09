@@ -218,6 +218,7 @@ pub fn execute_swap<'a: 'info, 'info>(
             basket_config.components.push(BasketComponent {
                 mint: token_mint,
                 ratio,
+                decimals: accounts.token_mint.decimals,
             });
         }
     } else {
@@ -278,7 +279,6 @@ pub fn execute_swap<'a: 'info, 'info>(
         let token_mint = accounts.token_mint.key();
         let token_amount = accounts.vault_token_source.amount;
 
-        msg!("token_amount is {}", token_amount);
         if token_amount == 0 {
             basket_config.components.retain(|c| c.mint != token_mint);
         } else {

@@ -7,8 +7,8 @@ use anchor_spl::{
 use crate::{
     constant::{MAX_COMPONENTS, USER_FUND},
     error::PieError,
-    utils::{swap_base_out, Calculator, SwapBaseOut},
-    BasketConfig, ProgramState, UserComponent, UserFund, SYS_DECIMALS,
+    utils::{swap_base_out, SwapBaseOut},
+    BasketConfig, ProgramState, UserComponent, UserFund,
 };
 
 #[derive(Accounts)]
@@ -155,12 +155,6 @@ pub fn buy_component(
     let balance_after = ctx.accounts.vault_token_destination.amount;
     let amount_received = balance_after.checked_sub(balance_before).unwrap();
 
-    let amount_to_add =  Calculator::to_u64(Calculator::normalize_decimal_v2(
-        amount_received,
-        ctx.accounts.mint_out.decimals as u64,
-        SYS_DECIMALS as u64,
-    )).unwrap();
-
     let user_fund = &mut ctx.accounts.user_fund;
 
     if let Some(asset) = user_fund
@@ -168,7 +162,7 @@ pub fn buy_component(
         .iter_mut()
         .find(|a| a.mint == ctx.accounts.mint_out.key())
     {
-        asset.amount = asset.amount.checked_add(amount_to_add).unwrap();
+        asset.amount = asset.amount.checked_add(amount_received).unwrap();
     } else {
         //TODO: check if the user has enough space to add the new asset
         require!(
