@@ -27,14 +27,7 @@ impl Space for BasketConfig {
         + 32 // creator
         + 32 // rebalancer
         + 32 // mint
-        + 4 // vec length
         + 1   // is_rebalancing (bool)
-        + BasketComponent::INIT_SPACE * MAX_COMPONENTS as usize; // vec items
-}
-
-impl Space for BasketComponent {
-    const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
-        + 32 // mint
-        + 8 // ratio
-        + 1; // decimals
+        + 4 // vec length
+        + (32+ 8 + 1)* MAX_COMPONENTS as usize; // vec items
 }

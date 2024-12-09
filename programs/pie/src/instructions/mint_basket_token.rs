@@ -65,11 +65,7 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .amount,
             token_config.decimals as u64,
                 SYS_DECIMALS as u64,
-            )).unwrap();
-            msg!("user_asset.amount {}", user_asset.amount);
-            msg!("user_amount_normalized is {}", user_amount_normalized);
-            msg!("token_config.ratio is {}", token_config.ratio);
-            
+            )).unwrap();            
             let possible_mint = user_amount_normalized
                 .checked_div(token_config.ratio)
                 .unwrap();
