@@ -7,7 +7,7 @@ use anchor_spl::{
 use crate::{
     error::PieError,
     utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut},
-    BasketComponent, BasketConfig, RebalancerState, BASKET_CONFIG, REBALANCER_STATE,
+    BasketComponent, BasketConfig, BASKET_CONFIG
 };
 
 #[derive(Accounts)]
@@ -16,15 +16,10 @@ pub struct ExecuteRebalancing<'info> {
     pub rebalancer: Signer<'info>,
 
     #[account(
-        seeds = [REBALANCER_STATE, rebalancer.key().as_ref()],
-        bump,
-        constraint = rebalancer_state.balancer == rebalancer.key() @ PieError::Unauthorized
-    )]
-    pub rebalancer_state: Box<Account<'info, RebalancerState>>,
-
-    #[account(
         mut,
-        constraint = basket_config.mint == basket_mint.key() @ PieError::InvalidBasket
+        seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
+        bump,
+        constraint = basket_config.rebalancer == rebalancer.key() @ PieError::Unauthorized
     )]
     pub basket_config: Account<'info, BasketConfig>,
     // Required token accounts

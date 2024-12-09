@@ -14,95 +14,6 @@ export type Pie = {
   },
   "instructions": [
     {
-      "name": "addRebalancer",
-      "discriminator": [
-        129,
-        213,
-        114,
-        48,
-        6,
-        140,
-        208,
-        11
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "rebalancerState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
-                  101,
-                  98,
-                  97,
-                  108,
-                  97,
-                  110,
-                  99,
-                  101,
-                  114,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "rebalancer"
-              }
-            ]
-          }
-        },
-        {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "rebalancer",
-          "type": "pubkey"
-        }
-      ]
-    },
-    {
       "name": "buyComponent",
       "discriminator": [
         179,
@@ -383,95 +294,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "deleteRebalancer",
-      "discriminator": [
-        132,
-        217,
-        124,
-        141,
-        200,
-        18,
-        138,
-        51
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "rebalancerState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
-                  101,
-                  98,
-                  97,
-                  108,
-                  97,
-                  110,
-                  99,
-                  101,
-                  114,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "rebalancer"
-              }
-            ]
-          }
-        },
-        {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "rebalancer",
-          "type": "pubkey"
-        }
-      ]
-    },
-    {
       "name": "executeRebalancing",
       "discriminator": [
         98,
@@ -490,40 +312,35 @@ export type Pie = {
           "signer": true
         },
         {
-          "name": "rebalancerState",
+          "name": "basketConfig",
+          "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  114,
-                  101,
                   98,
                   97,
-                  108,
-                  97,
-                  110,
-                  99,
-                  101,
-                  114,
-                  95,
                   115,
+                  107,
+                  101,
                   116,
-                  97,
-                  116,
-                  101
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
                 ]
               },
               {
                 "kind": "account",
-                "path": "rebalancer"
+                "path": "basket_config.id",
+                "account": "basketConfig"
               }
             ]
           }
-        },
-        {
-          "name": "basketConfig",
-          "writable": true
         },
         {
           "name": "tokenMint",
@@ -1042,40 +859,35 @@ export type Pie = {
           "signer": true
         },
         {
-          "name": "rebalancerState",
+          "name": "basketConfig",
+          "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  114,
-                  101,
                   98,
                   97,
-                  108,
-                  97,
-                  110,
-                  99,
-                  101,
-                  114,
-                  95,
                   115,
+                  107,
+                  101,
                   116,
-                  97,
-                  116,
-                  101
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
                 ]
               },
               {
                 "kind": "account",
-                "path": "rebalancer"
+                "path": "basket_config.id",
+                "account": "basketConfig"
               }
             ]
           }
-        },
-        {
-          "name": "basketConfig",
-          "writable": true
         },
         {
           "name": "systemProgram",
@@ -1129,38 +941,6 @@ export type Pie = {
           }
         },
         {
-          "name": "rebalancerState",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
-                  101,
-                  98,
-                  97,
-                  108,
-                  97,
-                  110,
-                  99,
-                  101,
-                  114,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "rebalancer"
-              }
-            ]
-          }
-        },
-        {
           "name": "vaultWrappedSol",
           "writable": true
         },
@@ -1170,7 +950,34 @@ export type Pie = {
         },
         {
           "name": "basketConfig",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
         }
       ],
       "args": []
@@ -1230,6 +1037,67 @@ export type Pie = {
           "type": "pubkey"
         }
       ]
+    },
+    {
+      "name": "updateRebalancer",
+      "discriminator": [
+        206,
+        187,
+        54,
+        228,
+        145,
+        8,
+        203,
+        111
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "newRebalancer",
+          "type": "pubkey"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1260,19 +1128,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "rebalancerState",
-      "discriminator": [
-        63,
-        210,
-        4,
-        138,
-        3,
-        220,
-        212,
-        209
-      ]
-    },
-    {
       "name": "userFund",
       "discriminator": [
         11,
@@ -1287,32 +1142,6 @@ export type Pie = {
     }
   ],
   "events": [
-    {
-      "name": "addRebalancerEvent",
-      "discriminator": [
-        197,
-        41,
-        101,
-        39,
-        186,
-        114,
-        11,
-        246
-      ]
-    },
-    {
-      "name": "basketTokenMintedEvent",
-      "discriminator": [
-        120,
-        158,
-        240,
-        147,
-        105,
-        53,
-        89,
-        119
-      ]
-    },
     {
       "name": "buyComponentEvent",
       "discriminator": [
@@ -1337,19 +1166,6 @@ export type Pie = {
         139,
         96,
         55
-      ]
-    },
-    {
-      "name": "deleteRebalancerEvent",
-      "discriminator": [
-        147,
-        215,
-        112,
-        160,
-        123,
-        209,
-        89,
-        166
       ]
     },
     {
@@ -1468,6 +1284,19 @@ export type Pie = {
         59,
         195
       ]
+    },
+    {
+      "name": "updateRebalancerEvent",
+      "discriminator": [
+        229,
+        233,
+        159,
+        66,
+        82,
+        132,
+        153,
+        70
+      ]
     }
   ],
   "errors": [
@@ -1530,25 +1359,14 @@ export type Pie = {
       "code": 6011,
       "name": "invalidMargin",
       "msg": "Invalid margin value"
+    },
+    {
+      "code": 6012,
+      "name": "invalidMarginBottom",
+      "msg": "Margin value for bottom exceeds the allowed limit"
     }
   ],
   "types": [
-    {
-      "name": "addRebalancerEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "rebalancer",
-            "type": "pubkey"
-          },
-          {
-            "name": "admin",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
     {
       "name": "basketComponent",
       "type": {
@@ -1583,6 +1401,10 @@ export type Pie = {
             "type": "pubkey"
           },
           {
+            "name": "rebalancer",
+            "type": "pubkey"
+          },
+          {
             "name": "mint",
             "type": "pubkey"
           },
@@ -1604,30 +1426,14 @@ export type Pie = {
       }
     },
     {
-      "name": "basketTokenMintedEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "recipient",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "buyComponentEvent",
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
           {
             "name": "user",
             "type": "pubkey"
@@ -1673,6 +1479,10 @@ export type Pie = {
           {
             "name": "decimals",
             "type": "u8"
+          },
+          {
+            "name": "rebalancer",
+            "type": "pubkey"
           }
         ]
       }
@@ -1682,6 +1492,10 @@ export type Pie = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
           {
             "name": "name",
             "type": "string"
@@ -1697,10 +1511,6 @@ export type Pie = {
           {
             "name": "creator",
             "type": "pubkey"
-          },
-          {
-            "name": "id",
-            "type": "u64"
           },
           {
             "name": "mint",
@@ -1720,26 +1530,14 @@ export type Pie = {
       }
     },
     {
-      "name": "deleteRebalancerEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "rebalancer",
-            "type": "pubkey"
-          },
-          {
-            "name": "admin",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "executeRebalancingEvent",
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
           {
             "name": "basketMint",
             "type": "pubkey"
@@ -1772,6 +1570,10 @@ export type Pie = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
           {
             "name": "user",
             "type": "pubkey"
@@ -1813,20 +1615,8 @@ export type Pie = {
             "type": "bool"
           },
           {
-            "name": "maxRebalanceMarginLamports",
+            "name": "rebalanceMarginLamports",
             "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "rebalancerState",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "balancer",
-            "type": "pubkey"
           }
         ]
       }
@@ -1836,6 +1626,10 @@ export type Pie = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
           {
             "name": "user",
             "type": "pubkey"
@@ -1857,6 +1651,10 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
             "name": "user",
             "type": "pubkey"
           },
@@ -1877,6 +1675,10 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
             "name": "mint",
             "type": "pubkey"
           },
@@ -1892,6 +1694,10 @@ export type Pie = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
           {
             "name": "mint",
             "type": "pubkey"
@@ -1935,6 +1741,10 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
             "name": "basketMint",
             "type": "pubkey"
           },
@@ -1957,6 +1767,26 @@ export type Pie = {
           {
             "name": "newMargin",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "updateRebalancerEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "oldRebalancer",
+            "type": "pubkey"
+          },
+          {
+            "name": "newRebalancer",
+            "type": "pubkey"
           }
         ]
       }

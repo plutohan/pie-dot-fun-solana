@@ -1,30 +1,20 @@
-import {
-  BN,
-  Idl,
-  IdlAccounts,
-  IdlEvents,
-  IdlTypes,
-  Program,
-} from "@coral-xyz/anchor";
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { Pie } from "../target/types/pie";
+import {BN, Idl, IdlAccounts, IdlEvents, IdlTypes, Program,} from "@coral-xyz/anchor";
+import {Connection, PublicKey, Transaction} from "@solana/web3.js";
+import {Pie} from "../target/types/pie";
 import * as PieIDL from "../target/idl/pie.json";
-import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { wrappedSOLInstruction } from "../tests/utils/helper";
-import { getOrCreateTokenAccountTx } from "../tests/utils/helper";
+import {getAssociatedTokenAddressSync, NATIVE_MINT} from "@solana/spl-token";
+import {Raydium} from "@raydium-io/raydium-sdk-v2";
+import {getOrCreateTokenAccountTx, wrappedSOLInstruction} from "../tests/utils/helper";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
-export type RebalancerState = IdlAccounts<Pie>["rebalancerState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
 export type UserFund = IdlAccounts<Pie>["userFund"];
 
 export type BasketComponent = IdlTypes<Pie>["basketComponent"];
 export type CreateBasketArgs = IdlTypes<Pie>["createBasketArgs"];
 
-export type AddRebalancerEvent = IdlEvents<Pie>["addRebalancerEvent"];
 export type CreateBasketEvent = IdlEvents<Pie>["createBasketEvent"];
-export type DeleteRebalancerEvent = IdlEvents<Pie>["deleteRebalancerEvent"];
+export type UpdateRebalancerEvent = IdlEvents<Pie>["updateRebalancerEvent"];
 export type TransferAdminEvent = IdlEvents<Pie>["transferAdminEvent"];
 export type TransferBasketEvent = IdlEvents<Pie>["transferBasketEvent"];
 export type UpdateRebalanceMarginEvent =
@@ -107,17 +97,6 @@ export class PieProgram {
   async getProgramState(): Promise<ProgramState | null> {
     try {
       return await this.accounts.programState.fetch(this.programStatePDA);
-    } catch (error) {
-      return null;
-    }
-  }
-
-  async getRebalancerState(
-    rebalancer: PublicKey
-  ): Promise<RebalancerState | null> {
-    try {
-      const rebalancerStatePDA = this.rebalancerStatePDA(rebalancer);
-      return await this.accounts.rebalancerState.fetch(rebalancerStatePDA);
     } catch (error) {
       return null;
     }
@@ -229,6 +208,27 @@ export class PieProgram {
 
     return createBasketTx;
   }
+
+    /**
+     * Creates a basket.
+     * @param creator - The creator account.
+     * @param basketId - The basket ID.
+     * @param newRebalancer - New rebalancer in the basket
+     * @returns A promise that resolves to a transaction.
+     */
+    async updateRebalancer(
+        creator: PublicKey,
+        basketId: BN,
+        newRebalancer: PublicKey,
+    ): Promise<Transaction> {
+        return await this.program.methods
+            .updateRebalancer(newRebalancer)
+            .accountsPartial({
+                creator,
+                basketConfig: this.basketConfigPDA(basketId),
+            })
+            .transaction();
+    }
 
   /**
    * Buys a component.
@@ -590,14 +590,6 @@ export class PieProgram {
   }
 
   /**
-   * Adds an event listener for the 'AddRebalancer' event.
-   * @param handler - The function to handle the event.
-   */
-  onAddRebalancer(handler: (event: AddRebalancerEvent) => void) {
-    this.program.addEventListener("addRebalancer", handler);
-  }
-
-  /**
    * Adds an event listener for the 'CreateBasket' event.
    * @param handler - The function to handle the event.
    */
@@ -609,8 +601,8 @@ export class PieProgram {
    * Adds an event listener for the 'DeleteRebalancer' event.
    * @param handler - The function to handle the event.
    */
-  onDeleteRebalancer(handler: (event: DeleteRebalancerEvent) => void) {
-    this.program.addEventListener("deleteRebalancer", handler);
+  onDeleteRebalancer(handler: (event: UpdateRebalancerEvent) => void) {
+    this.program.addEventListener("updateRebalancer", handler);
   }
 
   /**

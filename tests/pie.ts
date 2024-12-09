@@ -94,58 +94,6 @@ describe("pie", () => {
     });
   });
 
-  describe("add_rebalancer", () => {
-    it("should add a rebalancer", async () => {
-      const addRebalancerTx = await pieProgram.addRebalancer(
-        admin.publicKey,
-        rebalancer.publicKey
-      );
-      await sendAndConfirmTransaction(connection, addRebalancerTx, [admin]);
-
-      const rebalancerState = await pieProgram.getRebalancerState(
-        rebalancer.publicKey
-      );
-      assert.equal(
-        rebalancerState.balancer.toBase58(),
-        rebalancer.publicKey.toBase58()
-      );
-    });
-
-    it("should fail if the admin is unauthorized", async () => {
-      try {
-        await pieProgram.addRebalancer(
-          newAdmin.publicKey,
-          rebalancer.publicKey
-        );
-      } catch (e) {
-        console.log(e);
-      }
-    });
-  });
-
-  describe("delete_rebalancer", () => {
-    it("should add a rebalancer", async () => {
-      await sleep(1);
-      const deleteRebalancerTx = await pieProgram.deleteRebalancer(
-        admin.publicKey,
-        rebalancer.publicKey
-      );
-      await sendAndConfirmTransaction(connection, deleteRebalancerTx, [admin]);
-    });
-
-    it("should fail if the admin is unauthorized", async () => {
-      try {
-        const deleteRebalancerTx = await pieProgram.deleteRebalancer(
-          newAdmin.publicKey,
-          rebalancer.publicKey
-        );
-        await sendAndConfirmTransaction(connection, deleteRebalancerTx, [
-          newAdmin,
-        ]);
-      } catch (e) {}
-    });
-  });
-
   describe("create_basket", () => {
     describe("v1", () => {
       it("should create a basket with metadata", async () => {
@@ -161,6 +109,7 @@ describe("pie", () => {
           uri: "test",
           components: basketComponents,
           decimals: 6,
+          rebalancer: admin.publicKey,
         };
         const programState = await pieProgram.getProgramState();
         const basketId = programState.basketCounter;
@@ -173,7 +122,6 @@ describe("pie", () => {
         await sendAndConfirmTransaction(connection, createBasketTx, [admin]);
 
         const basketConfig = pieProgram.basketConfigPDA(basketId);
-        console.log('basketId: ', basketId)
 
         const basketMint = pieProgram.basketMintPDA(basketId);
         const basketConfigData = await pieProgram.getBasketConfig(basketId);
@@ -205,10 +153,10 @@ describe("pie", () => {
           uri: "test",
           components: basketComponents,
           decimals: 6,
+          rebalancer: admin.publicKey
         };
         const programState = await pieProgram.getProgramState();
         const basketId = programState.basketCounter;
-        console.log('basketId: ', basketId)
         const createBasketTx = await pieProgram.createBasket(
           admin.publicKey,
           createBasketArgs,
@@ -224,6 +172,46 @@ describe("pie", () => {
       it("should create a basket with metadata", async () => {});
 
       it("should create a basket with any creator", async () => {});
+    });
+  });
+
+  describe("update_rebalancer", () => {
+    it("should update with new balancer in basket config state", async () => {
+      const basketComponents = await createBasketComponents(
+          connection,
+          admin,
+          [1, 2, 3]
+      );
+      const createBasketArgs: CreateBasketArgs = {
+        name: "Basket Name Test",
+        symbol: "BNS",
+        uri: "test",
+        components: basketComponents,
+        decimals: 6,
+        rebalancer: admin.publicKey
+      };
+      const programState = await pieProgram.getProgramState();
+      const basketId = programState.basketCounter;
+      const createBasketTx = await pieProgram.createBasket(
+          admin.publicKey,
+          createBasketArgs,
+          basketId
+      );
+      await sendAndConfirmTransaction(connection, createBasketTx, [admin]);
+      const basketState = await pieProgram.getBasketConfig(basketId)
+      console.assert(basketState.rebalancer.toBase58(), admin.publicKey.toBase58())
+
+      const updateRebalancerTx = await pieProgram.updateRebalancer(
+          admin.publicKey,
+          basketId,
+          rebalancer.publicKey
+      );
+      await sendAndConfirmTransaction(connection, updateRebalancerTx, [admin]);
+      console.assert(basketState.rebalancer.toBase58(), rebalancer.publicKey.toBase58())
+    });
+
+    it("should fail if unauthorized", async () => {
+
     });
   });
 });
