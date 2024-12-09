@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "6dHbF8idAmSpgJ3VPFYcX1EsT67u5TCt5qaAbbhPADSH",
+  "address": "2N7M3F1BzS2mU58hcPrtd2kQT5vYRV3ggfNneb9mpCYH",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -1039,6 +1039,58 @@ export type Pie = {
       ]
     },
     {
+      "name": "updateRebalanceMargin",
+      "discriminator": [
+        230,
+        223,
+        85,
+        5,
+        40,
+        87,
+        87,
+        193
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "newMargin",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "updateRebalancer",
       "discriminator": [
         206,
@@ -1142,19 +1194,6 @@ export type Pie = {
     }
   ],
   "events": [
-    {
-      "name": "addRebalancerEvent",
-      "discriminator": [
-        197,
-        41,
-        101,
-        39,
-        186,
-        114,
-        11,
-        246
-      ]
-    },
     {
       "name": "buyComponentEvent",
       "discriminator": [

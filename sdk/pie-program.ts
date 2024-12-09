@@ -1,10 +1,24 @@
-import {BN, Idl, IdlAccounts, IdlEvents, IdlTypes, Program,} from "@coral-xyz/anchor";
-import {Connection, PublicKey, Transaction} from "@solana/web3.js";
-import {Pie} from "../target/types/pie";
+import {
+  BN,
+  Idl,
+  IdlAccounts,
+  IdlEvents,
+  IdlTypes,
+  Program,
+} from "@coral-xyz/anchor";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { Pie } from "../target/types/pie";
 import * as PieIDL from "../target/idl/pie.json";
-import {getAssociatedTokenAddressSync, NATIVE_MINT} from "@solana/spl-token";
-import {Raydium} from "@raydium-io/raydium-sdk-v2";
-import {getOrCreateTokenAccountTx, wrappedSOLInstruction} from "../tests/utils/helper";
+import {
+  getAssociatedTokenAddress,
+  getAssociatedTokenAddressSync,
+  NATIVE_MINT,
+} from "@solana/spl-token";
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
+import {
+  getOrCreateTokenAccountTx,
+  wrappedSOLInstruction,
+} from "../tests/utils/helper";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -32,8 +46,6 @@ const USER_FUND = "user_fund";
 const BASKET_CONFIG = "basket_config";
 const BASKET_MINT = "basket_mint";
 const REBALANCER_STATE = "rebalancer_state";
-
-export const EXPONENT = 1_000_000_000;
 
 const MPL_TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
@@ -151,37 +163,21 @@ export class PieProgram {
       .transaction();
   }
 
-  /**
-   * Adds a rebalancer to the program.
+    /**
+   * Updates the rebalance margin.
    * @param admin - The admin account.
-   * @param rebalancer - The rebalancer account.
+   * @param newMargin - The new margin.
    * @returns A promise that resolves to a transaction.
    */
-  async addRebalancer(
-    admin: PublicKey,
-    rebalancer: PublicKey
-  ): Promise<Transaction> {
-    return await this.program.methods
-      .addRebalancer(rebalancer)
-      .accounts({ admin, rebalancerState: this.rebalancerStatePDA(rebalancer) })
-      .transaction();
-  }
-
-  /**
-   * Deletes a rebalancer from the program.
-   * @param admin - The admin account.
-   * @param rebalancer - The rebalancer account.
-   * @returns A promise that resolves to a transaction.
-   */
-  async deleteRebalancer(
-    admin: PublicKey,
-    rebalancer: PublicKey
-  ): Promise<Transaction> {
-    return await this.program.methods
-      .deleteRebalancer(rebalancer)
-      .accounts({ admin })
-      .transaction();
-  }
+    async updateRebalanceMargin(
+      admin: PublicKey,
+      newMargin: number
+    ): Promise<Transaction> {
+      return await this.program.methods
+        .updateRebalanceMargin(new BN(newMargin))
+        .accounts({ admin, programState: this.programStatePDA })
+        .transaction();
+    }
 
   /**
    * Creates a basket.
@@ -211,26 +207,26 @@ export class PieProgram {
     return createBasketTx;
   }
 
-    /**
-     * Creates a basket.
-     * @param creator - The creator account.
-     * @param basketId - The basket ID.
-     * @param newRebalancer - New rebalancer in the basket
-     * @returns A promise that resolves to a transaction.
-     */
-    async updateRebalancer(
-        creator: PublicKey,
-        basketId: BN,
-        newRebalancer: PublicKey,
-    ): Promise<Transaction> {
-        return await this.program.methods
-            .updateRebalancer(newRebalancer)
-            .accountsPartial({
-                creator,
-                basketConfig: this.basketConfigPDA(basketId),
-            })
-            .transaction();
-    }
+  /**
+   * Creates a basket.
+   * @param creator - The creator account.
+   * @param basketId - The basket ID.
+   * @param newRebalancer - New rebalancer in the basket
+   * @returns A promise that resolves to a transaction.
+   */
+  async updateRebalancer(
+    creator: PublicKey,
+    basketId: BN,
+    newRebalancer: PublicKey
+  ): Promise<Transaction> {
+    return await this.program.methods
+      .updateRebalancer(newRebalancer)
+      .accountsPartial({
+        creator,
+        basketConfig: this.basketConfigPDA(basketId),
+      })
+      .transaction();
+  }
 
   /**
    * Buys a component.
@@ -255,6 +251,7 @@ export class PieProgram {
       poolId: ammId,
     });
     const inputMint = NATIVE_MINT;
+    const basketConfig = this.basketConfigPDA(basketId);
 
     const poolKeys = data.poolKeys;
     const baseIn = inputMint.toString() === poolKeys.mintA.address;
@@ -269,7 +266,6 @@ export class PieProgram {
       false
     );
 
-    const basketConfig = this.basketConfigPDA(basketId);
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
       await getOrCreateTokenAccountTx(
         this.connection,
@@ -503,12 +499,19 @@ export class PieProgram {
     rebalancer: PublicKey,
     basketId: BN
   ): Promise<Transaction> {
+    const basketPDA = this.basketConfigPDA(basketId);
+    const vaultWrappedSol = getAssociatedTokenAddressSync(
+      NATIVE_MINT,
+      basketPDA,
+      true
+    );
     return await this.program.methods
       .stopRebalancing()
       .accountsPartial({
         rebalancer,
         rebalancerState: this.rebalancerStatePDA(rebalancer),
-        basketConfig: this.basketConfigPDA(basketId),
+        basketConfig: basketPDA,
+        vaultWrappedSol: vaultWrappedSol,
         wrappedSolMint: NATIVE_MINT,
       })
       .transaction();
@@ -540,42 +543,50 @@ export class PieProgram {
     const data = await raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
-    const poolKeys = data.poolKeys;
 
     const basketMint = this.basketMintPDA(basketId);
     const basketConfig = this.basketConfigPDA(basketId);
+    const poolKeys = data.poolKeys;
+
+    const inputMint = isBuy ? NATIVE_MINT : tokenMint;
+
+    const baseIn = inputMint.toString() === poolKeys.mintA.address;
+
+    const [mintIn, mintOut] = baseIn
+      ? [poolKeys.mintA.address, poolKeys.mintB.address]
+      : [poolKeys.mintB.address, poolKeys.mintA.address];
 
     let inputTokenAccount: PublicKey;
     let outputTokenAccount: PublicKey;
     if (isBuy) {
       inputTokenAccount = getAssociatedTokenAddressSync(
-        tokenMint,
+        new PublicKey(mintIn),
         basketConfig,
         true
       );
-  
-      const { tokenAccount, tx: outputTx } =
-        await getOrCreateTokenAccountTx(
-          this.connection,
-          NATIVE_MINT,
-          rebalancer,
-          basketConfig
-        );
+
+      const { tokenAccount, tx: outputTx } = await getOrCreateTokenAccountTx(
+        this.connection,
+        new PublicKey(mintOut),
+        rebalancer,
+        basketConfig
+      );
       outputTokenAccount = tokenAccount;
       tx.add(outputTx);
     } else {
       inputTokenAccount = getAssociatedTokenAddressSync(
-        NATIVE_MINT,
+        new PublicKey(mintIn),
         basketConfig,
         true
       );
-      const { tokenAccount, tx: outputTx } =
-        await getOrCreateTokenAccountTx(
-          this.connection,
-          tokenMint,
-          rebalancer,
-          basketConfig
-        );
+
+      const { tokenAccount, tx: outputTx } = await getOrCreateTokenAccountTx(
+        this.connection,
+        new PublicKey(mintOut),
+        rebalancer,
+        basketConfig
+      );
+
       outputTokenAccount = tokenAccount;
       tx.add(outputTx);
     }

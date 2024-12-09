@@ -5,7 +5,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER_FUND, error::PieError, BasketConfig, UserFund, BASKET_CONFIG, BASKET_MINT, EXPONENT,
+    constant::USER_FUND, error::PieError, BasketConfig, UserFund, BASKET_CONFIG, BASKET_MINT,
 };
 
 #[derive(Accounts)]
@@ -60,12 +60,10 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .iter()
             .find(|a| a.mint == token_config.mint)
         {
-            let possible_mint = (user_asset
-                .amount as u128)
-                .checked_mul(EXPONENT as u128)
-                .unwrap()
-                .checked_div(token_config.ratio as u128)
-                .unwrap() as u64;
+            let possible_mint = user_asset
+            .amount
+                .checked_div(token_config.ratio)
+                .unwrap();
             amount_can_mint = amount_can_mint.min(possible_mint);
         }
     }
@@ -78,10 +76,8 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {
-            let amount_to_deduct = (token_config.ratio as u128)
-                .checked_mul(amount as u128)
-                .unwrap()
-                .checked_div(EXPONENT as u128)
+            let amount_to_deduct = token_config.ratio 
+                .checked_mul(amount)
                 .ok_or(PieError::InsufficientBalance)?;
             asset.amount = asset
                 .amount
