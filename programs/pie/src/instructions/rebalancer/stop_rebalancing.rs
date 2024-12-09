@@ -2,8 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{token::TokenAccount, token_interface::Mint};
 
 use crate::{
-    error::PieError, BasketComponent, BasketConfig, ProgramState, RebalancerState, PROGRAM_STATE,
-    REBALANCER_STATE,
+    error::PieError, BasketComponent, BasketConfig, ProgramState, PROGRAM_STATE, BASKET_CONFIG
 };
 
 #[event]
@@ -27,13 +26,6 @@ pub struct StopRebalancing<'info> {
     pub program_state: Account<'info, ProgramState>,
 
     #[account(
-        seeds = [REBALANCER_STATE, rebalancer.key().as_ref()],
-        bump,
-        constraint = rebalancer_state.balancer == rebalancer.key() @ PieError::Unauthorized
-    )]
-    pub rebalancer_state: Box<Account<'info, RebalancerState>>,
-
-    #[account(
         mut,
         token::mint = wrapped_sol_mint,
         token::authority = basket_config,
@@ -43,7 +35,12 @@ pub struct StopRebalancing<'info> {
     #[account(mut)]
     pub wrapped_sol_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
+        bump,
+        constraint = basket_config.rebalancer == rebalancer.key() @ PieError::Unauthorized
+    )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 }
 

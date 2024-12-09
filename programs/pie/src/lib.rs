@@ -27,13 +27,8 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn add_rebalancer(ctx: Context<AddRebalancer>, rebalancer: Pubkey) -> Result<()> {
-        instructions::add_rebalancer(ctx, rebalancer)?;
-        Ok(())
-    }
-
-    pub fn delete_rebalancer(ctx: Context<DeleteRebalancer>, rebalancer: Pubkey) -> Result<()> {
-        instructions::delete_rebalancer(ctx, rebalancer)?;
+    pub fn update_rebalancer(ctx: Context<UpdateRebalancerContext>, new_rebalancer: Pubkey) -> Result<()> {
+        instructions::update_rebalancer(ctx, new_rebalancer)?;
         Ok(())
     }
 

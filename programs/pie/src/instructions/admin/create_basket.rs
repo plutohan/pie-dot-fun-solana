@@ -59,6 +59,7 @@ pub struct CreateBasketArgs {
     pub symbol: String,
     pub uri: String,
     pub decimals: u8,
+    pub rebalancer: Pubkey
 }
 
 #[event]
@@ -88,6 +89,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
 
     basket_config.bump = ctx.bumps.basket_config;
     basket_config.creator = ctx.accounts.creator.key();
+    basket_config.rebalancer = args.rebalancer;
     basket_config.id = config.basket_counter;
     basket_config.mint = ctx.accounts.basket_mint.key();
     basket_config.components = args.components;
