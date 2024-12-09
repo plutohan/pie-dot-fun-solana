@@ -5,7 +5,6 @@ import {
   Signer,
   LAMPORTS_PER_SOL,
   Transaction,
-  TransactionInstruction,
   SystemProgram,
 } from "@solana/web3.js";
 import {
@@ -26,6 +25,8 @@ import {
 import { BasketComponent } from "../pie";
 import { BN } from "@coral-xyz/anchor";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
+import { PieProgram } from "../../sdk/pie-program";
+import { Table } from "console-table-printer";
 
 export async function createUserWithLamports(
   connection: Connection,
@@ -133,12 +134,13 @@ export async function createBasketComponents(
   ratios: Array<number>
 ): Promise<BasketComponent[]> {
   let components: BasketComponent[] = [];
-
+  const decimals = 6;
   for (let i = 0; i < ratios.length; i++) {
-    const mint = await createNewMint(connection, creator, 6);
+    const mint = await createNewMint(connection, creator, decimals);
     const component: BasketComponent = {
       mint: mint,
       ratio: new BN(ratios[i]),
+      decimals: decimals
     };
     components.push(component);
   }
@@ -222,7 +224,6 @@ export async function wrappedSOLInstruction(
   recipient: PublicKey,
   amount: number
 ) {
-
   let { tokenAccount: ata, tx: tx } = await getOrCreateTokenAccountTx(
     connection,
     NATIVE_MINT, // mint
@@ -240,4 +241,46 @@ export async function wrappedSOLInstruction(
   );
 
   return tx;
+}
+
+export async function showBasketConfigTable(
+  connection: Connection,
+  pieProgram: PieProgram,
+  basketId: BN
+) {
+  const basketConfig = await pieProgram.getBasketConfig(basketId);
+  const basketMintInfo = await getMint(
+    connection,
+    pieProgram.basketMintPDA(basketId)
+  );
+
+  const table = new Table({
+    columns: [
+      { name: "mint", alignment: "left", color: "cyan" },
+      { name: "basketSupply", alignment: "left", color: "blue" },
+      { name: "decimals", alignment: "left", color: "purple" },
+      { name: "balance", alignment: "right", color: "green" },
+      { name: "ratio", alignment: "right", color: "yellow" },
+    ],
+  });
+
+  for (let i = 0; i < basketConfig.components.length; i++) {
+    const vaultTokenPDA = getAssociatedTokenAddressSync(
+      basketConfig.components[i].mint,
+      pieProgram.basketConfigPDA(basketId),
+      true
+    );
+    const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
+
+    let component = basketConfig.components[i];
+    table.addRow({
+      mint: component.mint.toBase58(),
+      basketSupply: basketMintInfo.supply,
+      decimals: component.decimals.toString(),
+      balance: balance.value.amount,
+      ratio: component.ratio.toString(),
+    });
+  }
+
+  return table;
 }

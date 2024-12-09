@@ -4,13 +4,13 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
+use crate::constant::SYS_DECIMALS;
+use crate::utils::Calculator;
 use crate::{
     error::PieError,
     utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut},
     BasketComponent, BasketConfig, BASKET_CONFIG,
 };
-use crate::constant::SYS_DECIMALS;
-use crate::utils::Calculator;
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancing<'info> {
@@ -192,21 +192,34 @@ pub fn execute_swap<'a: 'info, 'info>(
             &ToAccountInfos::to_account_infos(&cpi_context),
             signer,
         )?;
+
         accounts.vault_token_destination.reload()?;
 
         let token_mint = accounts.token_mint.key();
-        let token_amount = accounts.vault_token_destination.amount;
+        let ratio = Calculator::to_u64(
+            Calculator::normalize_decimal_v2(
+                accounts.vault_token_destination.amount,
+                accounts.token_mint.decimals.try_into().unwrap(),
+                SYS_DECIMALS.try_into().unwrap(),
+            )
+            .checked_div(Calculator::to_u128(total_supply).unwrap())
+            .unwrap(),
+        )
+        .unwrap();
 
-        if token_amount == 0 {
-            basket_config.components.retain(|c| c.mint != token_mint);
+        // Now handle the update or insertion in a clean manner
+        if let Some(component) = basket_config
+            .components
+            .iter_mut()
+            .find(|c| c.mint == token_mint)
+        {
+            component.ratio = ratio;
         } else {
-            if let Some(component) = basket_config
-                .components
-                .iter_mut()
-                .find(|c| c.mint == token_mint)
-            {
-                component.ratio = Calculator::normalize_decimal_v2(token_amount, accounts.token_mint.decimals as u64, SYS_DECIMALS as u64).checked_div(total_supply as u128).unwrap() as u64;
-            }
+            basket_config.components.push(BasketComponent {
+                mint: token_mint,
+                ratio,
+                decimals: accounts.token_mint.decimals,
+            });
         }
     } else {
         let swap_base_in_inx = swap_base_in(
@@ -261,31 +274,27 @@ pub fn execute_swap<'a: 'info, 'info>(
             signer,
         )?;
 
-        accounts.vault_token_destination.reload()?;
+        accounts.vault_token_source.reload()?;
 
         let token_mint = accounts.token_mint.key();
-        let ratio = Calculator::to_u64(
-            Calculator::normalize_decimal_v2(
-                accounts.vault_token_destination.amount,
-                accounts.token_mint.decimals as u64,
-                SYS_DECIMALS as u64
-            ).checked_div(
-                Calculator::to_u128(total_supply).unwrap()
-            ).unwrap()
-        ).unwrap();
+        let token_amount = accounts.vault_token_source.amount;
 
-        // Now handle the update or insertion in a clean manner
-        if let Some(component) = basket_config
-            .components
-            .iter_mut()
-            .find(|c| c.mint == token_mint)
-        {
-            component.ratio = ratio;
+        if token_amount == 0 {
+            basket_config.components.retain(|c| c.mint != token_mint);
         } else {
-            basket_config.components.push(BasketComponent {
-                mint: token_mint,
-                ratio,
-            });
+            if let Some(component) = basket_config
+                .components
+                .iter_mut()
+                .find(|c| c.mint == token_mint)
+            {
+                component.ratio = Calculator::normalize_decimal_v2(
+                    token_amount,
+                    accounts.token_mint.decimals.try_into().unwrap(),
+                    SYS_DECIMALS.try_into().unwrap(),
+                )
+                .checked_div(total_supply as u128)
+                .unwrap().try_into().unwrap();
+            }
         }
     }
 
