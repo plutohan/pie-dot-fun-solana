@@ -1410,6 +1410,11 @@
       "code": 6012,
       "name": "InvalidMarginBottom",
       "msg": "Margin value for bottom exceeds the allowed limit"
+    },
+    {
+      "code": 6013,
+      "name": "ConversionFailure",
+      "msg": "Conversion to u64 failed with an overflow or underflow"
     }
   ],
   "types": [

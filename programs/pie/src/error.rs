@@ -40,4 +40,7 @@ pub enum PieError {
 
     #[msg("Margin value for bottom exceeds the allowed limit")]
     InvalidMarginBottom,
+
+    #[msg("Conversion to u64 failed with an overflow or underflow")]
+    ConversionFailure,
 }
