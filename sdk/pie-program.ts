@@ -33,6 +33,7 @@ export type CreateBasketEvent = IdlEvents<Pie>["createBasketEvent"]
 export type UpdateRebalancerEvent = IdlEvents<Pie>["updateRebalancerEvent"]
 export type TransferAdminEvent = IdlEvents<Pie>["transferAdminEvent"]
 export type TransferBasketEvent = IdlEvents<Pie>["transferBasketEvent"]
+
 export type UpdateRebalanceMarginEvent =
 	IdlEvents<Pie>["updateMaxRebalanceMarginEvent"]
 export type ExecuteRebalancingEvent = IdlEvents<Pie>["executeRebalancingEvent"]
@@ -388,7 +389,7 @@ export class PieProgram {
 			userSourceOwner,
 			maxAmountIn
 		)
-		tx.add(wrappedSolIx)
+		tx.add(...wrappedSolIx)
 		const buyComponentTx = await this.program.methods
 			.buyComponent(new BN(maxAmountIn), new BN(amountOut))
 			.accountsPartial({

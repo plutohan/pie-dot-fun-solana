@@ -6,6 +6,7 @@ import {
   LAMPORTS_PER_SOL,
   Transaction,
   SystemProgram,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -23,7 +24,7 @@ import {
   transfer,
 } from "@solana/spl-token";
 import { BasketComponent } from "../pie";
-import { BN } from "@coral-xyz/anchor";
+import { BN, Instruction } from "@coral-xyz/anchor";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { PieProgram } from "../../sdk/pie-program";
 import { Table } from "console-table-printer";
@@ -175,8 +176,8 @@ export async function getRaydiumPoolAccounts(
     false
   );
 
-  const { tokenAccount: outputTokenAccount, tx: outputTx } =
-    await getOrCreateTokenAccountTx(
+  const { tokenAccount: outputTokenAccount, ixs: outputIxs } =
+    await getOrCreateTokenAccountIx(
       connection,
       new PublicKey(mintOut),
       user,
@@ -188,23 +189,23 @@ export async function getRaydiumPoolAccounts(
       user,
       amountIn
     );
-    outputTx.add(wrappedSolIx);
+    outputIxs.push(...wrappedSolIx);
   }
 
-  return { tx: outputTx, tokenAccount: outputTokenAccount };
+  return { ixs: outputIxs, tokenAccount: outputTokenAccount };
 }
-export async function getOrCreateTokenAccountTx(
+export async function getOrCreateTokenAccountIx(
   connection: Connection,
   mint: PublicKey,
   payer: PublicKey,
   owner: PublicKey
-): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
+): Promise<{ tokenAccount: PublicKey; ixs: TransactionInstruction[] }> {
   const tokenAccount = await getAssociatedTokenAddress(mint, owner, true);
-  let transaction = new Transaction();
+  let instructions: TransactionInstruction[] = [];
   try {
     await getAccount(connection, tokenAccount, "confirmed");
   } catch (error) {
-    transaction.add(
+    instructions.push(
       createAssociatedTokenAccountInstruction(
         payer,
         tokenAccount,
@@ -215,22 +216,22 @@ export async function getOrCreateTokenAccountTx(
       )
     );
   }
-  return { tokenAccount: tokenAccount, tx: transaction };
+  return { tokenAccount: tokenAccount, ixs: instructions };
 }
 
 export async function wrappedSOLInstruction(
   connection: Connection,
   recipient: PublicKey,
   amount: number
-) {
-  let { tokenAccount: ata, tx: tx } = await getOrCreateTokenAccountTx(
+) : Promise<TransactionInstruction[]>{
+  let { tokenAccount: ata, ixs: ixs } = await getOrCreateTokenAccountIx(
     connection,
     NATIVE_MINT, // mint
     recipient, // owner
     recipient // payer
   );
 
-  tx.add(
+  ixs.push(
     SystemProgram.transfer({
       fromPubkey: recipient,
       toPubkey: ata,
@@ -239,7 +240,7 @@ export async function wrappedSOLInstruction(
     createSyncNativeInstruction(ata)
   );
 
-  return tx;
+  return ixs;
 }
 
 export async function showBasketConfigTable(
@@ -328,4 +329,29 @@ export async function showBasketVaultsTable(
   }
 
   return table;
+}
+
+export async function getOrCreateTokenAccountTx(
+    connection: Connection,
+    mint: PublicKey,
+    payer: PublicKey,
+    owner: PublicKey
+): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
+  const tokenAccount = await getAssociatedTokenAddress(mint, owner, true);
+  let transaction = new Transaction();
+  try {
+    await getAccount(connection, tokenAccount, "confirmed");
+  } catch (error) {
+    transaction.add(
+        createAssociatedTokenAccountInstruction(
+            payer,
+            tokenAccount,
+            owner,
+            mint,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        )
+    );
+  }
+  return { tokenAccount: tokenAccount, tx: transaction };
 }

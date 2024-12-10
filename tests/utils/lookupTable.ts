@@ -3,10 +3,49 @@ import {
   Connection,
   Keypair,
   PublicKey,
+  Transaction,
   TransactionInstruction,
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
+
+
+export async function finalizeTransaction(
+  connection: Connection,
+  keyPair: Keypair,
+  transaction: Transaction,
+  lookupTables: any
+) {
+  let latestBlockhash = await connection.getLatestBlockhash("finalized");
+  const messageV0 = new TransactionMessage({
+    payerKey: keyPair.publicKey,
+    recentBlockhash: latestBlockhash.blockhash,
+    instructions: transaction.instructions,
+  }).compileToV0Message(lookupTables);
+
+  const transactionV0 = new VersionedTransaction(messageV0);
+  transactionV0.sign([keyPair]);
+
+  const txid = await connection.sendTransaction(transactionV0, {
+    maxRetries: 5,
+    skipPreflight: true,
+  });
+  const confirmation = await connection.confirmTransaction({
+    signature: txid,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  });
+
+  if (confirmation.value.err) {
+    console.log(
+      `❌ Transaction Error at tx: https://explorer.solana.com/tx/${txid}?cluster=devnet`
+    );
+  } else {
+    console.log(
+      `🎉 Transaction Successfully Confirmed at tx: https://explorer.solana.com/tx/${txid}?cluster=devnet`
+    );
+  }
+}
 
 export async function createAndSendV0Tx(
   connection: Connection,
@@ -84,6 +123,6 @@ export async function findAddressesInTable(
 
   for (let i = 0; i < lookupTableAccount.value.state.addresses.length; i++) {
     const address = lookupTableAccount.value.state.addresses[i];
-    console.log(`   Address ${i + 1}: ${address.toBase58()}`);
+    console.log(`Address ${i + 1}: ${address.toBase58()}`);
   }
 }

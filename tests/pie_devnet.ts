@@ -1,11 +1,13 @@
 import { BN } from "@coral-xyz/anchor";
 import {
+  AddressLookupTableAccount,
   clusterApiUrl,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
   sendAndConfirmTransaction,
+  Transaction,
 } from "@solana/web3.js";
 import devnetAdmin from "../public/devnet-admin.json";
 import { assert } from "chai";
@@ -20,14 +22,14 @@ import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
 import {
   getAssociatedTokenAddress,
-  getMint,
   NATIVE_MINT,
 } from "@solana/spl-token";
 import {
-  getOrCreateTokenAccountTx,
-  showBasketConfigTable,
-  showUserFundTable,
+    getOrCreateTokenAccountTx,
+    showBasketConfigTable,
+    showUserFundTable,
 } from "./utils/helper";
+import { finalizeTransaction } from "./utils/lookupTable";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -225,7 +227,7 @@ describe("pie", () => {
     table.printTable();
   });
 
-  it("Buy Component", async () => {
+  it("Buy Component Normal", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
@@ -259,6 +261,52 @@ describe("pie", () => {
       basketId
     );
     userFundTable.printTable();
+  });
+
+  it("Buy Component Using look up table", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    const lookupTables: AddressLookupTableAccount[] = [];
+    const tx = new Transaction();
+
+    for (let i = 0; i < basketConfigData.components.length; i++) {
+      const buyComponentTx = await pieProgram.buyComponent(
+        admin.publicKey,
+        basketId,
+        1 * LAMPORTS_PER_SOL,
+        20000000,
+        raydium,
+        tokens[i].ammId
+      );
+
+      if(tokens[i].lut) {
+         const lut = (await connection.getAddressLookupTable(tokens[i].lut)).value;
+        lookupTables.push(lut)
+      }
+
+      tx.add(buyComponentTx);
+    }
+
+    await finalizeTransaction(connection, admin, tx, lookupTables);
+
+    const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
+
+    const table = new Table({
+      columns: [
+        { name: "mint", alignment: "left", color: "cyan" },
+        { name: "amount", alignment: "right", color: "green" },
+      ],
+    });
+
+    for (let i = 0; i < userFund.components.length; i++) {
+      let component = userFund.components[i];
+      table.addRow({
+        mint: component.mint.toBase58(),
+        amount: component.amount.toString(),
+      });
+    }
+    table.printTable();
   });
 
   it("Mint Basket", async () => {
@@ -507,7 +555,6 @@ describe("pie", () => {
     );
 
     const basketConfig = await pieProgram.getBasketConfig(basketId);
-    console.log(basketConfig.components);
     assert.equal(basketConfig.isRebalancing, false);
   });
 });
