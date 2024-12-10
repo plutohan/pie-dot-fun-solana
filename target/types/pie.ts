@@ -132,6 +132,14 @@ export type Pie = {
           "writable": true
         },
         {
+          "name": "platformFeeTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "creatorTokenAccount",
+          "writable": true
+        },
+        {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -1664,7 +1672,23 @@ export type Pie = {
             "type": "pubkey"
           },
           {
+            "name": "platformFeeWallet",
+            "type": "pubkey"
+          },
+          {
             "name": "basketCounter",
+            "type": "u64"
+          },
+          {
+            "name": "rebalanceMarginLamports",
+            "type": "u64"
+          },
+          {
+            "name": "mintRedeemFeePercentage",
+            "type": "u64"
+          },
+          {
+            "name": "platformFeePercentage",
             "type": "u64"
           },
           {
@@ -1674,10 +1698,6 @@ export type Pie = {
           {
             "name": "isInitialized",
             "type": "bool"
-          },
-          {
-            "name": "rebalanceMarginLamports",
-            "type": "u64"
           }
         ]
       }

@@ -7,7 +7,7 @@ use anchor_spl::{
 use crate::{
     constant::USER_FUND,
     error::PieError,
-    utils::{swap_base_in, SwapBaseIn},
+    utils::{calculate_fee_amount, swap_base_in, transfer_from_user_to_pool_vault, SwapBaseIn},
     BasketConfig, ProgramState, UserFund, BASKET_CONFIG,
 };
 
@@ -76,6 +76,20 @@ pub struct SellComponentContext<'info> {
     #[account(mut)]
     pub user_token_destination: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK: Safe. user source token Account
+    #[account(
+        mut,
+        token::authority = program_state.platform_fee_wallet
+    )]
+    pub platform_fee_token_account: Box<Account<'info, TokenAccount>>,
+
+    /// CHECK: Safe. user source token Account
+    #[account(
+        mut,
+        token::authority = basket_config.creator
+    )]
+    pub creator_token_account: Box<Account<'info, TokenAccount>>,
+
     pub token_program: Program<'info, Token>,
     /// CHECK: Safe. amm_program
     pub amm_program: AccountInfo<'info>,
@@ -111,6 +125,8 @@ pub fn sell_component(
         &ctx.accounts.basket_config.id.to_be_bytes(),
         &[ctx.accounts.basket_config.bump],
     ]];
+
+    let balance_before = ctx.accounts.user_token_destination.amount;
 
     let swap_base_in_inx = swap_base_in(
         &ctx.accounts.amm_program.key(),
@@ -157,15 +173,41 @@ pub fn sell_component(
         },
         signer,
     );
-
     solana_program::program::invoke_signed(
         &swap_base_in_inx,
         &ToAccountInfos::to_account_infos(&cpi_context),
         signer,
     )?;
 
+    ctx.accounts.user_token_destination.reload()?;
+
+    let balance_after = ctx.accounts.user_token_destination.amount;
+
+    let amount_received: u64 = balance_after.checked_sub(balance_before).unwrap();
+
+    let (platform_fee_amount, creator_fee_amount, remaining_amount) =
+        calculate_fee_amount(&ctx.accounts.program_state, amount_received)?;
+
+    // Transfer platform fee to platform fee wallet
+    transfer_from_user_to_pool_vault(
+        &ctx.accounts.user_token_destination.to_account_info(),
+        &ctx.accounts.platform_fee_token_account.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.token_program.to_account_info(),
+        platform_fee_amount,
+    )?;
+
+    // Transfer creator fee to creator
+    transfer_from_user_to_pool_vault(
+        &ctx.accounts.user_token_destination.to_account_info(),
+        &ctx.accounts.creator_token_account.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.token_program.to_account_info(),
+        creator_fee_amount,
+    )?;
+
     // Update user's component balance
-    component.amount = component.amount.checked_sub(amount_in).unwrap();
+    component.amount = component.amount.checked_sub(remaining_amount).unwrap();
 
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

@@ -126,6 +126,14 @@
           "writable": true
         },
         {
+          "name": "platform_fee_token_account",
+          "writable": true
+        },
+        {
+          "name": "creator_token_account",
+          "writable": true
+        },
+        {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -1658,7 +1666,23 @@
             "type": "pubkey"
           },
           {
+            "name": "platform_fee_wallet",
+            "type": "pubkey"
+          },
+          {
             "name": "basket_counter",
+            "type": "u64"
+          },
+          {
+            "name": "rebalance_margin_lamports",
+            "type": "u64"
+          },
+          {
+            "name": "mint_redeem_fee_percentage",
+            "type": "u64"
+          },
+          {
+            "name": "platform_fee_percentage",
             "type": "u64"
           },
           {
@@ -1668,10 +1692,6 @@
           {
             "name": "is_initialized",
             "type": "bool"
-          },
-          {
-            "name": "rebalance_margin_lamports",
-            "type": "u64"
           }
         ]
       }

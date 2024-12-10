@@ -12,3 +12,6 @@ pub use transfer_basket::*;
 
 pub mod update_margin;
 pub use update_margin::*;
+
+pub mod update_fee;
+pub use update_fee::*;

@@ -10,7 +10,6 @@ import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import * as PieIDL from "../target/idl/pie.json";
 import {
-  getAssociatedTokenAddress,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
 } from "@solana/spl-token";
@@ -163,21 +162,42 @@ export class PieProgram {
       .transaction();
   }
 
-    /**
+  /**
    * Updates the rebalance margin.
    * @param admin - The admin account.
    * @param newMargin - The new margin.
    * @returns A promise that resolves to a transaction.
    */
-    async updateRebalanceMargin(
-      admin: PublicKey,
-      newMargin: number
-    ): Promise<Transaction> {
-      return await this.program.methods
-        .updateRebalanceMargin(new BN(newMargin))
-        .accounts({ admin, programState: this.programStatePDA })
-        .transaction();
-    }
+  async updateRebalanceMargin(
+    admin: PublicKey,
+    newMargin: number
+  ): Promise<Transaction> {
+    return await this.program.methods
+      .updateRebalanceMargin(new BN(newMargin))
+      .accounts({ admin, programState: this.programStatePDA })
+      .transaction();
+  }
+
+  /**
+   * Updates the fee.
+   * @param admin - The admin account.
+   * @param newMintRedeemFeePercentage - The new mint redeem fee percentage.
+   * @param newPlatformFeePercentage - The new platform fee percentage.
+   * @returns A promise that resolves to a transaction.
+   */
+  async updateFee(
+    admin: PublicKey,
+    newMintRedeemFeePercentage: number,
+    newPlatformFeePercentage: number
+  ): Promise<Transaction> {
+    return await this.program.methods
+      .updateFee(
+        new BN(newMintRedeemFeePercentage),
+        new BN(newPlatformFeePercentage)
+      )
+      .accounts({ admin, programState: this.programStatePDA })
+      .transaction();
+  }
 
   /**
    * Creates a basket.

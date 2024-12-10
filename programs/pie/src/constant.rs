@@ -8,3 +8,5 @@ pub const SYS_DECIMALS: u128 = 1_000_000;
 pub const MAX_COMPONENTS: u8 = 50;
 
 pub const INITIALIZE_ADMIN: &str = "DjCDT99HEZyZuq48wugooYNGBnrB5Nhe93VgAKKBAPDV";
+
+pub const BASIS_POINTS: u64 = 10_000;
