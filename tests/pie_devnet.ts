@@ -19,7 +19,7 @@ import { tokens } from "./utils/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
 import { getAssociatedTokenAddress, getAssociatedTokenAddressSync, getMint, NATIVE_MINT } from "@solana/spl-token";
-import { showBasketConfigTable, sleep } from "./utils/helper";
+import { getOrCreateTokenAccountTx, showBasketConfigTable, sleep } from "./utils/helper";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -66,7 +66,55 @@ describe("pie", () => {
         `Rebalance margin updated at tx: https://explorer.solana.com/tx/${updateRebalanceMarginTxResult}?cluster=devnet`
       );
     }
+    console.log('programState.mintRedeemFeePercentage: ', programState);
 
+    if(programState.mintRedeemFeePercentage.toNumber() == 0) {
+      // mint redeem fee 1% and platform fee 0.5%
+      const updateFeeTx = await pieProgram.updateFee(admin.publicKey, 1000, 500);
+      const updateFeeTxResult = await sendAndConfirmTransaction(
+        connection,
+        updateFeeTx,
+        [admin],
+        { skipPreflight: true, commitment: "confirmed" }
+      );
+      console.log(
+        `Fee updated at tx: https://explorer.solana.com/tx/${updateFeeTxResult}?cluster=devnet`
+      );
+    }    
+
+    //create platform fee token account if needed 
+    const { tx: outputTx } =
+    await getOrCreateTokenAccountTx(
+      connection,
+      new PublicKey(NATIVE_MINT),
+      admin.publicKey,
+      programState.platformFeeWallet
+    );
+
+    if(outputTx.signatures.length !== 0) {
+      const createPlatformFeeTokenAccountTxResult = await sendAndConfirmTransaction(
+        connection,
+        outputTx,
+        [admin],
+        { skipPreflight: true, commitment: "confirmed" }
+      );
+      console.log(
+        `Platform fee token account created at tx: https://explorer.solana.com/tx/${createPlatformFeeTokenAccountTxResult}?cluster=devnet`
+      );
+    }
+
+    if(programState.platformFeeWallet.toBase58() !== new PublicKey('11111111111111111111111111111111').toBase58()) {
+      const updatePlatformFeeWalletTx = await pieProgram.updatePlatformFeeWallet(admin.publicKey, admin.publicKey);
+      const updatePlatformFeeWalletTxResult = await sendAndConfirmTransaction(
+        connection,
+        updatePlatformFeeWalletTx,
+        [admin],
+        { skipPreflight: true, commitment: "confirmed" }
+      );
+      console.log(
+        `Platform fee wallet updated at tx: https://explorer.solana.com/tx/${updatePlatformFeeWalletTxResult}?cluster=devnet`
+      );
+    }
   });
 
   it("Create Basket", async () => {
@@ -114,6 +162,27 @@ describe("pie", () => {
     console.log(
       `Basket created at tx: https://explorer.solana.com/tx/${createBasketTxResult}?cluster=devnet`
     );
+
+    //create creator fee token account if needed 
+    const { tx: outputTx } =
+    await getOrCreateTokenAccountTx(
+      connection,
+      new PublicKey(NATIVE_MINT),
+      admin.publicKey,
+      admin.publicKey
+    );
+
+    if(outputTx.signatures.length !== 0) {
+      const createCreatorFeeTokenAccountTxResult = await sendAndConfirmTransaction(
+        connection,
+        outputTx,
+        [admin],
+        { skipPreflight: true, commitment: "confirmed" }
+      );
+      console.log(
+        `Creator fee token account created at tx: https://explorer.solana.com/tx/${createCreatorFeeTokenAccountTxResult}?cluster=devnet`
+      );
+    }
 
     const basket = await pieProgram.getBasketConfig(basketId);
     assert.equal(basket.components.length, createBasketArgs.components.length);

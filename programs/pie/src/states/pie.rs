@@ -18,7 +18,7 @@ impl Space for ProgramState {
         + 1   // bump (u8)
         + 32  // admin (Pubkey)
         + 32  // platform_fee_wallet (Pubkey)
-        + 8   // basket_counter (u32)
+        + 8   // basket_counter (u64)
         + 8   // rebalance_margin_lamports (u64)
         + 8   // mint_redeem_fee_percentage (u64)
         + 8   // platform_fee_percentage (u64)

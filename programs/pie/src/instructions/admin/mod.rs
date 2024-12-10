@@ -15,3 +15,6 @@ pub use update_margin::*;
 
 pub mod update_fee;
 pub use update_fee::*;
+
+pub mod update_platform_fee_wallet;
+pub use update_platform_fee_wallet::*;

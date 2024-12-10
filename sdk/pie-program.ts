@@ -106,13 +106,30 @@ export class PieProgram {
       this.program.programId
     )[0];
   }
-
   async getProgramState(): Promise<ProgramState | null> {
     try {
       return await this.accounts.programState.fetch(this.programStatePDA);
     } catch (error) {
       return null;
     }
+  }
+
+  async getPlatformFeeTokenAccount(): Promise<PublicKey> {
+    const programState = await this.getProgramState();
+    const platformFeeTokenAccount = getAssociatedTokenAddressSync(
+      NATIVE_MINT,
+      programState.platformFeeWallet,
+    );
+    return platformFeeTokenAccount;
+  }
+
+  async getCreatorFeeTokenAccount(basketId: BN): Promise<PublicKey> {
+    const basketConfig = await this.getBasketConfig(basketId);
+    const creatorFeeTokenAccount = getAssociatedTokenAddressSync(
+      NATIVE_MINT,
+      basketConfig.creator,
+    );
+    return creatorFeeTokenAccount;
   }
 
   async getBasketConfig(basketId: BN): Promise<BasketConfig | null> {
@@ -179,7 +196,7 @@ export class PieProgram {
   }
 
   /**
-   * Updates the fee.
+   * Updates the fee. 10000 = 100% => 1000 = 1%
    * @param admin - The admin account.
    * @param newMintRedeemFeePercentage - The new mint redeem fee percentage.
    * @param newPlatformFeePercentage - The new platform fee percentage.
@@ -197,6 +214,19 @@ export class PieProgram {
       )
       .accounts({ admin, programState: this.programStatePDA })
       .transaction();
+  }
+
+  /**
+   * Updates the platform fee wallet.
+   * @param admin - The admin account.
+   * @param newPlatformFeeWallet - The new platform fee wallet.
+   * @returns A promise that resolves to a transaction.
+   */
+  async updatePlatformFeeWallet(
+    admin: PublicKey,
+    newPlatformFeeWallet: PublicKey
+  ): Promise<Transaction> {
+    return await this.program.methods.updatePlatformFeeWallet(newPlatformFeeWallet).accounts({ admin, programState: this.programStatePDA }).transaction();
   }
 
   /**
@@ -325,6 +355,8 @@ export class PieProgram {
         ammProgram: new PublicKey(poolKeys.programId),
         userTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
       })
       .transaction();
 
@@ -406,6 +438,8 @@ export class PieProgram {
         ammProgram: new PublicKey(poolKeys.programId),
         userTokenDestination: outputTokenAccount,
         vaultTokenSource: inputTokenAccount,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
       })
       .transaction();
 

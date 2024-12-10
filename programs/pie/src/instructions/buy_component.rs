@@ -117,22 +117,26 @@ pub fn buy_component(
         calculate_fee_amount(&ctx.accounts.program_state, max_amount_in)?;
 
     // Transfer platform fee to platform fee wallet
-    transfer_from_user_to_pool_vault(
-        &ctx.accounts.user_token_source.to_account_info(),
+    if platform_fee_amount > 0 {
+        transfer_from_user_to_pool_vault(
+            &ctx.accounts.user_token_source.to_account_info(),
         &ctx.accounts.platform_fee_token_account.to_account_info(),
         &&ctx.accounts.user_source_owner.to_account_info(),
         &ctx.accounts.token_program.to_account_info(),
-        platform_fee_amount,
-    )?;
+            platform_fee_amount,
+        )?;
+    }
 
     // Transfer creator fee to creator
-    transfer_from_user_to_pool_vault(
-        &ctx.accounts.user_token_source.to_account_info(),
-        &ctx.accounts.creator_token_account.to_account_info(),
-        &&ctx.accounts.user_source_owner.to_account_info(),
-        &ctx.accounts.token_program.to_account_info(),
-        creator_fee_amount,
-    )?;
+    if creator_fee_amount > 0 {
+        transfer_from_user_to_pool_vault(
+            &ctx.accounts.user_token_source.to_account_info(),
+            &ctx.accounts.creator_token_account.to_account_info(),
+            &&ctx.accounts.user_source_owner.to_account_info(),
+            &ctx.accounts.token_program.to_account_info(),
+            creator_fee_amount,
+        )?;
+    }
 
     let balance_before = ctx.accounts.vault_token_destination.amount;
 

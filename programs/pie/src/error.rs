@@ -14,6 +14,9 @@ pub enum PieError {
     #[msg("Can't found rebalancer info.")]
     RebalancerNotFound,
 
+    #[msg("Invalid fee")]
+    InvalidFee,
+
     #[msg("Max asset exceeded")]
     MaxAssetsExceeded,
 
