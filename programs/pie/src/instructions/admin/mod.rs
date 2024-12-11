@@ -7,8 +7,5 @@ pub use transfer_admin::*;
 pub mod create_basket;
 pub use create_basket::*;
 
-pub mod transfer_basket;
-pub use transfer_basket::*;
-
 pub mod update_margin;
 pub use update_margin::*;
