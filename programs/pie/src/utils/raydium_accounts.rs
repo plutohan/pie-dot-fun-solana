@@ -1,5 +1,8 @@
 use anchor_lang::prelude::*;
 
+
+// Ref: https://github.com/raydium-io/raydium-cpi/blob/master/programs/amm-cpi/src/context.rs#L262
+
 #[derive(Accounts, Clone)]
 pub struct SwapBaseIn<'info> {
     /// CHECK: Safe. amm Account
@@ -53,6 +56,7 @@ pub struct SwapBaseIn<'info> {
     pub token_program: AccountInfo<'info>,
 }
 
+// Ref: https://github.com/raydium-io/raydium-cpi/blob/master/programs/amm-cpi/src/context.rs#L319
 #[derive(Accounts, Clone)]
 pub struct SwapBaseOut<'info> {
     /// CHECK: Safe. amm Account

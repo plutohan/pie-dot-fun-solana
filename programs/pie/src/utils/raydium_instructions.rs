@@ -5,6 +5,7 @@ use anchor_spl::token::spl_token;
 use std::convert::TryInto;
 use std::mem::size_of;
 
+//REF: https://github.com/raydium-io/raydium-cpi/blob/master/programs/amm-cpi/src/instructions.rs
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct SwapInstructionBaseIn {

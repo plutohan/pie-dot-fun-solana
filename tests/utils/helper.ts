@@ -284,3 +284,28 @@ export async function showBasketConfigTable(
 
   return table;
 }
+
+export async function showUserFundTable(
+  pieProgram: PieProgram,
+  userPubkey: PublicKey,
+  basketId: BN
+) {
+  const userFund = await pieProgram.getUserFund(userPubkey, basketId);
+
+  const table = new Table({
+    columns: [
+      { name: "mint", alignment: "left", color: "cyan" },
+      { name: "amount", alignment: "right", color: "green" },
+    ],
+  });
+
+  for (let i = 0; i < userFund.components.length; i++) {
+    let component = userFund.components[i];
+    table.addRow({
+      mint: component.mint.toBase58(),
+      amount: component.amount.toString(),
+    });
+  }
+
+  return table;
+}

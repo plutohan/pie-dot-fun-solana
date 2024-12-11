@@ -8,7 +8,7 @@ use crate::{
     constant::{MAX_COMPONENTS, USER_FUND},
     error::PieError,
     utils::{calculate_fee_amount, swap_base_out, transfer_from_user_to_pool_vault, SwapBaseOut},
-    BasketConfig, ProgramState, UserComponent, UserFund,
+    BasketConfig, ProgramState, UserComponent, UserFund, NATIVE_MINT,
 };
 
 #[derive(Accounts)]
@@ -68,7 +68,8 @@ pub struct BuyComponentContext<'info> {
     /// CHECK: Safe. user source token Account
     #[account(
         mut,
-        token::authority = user_source_owner
+        token::authority = user_source_owner,
+        token::mint = NATIVE_MINT,
     )]
     pub user_token_source: Box<Account<'info, TokenAccount>>,
 
@@ -82,14 +83,16 @@ pub struct BuyComponentContext<'info> {
     /// CHECK: Safe. user source token Account
     #[account(
         mut,
-        token::authority = program_state.platform_fee_wallet
+        token::authority = program_state.platform_fee_wallet,
+        token::mint = NATIVE_MINT,
     )]
     pub platform_fee_token_account: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: Safe. user source token Account
     #[account(
         mut,
-        token::authority = basket_config.creator
+        token::authority = basket_config.creator,
+        token::mint = NATIVE_MINT,
     )]
     pub creator_token_account: Box<Account<'info, TokenAccount>>,
 
@@ -177,7 +180,7 @@ pub fn buy_component(
     let amount_swapped = balance_in_before.checked_sub(balance_in_after).unwrap();
     let amount_received = balance_out_after.checked_sub(balance_out_before).unwrap();
 
-    let (platform_fee_amount, creator_fee_amount, _remaining_amount) =
+    let (platform_fee_amount, creator_fee_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_swapped)?;
 
     // Transfer platform fee to platform fee wallet
