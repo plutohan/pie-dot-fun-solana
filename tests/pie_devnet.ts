@@ -18,7 +18,7 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens } from "./utils/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
-import { getAssociatedTokenAddress, getAssociatedTokenAddressSync, getMint, NATIVE_MINT } from "@solana/spl-token";
+import { getAssociatedTokenAddress, getMint, NATIVE_MINT } from "@solana/spl-token";
 import { getOrCreateTokenAccountTx, showBasketConfigTable, sleep } from "./utils/helper";
 
 describe("pie", () => {
@@ -50,6 +50,11 @@ describe("pie", () => {
       );
     }
 
+    //fetch again
+    programState = await pieProgram.getProgramState();
+
+    console.log('programState: ',programState);
+
     const rebalanceMarginLamports = programState ? programState.rebalanceMarginLamports.toNumber() : 0;
     if(rebalanceMarginLamports == 0) {
       const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin(admin.publicKey, 0.5 * LAMPORTS_PER_SOL);
@@ -66,7 +71,6 @@ describe("pie", () => {
         `Rebalance margin updated at tx: https://explorer.solana.com/tx/${updateRebalanceMarginTxResult}?cluster=devnet`
       );
     }
-    console.log('programState.mintRedeemFeePercentage: ', programState);
 
     if(programState.mintRedeemFeePercentage.toNumber() == 0) {
       // mint redeem fee 1% and platform fee 0.5%
@@ -81,6 +85,19 @@ describe("pie", () => {
         `Fee updated at tx: https://explorer.solana.com/tx/${updateFeeTxResult}?cluster=devnet`
       );
     }    
+
+    if(programState.platformFeeWallet.toString() == "11111111111111111111111111111111") {
+      const updatePlatformFeeWalletTx = await pieProgram.updatePlatformFeeWallet(admin.publicKey, admin.publicKey);
+      const updatePlatformFeeWalletResult = await sendAndConfirmTransaction(
+        connection,
+        updatePlatformFeeWalletTx,
+        [admin],
+        { skipPreflight: true, commitment: "confirmed" }
+      );
+      console.log(
+        `Platform Wallet fee updated at tx: https://explorer.solana.com/tx/${updatePlatformFeeWalletResult}?cluster=devnet`
+      );
+    }
 
     //create platform fee token account if needed 
     const { tx: outputTx } =
@@ -215,7 +232,7 @@ describe("pie", () => {
         admin.publicKey,
         basketId,
         1 * LAMPORTS_PER_SOL,
-        20000000,
+        200000000,
         raydium,
         tokens[i].ammId
       );
@@ -309,7 +326,7 @@ describe("pie", () => {
       admin.publicKey,
       new PublicKey(tokens[1].mint),
       basketId,
-      0.1 * 1000000,
+      10 * 1000000,
       0,
       raydium,
       tokens[1].ammId

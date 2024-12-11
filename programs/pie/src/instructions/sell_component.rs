@@ -187,9 +187,13 @@ pub fn sell_component(
 
     let (platform_fee_amount, creator_fee_amount, remaining_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_received)?;
+    
+    msg!("platform_fee_amount ${}", platform_fee_amount);
+    msg!("creator_fee_amount ${}", creator_fee_amount);
 
     // Transfer platform fee to platform fee wallet
     if platform_fee_amount > 0 {
+        msg!("platform_fee_amount ${}", platform_fee_amount);
         transfer_from_user_to_pool_vault(
             &ctx.accounts.user_token_destination.to_account_info(),
             &ctx.accounts.platform_fee_token_account.to_account_info(),
@@ -198,7 +202,6 @@ pub fn sell_component(
             platform_fee_amount,
         )?;
     }
-
     // Transfer creator fee to creator
     if creator_fee_amount > 0 {
         transfer_from_user_to_pool_vault(
