@@ -85,20 +85,6 @@ describe("pie", () => {
         `Fee updated at tx: https://explorer.solana.com/tx/${updateFeeTxResult}?cluster=devnet`
       );
     }    
-
-    if(programState.platformFeeWallet.toString() == "11111111111111111111111111111111") {
-      const updatePlatformFeeWalletTx = await pieProgram.updatePlatformFeeWallet(admin.publicKey, admin.publicKey);
-      const updatePlatformFeeWalletResult = await sendAndConfirmTransaction(
-        connection,
-        updatePlatformFeeWalletTx,
-        [admin],
-        { skipPreflight: true, commitment: "confirmed" }
-      );
-      console.log(
-        `Platform Wallet fee updated at tx: https://explorer.solana.com/tx/${updatePlatformFeeWalletResult}?cluster=devnet`
-      );
-    }
-
     //create platform fee token account if needed 
     const { tx: outputTx } =
     await getOrCreateTokenAccountTx(
@@ -120,7 +106,7 @@ describe("pie", () => {
       );
     }
 
-    if(programState.platformFeeWallet.toBase58() !== new PublicKey('11111111111111111111111111111111').toBase58()) {
+    if(programState.platformFeeWallet.toBase58() == new PublicKey('11111111111111111111111111111111').toBase58()) {
       const updatePlatformFeeWalletTx = await pieProgram.updatePlatformFeeWallet(admin.publicKey, admin.publicKey);
       const updatePlatformFeeWalletTxResult = await sendAndConfirmTransaction(
         connection,
