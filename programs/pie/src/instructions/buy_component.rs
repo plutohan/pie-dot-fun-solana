@@ -66,8 +66,11 @@ pub struct BuyComponentContext<'info> {
     /// CHECK: Safe. vault_signer Account
     pub market_vault_signer: AccountInfo<'info>,
     /// CHECK: Safe. user source token Account
-    #[account(mut)]
-    pub user_token_source: AccountInfo<'info>,
+    #[account(
+        mut,
+        token::authority = user_source_owner
+    )]
+    pub user_token_source: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -113,32 +116,8 @@ pub fn buy_component(
     // Verify amount is not zero
     require!(max_amount_in > 0, PieError::InvalidAmount);
 
-    let (platform_fee_amount, creator_fee_amount, remaining_amount) =
-        calculate_fee_amount(&ctx.accounts.program_state, max_amount_in)?;
-
-    // Transfer platform fee to platform fee wallet
-    if platform_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_source.to_account_info(),
-        &ctx.accounts.platform_fee_token_account.to_account_info(),
-        &&ctx.accounts.user_source_owner.to_account_info(),
-        &ctx.accounts.token_program.to_account_info(),
-            platform_fee_amount,
-        )?;
-    }
-
-    // Transfer creator fee to creator
-    if creator_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_source.to_account_info(),
-            &ctx.accounts.creator_token_account.to_account_info(),
-            &&ctx.accounts.user_source_owner.to_account_info(),
-            &ctx.accounts.token_program.to_account_info(),
-            creator_fee_amount,
-        )?;
-    }
-
-    let balance_before = ctx.accounts.vault_token_destination.amount;
+    let balance_in_before = ctx.accounts.user_token_source.amount;
+    let balance_out_before = ctx.accounts.vault_token_destination.amount;
 
     let swap_base_out_inx = swap_base_out(
         &ctx.accounts.amm_program.key(),
@@ -158,7 +137,7 @@ pub fn buy_component(
         &ctx.accounts.user_token_source.key(),
         &ctx.accounts.vault_token_destination.key(),
         &ctx.accounts.user_source_owner.key(),
-        remaining_amount,
+        max_amount_in,
         amount_out,
     )?;
 
@@ -189,10 +168,39 @@ pub fn buy_component(
         &swap_base_out_inx,
         &ToAccountInfos::to_account_infos(&cpi_context),
     )?;
+    ctx.accounts.user_token_source.reload()?;
     ctx.accounts.vault_token_destination.reload()?;
 
-    let balance_after = ctx.accounts.vault_token_destination.amount;
-    let amount_received = balance_after.checked_sub(balance_before).unwrap();
+    let balance_in_after = ctx.accounts.user_token_source.amount;
+    let balance_out_after = ctx.accounts.vault_token_destination.amount;
+
+    let amount_swapped = balance_in_before.checked_sub(balance_in_after).unwrap();
+    let amount_received = balance_out_after.checked_sub(balance_out_before).unwrap();
+
+    let (platform_fee_amount, creator_fee_amount, _remaining_amount) =
+        calculate_fee_amount(&ctx.accounts.program_state, amount_swapped)?;
+
+    // Transfer platform fee to platform fee wallet
+    if platform_fee_amount > 0 {
+        transfer_from_user_to_pool_vault(
+            &ctx.accounts.user_token_source.to_account_info(),
+            &ctx.accounts.platform_fee_token_account.to_account_info(),
+            &&ctx.accounts.user_source_owner.to_account_info(),
+            &ctx.accounts.token_program.to_account_info(),
+            platform_fee_amount,
+        )?;
+    }
+
+    // Transfer creator fee to creator
+    if creator_fee_amount > 0 {
+        transfer_from_user_to_pool_vault(
+            &ctx.accounts.user_token_source.to_account_info(),
+            &ctx.accounts.creator_token_account.to_account_info(),
+            &&ctx.accounts.user_source_owner.to_account_info(),
+            &ctx.accounts.token_program.to_account_info(),
+            creator_fee_amount,
+        )?;
+    }
 
     let user_fund = &mut ctx.accounts.user_fund;
 

@@ -198,7 +198,6 @@ pub fn sell_component(
             platform_fee_amount,
         )?;
     }
-
     // Transfer creator fee to creator
     if creator_fee_amount > 0 {
         transfer_from_user_to_pool_vault(
