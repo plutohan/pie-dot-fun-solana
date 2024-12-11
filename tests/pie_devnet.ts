@@ -124,18 +124,18 @@ describe("pie", () => {
     const components: BasketComponent[] = [
       {
         mint: new PublicKey(tokens[0].mint),
-        ratio: new BN(1 * 10 **6 ),
+        quantity: new BN(1 * 10 **6 ),
         decimals: (await getMint(connection, new PublicKey(tokens[0].mint))).decimals
       },
       {
         mint: new PublicKey(tokens[1].mint),
-        ratio: new BN(2 * 10 **6 ),
+        quantity: new BN(2 * 10 **6 ),
         decimals: (await getMint(connection, new PublicKey(tokens[1].mint))).decimals
 
       },
       {
         mint: new PublicKey(tokens[2].mint),
-        ratio: new BN(3 * 10 **6 ),
+        quantity: new BN(3 * 10 **6 ),
         decimals: (await getMint(connection, new PublicKey(tokens[2].mint))).decimals
       },
     ];
@@ -195,7 +195,7 @@ describe("pie", () => {
     const table = new Table({
       columns: [
         { name: "mint", alignment: "left", color: "cyan" },
-        { name: "ratio", alignment: "right", color: "green" },
+        { name: "quantity", alignment: "right", color: "green" },
       ],
     });
 
@@ -203,7 +203,7 @@ describe("pie", () => {
       let component = basket.components[i];
       table.addRow({
         mint: component.mint.toBase58(),
-        ratio: component.ratio.toString(),
+        quantity: component.quantity.toString(),
       });
     }
     table.printTable();

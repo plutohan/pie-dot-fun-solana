@@ -196,16 +196,14 @@ pub fn execute_swap<'a: 'info, 'info>(
         accounts.vault_token_destination.reload()?;
 
         let token_mint = accounts.token_mint.key();
-        let ratio = Calculator::to_u64(
+        let quantity = Calculator::to_u64(
             Calculator::normalize_decimal_v2(
                 accounts.vault_token_destination.amount,
                 accounts.token_mint.decimals.try_into().unwrap(),
                 SYS_DECIMALS.try_into().unwrap(),
-            )
-            .checked_div(Calculator::to_u128(total_supply).unwrap())
-            .unwrap(),
-        )
-        .unwrap();
+            ).checked_mul(SYS_DECIMALS.try_into().unwrap()).unwrap()
+            .checked_div(Calculator::to_u128(total_supply).unwrap()).unwrap()
+        ).unwrap();
 
         // Now handle the update or insertion in a clean manner
         if let Some(component) = basket_config
@@ -213,11 +211,11 @@ pub fn execute_swap<'a: 'info, 'info>(
             .iter_mut()
             .find(|c| c.mint == token_mint)
         {
-            component.ratio = ratio;
+            component.quantity = quantity;
         } else {
             basket_config.components.push(BasketComponent {
                 mint: token_mint,
-                ratio,
+                quantity,
                 decimals: accounts.token_mint.decimals,
             });
         }
@@ -287,13 +285,13 @@ pub fn execute_swap<'a: 'info, 'info>(
                 .iter_mut()
                 .find(|c| c.mint == token_mint)
             {
-                component.ratio = Calculator::normalize_decimal_v2(
-                    token_amount,
-                    accounts.token_mint.decimals.try_into().unwrap(),
-                    SYS_DECIMALS.try_into().unwrap(),
-                )
-                .checked_div(total_supply as u128)
-                .unwrap().try_into().unwrap();
+                component.quantity = Calculator::to_u64(
+                    Calculator::normalize_decimal_v2(
+                        token_amount,
+                        accounts.token_mint.decimals.try_into().unwrap(),
+                        SYS_DECIMALS.try_into().unwrap(),
+                    ).checked_mul(SYS_DECIMALS.try_into().unwrap()).unwrap().checked_div(total_supply.try_into().unwrap()).unwrap()
+                ).unwrap();
             }
         }
     }

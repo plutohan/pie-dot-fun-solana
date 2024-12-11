@@ -5,7 +5,7 @@ use crate::constant::MAX_COMPONENTS;
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct BasketComponent {
     pub mint: Pubkey,
-    pub ratio: u64,
+    pub quantity: u64,
     pub decimals: u8,
 }
 

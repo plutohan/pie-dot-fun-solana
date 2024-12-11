@@ -139,7 +139,7 @@ export async function createBasketComponents(
     const mint = await createNewMint(connection, creator, decimals);
     const component: BasketComponent = {
       mint: mint,
-      ratio: new BN(ratios[i]),
+      quantity: new BN(ratios[i]),
       decimals: decimals
     };
     components.push(component);
@@ -260,7 +260,7 @@ export async function showBasketConfigTable(
       { name: "basketSupply", alignment: "left", color: "blue" },
       { name: "decimals", alignment: "left", color: "purple" },
       { name: "balance", alignment: "right", color: "green" },
-      { name: "ratio", alignment: "right", color: "yellow" },
+      { name: "quantity", alignment: "right", color: "yellow" },
     ],
   });
 
@@ -278,7 +278,7 @@ export async function showBasketConfigTable(
       basketSupply: basketMintInfo.supply,
       decimals: component.decimals.toString(),
       balance: balance.value.amount,
-      ratio: component.ratio.toString(),
+      quantity: component.quantity.toString(),
     });
   }
 
