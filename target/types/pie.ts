@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "DxbbTCg4dFQRXPvcfQMEAn4VmuEb7b8u9dxwZpXEZsMS",
+  "address": "CxDpS1HuE9vmVcEsFnV5ejzSXDFLje85CQb9THogdyNu",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -129,6 +129,14 @@ export type Pie = {
         },
         {
           "name": "vaultTokenDestination",
+          "writable": true
+        },
+        {
+          "name": "platformFeeTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "creatorTokenAccount",
           "writable": true
         },
         {
@@ -818,6 +826,14 @@ export type Pie = {
           "writable": true
         },
         {
+          "name": "platformFeeTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "creatorTokenAccount",
+          "writable": true
+        },
+        {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -1034,6 +1050,118 @@ export type Pie = {
       "args": [
         {
           "name": "newAdmin",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "updateFee",
+      "discriminator": [
+        232,
+        253,
+        195,
+        247,
+        148,
+        212,
+        73,
+        222
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "newMintRedeemFeePercentage",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "newPlatformFeePercentage",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "updatePlatformFeeWallet",
+      "discriminator": [
+        135,
+        108,
+        214,
+        52,
+        224,
+        155,
+        54,
+        136
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "newPlatformFeeWallet",
           "type": "pubkey"
         }
       ]
@@ -1325,6 +1453,19 @@ export type Pie = {
       ]
     },
     {
+      "name": "updateFeeEvent",
+      "discriminator": [
+        79,
+        79,
+        188,
+        14,
+        247,
+        41,
+        59,
+        187
+      ]
+    },
+    {
       "name": "updateMaxRebalanceMarginEvent",
       "discriminator": [
         5,
@@ -1335,6 +1476,19 @@ export type Pie = {
         201,
         59,
         195
+      ]
+    },
+    {
+      "name": "updatePlatformFeeWalletEvent",
+      "discriminator": [
+        202,
+        159,
+        195,
+        220,
+        101,
+        33,
+        224,
+        24
       ]
     },
     {
@@ -1374,51 +1528,56 @@ export type Pie = {
     },
     {
       "code": 6004,
+      "name": "invalidFee",
+      "msg": "Invalid fee"
+    },
+    {
+      "code": 6005,
       "name": "maxAssetsExceeded",
       "msg": "Max asset exceeded"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "invalidBasket",
       "msg": "Invalid Basket"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "insufficientBalance",
       "msg": "Insufficient Balance"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "invalidAmount",
       "msg": "Invalid Amount"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "componentNotFound",
       "msg": "Component not found"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "notInRebalancing",
       "msg": "Not in rebalancing"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "alreadyRebalancing",
       "msg": "Already rebalancing"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "invalidMargin",
       "msg": "Invalid margin value"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "invalidMarginBottom",
       "msg": "Margin value for bottom exceeds the allowed limit"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "conversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
     }
@@ -1664,7 +1823,23 @@ export type Pie = {
             "type": "pubkey"
           },
           {
+            "name": "platformFeeWallet",
+            "type": "pubkey"
+          },
+          {
             "name": "basketCounter",
+            "type": "u64"
+          },
+          {
+            "name": "rebalanceMarginLamports",
+            "type": "u64"
+          },
+          {
+            "name": "mintRedeemFeePercentage",
+            "type": "u64"
+          },
+          {
+            "name": "platformFeePercentage",
             "type": "u64"
           },
           {
@@ -1674,10 +1849,6 @@ export type Pie = {
           {
             "name": "isInitialized",
             "type": "bool"
-          },
-          {
-            "name": "rebalanceMarginLamports",
-            "type": "u64"
           }
         ]
       }
@@ -1821,6 +1992,26 @@ export type Pie = {
       }
     },
     {
+      "name": "updateFeeEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newMintRedeemFeePercentage",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "newPlatformFeePercentage",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "updateMaxRebalanceMarginEvent",
       "type": {
         "kind": "struct",
@@ -1828,6 +2019,18 @@ export type Pie = {
           {
             "name": "newMargin",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "updatePlatformFeeWalletEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newPlatformFeeWallet",
+            "type": "pubkey"
           }
         ]
       }

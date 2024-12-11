@@ -1,5 +1,5 @@
 {
-  "address": "DxbbTCg4dFQRXPvcfQMEAn4VmuEb7b8u9dxwZpXEZsMS",
+  "address": "CxDpS1HuE9vmVcEsFnV5ejzSXDFLje85CQb9THogdyNu",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -123,6 +123,14 @@
         },
         {
           "name": "vault_token_destination",
+          "writable": true
+        },
+        {
+          "name": "platform_fee_token_account",
+          "writable": true
+        },
+        {
+          "name": "creator_token_account",
           "writable": true
         },
         {
@@ -812,6 +820,14 @@
           "writable": true
         },
         {
+          "name": "platform_fee_token_account",
+          "writable": true
+        },
+        {
+          "name": "creator_token_account",
+          "writable": true
+        },
+        {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -1028,6 +1044,118 @@
       "args": [
         {
           "name": "new_admin",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "update_fee",
+      "discriminator": [
+        232,
+        253,
+        195,
+        247,
+        148,
+        212,
+        73,
+        222
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_mint_redeem_fee_percentage",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "new_platform_fee_percentage",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_platform_fee_wallet",
+      "discriminator": [
+        135,
+        108,
+        214,
+        52,
+        224,
+        155,
+        54,
+        136
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_platform_fee_wallet",
           "type": "pubkey"
         }
       ]
@@ -1319,6 +1447,19 @@
       ]
     },
     {
+      "name": "UpdateFeeEvent",
+      "discriminator": [
+        79,
+        79,
+        188,
+        14,
+        247,
+        41,
+        59,
+        187
+      ]
+    },
+    {
       "name": "UpdateMaxRebalanceMarginEvent",
       "discriminator": [
         5,
@@ -1329,6 +1470,19 @@
         201,
         59,
         195
+      ]
+    },
+    {
+      "name": "UpdatePlatformFeeWalletEvent",
+      "discriminator": [
+        202,
+        159,
+        195,
+        220,
+        101,
+        33,
+        224,
+        24
       ]
     },
     {
@@ -1368,51 +1522,56 @@
     },
     {
       "code": 6004,
+      "name": "InvalidFee",
+      "msg": "Invalid fee"
+    },
+    {
+      "code": 6005,
       "name": "MaxAssetsExceeded",
       "msg": "Max asset exceeded"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "InvalidBasket",
       "msg": "Invalid Basket"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "InsufficientBalance",
       "msg": "Insufficient Balance"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "InvalidAmount",
       "msg": "Invalid Amount"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "ComponentNotFound",
       "msg": "Component not found"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "NotInRebalancing",
       "msg": "Not in rebalancing"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "AlreadyRebalancing",
       "msg": "Already rebalancing"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "InvalidMargin",
       "msg": "Invalid margin value"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "InvalidMarginBottom",
       "msg": "Margin value for bottom exceeds the allowed limit"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "ConversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
     }
@@ -1658,7 +1817,23 @@
             "type": "pubkey"
           },
           {
+            "name": "platform_fee_wallet",
+            "type": "pubkey"
+          },
+          {
             "name": "basket_counter",
+            "type": "u64"
+          },
+          {
+            "name": "rebalance_margin_lamports",
+            "type": "u64"
+          },
+          {
+            "name": "mint_redeem_fee_percentage",
+            "type": "u64"
+          },
+          {
+            "name": "platform_fee_percentage",
             "type": "u64"
           },
           {
@@ -1668,10 +1843,6 @@
           {
             "name": "is_initialized",
             "type": "bool"
-          },
-          {
-            "name": "rebalance_margin_lamports",
-            "type": "u64"
           }
         ]
       }
@@ -1815,6 +1986,26 @@
       }
     },
     {
+      "name": "UpdateFeeEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "new_mint_redeem_fee_percentage",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "new_platform_fee_percentage",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdateMaxRebalanceMarginEvent",
       "type": {
         "kind": "struct",
@@ -1822,6 +2013,18 @@
           {
             "name": "new_margin",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdatePlatformFeeWalletEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "new_platform_fee_wallet",
+            "type": "pubkey"
           }
         ]
       }

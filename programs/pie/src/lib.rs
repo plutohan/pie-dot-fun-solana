@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("DxbbTCg4dFQRXPvcfQMEAn4VmuEb7b8u9dxwZpXEZsMS");
+declare_id!("CxDpS1HuE9vmVcEsFnV5ejzSXDFLje85CQb9THogdyNu");
 
 pub mod constant;
 pub mod error;
@@ -40,6 +40,27 @@ pub mod pie {
         new_margin: u64,
     ) -> Result<()> {
         instructions::update_rebalance_margin(ctx, new_margin)?;
+        Ok(())
+    }
+
+    pub fn update_platform_fee_wallet(
+        ctx: Context<UpdatePlatformFeeWalletContext>,
+        new_platform_fee_wallet: Pubkey,
+    ) -> Result<()> {
+        instructions::update_platform_fee_wallet(ctx, new_platform_fee_wallet)?;
+        Ok(())
+    }
+
+    pub fn update_fee(
+        ctx: Context<UpdateFeeContext>,
+        new_mint_redeem_fee_percentage: Option<u64>,
+        new_platform_fee_percentage: Option<u64>,
+    ) -> Result<()> {
+        instructions::update_fee(
+            ctx,
+            new_mint_redeem_fee_percentage,
+            new_platform_fee_percentage,
+        )?;
         Ok(())
     }
 

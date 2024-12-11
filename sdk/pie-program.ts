@@ -10,7 +10,6 @@ import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import * as PieIDL from "../target/idl/pie.json";
 import {
-  getAssociatedTokenAddress,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
 } from "@solana/spl-token";
@@ -107,13 +106,30 @@ export class PieProgram {
       this.program.programId
     )[0];
   }
-
   async getProgramState(): Promise<ProgramState | null> {
     try {
       return await this.accounts.programState.fetch(this.programStatePDA);
     } catch (error) {
       return null;
     }
+  }
+
+  async getPlatformFeeTokenAccount(): Promise<PublicKey> {
+    const programState = await this.getProgramState();
+    const platformFeeTokenAccount = getAssociatedTokenAddressSync(
+      NATIVE_MINT,
+      programState.platformFeeWallet,
+    );
+    return platformFeeTokenAccount;
+  }
+
+  async getCreatorFeeTokenAccount(basketId: BN): Promise<PublicKey> {
+    const basketConfig = await this.getBasketConfig(basketId);
+    const creatorFeeTokenAccount = getAssociatedTokenAddressSync(
+      NATIVE_MINT,
+      basketConfig.creator,
+    );
+    return creatorFeeTokenAccount;
   }
 
   async getBasketConfig(basketId: BN): Promise<BasketConfig | null> {
@@ -163,21 +179,55 @@ export class PieProgram {
       .transaction();
   }
 
-    /**
+  /**
    * Updates the rebalance margin.
    * @param admin - The admin account.
    * @param newMargin - The new margin.
    * @returns A promise that resolves to a transaction.
    */
-    async updateRebalanceMargin(
-      admin: PublicKey,
-      newMargin: number
-    ): Promise<Transaction> {
-      return await this.program.methods
-        .updateRebalanceMargin(new BN(newMargin))
-        .accounts({ admin, programState: this.programStatePDA })
-        .transaction();
-    }
+  async updateRebalanceMargin(
+    admin: PublicKey,
+    newMargin: number
+  ): Promise<Transaction> {
+    return await this.program.methods
+      .updateRebalanceMargin(new BN(newMargin))
+      .accounts({ admin, programState: this.programStatePDA })
+      .transaction();
+  }
+
+  /**
+   * Updates the fee. 10000 = 100% => 1000 = 1%
+   * @param admin - The admin account.
+   * @param newMintRedeemFeePercentage - The new mint redeem fee percentage.
+   * @param newPlatformFeePercentage - The new platform fee percentage.
+   * @returns A promise that resolves to a transaction.
+   */
+  async updateFee(
+    admin: PublicKey,
+    newMintRedeemFeePercentage: number,
+    newPlatformFeePercentage: number
+  ): Promise<Transaction> {
+    return await this.program.methods
+      .updateFee(
+        new BN(newMintRedeemFeePercentage),
+        new BN(newPlatformFeePercentage)
+      )
+      .accounts({ admin, programState: this.programStatePDA })
+      .transaction();
+  }
+
+  /**
+   * Updates the platform fee wallet.
+   * @param admin - The admin account.
+   * @param newPlatformFeeWallet - The new platform fee wallet.
+   * @returns A promise that resolves to a transaction.
+   */
+  async updatePlatformFeeWallet(
+    admin: PublicKey,
+    newPlatformFeeWallet: PublicKey
+  ): Promise<Transaction> {
+    return await this.program.methods.updatePlatformFeeWallet(newPlatformFeeWallet).accounts({ admin, programState: this.programStatePDA }).transaction();
+  }
 
   /**
    * Creates a basket.
@@ -305,6 +355,8 @@ export class PieProgram {
         ammProgram: new PublicKey(poolKeys.programId),
         userTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
       })
       .transaction();
 
@@ -386,6 +438,8 @@ export class PieProgram {
         ammProgram: new PublicKey(poolKeys.programId),
         userTokenDestination: outputTokenAccount,
         vaultTokenSource: inputTokenAccount,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
       })
       .transaction();
 

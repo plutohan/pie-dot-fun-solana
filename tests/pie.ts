@@ -1,5 +1,4 @@
 import * as anchor from "@coral-xyz/anchor";
-import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import { Pie } from "../target/types/pie";
 import {
   Connection,
@@ -17,10 +16,6 @@ import { getMint } from "@solana/spl-token";
 export type BasketComponent = anchor.IdlTypes<Pie>["basketComponent"];
 export type CreateBasketArgs = anchor.IdlTypes<Pie>["createBasketArgs"];
 
-const MPL_TOKEN_METADATA_PROGRAM_ID = new PublicKey(
-  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-);
-
 function sleep(s: number) {
   return new Promise((resolve) => setTimeout(resolve, s * 1000));
 }
@@ -34,6 +29,7 @@ describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
   const newAdmin = Keypair.generate();
   const rebalancer = Keypair.generate();
+  const platformFeeWallet = Keypair.generate();
 
   const pieProgram = new PieProgram(connection);
 
@@ -43,6 +39,7 @@ describe("pie", () => {
       connection.requestAirdrop(defaultProvider.publicKey, LAMPORTS_PER_SOL),
       connection.requestAirdrop(newAdmin.publicKey, LAMPORTS_PER_SOL),
       connection.requestAirdrop(rebalancer.publicKey, LAMPORTS_PER_SOL),
+      connection.requestAirdrop(platformFeeWallet.publicKey, LAMPORTS_PER_SOL),
     ]);
     await sleep(1);
 
@@ -87,6 +84,68 @@ describe("pie", () => {
           admin.publicKey
         );
         await sendAndConfirmTransaction(connection, transferTx, [newAdmin]);
+      } catch (e) {}
+    });
+  });
+
+  describe("update_fee", () => {
+    it("should update fee", async () => {
+      const updateFeeTx = await pieProgram.updateFee(
+        admin.publicKey,
+        1000,
+        1000
+      );
+      await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
+
+      const programState = await pieProgram.getProgramState();
+      assert.equal(programState.mintRedeemFeePercentage.toNumber(), 1000);
+      assert.equal(programState.platformFeePercentage.toNumber(), 1000);
+    });
+    it("should fail if not admin", async () => {
+      try {
+        const updateFeeTx = await pieProgram.updateFee(
+          newAdmin.publicKey,
+          1000,
+          1000
+        );
+        await sendAndConfirmTransaction(connection, updateFeeTx, [newAdmin]);
+      } catch (e) {}
+    });
+
+    it("should fail if the fee is invalid", async () => {
+      try {
+        const updateFeeTx = await pieProgram.updateFee(
+          admin.publicKey,
+          1000,
+          1000
+        );
+        await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
+      } catch (e) {
+        console.log(e);
+      }
+    });
+  });
+
+  describe("update_platform_fee_wallet", () => {
+    it("should update platform fee wallet", async () => {
+      const updatePlatformFeeWalletTx = await pieProgram.updatePlatformFeeWallet(
+        admin.publicKey,
+        platformFeeWallet.publicKey
+      );
+      await sendAndConfirmTransaction(connection, updatePlatformFeeWalletTx, [admin]);
+
+      const programState = await pieProgram.getProgramState();
+      assert.equal(programState.platformFeeWallet.toBase58(), platformFeeWallet.publicKey.toBase58());
+
+    });
+
+    it("should fail if not admin", async () => {
+      try {
+        const updatePlatformFeeWalletTx = await pieProgram.updatePlatformFeeWallet(
+          newAdmin.publicKey,
+          platformFeeWallet.publicKey
+        );
+        await sendAndConfirmTransaction(connection, updatePlatformFeeWalletTx, [newAdmin]);
       } catch (e) {}
     });
   });
