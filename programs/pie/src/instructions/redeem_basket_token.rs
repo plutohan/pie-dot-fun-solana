@@ -82,7 +82,7 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
             .find(|a| a.mint == token_config.mint)
         {
             let mut amount_return: u64 = amount
-                .checked_mul(token_config.ratio)
+                .checked_mul(token_config.quantity)
                 .unwrap();
 
             amount_return = Calculator::to_u64(Calculator::restore_decimal(
