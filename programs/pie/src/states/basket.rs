@@ -5,8 +5,7 @@ use crate::constant::MAX_COMPONENTS;
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct BasketComponent {
     pub mint: Pubkey,
-    pub quantity: u64,
-    pub decimals: u8,
+    pub quantity_in_sys_decimal: u128,
 }
 
 #[account]
@@ -29,5 +28,5 @@ impl Space for BasketConfig {
         + 32 // mint
         + 1   // is_rebalancing (bool)
         + 4 // vec length
-        + (32+ 8 + 1)* MAX_COMPONENTS as usize; // vec items
+        + (32+ 16)* MAX_COMPONENTS as usize; // vec items
 }
