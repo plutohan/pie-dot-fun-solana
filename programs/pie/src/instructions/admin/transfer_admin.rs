@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::{constant::PROGRAM_STATE, error::PieError, ProgramState};
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct TransferAdminContext<'info> {
@@ -19,7 +19,6 @@ pub struct TransferAdminContext<'info> {
 #[event]
 pub struct TransferAdminEvent {
     pub old_admin: Pubkey,
-
     pub new_admin: Pubkey,
 }
 

@@ -32,7 +32,7 @@ pub fn transfer_from_user_to_pool_vault<'info>(
 pub fn calculate_fee_amount(program_state: &ProgramState, amount: u64) -> Result<(u64, u64)> {
     let platform_fee_percentage = program_state.platform_fee_percentage;
     let creator_fee_percentage = program_state
-        .mint_redeem_fee_percentage
+        .creator_fee_percentage
         .checked_sub(platform_fee_percentage)
         .unwrap();
 

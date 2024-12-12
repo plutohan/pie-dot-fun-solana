@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
-use crate::{error::PieError, BASKET_CONFIG};
 use crate::states::BasketConfig;
+use crate::{error::PieError, BASKET_CONFIG};
 
 #[derive(Accounts)]
 pub struct UpdateRebalancerContext<'info> {
@@ -24,8 +24,14 @@ pub struct UpdateRebalancerEvent {
     pub new_rebalancer: Pubkey,
 }
 
-pub fn update_rebalancer(ctx: Context<UpdateRebalancerContext>, new_rebalancer: Pubkey) -> Result<()> {
-    require!(ctx.accounts.creator.key() == ctx.accounts.basket_config.creator, PieError::Unauthorized);
+pub fn update_rebalancer(
+    ctx: Context<UpdateRebalancerContext>,
+    new_rebalancer: Pubkey,
+) -> Result<()> {
+    require!(
+        ctx.accounts.creator.key() == ctx.accounts.basket_config.creator,
+        PieError::Unauthorized
+    );
 
     ctx.accounts.basket_config.rebalancer = new_rebalancer;
 
