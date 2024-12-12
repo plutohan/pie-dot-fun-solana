@@ -1,6 +1,6 @@
 use crate::constant::{INITIALIZE_ADMIN, PROGRAM_STATE};
 use crate::error::PieError;
-use crate::{ProgramState};
+use crate::ProgramState;
 use anchor_lang::prelude::*;
 use std::str::FromStr;
 
@@ -42,4 +42,3 @@ pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
 
     Ok(())
 }
-

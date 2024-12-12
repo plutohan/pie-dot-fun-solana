@@ -15,8 +15,8 @@ pub struct BasketConfig {
     pub creator: Pubkey,
     pub rebalancer: Pubkey,
     pub mint: Pubkey,
-    pub components: Vec<BasketComponent>,
     pub is_rebalancing: bool,
+    pub components: Vec<BasketComponent>,
 }
 
 impl Space for BasketConfig {
