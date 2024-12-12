@@ -1,5 +1,4 @@
 use anchor_lang::{prelude::*, solana_program};
-
 use anchor_spl::{
     token::{Token, TokenAccount},
     token_interface::Mint,
@@ -123,13 +122,13 @@ pub fn sell_component(
 
     require!(component.amount >= amount_in, PieError::InsufficientBalance);
 
+    let balance_before = ctx.accounts.user_token_destination.amount;
+
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
         &ctx.accounts.basket_config.id.to_be_bytes(),
         &[ctx.accounts.basket_config.bump],
     ]];
-
-    let balance_before = ctx.accounts.user_token_destination.amount;
 
     let swap_base_in_inx = swap_base_in(
         &ctx.accounts.amm_program.key(),
@@ -176,6 +175,7 @@ pub fn sell_component(
         },
         signer,
     );
+
     solana_program::program::invoke_signed(
         &swap_base_in_inx,
         &ToAccountInfos::to_account_infos(&cpi_context),

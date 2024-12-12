@@ -196,9 +196,8 @@ pub fn execute_swap<'a: 'info, 'info>(
 
         let token_mint = accounts.token_mint.key();
         let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(accounts.vault_token_destination.amount);
+            Calculator::apply_sys_decimal(accounts.vault_token_destination.amount).checked_div(total_supply.try_into().unwrap()).unwrap();
 
-        // Now handle the update or insertion in a clean manner
         if let Some(component) = basket_config
             .components
             .iter_mut()
@@ -268,7 +267,7 @@ pub fn execute_swap<'a: 'info, 'info>(
 
         let token_mint = accounts.token_mint.key();
         let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(accounts.vault_token_source.amount);
+            Calculator::apply_sys_decimal(accounts.vault_token_source.amount).checked_div(total_supply.try_into().unwrap()).unwrap();
 
         if quantity_in_sys_decimal == 0 {
             basket_config.components.retain(|c| c.mint != token_mint);

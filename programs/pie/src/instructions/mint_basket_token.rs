@@ -48,7 +48,7 @@ pub struct MintBasketTokenEvent {
     pub amount: u64,
 }
 
-pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> Result<()> {
+pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, basket_token_amount: u64) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
     let basket_config = &mut ctx.accounts.basket_config;
 
@@ -60,17 +60,12 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .iter()
             .find(|a| a.mint == token_config.mint)
         {
-            let user_amount_in_system_decimal = Calculator::apply_sys_decimal(user_asset.amount);
-            
-            let possible_mint = user_amount_in_system_decimal
-                .checked_div(token_config.quantity_in_sys_decimal.into())
-                .unwrap();
-
-            amount_can_mint = amount_can_mint.min(possible_mint.try_into().unwrap());
+            let possible_mint_amount = calculate_possible_mint_amount(user_asset.amount, token_config.quantity_in_sys_decimal).unwrap();
+            amount_can_mint = amount_can_mint.min(possible_mint_amount.try_into().unwrap());
         }
     }
 
-    require!(amount_can_mint >= amount, PieError::InvalidAmount);
+    require!(amount_can_mint >= basket_token_amount, PieError::InvalidAmount);
 
     for token_config in basket_config.components.iter() {
         if let Some(asset) = user_fund
@@ -78,12 +73,8 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {
-            let amount_to_deduct = token_config.quantity_in_sys_decimal
-                .checked_mul(amount.into())
-                .unwrap();
-            
-            let amount_to_deduct_in_raw_decimal = Calculator::restore_raw_decimal(amount_to_deduct);
-            
+            let amount_to_deduct_in_raw_decimal = calculate_deduct_amount(basket_token_amount.into(), token_config.quantity_in_sys_decimal)?;
+
             asset.amount = asset
                 .amount
                 .checked_sub(amount_to_deduct_in_raw_decimal)
@@ -104,14 +95,37 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-    mint_to(cpi_ctx, amount)?;
+    mint_to(cpi_ctx, basket_token_amount)?;
 
     emit!(MintBasketTokenEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
         basket_mint: ctx.accounts.basket_mint.key(),
-        amount,
+        amount: basket_token_amount,
     });
 
     Ok(())
 }
+
+fn calculate_deduct_amount(basket_token_amount: u128, quantity_in_sys_decimal: u128) -> Result<u64> {
+    let amount_to_deduct = quantity_in_sys_decimal
+        .checked_mul(basket_token_amount).unwrap();
+    Ok(Calculator::restore_raw_decimal(amount_to_deduct))
+}
+
+fn calculate_possible_mint_amount(user_asset_amount: u64, quantity_in_sys_decimal: u128) -> Result<u128> {
+    let user_amount_in_system_decimal = Calculator::apply_sys_decimal(user_asset_amount);
+
+    Ok(user_amount_in_system_decimal.checked_div(quantity_in_sys_decimal).unwrap())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_calculate_deduct_amount() {
+        assert_eq!(calculate_deduct_amount(1_000_000_000u128, 1_000u128).unwrap(), 1_000_000u64);
+    }
+}
+

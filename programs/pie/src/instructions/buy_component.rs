@@ -116,7 +116,6 @@ pub fn buy_component(
     max_amount_in: u64,
     amount_out: u64,
 ) -> Result<()> {
-    // Verify amount is not zero
     require!(max_amount_in > 0, PieError::InvalidAmount);
 
     let balance_in_before = ctx.accounts.user_token_source.amount;
@@ -171,6 +170,7 @@ pub fn buy_component(
         &swap_base_out_inx,
         &ToAccountInfos::to_account_infos(&cpi_context),
     )?;
+
     ctx.accounts.user_token_source.reload()?;
     ctx.accounts.vault_token_destination.reload()?;
 

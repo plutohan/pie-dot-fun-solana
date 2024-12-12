@@ -1104,7 +1104,7 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "newMintRedeemFeePercentage",
+          "name": "newCreatorFeePercentage",
           "type": {
             "option": "u64"
           }
@@ -1596,12 +1596,8 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "quantity",
-            "type": "u64"
-          },
-          {
-            "name": "decimals",
-            "type": "u8"
+            "name": "quantityInSysDecimal",
+            "type": "u128"
           }
         ]
       }
@@ -1632,6 +1628,10 @@ export type Pie = {
             "type": "pubkey"
           },
           {
+            "name": "isRebalancing",
+            "type": "bool"
+          },
+          {
             "name": "components",
             "type": {
               "vec": {
@@ -1640,10 +1640,6 @@ export type Pie = {
                 }
               }
             }
-          },
-          {
-            "name": "isRebalancing",
-            "type": "bool"
           }
         ]
       }
@@ -1838,7 +1834,7 @@ export type Pie = {
             "type": "u64"
           },
           {
-            "name": "mintRedeemFeePercentage",
+            "name": "creatorFeePercentage",
             "type": "u64"
           },
           {
@@ -2000,7 +1996,7 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
-            "name": "newMintRedeemFeePercentage",
+            "name": "newCreatorFeePercentage",
             "type": {
               "option": "u64"
             }
