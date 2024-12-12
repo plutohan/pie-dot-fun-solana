@@ -5,7 +5,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, UserFund, BASKET_CONFIG, BASKET_MINT, SYS_DECIMALS
+    constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, UserFund, BASKET_CONFIG, BASKET_MINT
 };
 
 #[derive(Accounts)]
@@ -60,16 +60,13 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .iter()
             .find(|a| a.mint == token_config.mint)
         {
-            let user_amount_normalized = Calculator::to_u64(Calculator::normalize_decimal_v2(
-                user_asset
-            .amount,
-            token_config.decimals.try_into().unwrap(),
-                SYS_DECIMALS.try_into().unwrap(),
-            )).unwrap();            
-            let possible_mint = user_amount_normalized
-                .checked_div(token_config.quantity)
+            let user_amount_in_system_decimal = Calculator::apply_sys_decimal(user_asset.amount);
+            
+            let possible_mint = user_amount_in_system_decimal
+                .checked_div(token_config.quantity_in_sys_decimal.into())
                 .unwrap();
-            amount_can_mint = amount_can_mint.min(possible_mint);
+
+            amount_can_mint = amount_can_mint.min(possible_mint.try_into().unwrap());
         }
     }
 
@@ -81,19 +78,15 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {
-            let mut amount_to_deduct = token_config.quantity
-                .checked_mul(amount)
+            let amount_to_deduct = token_config.quantity_in_sys_decimal
+                .checked_mul(amount.into())
                 .unwrap();
             
-            amount_to_deduct = Calculator::to_u64(Calculator::restore_decimal(
-                amount_to_deduct.try_into().unwrap(),
-                token_config.decimals.try_into().unwrap(),
-                SYS_DECIMALS,
-            )).unwrap();
-
+            let amount_to_deduct_in_raw_decimal = Calculator::restore_raw_decimal(amount_to_deduct);
+            
             asset.amount = asset
                 .amount
-                .checked_sub(amount_to_deduct)
+                .checked_sub(amount_to_deduct_in_raw_decimal)
                 .ok_or(PieError::InsufficientBalance)?;
         }
     }

@@ -1,4 +1,4 @@
-use crate::error::PieError;
+use crate::{error::PieError, SYS_DECIMALS};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Calculator {}
@@ -17,25 +17,12 @@ impl Calculator {
         val.try_into().map_err(|_| PieError::ConversionFailure)
     }
 
-    pub fn normalize_decimal_v2(val: u64, native_decimal: u64, sys_decimal_value: u64) -> u128 {
-        // e.g., amm.sys_decimal_value is 10**6, native_decimal is 10**9, price is 1.23, this function will convert (1.23*10**9) -> (1.23*10**6)
-        //let ret:u64 = val.checked_mul(amm.sys_decimal_value).unwrap().checked_div((10 as u64).pow(native_decimal.into())).unwrap();
-        let ret_mut = Self::to_u128(val).unwrap()
-            .checked_mul(Self::to_u128(sys_decimal_value).unwrap())
-            .unwrap();
-        let ret = ret_mut
-            .checked_div(10u128.checked_pow(Self::to_u32(native_decimal).unwrap()).unwrap())
-            .unwrap();
-        ret
+    pub fn apply_sys_decimal(val: u64) -> u128 {
+        let val: u128 = val.into();
+        val.checked_mul(SYS_DECIMALS.into()).unwrap()
     }
 
-    pub fn restore_decimal(val: u128, native_decimal: u64, sys_decimal_value: u64) -> u128 {
-        // e.g., amm.sys_decimal_value is 10**6, native_decimal is 10**9, price is 1.23, this function will convert (1.23*10**6) -> (1.23*10**9)
-        // let ret:u64 = val.checked_mul((10 as u64).pow(native_decimal.into())).unwrap().checked_div(amm.sys_decimal_value).unwrap();
-        let ret_mut = val
-            .checked_mul(10u128.checked_pow(Self::to_u32(native_decimal).unwrap()).unwrap())
-            .unwrap();
-        let ret = ret_mut.checked_div(Self::to_u128(sys_decimal_value).unwrap()).unwrap();
-        ret
+    pub fn restore_raw_decimal(val: u128) -> u64 {
+        Self::to_u64(val.checked_div(SYS_DECIMALS.into()).unwrap()).unwrap()
     }
 }
