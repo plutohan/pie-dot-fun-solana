@@ -30,19 +30,13 @@ pub fn transfer_from_user_to_pool_vault<'info>(
 }
 
 pub fn calculate_fee_amount(program_state: &ProgramState, amount: u64) -> Result<(u64, u64)> {
-    let platform_fee_percentage = program_state.platform_fee_percentage;
-    let creator_fee_percentage = program_state
-        .creator_fee_percentage
-        .checked_sub(platform_fee_percentage)
-        .unwrap();
-
     let platform_fee_amount = amount
-        .checked_mul(platform_fee_percentage)
+        .checked_mul(program_state.platform_fee_percentage)
         .unwrap()
         .checked_div(BASIS_POINTS)
         .unwrap();
     let creator_fee_amount = amount
-        .checked_mul(creator_fee_percentage)
+        .checked_mul(program_state.creator_fee_percentage)
         .unwrap()
         .checked_div(BASIS_POINTS)
         .unwrap();
