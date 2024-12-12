@@ -36,10 +36,6 @@ pub fn update_fee(
     if let Some(new_platform_fee_percentage) = new_platform_fee_percentage {
         program_state.platform_fee_percentage = new_platform_fee_percentage;
     }
-    require!(
-        program_state.mint_redeem_fee_percentage >= program_state.platform_fee_percentage,
-        PieError::InvalidFee
-    );
 
     emit!(UpdateFeeEvent {
         new_creator_fee_percentage,
