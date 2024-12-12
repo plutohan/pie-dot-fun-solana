@@ -1590,12 +1590,8 @@
             "type": "pubkey"
           },
           {
-            "name": "quantity",
-            "type": "u64"
-          },
-          {
-            "name": "decimals",
-            "type": "u8"
+            "name": "quantity_in_sys_decimal",
+            "type": "u128"
           }
         ]
       }
@@ -1626,6 +1622,10 @@
             "type": "pubkey"
           },
           {
+            "name": "is_rebalancing",
+            "type": "bool"
+          },
+          {
             "name": "components",
             "type": {
               "vec": {
@@ -1634,10 +1634,6 @@
                 }
               }
             }
-          },
-          {
-            "name": "is_rebalancing",
-            "type": "bool"
           }
         ]
       }

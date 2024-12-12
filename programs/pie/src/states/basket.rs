@@ -26,7 +26,7 @@ impl Space for BasketConfig {
         + 32 // creator
         + 32 // rebalancer
         + 32 // mint
-        + 1   // is_rebalancing (bool)
+        + 1  // is_rebalancing (bool)
         + 4 // vec length
         + (32+ 16)* MAX_COMPONENTS as usize; // vec items
 }
