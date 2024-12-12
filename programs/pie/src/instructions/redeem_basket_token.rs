@@ -4,7 +4,9 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, ProgramState, UserFund, SYS_DECIMALS};
+use crate::{
+    constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, ProgramState, UserFund,
+};
 
 #[derive(Accounts)]
 pub struct RedeemBasketTokenContext<'info> {
@@ -82,20 +84,14 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
             .iter_mut()
             .find(|a| a.mint == token_config.mint)
         {
-            let mut amount_return: u64 = amount
-                .checked_mul(token_config.quantity).unwrap()
-                .checked_div(SYS_DECIMALS)
+            let amount_return: u128 = token_config
+                .quantity_in_sys_decimal
+                .checked_mul(amount.into())
                 .unwrap();
-
-            amount_return = Calculator::to_u64(Calculator::restore_decimal(
-                amount_return.try_into().unwrap(), 
-                token_config.decimals.try_into().unwrap(),
-                SYS_DECIMALS.try_into().unwrap(),
-            )).unwrap();
 
             asset.amount = asset
                 .amount
-                .checked_add(amount_return)
+                .checked_add(Calculator::restore_raw_decimal(amount_return))
                 .unwrap();
         }
     }

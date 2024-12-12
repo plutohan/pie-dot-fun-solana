@@ -4,7 +4,6 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::constant::SYS_DECIMALS;
 use crate::utils::Calculator;
 use crate::{
     error::PieError,
@@ -196,14 +195,8 @@ pub fn execute_swap<'a: 'info, 'info>(
         accounts.vault_token_destination.reload()?;
 
         let token_mint = accounts.token_mint.key();
-        let quantity = Calculator::to_u64(
-            Calculator::normalize_decimal_v2(
-                accounts.vault_token_destination.amount,
-                accounts.token_mint.decimals.try_into().unwrap(),
-                SYS_DECIMALS.try_into().unwrap(),
-            ).checked_mul(SYS_DECIMALS.try_into().unwrap()).unwrap()
-            .checked_div(Calculator::to_u128(total_supply).unwrap()).unwrap()
-        ).unwrap();
+        let quantity_in_sys_decimal =
+            Calculator::apply_sys_decimal(accounts.vault_token_destination.amount);
 
         // Now handle the update or insertion in a clean manner
         if let Some(component) = basket_config
@@ -211,12 +204,11 @@ pub fn execute_swap<'a: 'info, 'info>(
             .iter_mut()
             .find(|c| c.mint == token_mint)
         {
-            component.quantity = quantity;
+            component.quantity_in_sys_decimal = quantity_in_sys_decimal;
         } else {
             basket_config.components.push(BasketComponent {
                 mint: token_mint,
-                quantity,
-                decimals: accounts.token_mint.decimals,
+                quantity_in_sys_decimal,
             });
         }
     } else {
@@ -275,9 +267,10 @@ pub fn execute_swap<'a: 'info, 'info>(
         accounts.vault_token_source.reload()?;
 
         let token_mint = accounts.token_mint.key();
-        let token_amount = accounts.vault_token_source.amount;
+        let quantity_in_sys_decimal =
+            Calculator::apply_sys_decimal(accounts.vault_token_source.amount);
 
-        if token_amount == 0 {
+        if quantity_in_sys_decimal == 0 {
             basket_config.components.retain(|c| c.mint != token_mint);
         } else {
             if let Some(component) = basket_config
@@ -285,13 +278,7 @@ pub fn execute_swap<'a: 'info, 'info>(
                 .iter_mut()
                 .find(|c| c.mint == token_mint)
             {
-                component.quantity = Calculator::to_u64(
-                    Calculator::normalize_decimal_v2(
-                        token_amount,
-                        accounts.token_mint.decimals.try_into().unwrap(),
-                        SYS_DECIMALS.try_into().unwrap(),
-                    ).checked_mul(SYS_DECIMALS.try_into().unwrap()).unwrap().checked_div(total_supply.try_into().unwrap()).unwrap()
-                ).unwrap();
+                component.quantity_in_sys_decimal = quantity_in_sys_decimal;
             }
         }
     }
