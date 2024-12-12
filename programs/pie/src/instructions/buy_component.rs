@@ -214,7 +214,6 @@ pub fn buy_component(
     {
         asset.amount = asset.amount.checked_add(amount_received).unwrap();
     } else {
-        //TODO: check if the user has enough space to add the new asset
         require!(
             user_fund.components.len() < MAX_COMPONENTS as usize,
             PieError::MaxAssetsExceeded
