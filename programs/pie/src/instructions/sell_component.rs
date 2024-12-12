@@ -1,4 +1,5 @@
 use anchor_lang::{prelude::*, solana_program};
+
 use anchor_spl::{
     token::{Token, TokenAccount},
     token_interface::Mint,
@@ -8,7 +9,7 @@ use crate::{
     constant::USER_FUND,
     error::PieError,
     utils::{calculate_fee_amount, swap_base_in, transfer_from_user_to_pool_vault, SwapBaseIn},
-    BasketConfig, ProgramState, UserFund, BASKET_CONFIG,
+    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT,
 };
 
 #[derive(Accounts)]
@@ -79,14 +80,16 @@ pub struct SellComponentContext<'info> {
     /// CHECK: Safe. user source token Account
     #[account(
         mut,
-        token::authority = program_state.platform_fee_wallet
+        token::authority = program_state.platform_fee_wallet,
+        token::mint = NATIVE_MINT,
     )]
     pub platform_fee_token_account: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: Safe. user source token Account
     #[account(
         mut,
-        token::authority = basket_config.creator
+        token::authority = basket_config.creator,
+        token::mint = NATIVE_MINT,
     )]
     pub creator_token_account: Box<Account<'info, TokenAccount>>,
 
@@ -185,7 +188,7 @@ pub fn sell_component(
 
     let amount_received: u64 = balance_after.checked_sub(balance_before).unwrap();
 
-    let (platform_fee_amount, creator_fee_amount, remaining_amount) =
+    let (platform_fee_amount, creator_fee_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_received)?;
 
     // Transfer platform fee to platform fee wallet
@@ -210,7 +213,7 @@ pub fn sell_component(
     }
 
     // Update user's component balance
-    component.amount = component.amount.checked_sub(remaining_amount).unwrap();
+    component.amount = component.amount.checked_sub(amount_in).unwrap();
 
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

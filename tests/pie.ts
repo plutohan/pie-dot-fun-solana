@@ -4,7 +4,6 @@ import {
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
-  PublicKey,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import devnetAdmin from "../public/devnet-admin.json";

@@ -6,6 +6,7 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
   sendAndConfirmTransaction,
+  Transaction,
 } from "@solana/web3.js";
 import devnetAdmin from "../public/devnet-admin.json";
 import { assert } from "chai";
@@ -18,8 +19,17 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens } from "./utils/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
-import { getAssociatedTokenAddress, getMint, NATIVE_MINT } from "@solana/spl-token";
-import { getOrCreateTokenAccountTx, showBasketConfigTable, sleep } from "./utils/helper";
+import {
+  getAssociatedTokenAddress,
+  getMint,
+  NATIVE_MINT,
+} from "@solana/spl-token";
+import {
+  getOrCreateTokenAccountTx,
+  showBasketConfigTable,
+  showUserFundTable,
+  sleep,
+} from "./utils/helper";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -29,7 +39,6 @@ describe("pie", () => {
   let raydium: Raydium;
 
   it("Setup and Initialized if needed ", async () => {
-
     //init raydium
     raydium = await initSdk(connection, "devnet");
 
@@ -53,18 +62,21 @@ describe("pie", () => {
     //fetch again
     programState = await pieProgram.getProgramState();
 
-    console.log('programState: ',programState);
-
-    const rebalanceMarginLamports = programState ? programState.rebalanceMarginLamports.toNumber() : 0;
-    if(rebalanceMarginLamports == 0) {
-      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin(admin.publicKey, 0.5 * LAMPORTS_PER_SOL);
+    const rebalanceMarginLamports = programState
+      ? programState.rebalanceMarginLamports.toNumber()
+      : 0;
+    if (rebalanceMarginLamports == 0) {
+      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin(
+        admin.publicKey,
+        0.5 * LAMPORTS_PER_SOL
+      );
       const updateRebalanceMarginTxResult = await sendAndConfirmTransaction(
         connection,
         updateRebalanceMarginTx,
         [admin],
-        { 
-          skipPreflight: true, 
-          commitment: "confirmed" 
+        {
+          skipPreflight: true,
+          commitment: "confirmed",
         }
       );
       console.log(
@@ -72,9 +84,13 @@ describe("pie", () => {
       );
     }
 
-    if(programState.mintRedeemFeePercentage.toNumber() == 0) {
+    if (programState.mintRedeemFeePercentage.toNumber() == 0) {
       // mint redeem fee 1% and platform fee 0.5%
-      const updateFeeTx = await pieProgram.updateFee(admin.publicKey, 1000, 500);
+      const updateFeeTx = await pieProgram.updateFee(
+        admin.publicKey,
+        1000,
+        500
+      );
       const updateFeeTxResult = await sendAndConfirmTransaction(
         connection,
         updateFeeTx,
@@ -84,30 +100,35 @@ describe("pie", () => {
       console.log(
         `Fee updated at tx: https://explorer.solana.com/tx/${updateFeeTxResult}?cluster=devnet`
       );
-    }    
-    //create platform fee token account if needed 
-    const { tx: outputTx } =
-    await getOrCreateTokenAccountTx(
+    }
+    //create platform fee token account if needed
+    const { tx: outputTx } = await getOrCreateTokenAccountTx(
       connection,
       new PublicKey(NATIVE_MINT),
       admin.publicKey,
       programState.platformFeeWallet
     );
 
-    if(outputTx.signatures.length !== 0) {
-      const createPlatformFeeTokenAccountTxResult = await sendAndConfirmTransaction(
-        connection,
-        outputTx,
-        [admin],
-        { skipPreflight: true, commitment: "confirmed" }
-      );
+    if (outputTx.signatures.length !== 0) {
+      const createPlatformFeeTokenAccountTxResult =
+        await sendAndConfirmTransaction(connection, outputTx, [admin], {
+          skipPreflight: true,
+          commitment: "confirmed",
+        });
       console.log(
         `Platform fee token account created at tx: https://explorer.solana.com/tx/${createPlatformFeeTokenAccountTxResult}?cluster=devnet`
       );
     }
 
-    if(programState.platformFeeWallet.toBase58() == new PublicKey('11111111111111111111111111111111').toBase58()) {
-      const updatePlatformFeeWalletTx = await pieProgram.updatePlatformFeeWallet(admin.publicKey, admin.publicKey);
+    if (
+      programState.platformFeeWallet.toBase58() ==
+      new PublicKey("11111111111111111111111111111111").toBase58()
+    ) {
+      const updatePlatformFeeWalletTx =
+        await pieProgram.updatePlatformFeeWallet(
+          admin.publicKey,
+          admin.publicKey
+        );
       const updatePlatformFeeWalletTxResult = await sendAndConfirmTransaction(
         connection,
         updatePlatformFeeWalletTx,
@@ -146,7 +167,7 @@ describe("pie", () => {
       uri: "test",
       components: components,
       decimals: 6,
-      rebalancer: admin.publicKey
+      rebalancer: admin.publicKey,
     };
 
     const programState = await pieProgram.getProgramState();
@@ -166,22 +187,20 @@ describe("pie", () => {
       `Basket created at tx: https://explorer.solana.com/tx/${createBasketTxResult}?cluster=devnet`
     );
 
-    //create creator fee token account if needed 
-    const { tx: outputTx } =
-    await getOrCreateTokenAccountTx(
+    //create creator fee token account if needed
+    const { tx: outputTx } = await getOrCreateTokenAccountTx(
       connection,
       new PublicKey(NATIVE_MINT),
       admin.publicKey,
       admin.publicKey
     );
 
-    if(outputTx.signatures.length !== 0) {
-      const createCreatorFeeTokenAccountTxResult = await sendAndConfirmTransaction(
-        connection,
-        outputTx,
-        [admin],
-        { skipPreflight: true, commitment: "confirmed" }
-      );
+    if (outputTx.signatures.length !== 0) {
+      const createCreatorFeeTokenAccountTxResult =
+        await sendAndConfirmTransaction(connection, outputTx, [admin], {
+          skipPreflight: true,
+          commitment: "confirmed",
+        });
       console.log(
         `Creator fee token account created at tx: https://explorer.solana.com/tx/${createCreatorFeeTokenAccountTxResult}?cluster=devnet`
       );
@@ -237,23 +256,12 @@ describe("pie", () => {
         `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
       );
     }
-    const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
-
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "amount", alignment: "right", color: "green" },
-      ],
-    });
-
-    for (let i = 0; i < userFund.components.length; i++) {
-      let component = userFund.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        amount: component.amount.toString(),
-      });
-    }
-    table.printTable();
+    const userFundTable = await showUserFundTable(
+      pieProgram,
+      admin.publicKey,
+      basketId
+    );
+    userFundTable.printTable();
   });
 
   it("Mint Basket", async () => {
@@ -279,6 +287,14 @@ describe("pie", () => {
     console.log(
       `Mint basket token at tx: https://explorer.solana.com/tx/${mintBasketTokenTxResult}?cluster=devnet`
     );
+
+    console.log("User fund after mint basket: ");
+    const userFundTable = await showUserFundTable(
+      pieProgram,
+      admin.publicKey,
+      basketId
+    );
+    userFundTable.printTable();
   });
 
   it("Redeem Basket Token", async () => {
@@ -303,6 +319,13 @@ describe("pie", () => {
     console.log(
       `Redeem basket token at tx: https://explorer.solana.com/tx/${redeemBasketTokenTxResult}?cluster=devnet`
     );
+    console.log("User fund after redeem basket: ");
+    const userFundTable = await showUserFundTable(
+      pieProgram,
+      admin.publicKey,
+      basketId
+    );
+    userFundTable.printTable();
   });
 
   it("Sell Component", async () => {
@@ -315,7 +338,8 @@ describe("pie", () => {
       10 * 1000000,
       0,
       raydium,
-      tokens[1].ammId
+      tokens[1].ammId,
+      true
     );
 
     const sellComponentTxResult = await sendAndConfirmTransaction(
@@ -332,23 +356,13 @@ describe("pie", () => {
       `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
     );
 
-    const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "amount", alignment: "right", color: "green" },
-      ],
-    });
-
-    for (let i = 0; i < userFund.components.length; i++) {
-      let component = userFund.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        amount: component.amount.toString(),
-      });
-    }
-    console.log("User fund after sell component:");
-    table.printTable();
+    console.log("User fund after sell component basket: ");
+    const userFundTable = await showUserFundTable(
+      pieProgram,
+      admin.publicKey,
+      basketId
+    );
+    userFundTable.printTable();
   });
 
   it("Start rebalance basket", async () => {
@@ -372,7 +386,11 @@ describe("pie", () => {
       `Start rebalance at tx: https://explorer.solana.com/tx/${startRebalanceTxResult}?cluster=devnet`
     );
 
-    const basketMintTable = await showBasketConfigTable(connection, pieProgram, basketId);
+    const basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
+      basketId
+    );
     basketMintTable.printTable();
   });
 
@@ -383,8 +401,15 @@ describe("pie", () => {
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
     const component = basketConfigData.components[2];
 
-    const vaultComponentAccount = await getAssociatedTokenAddress(component.mint, basketConfigPDA, true);
-    const vaultComponentsBalance = await connection.getTokenAccountBalance(vaultComponentAccount, 'confirmed');
+    const vaultComponentAccount = await getAssociatedTokenAddress(
+      component.mint,
+      basketConfigPDA,
+      true
+    );
+    const vaultComponentsBalance = await connection.getTokenAccountBalance(
+      vaultComponentAccount,
+      "confirmed"
+    );
     const executeRebalanceTx = await pieProgram.executeRebalancing(
       admin.publicKey,
       false,
@@ -408,8 +433,12 @@ describe("pie", () => {
     console.log(
       `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
     );
-    console.log(`Basket config ${basketId.toString()} data: `)
-    const basketMintTable = await showBasketConfigTable(connection, pieProgram, basketId);
+    console.log(`Basket config ${basketId.toString()} data: `);
+    const basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
+      basketId
+    );
     basketMintTable.printTable();
   });
 
@@ -417,8 +446,14 @@ describe("pie", () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
-    const vaultWrappedSolAccount = await getAssociatedTokenAddress(NATIVE_MINT, basketConfigPDA, true);
-    const vaultWrappedSolBalance = await connection.getTokenAccountBalance(vaultWrappedSolAccount);
+    const vaultWrappedSolAccount = await getAssociatedTokenAddress(
+      NATIVE_MINT,
+      basketConfigPDA,
+      true
+    );
+    const vaultWrappedSolBalance = await connection.getTokenAccountBalance(
+      vaultWrappedSolAccount
+    );
 
     const executeRebalanceTx = await pieProgram.executeRebalancing(
       admin.publicKey,
@@ -444,8 +479,12 @@ describe("pie", () => {
       `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
     );
 
-    console.log(`Basket config ${basketId.toString()} data: `)
-    const basketMintTable = await showBasketConfigTable(connection, pieProgram, basketId);
+    console.log(`Basket config ${basketId.toString()} data: `);
+    const basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
+      basketId
+    );
     basketMintTable.printTable();
   });
 
@@ -470,7 +509,7 @@ describe("pie", () => {
     );
 
     const basketConfig = await pieProgram.getBasketConfig(basketId);
-    console.log(basketConfig.components)
+    console.log(basketConfig.components);
     assert.equal(basketConfig.isRebalancing, false);
   });
 });

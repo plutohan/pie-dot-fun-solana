@@ -10,6 +10,7 @@ import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import * as PieIDL from "../target/idl/pie.json";
 import {
+  createCloseAccountInstruction,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
 } from "@solana/spl-token";
@@ -118,7 +119,7 @@ export class PieProgram {
     const programState = await this.getProgramState();
     const platformFeeTokenAccount = getAssociatedTokenAddressSync(
       NATIVE_MINT,
-      programState.platformFeeWallet,
+      programState.platformFeeWallet
     );
     return platformFeeTokenAccount;
   }
@@ -127,7 +128,7 @@ export class PieProgram {
     const basketConfig = await this.getBasketConfig(basketId);
     const creatorFeeTokenAccount = getAssociatedTokenAddressSync(
       NATIVE_MINT,
-      basketConfig.creator,
+      basketConfig.creator
     );
     return creatorFeeTokenAccount;
   }
@@ -226,7 +227,10 @@ export class PieProgram {
     admin: PublicKey,
     newPlatformFeeWallet: PublicKey
   ): Promise<Transaction> {
-    return await this.program.methods.updatePlatformFeeWallet(newPlatformFeeWallet).accounts({ admin, programState: this.programStatePDA }).transaction();
+    return await this.program.methods
+      .updatePlatformFeeWallet(newPlatformFeeWallet)
+      .accounts({ admin, programState: this.programStatePDA })
+      .transaction();
   }
 
   /**
@@ -382,7 +386,8 @@ export class PieProgram {
     amountIn: number,
     minimumAmountOut: number,
     raydium: Raydium,
-    ammId: string
+    ammId: string,
+    unwrappedSol: boolean
   ): Promise<Transaction> {
     const tx = new Transaction();
     const basketMint = this.basketMintPDA(basketId);
@@ -442,8 +447,11 @@ export class PieProgram {
         creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
       })
       .transaction();
-
     tx.add(sellComponentTx);
+
+    if (unwrappedSol) {
+      tx.add(createCloseAccountInstruction(outputTokenAccount, user, user));
+    }
     return tx;
   }
 
