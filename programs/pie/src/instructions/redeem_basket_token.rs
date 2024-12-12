@@ -73,6 +73,7 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
             authority: ctx.accounts.user.to_account_info(),
         },
     );
+
     burn(burn_basket_ctx, amount)?;
 
     for token_config in basket_config.components.iter() {
@@ -82,7 +83,8 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
             .find(|a| a.mint == token_config.mint)
         {
             let mut amount_return: u64 = amount
-                .checked_mul(token_config.quantity)
+                .checked_mul(token_config.quantity).unwrap()
+                .checked_div(SYS_DECIMALS)
                 .unwrap();
 
             amount_return = Calculator::to_u64(Calculator::restore_decimal(

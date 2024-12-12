@@ -16,11 +16,7 @@ pub struct CreateBasketContext<'info> {
     #[account(mut)]
     pub creator: Signer<'info>,
 
-    #[account(
-        mut,
-        seeds = [PROGRAM_STATE],
-        bump
-    )]
+    #[account(mut, seeds = [PROGRAM_STATE], bump)]
     pub program_state: Account<'info, ProgramState>,
 
     #[account(
@@ -33,7 +29,7 @@ pub struct CreateBasketContext<'info> {
     pub basket_config: Account<'info, BasketConfig>,
 
     #[account(
-        init,
+        init_if_needed,
         seeds = [BASKET_MINT, &program_state.basket_counter.to_be_bytes()],
         bump,
         payer = creator,
@@ -41,12 +37,16 @@ pub struct CreateBasketContext<'info> {
         mint::authority = basket_config,
     )]
     pub basket_mint: Account<'info, Mint>,
-    /// To store Metaplex metadata
+
+    /// Metadata account to store Metaplex metadata
     /// CHECK: Safety check performed inside function body
     #[account(mut)]
     pub metadata_account: UncheckedAccount<'info>,
+
+    /// The Metaplex metadata program
     /// CHECK: Metadata program address constraint applied
     pub metadata_program: Program<'info, Metadata>,
+
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -59,7 +59,7 @@ pub struct CreateBasketArgs {
     pub symbol: String,
     pub uri: String,
     pub decimals: u8,
-    pub rebalancer: Pubkey
+    pub rebalancer: Pubkey,
 }
 
 #[event]
@@ -78,7 +78,6 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
 
     if !program_state.enable_creator {
         let current_admin = program_state.admin;
-
         if ctx.accounts.creator.key() != current_admin {
             return Err(PieError::Unauthorized.into());
         }
@@ -92,7 +91,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     basket_config.rebalancer = args.rebalancer;
     basket_config.id = config.basket_counter;
     basket_config.mint = ctx.accounts.basket_mint.key();
-    basket_config.components = args.components;
+    basket_config.components = args.components.clone();
 
     config.basket_counter += 1;
 

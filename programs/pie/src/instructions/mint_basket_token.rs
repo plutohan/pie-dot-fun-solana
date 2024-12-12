@@ -61,12 +61,12 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .find(|a| a.mint == token_config.mint)
         {
             let user_amount_normalized = Calculator::to_u64(Calculator::normalize_decimal_v2(
-                user_asset
-            .amount,
-            token_config.decimals.try_into().unwrap(),
+                user_asset.amount,
+                token_config.decimals.try_into().unwrap(),
                 SYS_DECIMALS.try_into().unwrap(),
-            )).unwrap();            
+            )).unwrap();
             let possible_mint = user_amount_normalized
+                .checked_mul(SYS_DECIMALS).unwrap()
                 .checked_div(token_config.quantity)
                 .unwrap();
             amount_can_mint = amount_can_mint.min(possible_mint);
@@ -82,7 +82,8 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> R
             .find(|a| a.mint == token_config.mint)
         {
             let mut amount_to_deduct = token_config.quantity
-                .checked_mul(amount)
+                .checked_mul(amount).unwrap()
+                .checked_div(SYS_DECIMALS)
                 .unwrap();
             
             amount_to_deduct = Calculator::to_u64(Calculator::restore_decimal(

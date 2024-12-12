@@ -269,12 +269,15 @@ export type Pie = {
         {
           "name": "metadataAccount",
           "docs": [
-            "To store Metaplex metadata"
+            "Metadata account to store Metaplex metadata"
           ],
           "writable": true
         },
         {
           "name": "metadataProgram",
+          "docs": [
+            "The Metaplex metadata program"
+          ],
           "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
         },
         {
