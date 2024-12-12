@@ -18,19 +18,19 @@ pub struct UpdateFeeContext<'info> {
 
 #[event]
 pub struct UpdateFeeEvent {
-    pub new_mint_redeem_fee_percentage: Option<u64>,
+    pub new_creator_fee_percentage: Option<u64>,
     pub new_platform_fee_percentage: Option<u64>,
 }
 
 pub fn update_fee(
     ctx: Context<UpdateFeeContext>,
-    new_mint_redeem_fee_percentage: Option<u64>,
+    new_creator_fee_percentage: Option<u64>,
     new_platform_fee_percentage: Option<u64>,
 ) -> Result<()> {
     let program_state = &mut ctx.accounts.program_state;
 
-    if let Some(new_mint_redeem_fee_percentage) = new_mint_redeem_fee_percentage {
-        program_state.mint_redeem_fee_percentage = new_mint_redeem_fee_percentage;
+    if let Some(new_creator_fee_percentage) = new_creator_fee_percentage {
+        program_state.creator_fee_percentage = new_creator_fee_percentage;
     }
 
     if let Some(new_platform_fee_percentage) = new_platform_fee_percentage {
@@ -42,7 +42,7 @@ pub fn update_fee(
     );
 
     emit!(UpdateFeeEvent {
-        new_mint_redeem_fee_percentage,
+        new_creator_fee_percentage,
         new_platform_fee_percentage
     });
 

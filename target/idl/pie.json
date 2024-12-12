@@ -1098,7 +1098,7 @@
       ],
       "args": [
         {
-          "name": "new_mint_redeem_fee_percentage",
+          "name": "new_creator_fee_percentage",
           "type": {
             "option": "u64"
           }
@@ -1832,7 +1832,7 @@
             "type": "u64"
           },
           {
-            "name": "mint_redeem_fee_percentage",
+            "name": "creator_fee_percentage",
             "type": "u64"
           },
           {
@@ -1994,7 +1994,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "new_mint_redeem_fee_percentage",
+            "name": "new_creator_fee_percentage",
             "type": {
               "option": "u64"
             }
