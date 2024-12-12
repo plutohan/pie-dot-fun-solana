@@ -107,8 +107,8 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, basket_token_amou
     Ok(())
 }
 
-fn calculate_deduct_amount(basket_token_amount: u128, token_quantity: u128) -> Result<u64> {
-    let amount_to_deduct = token_quantity
+fn calculate_deduct_amount(basket_token_amount: u128, quantity_in_sys_decimal: u128) -> Result<u64> {
+    let amount_to_deduct = quantity_in_sys_decimal
         .checked_mul(basket_token_amount).unwrap();
     Ok(Calculator::restore_raw_decimal(amount_to_deduct))
 }
