@@ -1,311 +1,331 @@
 import {
-  Keypair,
-  PublicKey,
-  Connection,
-  Signer,
-  LAMPORTS_PER_SOL,
-  Transaction,
-  SystemProgram,
-} from "@solana/web3.js";
+	Keypair,
+	PublicKey,
+	Connection,
+	Signer,
+	LAMPORTS_PER_SOL,
+	Transaction,
+	SystemProgram,
+} from "@solana/web3.js"
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  createMint,
-  createSyncNativeInstruction,
-  getAccount,
-  getAssociatedTokenAddress,
-  getAssociatedTokenAddressSync,
-  getMint,
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
-  NATIVE_MINT,
-  TOKEN_PROGRAM_ID,
-  transfer,
-} from "@solana/spl-token";
-import { BasketComponent } from "../pie";
-import { BN } from "@coral-xyz/anchor";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { PieProgram } from "../../sdk/pie-program";
-import { Table } from "console-table-printer";
+	ASSOCIATED_TOKEN_PROGRAM_ID,
+	createAssociatedTokenAccountInstruction,
+	createMint,
+	createSyncNativeInstruction,
+	getAccount,
+	getAssociatedTokenAddress,
+	getAssociatedTokenAddressSync,
+	getMint,
+	getOrCreateAssociatedTokenAccount,
+	mintTo,
+	NATIVE_MINT,
+	TOKEN_PROGRAM_ID,
+	transfer,
+} from "@solana/spl-token"
+import { BasketComponent } from "../pie"
+import { BN } from "@coral-xyz/anchor"
+import { Raydium } from "@raydium-io/raydium-sdk-v2"
+import { PieProgram } from "../../sdk/pie-program"
+import { Table } from "console-table-printer"
 
 export async function createUserWithLamports(
-  connection: Connection,
-  lamports: number
+	connection: Connection,
+	lamports: number
 ): Promise<Signer> {
-  const account = Keypair.generate();
-  const signature = await connection.requestAirdrop(
-    account.publicKey,
-    lamports * LAMPORTS_PER_SOL
-  );
-  const block = await connection.getLatestBlockhash();
-  await connection.confirmTransaction({ ...block, signature });
-  return account;
+	const account = Keypair.generate()
+	const signature = await connection.requestAirdrop(
+		account.publicKey,
+		lamports * LAMPORTS_PER_SOL
+	)
+	const block = await connection.getLatestBlockhash()
+	await connection.confirmTransaction({ ...block, signature })
+	return account
 }
 
 export async function createNewMint(
-  connection: Connection,
-  creator: Signer,
-  decimals: number
+	connection: Connection,
+	creator: Signer,
+	decimals: number
 ): Promise<PublicKey> {
-  const tokenMint = await createMint(
-    connection,
-    creator, // payer
-    creator.publicKey, // mintAuthority
-    creator.publicKey, // freezeAuthority
-    decimals // decimals
-  );
-  return tokenMint;
+	const tokenMint = await createMint(
+		connection,
+		creator, // payer
+		creator.publicKey, // mintAuthority
+		creator.publicKey, // freezeAuthority
+		decimals // decimals
+	)
+	return tokenMint
 }
 
 export async function mintTokenTo(
-  connection: Connection,
-  tokenMint: PublicKey,
-  mintAuthority: Signer,
-  payer: Signer,
-  to: PublicKey,
-  amount: number
+	connection: Connection,
+	tokenMint: PublicKey,
+	mintAuthority: Signer,
+	payer: Signer,
+	to: PublicKey,
+	amount: number
 ): Promise<PublicKey> {
-  const userTokenAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    payer,
-    tokenMint,
-    to,
-    true
-  );
+	const userTokenAccount = await getOrCreateAssociatedTokenAccount(
+		connection,
+		payer,
+		tokenMint,
+		to,
+		true
+	)
 
-  const mintInfo = await getMint(connection, tokenMint);
+	const mintInfo = await getMint(connection, tokenMint)
 
-  //mint for dever 3_000_000 tokens
-  await mintTo(
-    connection,
-    payer,
-    tokenMint,
-    userTokenAccount.address,
-    mintAuthority,
-    amount * 10 ** mintInfo.decimals
-  );
+	//mint for dever 3_000_000 tokens
+	await mintTo(
+		connection,
+		payer,
+		tokenMint,
+		userTokenAccount.address,
+		mintAuthority,
+		amount * 10 ** mintInfo.decimals
+	)
 
-  return userTokenAccount.address;
+	return userTokenAccount.address
 }
 
 export async function sendTokenTo(
-  connection: Connection,
-  tokenMint: PublicKey,
-  owner: Signer,
-  from: PublicKey,
-  to: PublicKey,
-  amount: number
+	connection: Connection,
+	tokenMint: PublicKey,
+	owner: Signer,
+	from: PublicKey,
+	to: PublicKey,
+	amount: number
 ): Promise<String> {
-  const sourceTokenAccount = getAssociatedTokenAddressSync(
-    tokenMint,
-    from,
-    true
-  );
+	const sourceTokenAccount = getAssociatedTokenAddressSync(
+		tokenMint,
+		from,
+		true
+	)
 
-  const destinationTokenAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    owner,
-    tokenMint,
-    to,
-    true
-  );
+	const destinationTokenAccount = await getOrCreateAssociatedTokenAccount(
+		connection,
+		owner,
+		tokenMint,
+		to,
+		true
+	)
 
-  const mintInfo = await getMint(connection, tokenMint);
+	const mintInfo = await getMint(connection, tokenMint)
 
-  const tx = await transfer(
-    connection,
-    owner,
-    sourceTokenAccount,
-    destinationTokenAccount.address,
-    owner,
-    amount * 10 ** mintInfo.decimals
-  );
+	const tx = await transfer(
+		connection,
+		owner,
+		sourceTokenAccount,
+		destinationTokenAccount.address,
+		owner,
+		amount * 10 ** mintInfo.decimals
+	)
 
-  return tx;
+	return tx
 }
 
 export async function sleep(ms) {
-  await new Promise((resolve) => setTimeout(resolve, ms));
+	await new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export async function createBasketComponents(
-  connection: Connection,
-  creator: Signer,
-  ratios: Array<number>
+	connection: Connection,
+	creator: Signer,
+	ratios: Array<number>
 ): Promise<BasketComponent[]> {
-  let components: BasketComponent[] = [];
-  const decimals = 6;
-  for (let i = 0; i < ratios.length; i++) {
-    const mint = await createNewMint(connection, creator, decimals);
-    const component: BasketComponent = {
-      mint: mint,
-      quantity: new BN(ratios[i]),
-      decimals: decimals
-    };
-    components.push(component);
-  }
+	let components: BasketComponent[] = []
+	const decimals = 6
+	for (let i = 0; i < ratios.length; i++) {
+		const mint = await createNewMint(connection, creator, decimals)
+		const component: BasketComponent = {
+			mint: mint,
+			quantityInSysDecimal: new BN(ratios[i]),
+		}
+		components.push(component)
+	}
 
-  return components;
+	return components
 }
 
 export async function getRaydiumPoolAccounts(
-  connection: Connection,
-  raydium: Raydium,
-  ammId: string,
-  inputMint: PublicKey,
-  user: PublicKey,
-  amountIn: number
+	connection: Connection,
+	raydium: Raydium,
+	ammId: string,
+	inputMint: PublicKey,
+	user: PublicKey,
+	amountIn: number
 ) {
-  const txInstructions: any[] = [];
+	const txInstructions: any[] = []
 
-  const data = await raydium.liquidity.getPoolInfoFromRpc({
-    poolId: ammId,
-  });
-  console.log(data);
-  const poolKeys = data.poolKeys;
+	const data = await raydium.liquidity.getPoolInfoFromRpc({
+		poolId: ammId,
+	})
+	console.log(data)
+	const poolKeys = data.poolKeys
 
-  const baseIn = inputMint.toString() === poolKeys.mintA.address;
+	const baseIn = inputMint.toString() === poolKeys.mintA.address
 
-  const [mintIn, mintOut] = baseIn
-    ? [poolKeys.mintA.address, poolKeys.mintB.address]
-    : [poolKeys.mintB.address, poolKeys.mintA.address];
+	const [mintIn, mintOut] = baseIn
+		? [poolKeys.mintA.address, poolKeys.mintB.address]
+		: [poolKeys.mintB.address, poolKeys.mintA.address]
 
-  const inputTokenAccount = getAssociatedTokenAddressSync(
-    new PublicKey(mintIn),
-    user,
-    false
-  );
+	const inputTokenAccount = getAssociatedTokenAddressSync(
+		new PublicKey(mintIn),
+		user,
+		false
+	)
 
-  const { tokenAccount: outputTokenAccount, tx: outputTx } =
-    await getOrCreateTokenAccountTx(
-      connection,
-      new PublicKey(mintOut),
-      user,
-      user
-    );
-  if (inputMint.equals(NATIVE_MINT)) {
-    const wrappedSolIx = await wrappedSOLInstruction(
-      connection,
-      user,
-      amountIn
-    );
-    outputTx.add(wrappedSolIx);
-  }
+	const { tokenAccount: outputTokenAccount, tx: outputTx } =
+		await getOrCreateTokenAccountTx(
+			connection,
+			new PublicKey(mintOut),
+			user,
+			user
+		)
+	if (inputMint.equals(NATIVE_MINT)) {
+		const wrappedSolIx = await wrappedSOLInstruction(
+			connection,
+			user,
+			amountIn
+		)
+		outputTx.add(wrappedSolIx)
+	}
 
-  return { tx: outputTx, tokenAccount: outputTokenAccount };
+	return { tx: outputTx, tokenAccount: outputTokenAccount }
 }
 export async function getOrCreateTokenAccountTx(
-  connection: Connection,
-  mint: PublicKey,
-  payer: PublicKey,
-  owner: PublicKey
+	connection: Connection,
+	mint: PublicKey,
+	payer: PublicKey,
+	owner: PublicKey
 ): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
-  const tokenAccount = await getAssociatedTokenAddress(mint, owner, true);
-  let transaction = new Transaction();
-  try {
-    await getAccount(connection, tokenAccount, "confirmed");
-  } catch (error) {
-    transaction.add(
-      createAssociatedTokenAccountInstruction(
-        payer,
-        tokenAccount,
-        owner,
-        mint,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      )
-    );
-  }
-  return { tokenAccount: tokenAccount, tx: transaction };
+	const tokenAccount = await getAssociatedTokenAddress(mint, owner, true)
+	let transaction = new Transaction()
+	try {
+		await getAccount(connection, tokenAccount, "confirmed")
+	} catch (error) {
+		transaction.add(
+			createAssociatedTokenAccountInstruction(
+				payer,
+				tokenAccount,
+				owner,
+				mint,
+				TOKEN_PROGRAM_ID,
+				ASSOCIATED_TOKEN_PROGRAM_ID
+			)
+		)
+	}
+	return { tokenAccount: tokenAccount, tx: transaction }
 }
 
 export async function wrappedSOLInstruction(
-  connection: Connection,
-  recipient: PublicKey,
-  amount: number
+	connection: Connection,
+	recipient: PublicKey,
+	amount: number
 ) {
-  let { tokenAccount: ata, tx: tx } = await getOrCreateTokenAccountTx(
-    connection,
-    NATIVE_MINT, // mint
-    recipient, // owner
-    recipient // payer
-  );
+	let { tokenAccount: ata, tx: tx } = await getOrCreateTokenAccountTx(
+		connection,
+		NATIVE_MINT, // mint
+		recipient, // owner
+		recipient // payer
+	)
 
-  tx.add(
-    SystemProgram.transfer({
-      fromPubkey: recipient,
-      toPubkey: ata,
-      lamports: amount,
-    }),
-    createSyncNativeInstruction(ata)
-  );
+	tx.add(
+		SystemProgram.transfer({
+			fromPubkey: recipient,
+			toPubkey: ata,
+			lamports: amount,
+		}),
+		createSyncNativeInstruction(ata)
+	)
 
-  return tx;
+	return tx
 }
 
 export async function showBasketConfigTable(
-  connection: Connection,
-  pieProgram: PieProgram,
-  basketId: BN
+	connection: Connection,
+	pieProgram: PieProgram,
+	basketId: BN
 ) {
-  const basketConfig = await pieProgram.getBasketConfig(basketId);
-  const basketMintInfo = await getMint(
-    connection,
-    pieProgram.basketMintPDA(basketId)
-  );
+	const basketConfig = await pieProgram.getBasketConfig(basketId)
+	const basketMintInfo = await getMint(
+		connection,
+		pieProgram.basketMintPDA(basketId)
+	)
 
-  const table = new Table({
-    columns: [
-      { name: "mint", alignment: "left", color: "cyan" },
-      { name: "basketSupply", alignment: "left", color: "blue" },
-      { name: "decimals", alignment: "left", color: "purple" },
-      { name: "balance", alignment: "right", color: "green" },
-      { name: "quantity", alignment: "right", color: "yellow" },
-    ],
-  });
+	const table = new Table({
+		columns: [
+			{ name: "mint", alignment: "left", color: "cyan" },
+			{ name: "basketSupply", alignment: "left", color: "blue" },
+			{ name: "decimals", alignment: "left", color: "purple" },
+			{ name: "balance", alignment: "right", color: "green" },
+			{ name: "quantity", alignment: "right", color: "yellow" },
+		],
+	})
 
-  for (let i = 0; i < basketConfig.components.length; i++) {
-    const vaultTokenPDA = getAssociatedTokenAddressSync(
-      basketConfig.components[i].mint,
-      pieProgram.basketConfigPDA(basketId),
-      true
-    );
-    const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
+	for (let i = 0; i < basketConfig.components.length; i++) {
+		const vaultTokenPDA = getAssociatedTokenAddressSync(
+			basketConfig.components[i].mint,
+			pieProgram.basketConfigPDA(basketId),
+			true
+		)
+		const balance = await connection.getTokenAccountBalance(vaultTokenPDA)
 
-    let component = basketConfig.components[i];
-    table.addRow({
-      mint: component.mint.toBase58(),
-      basketSupply: basketMintInfo.supply,
-      decimals: component.decimals.toString(),
-      balance: balance.value.amount,
-      quantity: component.quantity.toString(),
-    });
-  }
+		let component = basketConfig.components[i]
+		table.addRow({
+			mint: component.mint.toBase58(),
+			basketSupply: basketMintInfo.supply,
+			decimals: basketMintInfo.decimals,
+			balance: balance.value.amount,
+			quantity: component.quantityInSysDecimal.toString(),
+		})
+	}
 
-  return table;
+	return table
 }
 
 export async function showUserFundTable(
-  pieProgram: PieProgram,
-  userPubkey: PublicKey,
-  basketId: BN
+	pieProgram: PieProgram,
+	userPubkey: PublicKey,
+	basketId: BN
 ) {
-  const userFund = await pieProgram.getUserFund(userPubkey, basketId);
+	const userFund = await pieProgram.getUserFund(userPubkey, basketId)
 
-  const table = new Table({
-    columns: [
-      { name: "mint", alignment: "left", color: "cyan" },
-      { name: "amount", alignment: "right", color: "green" },
-    ],
-  });
+	const table = new Table({
+		columns: [
+			{ name: "mint", alignment: "left", color: "cyan" },
+			{ name: "amount", alignment: "right", color: "green" },
+		],
+	})
 
-  for (let i = 0; i < userFund.components.length; i++) {
-    let component = userFund.components[i];
-    table.addRow({
-      mint: component.mint.toBase58(),
-      amount: component.amount.toString(),
-    });
-  }
+	for (let i = 0; i < userFund.components.length; i++) {
+		let component = userFund.components[i]
+		table.addRow({
+			mint: component.mint.toBase58(),
+			amount: component.amount.toString(),
+		})
+	}
 
-  return table;
+	return table
+}
+
+export async function showBasketVaultsTable(
+	basketVaults: { mint: PublicKey; balance: number }[]
+) {
+	const table = new Table({
+		columns: [
+			{ name: "mint", alignment: "left", color: "cyan" },
+			{ name: "balance", alignment: "right", color: "green" },
+		],
+	})
+
+	for (let i = 0; i < basketVaults.length; i++) {
+		const vault = basketVaults[i]
+		table.addRow({
+			mint: vault.mint.toBase58(),
+			balance: vault.balance.toString(),
+		})
+	}
+
+	return table
 }
