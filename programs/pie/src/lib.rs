@@ -11,6 +11,13 @@ pub mod utils;
 use constant::*;
 use instructions::*;
 use states::*;
+pub mod raydium_amm_address {
+    #[cfg(not(any(feature = "devnet")))]
+    anchor_lang::declare_id!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
+    #[cfg(feature = "devnet")]
+    anchor_lang::declare_id!("HWy1jotHpo6UqeQxx49dpYYdQB8wj9Qk9MdxwjLvDHB8");
+}
+declare_id!("Aa4nMgn2p4qfnr4TmszSn5ydUhmfW34QjDBLVAFHWvYL");
 
 pub mod raydium_amm {
     use anchor_lang::prelude::declare_id;

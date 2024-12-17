@@ -10,6 +10,7 @@ name = "pie"
 
 [features]
 default = []
+devnet = []
 cpi = ["no-entrypoint"]
 devnet = []
 no-entrypoint = []

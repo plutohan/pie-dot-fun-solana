@@ -75,6 +75,10 @@ pub struct ExecuteRebalancing<'info> {
 
     pub token_program: Program<'info, Token>,
     /// CHECK: amm_program
+    #[account(
+        mut,
+        address = crate::raydium_amm_address::id(),
+    )]
     pub amm_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }
