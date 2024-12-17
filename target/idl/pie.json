@@ -821,10 +821,6 @@
           }
         },
         {
-          "name": "token_mint",
-          "writable": true
-        },
-        {
           "name": "basket_mint",
           "writable": true
         },

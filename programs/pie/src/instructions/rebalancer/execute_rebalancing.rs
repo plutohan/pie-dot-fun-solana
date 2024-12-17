@@ -23,10 +23,6 @@ pub struct ExecuteRebalancing<'info> {
         constraint = basket_config.rebalancer == rebalancer.key() @ PieError::Unauthorized
     )]
     pub basket_config: Account<'info, BasketConfig>,
-    // Required token accounts
-    #[account(mut)]
-    pub token_mint: Box<InterfaceAccount<'info, Mint>>,
-
     #[account(mut)]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
     // Raydium AMM accounts
@@ -198,7 +194,7 @@ pub fn execute_swap<'a: 'info, 'info>(
 
         accounts.vault_token_destination.reload()?;
 
-        let token_mint = accounts.token_mint.key();
+        let token_mint = accounts.vault_token_destination.mint;
         let quantity_in_sys_decimal =
             Calculator::apply_sys_decimal(accounts.vault_token_destination.amount).checked_div(total_supply.try_into().unwrap()).unwrap();
 
@@ -269,7 +265,7 @@ pub fn execute_swap<'a: 'info, 'info>(
 
         accounts.vault_token_source.reload()?;
 
-        let token_mint = accounts.token_mint.key();
+        let token_mint = accounts.vault_token_source.mint;
         let quantity_in_sys_decimal =
             Calculator::apply_sys_decimal(accounts.vault_token_source.amount).checked_div(total_supply.try_into().unwrap()).unwrap();
 

@@ -1174,7 +1174,6 @@ export class PieProgram {
         rebalancer,
         rebalancerState: this.rebalancerStatePDA(rebalancer),
         basketConfig: this.basketConfigPDA(basketId),
-        tokenMint,
         basketMint,
         amm: new PublicKey(ammId),
         ammAuthority: new PublicKey(poolKeys.authority),

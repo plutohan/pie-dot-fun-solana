@@ -827,10 +827,6 @@ export type Pie = {
           }
         },
         {
-          "name": "tokenMint",
-          "writable": true
-        },
-        {
           "name": "basketMint",
           "writable": true
         },
