@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use crate::{
     constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, ProgramState,
-    UserComponent, UserFund,
+    UserComponent, UserFund, PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -14,7 +14,11 @@ pub struct RedeemBasketTokenContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [PROGRAM_STATE],
+        bump = program_state.bump
+    )]
     pub program_state: Box<Account<'info, ProgramState>>,
 
     #[account(

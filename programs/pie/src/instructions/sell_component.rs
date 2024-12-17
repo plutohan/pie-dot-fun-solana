@@ -23,7 +23,11 @@ pub struct SellComponentContext<'info> {
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+         seeds = [PROGRAM_STATE], 
+        bump = program_state.bump
+    )]
     pub program_state: Box<Account<'info, ProgramState>>,
 
     #[account(
