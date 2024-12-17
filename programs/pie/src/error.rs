@@ -49,4 +49,13 @@ pub enum PieError {
 
     #[msg("Invalid basket mint")]
     InvalidBasketMint,
+    
+    #[msg("Duplicate component")]
+    DuplicateComponent,
+
+    #[msg("Invalid mint")]
+    InvalidMint,
+
+    #[msg("Invalid component quantity")]
+    InvalidComponentQuantity
 }

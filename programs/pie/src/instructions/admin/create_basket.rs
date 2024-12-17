@@ -3,6 +3,8 @@ use anchor_spl::metadata::mpl_token_metadata::types::DataV2;
 use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3, Metadata};
 use anchor_spl::token::{Mint, Token};
 
+use std::collections::HashSet;
+
 use crate::BASKET_MINT;
 use crate::{
     constant::{BASKET_CONFIG, PROGRAM_STATE},
@@ -76,12 +78,16 @@ pub struct CreateBasketEvent {
 pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
     let program_state = &ctx.accounts.program_state;
 
+    // Authorization check
     if !program_state.enable_creator {
         let current_admin = program_state.admin;
         if ctx.accounts.creator.key() != current_admin {
             return Err(PieError::Unauthorized.into());
         }
     }
+
+    // Validate components
+    validate_components(&args.components)?;
 
     let basket_config = &mut ctx.accounts.basket_config;
     let config = &mut ctx.accounts.program_state;
@@ -101,6 +107,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
         &[basket_config.bump],
     ]];
 
+    // Create metadata for the basket mint
     create_metadata_accounts_v3(
         CpiContext::new_with_signer(
             ctx.accounts.metadata_program.to_account_info(),
@@ -138,6 +145,25 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
         mint: basket_config.mint,
         components: basket_config.components.clone(),
     });
+
+    Ok(())
+}
+
+fn validate_components(components: &[BasketComponent]) -> Result<()> {
+    let mut mint_set = HashSet::new();
+    for component in components {
+        // Check for duplicates
+        if !mint_set.insert(component.mint) {
+            return Err(PieError::DuplicateComponent.into());
+        }
+
+        require!(component.mint != Pubkey::default(), PieError::InvalidMint);
+
+        require!(
+            component.quantity_in_sys_decimal > 0,
+            PieError::InvalidComponentQuantity
+        );
+    }
 
     Ok(())
 }
