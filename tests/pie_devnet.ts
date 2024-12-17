@@ -51,7 +51,7 @@ describe("pie", () => {
         initializeTx,
         [admin],
         {
-          skipPreflight: false,
+          skipPreflight: true,
           commitment: "confirmed",
         }
       );
@@ -76,7 +76,7 @@ describe("pie", () => {
         updateRebalanceMarginTx,
         [admin],
         {
-          skipPreflight: false,
+          skipPreflight: true,
           commitment: "confirmed",
         }
       );
@@ -96,7 +96,7 @@ describe("pie", () => {
         connection,
         updateFeeTx,
         [admin],
-        { skipPreflight: false, commitment: "confirmed" }
+        { skipPreflight: true, commitment: "confirmed" }
       );
       console.log(
         `Fee updated at tx: https://explorer.solana.com/tx/${updateFeeTxResult}?cluster=devnet`
@@ -113,7 +113,7 @@ describe("pie", () => {
     if (outputTx.signatures.length !== 0) {
       const createPlatformFeeTokenAccountTxResult =
         await sendAndConfirmTransaction(connection, outputTx, [admin], {
-          skipPreflight: false,
+          skipPreflight: true,
           commitment: "confirmed",
         });
       console.log(
@@ -134,7 +134,7 @@ describe("pie", () => {
         connection,
         updatePlatformFeeWalletTx,
         [admin],
-        { skipPreflight: false, commitment: "confirmed" }
+        { skipPreflight: true, commitment: "confirmed" }
       );
       console.log(
         `Platform fee wallet updated at tx: https://explorer.solana.com/tx/${updatePlatformFeeWalletTxResult}?cluster=devnet`
@@ -178,7 +178,7 @@ describe("pie", () => {
       connection,
       createBasketTx,
       [admin],
-      { skipPreflight: false, commitment: "confirmed" }
+      { skipPreflight: true, commitment: "confirmed" }
     );
     console.log(
       `Basket created at tx: https://explorer.solana.com/tx/${createBasketTxResult}?cluster=devnet`
@@ -195,7 +195,7 @@ describe("pie", () => {
     if (outputTx.signatures.length !== 0) {
       const createCreatorFeeTokenAccountTxResult =
         await sendAndConfirmTransaction(connection, outputTx, [admin], {
-          skipPreflight: false,
+          skipPreflight: true,
           commitment: "confirmed",
         });
       console.log(
@@ -244,7 +244,7 @@ describe("pie", () => {
         buyComponentTx,
         [admin],
         {
-          skipPreflight: false,
+          skipPreflight: true,
           commitment: "confirmed",
         }
       );
@@ -276,7 +276,7 @@ describe("pie", () => {
       mintBasketTokenTx,
       [admin],
       {
-        skipPreflight: false,
+        skipPreflight: true,
         commitment: "confirmed",
       }
     );
@@ -308,7 +308,7 @@ describe("pie", () => {
       redeemBasketTokenTx,
       [admin],
       {
-        skipPreflight: false,
+        skipPreflight: true,
         commitment: "confirmed",
       }
     );
@@ -344,7 +344,7 @@ describe("pie", () => {
       sellComponentTx,
       [admin],
       {
-        skipPreflight: false,
+        skipPreflight: true,
         commitment: "confirmed",
       }
     );
@@ -468,7 +468,7 @@ describe("pie", () => {
       executeRebalanceTx,
       [admin],
       {
-        skipPreflight: false,
+        skipPreflight: true,
         commitment: "confirmed",
       }
     );
@@ -498,7 +498,7 @@ describe("pie", () => {
       stopRebalanceTx,
       [admin],
       {
-        skipPreflight: false,
+        skipPreflight: true,
         commitment: "confirmed",
       }
     );
