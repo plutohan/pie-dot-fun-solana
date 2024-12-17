@@ -5,7 +5,8 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, ProgramState, UserFund,
+    constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, ProgramState,
+    UserComponent, UserFund,
 };
 
 #[derive(Accounts)]
@@ -79,6 +80,7 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
     burn(burn_basket_ctx, amount)?;
 
     for token_config in basket_config.components.iter() {
+        // Attempt to find the existing component in user_fund
         if let Some(asset) = user_fund
             .components
             .iter_mut()
@@ -88,11 +90,20 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
                 .quantity_in_sys_decimal
                 .checked_mul(amount.into())
                 .unwrap();
-
             asset.amount = asset
                 .amount
                 .checked_add(Calculator::restore_raw_decimal(amount_return))
                 .unwrap();
+        } else {
+            // If the component doesn't exist, we insert it
+            let amount_return: u128 = token_config
+                .quantity_in_sys_decimal
+                .checked_mul(amount.into())
+                .unwrap();
+            user_fund.components.push(UserComponent {
+                mint: token_config.mint,
+                amount: Calculator::restore_raw_decimal(amount_return),
+            });
         }
     }
 
