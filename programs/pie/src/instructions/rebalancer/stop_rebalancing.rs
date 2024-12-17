@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{token::TokenAccount, token_interface::Mint};
 
 use crate::{
-    error::PieError, BasketComponent, BasketConfig, ProgramState, PROGRAM_STATE, BASKET_CONFIG
+    error::PieError, BasketComponent, BasketConfig, ProgramState, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE
 };
 
 #[event]
@@ -32,7 +32,10 @@ pub struct StopRebalancing<'info> {
     )]
     pub vault_wrapped_sol: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        address = NATIVE_MINT
+    )]
     pub wrapped_sol_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
