@@ -57,5 +57,8 @@ pub enum PieError {
     InvalidMint,
 
     #[msg("Invalid component quantity")]
-    InvalidComponentQuantity
+    InvalidComponentQuantity,
+
+    #[msg("Invalid quantity")]
+    InvalidQuantity
 }

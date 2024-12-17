@@ -197,7 +197,10 @@ pub fn execute_swap<'a: 'info, 'info>(
         let token_mint = accounts.vault_token_destination.mint;
         let quantity_in_sys_decimal =
             Calculator::apply_sys_decimal(accounts.vault_token_destination.amount).checked_div(total_supply.try_into().unwrap()).unwrap();
-
+        
+        // **New validation step:** Ensure quantity_in_sys_decimal is not zero.
+        require!(quantity_in_sys_decimal > 0, PieError::InvalidQuantity);
+        
         if let Some(component) = basket_config
             .components
             .iter_mut()
