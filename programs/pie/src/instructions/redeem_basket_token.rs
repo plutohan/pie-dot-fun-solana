@@ -60,6 +60,7 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
     require!(amount > 0, PieError::InvalidAmount);
     let user_fund = &mut ctx.accounts.user_fund;
     let basket_config = &mut ctx.accounts.basket_config;
+    require!(!basket_config.is_rebalancing, PieError::RebalancingInProgress);
 
     // Validate that the user has enough tokens to burn
     require!(

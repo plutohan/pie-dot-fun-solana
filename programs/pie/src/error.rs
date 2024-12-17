@@ -60,5 +60,8 @@ pub enum PieError {
     InvalidComponentQuantity,
 
     #[msg("Invalid quantity")]
-    InvalidQuantity
+    InvalidQuantity,
+
+    #[msg("Rebalancing in process")]
+    RebalancingInProgress
 }
