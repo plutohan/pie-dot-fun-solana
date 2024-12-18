@@ -6,7 +6,6 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
   sendAndConfirmTransaction,
-  Transaction,
 } from "@solana/web3.js";
 import devnetAdmin from "../public/devnet-admin.json";
 import { assert } from "chai";
@@ -28,7 +27,6 @@ import {
   getOrCreateTokenAccountTx,
   showBasketConfigTable,
   showUserFundTable,
-  sleep,
 } from "./utils/helper";
 
 describe("pie", () => {
@@ -38,11 +36,14 @@ describe("pie", () => {
   const pieProgram = new PieProgram(connection);
   let raydium: Raydium;
 
-  it("Setup and Initialized if needed ", async () => {
+  beforeEach(async () => {
     //init raydium
     raydium = await initSdk(connection, "devnet");
+  });
 
+  it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
+
     if (!programState) {
       const initializeTx = await pieProgram.initialize(admin.publicKey);
       const initializeTxResult = await sendAndConfirmTransaction(
@@ -84,7 +85,7 @@ describe("pie", () => {
       );
     }
 
-    if (programState.mintRedeemFeePercentage.toNumber() == 0) {
+    if (programState.platformFeePercentage.toNumber() == 0) {
       // mint redeem fee 1% and platform fee 0.5%
       const updateFeeTx = await pieProgram.updateFee(
         admin.publicKey,
@@ -145,19 +146,15 @@ describe("pie", () => {
     const components: BasketComponent[] = [
       {
         mint: new PublicKey(tokens[0].mint),
-        quantity: new BN(1 * 10 **6 ),
-        decimals: (await getMint(connection, new PublicKey(tokens[0].mint))).decimals
+        quantityInSysDecimal: new BN(1 * 10 ** 6),
       },
       {
         mint: new PublicKey(tokens[1].mint),
-        quantity: new BN(2 * 10 **6 ),
-        decimals: (await getMint(connection, new PublicKey(tokens[1].mint))).decimals
-
+        quantityInSysDecimal: new BN(2 * 10 ** 6),
       },
       {
         mint: new PublicKey(tokens[2].mint),
-        quantity: new BN(3 * 10 **6 ),
-        decimals: (await getMint(connection, new PublicKey(tokens[2].mint))).decimals
+        quantityInSysDecimal: new BN(3 * 10 ** 6),
       },
     ];
 
@@ -222,7 +219,7 @@ describe("pie", () => {
       let component = basket.components[i];
       table.addRow({
         mint: component.mint.toBase58(),
-        quantity: component.quantity.toString(),
+        quantity: component.quantityInSysDecimal.toString(),
       });
     }
     table.printTable();
@@ -399,7 +396,7 @@ describe("pie", () => {
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
-    const component = basketConfigData.components[2];
+    const component = basketConfigData.components[1];
 
     const vaultComponentAccount = await getAssociatedTokenAddress(
       component.mint,
@@ -410,14 +407,15 @@ describe("pie", () => {
       vaultComponentAccount,
       "confirmed"
     );
+
     const executeRebalanceTx = await pieProgram.executeRebalancing(
       admin.publicKey,
       false,
       Number(vaultComponentsBalance.value.amount),
       0,
-      tokens[2].ammId,
+      tokens[1].ammId,
       basketId,
-      new PublicKey(tokens[2].mint),
+      new PublicKey(tokens[1].mint),
       raydium
     );
     const executeRebalanceTxResult = await sendAndConfirmTransaction(

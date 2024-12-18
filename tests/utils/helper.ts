@@ -139,8 +139,7 @@ export async function createBasketComponents(
     const mint = await createNewMint(connection, creator, decimals);
     const component: BasketComponent = {
       mint: mint,
-      quantity: new BN(ratios[i]),
-      decimals: decimals
+      quantityInSysDecimal: new BN(ratios[i]),
     };
     components.push(component);
   }
@@ -276,9 +275,9 @@ export async function showBasketConfigTable(
     table.addRow({
       mint: component.mint.toBase58(),
       basketSupply: basketMintInfo.supply,
-      decimals: component.decimals.toString(),
+      decimals: basketMintInfo.decimals,
       balance: balance.value.amount,
-      quantity: component.quantity.toString(),
+      quantity: component.quantityInSysDecimal.toString(),
     });
   }
 
@@ -304,6 +303,27 @@ export async function showUserFundTable(
     table.addRow({
       mint: component.mint.toBase58(),
       amount: component.amount.toString(),
+    });
+  }
+
+  return table;
+}
+
+export async function showBasketVaultsTable(
+  basketVaults: { mint: PublicKey; balance: number }[]
+) {
+  const table = new Table({
+    columns: [
+      { name: "mint", alignment: "left", color: "cyan" },
+      { name: "balance", alignment: "right", color: "green" },
+    ],
+  });
+
+  for (let i = 0; i < basketVaults.length; i++) {
+    const vault = basketVaults[i];
+    table.addRow({
+      mint: vault.mint.toBase58(),
+      balance: vault.balance.toString(),
     });
   }
 
