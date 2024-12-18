@@ -25,18 +25,11 @@ export const tokens: TokenInfo[] = [
     ammId: "F9yAGLqScH6iA95kFJxTjRuqoK69TPbvGrAKBKzKHjSa",
   },
   {
-    name: "DEVTMAC",
-    mint: "Afn8YB1p4NsoZeS5XJBZ18LTfEy5NFPwN46wapZcBQr6",
-    lut: new PublicKey("Cx4ePwkwmByBH2NVWVHEhJ3kFN394QCvVXc8X5gAvU73"),
-    ammId: "59kw9y3WfL38tCE47trcEBEc5JktUJiKMaVAhxowuTjy",
-  },
-  {
     name: "EXO",
     mint: "H3p3yQHovyxScckQqhkv1JP4z5CLFGdpYBK3ev8Sny4u",
     lut: new PublicKey("5sn4smqth5AnvL2C3uStcBSEhYNCmG5D25qYMSfV1man"),
     ammId: "E6So4qxyABvxNt9XHxDpvJQJhn4pida1viyhju5hRFCG",
   },
-
   {
     name: "SOLYMPICS",
     mint: "C4FpfMhVQ4a9zXjTNgNzxhoXbgG18boeQcijw2TZF8nG",
@@ -44,23 +37,28 @@ export const tokens: TokenInfo[] = [
     ammId: "4TjwgVDpDcnDcmU4wAGXzrpjb6dhtapFHW6eDacdgwLW",
   },
   {
+    name: "oooo",
+    mint: "CqZPgSePHqHqZkUpQNVBiG5znFuDimZuCuvteZgreAFd",
+    lut: new PublicKey("GC8WTSe78ScJvU6AthZVi6p65syZsWn11VsiScG9jAfK"),
+    ammId: "ifVSvkx6x2P97HHVBjhbjvC9d6U2dfy2nbHPcmzkiYy",
+  },
+  {
     name: "TST",
     mint: "ASs2nD6Bnka5bsYy9zxuDNMjW47V1oeu9QNQbnWDxN3Z",
     lut: new PublicKey("8RFSW2MdSj3uNnWvjf1jbBcitgZ7y4SVDBiDdXWsHn81"),
     ammId: "6Sk1FWnhkhSWTmhUpbFxTdpy5nxtL4WLwP1QiRzSz5fX",
   },
-
+  {
+    name: "DEVTMAC",
+    mint: "Afn8YB1p4NsoZeS5XJBZ18LTfEy5NFPwN46wapZcBQr6",
+    lut: new PublicKey("Cx4ePwkwmByBH2NVWVHEhJ3kFN394QCvVXc8X5gAvU73"),
+    ammId: "59kw9y3WfL38tCE47trcEBEc5JktUJiKMaVAhxowuTjy",
+  },
   {
     name: "disperse",
     mint: "5QiDKfdEHAqAMEDMEs48izW8WFKdGnMA3BmoHrQgyhcw",
     lut: new PublicKey("GoivANz5qR7VgBEUdWK7GbUUQAnCQLUmSdcQYmuuWds1"),
     ammId: "AkudHW16bjPc1bB7N5L6GHQGKt9Z3oG9iHJj48tLWS5g",
-  },
-  {
-    name: "oooo",
-    mint: "CqZPgSePHqHqZkUpQNVBiG5znFuDimZuCuvteZgreAFd",
-    lut: new PublicKey("GC8WTSe78ScJvU6AthZVi6p65syZsWn11VsiScG9jAfK"),
-    ammId: "ifVSvkx6x2P97HHVBjhbjvC9d6U2dfy2nbHPcmzkiYy",
   },
   {
     name: "waet",
