@@ -12,6 +12,22 @@ use constant::*;
 use instructions::*;
 use states::*;
 
+pub mod raydium_amm {
+    use anchor_lang::prelude::declare_id;
+    #[cfg(feature = "devnet")]
+    declare_id!("HWy1jotHpo6UqeQxx49dpYYdQB8wj9Qk9MdxwjLvDHB8");
+    #[cfg(not(feature = "devnet"))]
+    declare_id!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
+}
+
+pub mod raydium_clmm {
+    use anchor_lang::prelude::declare_id;
+    #[cfg(feature = "devnet")]
+    declare_id!("CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK");
+    #[cfg(not(feature = "devnet"))]
+    declare_id!("devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH");
+}
+
 #[program]
 pub mod pie {
 
@@ -84,6 +100,15 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn buy_component_cpmm(
+        ctx: Context<BuyComponentCpmm>,
+        max_amount_in: u64,
+        amount_out: u64,
+    ) -> Result<()> {
+        instructions::buy_component_cpmm(ctx, max_amount_in, amount_out)?;
+        Ok(())
+    }
+
     pub fn sell_component(
         ctx: Context<SellComponentContext>,
         amount_in: u64,
@@ -92,6 +117,16 @@ pub mod pie {
         instructions::sell_component(ctx, amount_in, minimum_amount_out)?;
         Ok(())
     }
+
+    pub fn sell_component_cpmm(
+        ctx: Context<SellComponentCpmm>,
+        amount_in: u64,
+        minimum_amount_out: u64,
+    ) -> Result<()> {
+        instructions::sell_component_cpmm(ctx, amount_in, minimum_amount_out)?;
+        Ok(())
+    }
+
     pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
         instructions::start_rebalancing(ctx)?;
         Ok(())
@@ -104,6 +139,16 @@ pub mod pie {
         amount_out: u64,
     ) -> Result<()> {
         instructions::execute_rebalancing(ctx, is_buy, amount_in, amount_out)?;
+        Ok(())
+    }
+
+    pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<ExecuteRebalancingCpmm>,
+        is_buy: bool,
+        amount_in: u64,
+        amount_out: u64,
+    ) -> Result<()> {
+        instructions::execute_rebalancing_cpmm(ctx, is_buy, amount_in, amount_out)?;
         Ok(())
     }
 

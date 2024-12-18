@@ -98,6 +98,10 @@ pub struct BuyComponentContext<'info> {
 
     pub token_program: Program<'info, Token>,
     /// CHECK: Safe. amm_program
+    #[account(
+        mut,
+        address = crate::raydium_amm::id(),
+    )]
     pub amm_program: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
