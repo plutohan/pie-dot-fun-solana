@@ -31,8 +31,11 @@ import {
 } from "./utils/helper";
 import { finalizeTransaction } from "./utils/lookupTable";
 
+
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
+
+  const addressLookupTableMap = new Map<string, PublicKey>();
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
   const pieProgram = new PieProgram(connection);
@@ -145,6 +148,7 @@ describe("pie", () => {
   });
 
   it("Create Basket", async () => {
+
     const components: BasketComponent[] = [
       {
         mint: new PublicKey(tokens[0].mint),
@@ -159,6 +163,7 @@ describe("pie", () => {
         quantityInSysDecimal: new BN(3 * 10 ** 6),
       },
     ];
+
 
     const createBasketArgs: CreateBasketArgs = {
       name: "Basket Name Test",
@@ -176,6 +181,16 @@ describe("pie", () => {
       createBasketArgs,
       basketId
     );
+
+    //add address to lookup table
+    const newLookupTable = await pieProgram.addBasketInfoToAddressLookupTable(raydium, connection, admin, tokens[0].ammId, basketId);
+    await pieProgram.addBasketInfoToAddressLookupTable(raydium, connection, admin, tokens[1].ammId, basketId, newLookupTable);
+    await pieProgram.addBasketInfoToAddressLookupTable(raydium, connection, admin, tokens[2].ammId, basketId, newLookupTable);
+
+    if(!addressLookupTableMap.has(basketId.toString())) {
+      addressLookupTableMap.set(basketId.toString(), newLookupTable);
+    } 
+
     const createBasketTxResult = await sendAndConfirmTransaction(
       connection,
       createBasketTx,
@@ -241,6 +256,7 @@ describe("pie", () => {
         tokens[i].ammId
       );
 
+
       const buyComponentTxResult = await sendAndConfirmTransaction(
         connection,
         buyComponentTx,
@@ -267,7 +283,8 @@ describe("pie", () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
-    const lookupTables: AddressLookupTableAccount[] = [];
+    let addressLookupTable: PublicKey;
+    const addressLookupTablesAccount: AddressLookupTableAccount[] = [];
     const tx = new Transaction();
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
@@ -279,16 +296,17 @@ describe("pie", () => {
         raydium,
         tokens[i].ammId
       );
-
-      if(tokens[i].lut) {
-         const lut = (await connection.getAddressLookupTable(tokens[i].lut)).value;
-        lookupTables.push(lut)
-      }
-
       tx.add(buyComponentTx);
     }
+    
 
-    await finalizeTransaction(connection, admin, tx, lookupTables);
+    if(addressLookupTableMap.has(basketId.toString())) {
+      addressLookupTable = addressLookupTableMap.get(basketId.toString());
+      const lut = (await connection.getAddressLookupTable(addressLookupTable)).value;
+      addressLookupTablesAccount.push(lut)
+    }
+
+    await finalizeTransaction(connection, admin, tx, addressLookupTablesAccount);
 
     const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
 
@@ -489,6 +507,8 @@ describe("pie", () => {
   });
 
   it("Executing rebalance basket by buying component 4", async () => {
+    const isBuy = true;
+    const newBasketBuy = tokens[3];
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
@@ -503,12 +523,12 @@ describe("pie", () => {
 
     const executeRebalanceTx = await pieProgram.executeRebalancing(
       admin.publicKey,
-      true,
+      isBuy,
       Number(vaultWrappedSolBalance.value.amount) / 2,
       20,
-      tokens[3].ammId,
+      newBasketBuy.ammId,
       basketId,
-      new PublicKey(tokens[3].mint),
+      new PublicKey(newBasketBuy.mint),
       raydium
     );
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
@@ -520,6 +540,13 @@ describe("pie", () => {
         commitment: "confirmed",
       }
     );
+
+    //add basket info to lookup table when buy new basket token to config
+    if(isBuy) {
+      const lookupTable = addressLookupTableMap.get(basketId.toString());
+
+      await pieProgram.addBasketInfoToAddressLookupTable(raydium, connection, admin, newBasketBuy.ammId, basketId, lookupTable)
+    }
 
     console.log(
       `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`

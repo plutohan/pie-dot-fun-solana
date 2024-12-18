@@ -9,7 +9,6 @@ import {
   VersionedTransaction,
 } from "@solana/web3.js";
 
-
 export async function finalizeTransaction(
   connection: Connection,
   keyPair: Keypair,
@@ -110,19 +109,12 @@ export async function addAddressesToTable(
 export async function findAddressesInTable(
   connection: Connection,
   lookupTableAddress: PublicKey
-) {
+): Promise<PublicKey[]> {
   const lookupTableAccount = await connection.getAddressLookupTable(
     lookupTableAddress
   );
-  console.log(
-    `Successfully found lookup table: `,
-    lookupTableAccount.value?.key.toString()
-  );
-
-  if (!lookupTableAccount.value) return;
-
-  for (let i = 0; i < lookupTableAccount.value.state.addresses.length; i++) {
-    const address = lookupTableAccount.value.state.addresses[i];
-    console.log(`Address ${i + 1}: ${address.toBase58()}`);
+  if (!lookupTableAccount.value) {
+    return [];
   }
+  return lookupTableAccount.value.state.addresses;
 }
