@@ -10,7 +10,7 @@ import {
 } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
+  createAssociatedTokenAccountInstruction, createCloseAccountInstruction,
   createMint,
   createSyncNativeInstruction,
   getAccount,
@@ -353,4 +353,12 @@ export async function getOrCreateTokenAccountTx(
     );
   }
   return { tokenAccount: tokenAccount, tx: transaction };
+}
+
+export function unwrapSolIx(acc: PublicKey, destination: PublicKey) : TransactionInstruction {
+  return createCloseAccountInstruction(
+      acc,
+      destination,
+      destination
+  )
 }

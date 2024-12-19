@@ -974,7 +974,7 @@ export class PieProgram {
     this.program.addEventListener("redeemBasketToken", handler);
   }
 
-  async getOrCreateNativeMint(payer: PublicKey, owner: PublicKey) : Promise<PublicKey> {
+  async getOrCreateNativeMintATA(payer: PublicKey, owner: PublicKey) : Promise<PublicKey> {
       const { tokenAccount } = await getOrCreateTokenAccountTx(
           this.connection,
           new PublicKey(NATIVE_MINT),

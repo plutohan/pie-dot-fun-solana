@@ -22,9 +22,9 @@ import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
-  getOrCreateTokenAccountTx,
+  getOrCreateTokenAccountTx, getTokenAccount,
   showBasketConfigTable,
-  showUserFundTable, wrappedSOLInstruction,
+  showUserFundTable, unwrapSolIx, wrappedSOLInstruction,
 } from "./utils/helper";
 import { finalizeTransaction } from "./utils/lookupTable";
 
@@ -294,7 +294,7 @@ describe("pie", () => {
     const tx = new Transaction();
 
     const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
-    await pieProgram.getOrCreateNativeMint(admin.publicKey, admin.publicKey)
+    const nativeMintAta = await pieProgram.getOrCreateNativeMintATA(admin.publicKey, admin.publicKey)
     const wrappedSolIx = await wrappedSOLInstruction(
         admin.publicKey,
         totalSolTobuy,
@@ -319,6 +319,8 @@ describe("pie", () => {
         .value;
       addressLookupTablesAccount.push(lut);
     }
+
+    tx.add(unwrapSolIx(nativeMintAta, admin.publicKey))
 
     await finalizeTransaction(
       connection,
