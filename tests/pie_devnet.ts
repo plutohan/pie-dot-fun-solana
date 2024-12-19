@@ -22,6 +22,7 @@ import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
+  getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx, getTokenAccount,
   showBasketConfigTable,
   showUserFundTable, unwrapSolIx, wrappedSOLInstruction,
@@ -35,6 +36,7 @@ describe("pie", () => {
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
   const pieProgram = new PieProgram(connection);
+
   let raydium: Raydium;
 
   beforeEach(async () => {
@@ -253,22 +255,38 @@ describe("pie", () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
+    const { tokenAccount: nativeMintAta, tx} = await getOrCreateNativeMintATA(connection, admin.publicKey, admin.publicKey)
+    const wrappedSolIx = await wrappedSOLInstruction(
+        admin.publicKey,
+        totalSolTobuy,
+    );
+    tx.add(...wrappedSolIx)
+
+    await sendAndConfirmTransaction(
+        connection,
+        tx,
+        [admin],
+        {
+          skipPreflight: true,
+          commitment: "confirmed",
+        }
+    );
+
     for (let i = 0; i < basketConfigData.components.length; i++) {
-
-
-
-      const buyComponentTx = await pieProgram.buyComponent(
+      let txs = new Transaction();
+      txs.add(await pieProgram.buyComponent(
         admin.publicKey,
         basketId,
         1 * LAMPORTS_PER_SOL,
-        200000000,
+        2000000,
         raydium,
         tokens[i].ammId
-      );
+      ));
 
       const buyComponentTxResult = await sendAndConfirmTransaction(
         connection,
-        buyComponentTx,
+        txs,
         [admin],
         {
           skipPreflight: true,
@@ -294,10 +312,8 @@ describe("pie", () => {
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
     let addressLookupTable: PublicKey;
     const addressLookupTablesAccount: AddressLookupTableAccount[] = [];
-    const tx = new Transaction();
-
     const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
-    const nativeMintAta = await pieProgram.getOrCreateNativeMintATA(admin.publicKey, admin.publicKey)
+    const { tokenAccount: nativeMintAta, tx } = await getOrCreateNativeMintATA(connection, admin.publicKey, admin.publicKey)
     const wrappedSolIx = await wrappedSOLInstruction(
         admin.publicKey,
         totalSolTobuy,

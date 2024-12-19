@@ -973,14 +973,4 @@ export class PieProgram {
   onRedeemBasketToken(handler: (event: RedeemBasketTokenEvent) => void) {
     this.program.addEventListener("redeemBasketToken", handler);
   }
-
-  async getOrCreateNativeMintATA(payer: PublicKey, owner: PublicKey) : Promise<PublicKey> {
-      const { tokenAccount } = await getOrCreateTokenAccountTx(
-          this.connection,
-          new PublicKey(NATIVE_MINT),
-          payer,
-          owner
-      );
-      return tokenAccount
-  }
 }

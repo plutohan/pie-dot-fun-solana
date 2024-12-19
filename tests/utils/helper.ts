@@ -362,3 +362,13 @@ export function unwrapSolIx(acc: PublicKey, destination: PublicKey) : Transactio
       destination
   )
 }
+
+export async function getOrCreateNativeMintATA(connection: Connection, payer: PublicKey, owner: PublicKey) : Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
+  const { tokenAccount, tx } = await getOrCreateTokenAccountTx(
+      connection,
+      new PublicKey(NATIVE_MINT),
+      payer,
+      owner
+  );
+  return { tokenAccount, tx };
+}
