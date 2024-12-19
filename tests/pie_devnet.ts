@@ -111,7 +111,7 @@ describe("pie", () => {
       programState.platformFeeWallet
     );
 
-    if (outputTx.signatures.length !== 0) {
+    if (outputTx.instructions.length !== 0) {
       const createPlatformFeeTokenAccountTxResult =
         await sendAndConfirmTransaction(connection, outputTx, [admin], {
           skipPreflight: true,
