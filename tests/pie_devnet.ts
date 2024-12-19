@@ -254,6 +254,9 @@ describe("pie", () => {
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
     for (let i = 0; i < basketConfigData.components.length; i++) {
+
+
+
       const buyComponentTx = await pieProgram.buyComponent(
         admin.publicKey,
         basketId,
@@ -548,6 +551,7 @@ describe("pie", () => {
       basketConfigPDA,
       true
     );
+
     const vaultComponentsBalance = await connection.getTokenAccountBalance(
       vaultComponentAccount,
       "confirmed"
@@ -556,13 +560,14 @@ describe("pie", () => {
     const executeRebalanceTx = await pieProgram.executeRebalancing(
       admin.publicKey,
       false,
-      Number(vaultComponentsBalance.value.amount),
-      0,
+      vaultComponentsBalance.value.amount,
+      "0",
       tokens[0].ammId,
       basketId,
       new PublicKey(tokens[0].mint),
       raydium
     );
+
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
       executeRebalanceTx,
@@ -603,8 +608,8 @@ describe("pie", () => {
     const executeRebalanceTx = await pieProgram.executeRebalancing(
       admin.publicKey,
       isBuy,
-      Number(vaultWrappedSolBalance.value.amount) / 2,
-      20,
+        (new BN(vaultWrappedSolBalance.value.amount)).div(new BN(2)).toString(),
+      "20",
       newBasketBuy.ammId,
       basketId,
       new PublicKey(newBasketBuy.mint),

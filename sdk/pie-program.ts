@@ -651,8 +651,8 @@ export class PieProgram {
   async executeRebalancing(
     rebalancer: PublicKey,
     isBuy: boolean,
-    amountIn: number,
-    amountOut: number,
+    amountIn: string,
+    amountOut: string,
     ammId: string,
     basketId: BN,
     tokenMint: PublicKey,
@@ -783,8 +783,8 @@ export class PieProgram {
       const rebalanceTx = await this.executeRebalancing(
         rebalancer.publicKey,
         swap.isBuy,
-        swap.amountIn,
-        swap.amountOut,
+        swap.amountIn.toString(),
+        swap.amountOut.toString(),
         ammId,
         basketId,
         swap.mint,
