@@ -671,13 +671,16 @@ describe("pie", () => {
   it("Stop rebalance basket", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
+    const basketPDA = pieProgram.basketConfigPDA(basketId)
+    const  { tokenAccount: nativeAta, tx: txs } = await getOrCreateNativeMintATA(connection, admin.publicKey, basketPDA)
     const stopRebalanceTx = await pieProgram.stopRebalancing(
       admin.publicKey,
       basketId
     );
+    txs.add(stopRebalanceTx)
     const stopRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
-      stopRebalanceTx,
+      txs,
       [admin],
       {
         skipPreflight: true,
