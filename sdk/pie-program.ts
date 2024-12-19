@@ -383,21 +383,14 @@ export class PieProgram {
       false
     );
 
-    const { tokenAccount: outputTokenAccount, tx: outputTx } =
-      await getOrCreateTokenAccountTx(
+    const { tokenAccount: outputTokenAccount, tx: outputTx } = await getOrCreateTokenAccountTx(
         this.connection,
         new PublicKey(mintOut),
         userSourceOwner,
         basketConfig
-      );
-
-    tx.add(outputTx);
-    const wrappedSolIx = await wrappedSOLInstruction(
-      this.connection,
-      userSourceOwner,
-      maxAmountIn
     );
-    tx.add(...wrappedSolIx);
+    tx.add(outputTx);
+
     const buyComponentTx = await this.program.methods
       .buyComponent(new BN(maxAmountIn), new BN(amountOut))
       .accountsPartial({
@@ -979,5 +972,15 @@ export class PieProgram {
    */
   onRedeemBasketToken(handler: (event: RedeemBasketTokenEvent) => void) {
     this.program.addEventListener("redeemBasketToken", handler);
+  }
+
+  async getOrCreateNativeMint(payer: PublicKey, owner: PublicKey) : Promise<PublicKey> {
+      const { tokenAccount } = await getOrCreateTokenAccountTx(
+          this.connection,
+          new PublicKey(NATIVE_MINT),
+          payer,
+          owner
+      );
+      return tokenAccount
   }
 }

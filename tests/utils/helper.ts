@@ -1,11 +1,11 @@
 import {
-  Keypair,
-  PublicKey,
   Connection,
-  Signer,
+  Keypair,
   LAMPORTS_PER_SOL,
-  Transaction,
+  PublicKey,
+  Signer,
   SystemProgram,
+  Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
 import {
@@ -23,11 +23,11 @@ import {
   TOKEN_PROGRAM_ID,
   transfer,
 } from "@solana/spl-token";
-import { BasketComponent } from "../pie";
-import { BN, Instruction } from "@coral-xyz/anchor";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { PieProgram } from "../../sdk/pie-program";
-import { Table } from "console-table-printer";
+import {BasketComponent} from "../pie";
+import {BN} from "@coral-xyz/anchor";
+import {Raydium} from "@raydium-io/raydium-sdk-v2";
+import {PieProgram} from "../../sdk/pie-program";
+import {Table} from "console-table-printer";
 
 export async function createUserWithLamports(
   connection: Connection,
@@ -185,7 +185,6 @@ export async function getRaydiumPoolAccounts(
     );
   if (inputMint.equals(NATIVE_MINT)) {
     const wrappedSolIx = await wrappedSOLInstruction(
-      connection,
       user,
       amountIn
     );
@@ -219,18 +218,19 @@ export async function getOrCreateTokenAccountIx(
   return { tokenAccount: tokenAccount, ixs: instructions };
 }
 
+export async function getTokenAccount(
+    mint: PublicKey,
+    owner: PublicKey
+): Promise<PublicKey> {
+  return await getAssociatedTokenAddress(mint, owner, true)
+}
+
 export async function wrappedSOLInstruction(
-  connection: Connection,
   recipient: PublicKey,
   amount: number
 ) : Promise<TransactionInstruction[]>{
-  let { tokenAccount: ata, ixs: ixs } = await getOrCreateTokenAccountIx(
-    connection,
-    NATIVE_MINT, // mint
-    recipient, // owner
-    recipient // payer
-  );
-
+  let ixs: TransactionInstruction[] = []
+  const ata = await getTokenAccount(NATIVE_MINT, recipient)
   ixs.push(
     SystemProgram.transfer({
       fromPubkey: recipient,
@@ -239,7 +239,6 @@ export async function wrappedSOLInstruction(
     }),
     createSyncNativeInstruction(ata)
   );
-
   return ixs;
 }
 

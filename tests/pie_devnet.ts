@@ -24,7 +24,7 @@ import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
   getOrCreateTokenAccountTx,
   showBasketConfigTable,
-  showUserFundTable,
+  showUserFundTable, wrappedSOLInstruction,
 } from "./utils/helper";
 import { finalizeTransaction } from "./utils/lookupTable";
 
@@ -292,6 +292,14 @@ describe("pie", () => {
     let addressLookupTable: PublicKey;
     const addressLookupTablesAccount: AddressLookupTableAccount[] = [];
     const tx = new Transaction();
+
+    const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
+    await pieProgram.getOrCreateNativeMint(admin.publicKey, admin.publicKey)
+    const wrappedSolIx = await wrappedSOLInstruction(
+        admin.publicKey,
+        totalSolTobuy,
+    );
+    tx.add(...wrappedSolIx);
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
       const buyComponentTx = await pieProgram.buyComponent(
