@@ -1,5 +1,8 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::{
+    token::{self},
+    token_interface::{Mint, TokenAccount, TokenInterface},
+};
 
 use raydium_cpmm_cpi::{
     cpi,
@@ -11,7 +14,7 @@ use raydium_cpmm_cpi::{
 use crate::{
     constant::{MAX_COMPONENTS, USER_FUND},
     error::PieError,
-    utils::{calculate_fee_amount, transfer_from_user_to_pool_vault},
+    utils::{calculate_fee_amount, transfer_fees},
     BasketConfig, ProgramState, UserComponent, UserFund, NATIVE_MINT,
 };
 
@@ -86,6 +89,7 @@ pub struct BuyComponentCpmm<'info> {
     pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// SPL program for input token transfers: Token Program
+    #[account(address = token::ID)]
     pub input_token_program: Interface<'info, TokenInterface>,
 
     /// SPL program for output token transfers: Token or Token 2022 Program
@@ -156,27 +160,16 @@ pub fn buy_component_cpmm(
     let (platform_fee_amount, creator_fee_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_swapped)?;
 
-    // Transfer platform fee to platform fee wallet
-    if platform_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_source.to_account_info(),
-            &ctx.accounts.platform_fee_token_account.to_account_info(),
-            &&ctx.accounts.user.to_account_info(),
-            &ctx.accounts.input_token_program.to_account_info(),
-            platform_fee_amount,
-        )?;
-    }
-
-    // Transfer creator fee to creator
-    if creator_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_source.to_account_info(),
-            &ctx.accounts.creator_token_account.to_account_info(),
-            &&ctx.accounts.user.to_account_info(),
-            &ctx.accounts.input_token_program.to_account_info(),
-            creator_fee_amount,
-        )?;
-    }
+    //transfer fees for creator and platform fee
+    transfer_fees(
+        &ctx.accounts.user_token_source.to_account_info(),
+        &ctx.accounts.platform_fee_token_account.to_account_info(),
+        &ctx.accounts.creator_token_account.to_account_info(),
+        &ctx.accounts.user_token_source.to_account_info(),
+        &ctx.accounts.input_token_program.to_account_info(),
+        platform_fee_amount,
+        creator_fee_amount,
+    )?;
 
     let user_fund = &mut ctx.accounts.user_fund;
 
