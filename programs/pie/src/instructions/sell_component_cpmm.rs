@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    token::Token,
-    token_2022::Token2022,
+    token::{self},
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
 
@@ -15,7 +14,7 @@ use raydium_cpmm_cpi::{
 use crate::{
     constant::USER_FUND,
     error::PieError,
-    utils::{calculate_fee_amount, transfer_from_user_to_pool_vault},
+    utils::{calculate_fee_amount, transfer_fees},
     BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT,
 };
 
@@ -97,6 +96,7 @@ pub struct SellComponentCpmm<'info> {
     pub input_token_program: Interface<'info, TokenInterface>,
 
     /// SPL program for output token transfers: Token
+    #[account(address = token::ID)]
     pub output_token_program: Interface<'info, TokenInterface>,
 
     /// The mint of input token
@@ -104,19 +104,13 @@ pub struct SellComponentCpmm<'info> {
     pub input_token_mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The mint of output token
-    #[account(
-    address = output_vault.mint
-)]
+    #[account(address = output_vault.mint)]
     pub output_token_mint: Box<InterfaceAccount<'info, Mint>>,
     /// The program account for the most recent oracle observation
     #[account(mut, address = pool_state.load()?.observation_key)]
     pub observation_state: AccountLoader<'info, ObservationState>,
 
     pub cp_swap_program: Program<'info, RaydiumCpmm>,
-
-    pub token_program: Program<'info, Token>,
-
-    pub token_2022_program: Program<'info, Token2022>,
 
     pub system_program: Program<'info, System>,
 }
@@ -184,26 +178,16 @@ pub fn sell_component_cpmm(
     let (platform_fee_amount, creator_fee_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_received)?;
 
-    // Transfer platform fee to platform fee wallet
-    if platform_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_destination.to_account_info(),
-            &ctx.accounts.platform_fee_token_account.to_account_info(),
-            &ctx.accounts.user.to_account_info(),
-            &ctx.accounts.token_program.to_account_info(),
-            platform_fee_amount,
-        )?;
-    }
-    // Transfer creator fee to creator
-    if creator_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_destination.to_account_info(),
-            &ctx.accounts.creator_token_account.to_account_info(),
-            &ctx.accounts.user.to_account_info(),
-            &ctx.accounts.token_program.to_account_info(),
-            creator_fee_amount,
-        )?;
-    }
+    //transfer fees for creator and platform fee
+    transfer_fees(
+        &ctx.accounts.user_token_destination.to_account_info(),
+        &ctx.accounts.platform_fee_token_account.to_account_info(),
+        &ctx.accounts.creator_token_account.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &&ctx.accounts.output_token_program.to_account_info(),
+        platform_fee_amount,
+        creator_fee_amount,
+    )?;
 
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount_in).unwrap();

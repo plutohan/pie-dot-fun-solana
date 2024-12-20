@@ -12,6 +12,8 @@ pub const OBSERVATION_UPDATE_DURATION_DEFAULT: u64 = 15;
 
 pub const Q32: u128 = (u32::MAX as u128) + 1; // 2^32
 
+//REF: https://github.com/raydium-io/raydium-cpi/blob/master/programs/amm-cpi/src/instructions.rs
+
 /// Holds the current owner of the factory
 #[account]
 #[derive(Default, Debug)]

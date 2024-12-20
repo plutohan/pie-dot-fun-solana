@@ -7,7 +7,7 @@ use anchor_spl::{
 use crate::{
     constant::USER_FUND,
     error::PieError,
-    utils::{calculate_fee_amount, swap_base_in, transfer_from_user_to_pool_vault, SwapBaseIn},
+    utils::{calculate_fee_amount, swap_base_in, transfer_fees, SwapBaseIn},
     BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT,
 };
 
@@ -191,27 +191,17 @@ pub fn sell_component(
     let (platform_fee_amount, creator_fee_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_received)?;
 
-    // Transfer platform fee to platform fee wallet
-    if platform_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_destination.to_account_info(),
-            &ctx.accounts.platform_fee_token_account.to_account_info(),
-            &ctx.accounts.user.to_account_info(),
-            &ctx.accounts.token_program.to_account_info(),
-            platform_fee_amount,
-        )?;
-    }
-    // Transfer creator fee to creator
-    if creator_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_destination.to_account_info(),
-            &ctx.accounts.creator_token_account.to_account_info(),
-            &ctx.accounts.user.to_account_info(),
-            &ctx.accounts.token_program.to_account_info(),
-            creator_fee_amount,
-        )?;
-    }
-
+    //transfer fees for creator and platform fee
+    transfer_fees(
+        &ctx.accounts.user_token_destination.to_account_info(),
+        &ctx.accounts.platform_fee_token_account.to_account_info(),
+        &ctx.accounts.creator_token_account.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.token_program.to_account_info(),
+        platform_fee_amount,
+        creator_fee_amount,
+    )?;
+    
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount_in).unwrap();
 

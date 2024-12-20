@@ -6,8 +6,6 @@ use anchor_spl::{
     token::Token,
     token_interface::{Mint, Token2022, TokenAccount, TokenInterface},
 };
-
-
 #[derive(Accounts)]
 pub struct Swap<'info> {
     /// The user performing the swap
