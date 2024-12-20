@@ -27,7 +27,7 @@ import {
   showBasketConfigTable,
   showUserFundTable, unwrapSolIx, wrappedSOLInstruction,
 } from "./utils/helper";
-import { finalizeTransaction } from "./utils/lookupTable";
+import {addAddressesToTable, finalizeTransaction} from "./utils/lookupTable";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -227,6 +227,22 @@ describe("pie", () => {
       console.log(
         `Creator fee token account created at tx: https://explorer.solana.com/tx/${createCreatorFeeTokenAccountTxResult}?cluster=devnet`
       );
+    }
+
+    let addressLookupTable = addressLookupTableMap.get(basketId.toString());
+    const lut = (await connection.getAddressLookupTable(addressLookupTable))
+        .value;
+
+    const { vaults, tx: createBasketVaultTx} = await pieProgram.createBasketVaultAccounts(admin.publicKey, createBasketArgs, basketId)
+    await finalizeTransaction(
+        connection,
+        admin,
+        createBasketVaultTx,
+        [lut]
+    );
+
+    if (vaults.length > 0) {
+      await addAddressesToTable(connection, admin, addressLookupTable, vaults)
     }
 
     const basket = await pieProgram.getBasketConfig(basketId);
