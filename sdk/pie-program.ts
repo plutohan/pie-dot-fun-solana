@@ -23,7 +23,7 @@ import {
 } from "@solana/spl-token";
 import {Owner, Raydium} from "@raydium-io/raydium-sdk-v2";
 import {
-    getOrCreateTokenAccountTx,
+    getOrCreateTokenAccountTx, unwrapSolIx,
     wrappedSOLInstruction,
 } from "../tests/utils/helper";
 import {tokens} from "../tests/utils/token_test";
@@ -33,6 +33,7 @@ import {
     createLookupTable,
     findAddressesInTable,
 } from "../tests/utils/lookupTable";
+import {bo} from "@raydium-io/raydium-sdk-v2/lib/api-7264fa6b";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -363,6 +364,7 @@ export class PieProgram {
             );
             tx.add(outputTx);
             vaults.push(outputTokenAccount)
+            vaults.push(outputTokenAccount)
         }
 
         return {vaults, tx};
@@ -405,7 +407,8 @@ export class PieProgram {
         maxAmountIn: number,
         amountOut: number,
         raydium: Raydium,
-        ammId: string
+        ammId: string,
+        unwrapSol: boolean = true
     ): Promise<Transaction> {
         const tx = new Transaction();
         const data = await raydium.liquidity.getPoolInfoFromRpc({
@@ -465,6 +468,10 @@ export class PieProgram {
             .transaction();
 
         tx.add(buyComponentTx);
+
+        if(unwrapSol && inputMint === NATIVE_MINT) {
+            tx.add(unwrapSolIx(inputTokenAccount, userSourceOwner))
+        }
         return tx;
     }
 
