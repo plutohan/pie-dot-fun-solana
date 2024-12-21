@@ -1,11 +1,13 @@
 import { BN } from "@coral-xyz/anchor";
 import {
+  AddressLookupTableAccount,
   clusterApiUrl,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
   sendAndConfirmTransaction,
+  Transaction,
 } from "@solana/web3.js";
 import devnetAdmin from "../public/devnet-admin.json";
 import { assert } from "chai";
@@ -18,22 +20,23 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens } from "./utils/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
+import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
-  getAssociatedTokenAddress,
-  getMint,
-  NATIVE_MINT,
-} from "@solana/spl-token";
-import {
-  getOrCreateTokenAccountTx,
+  getOrCreateNativeMintATA,
+  getOrCreateTokenAccountTx, getTokenAccount,
   showBasketConfigTable,
-  showUserFundTable,
+  showUserFundTable, unwrapSolIx, wrappedSOLInstruction,
 } from "./utils/helper";
+import {addAddressesToTable, finalizeTransaction} from "./utils/lookupTable";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
 
+  const addressLookupTableMap = new Map<string, PublicKey>();
+
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
   const pieProgram = new PieProgram(connection);
+
   let raydium: Raydium;
 
   beforeEach(async () => {
@@ -156,6 +159,10 @@ describe("pie", () => {
         mint: new PublicKey(tokens[2].mint),
         quantityInSysDecimal: new BN(3 * 10 ** 6),
       },
+      {
+        mint: new PublicKey(tokens[3].mint),
+        quantityInSysDecimal: new BN(3 * 10 ** 6),
+      },
     ];
 
     const createBasketArgs: CreateBasketArgs = {
@@ -174,6 +181,25 @@ describe("pie", () => {
       createBasketArgs,
       basketId
     );
+
+    //add address to lookup table
+    let newLookupTable: PublicKey;
+
+    for (let i = 0; i < createBasketArgs.components.length; i++) {
+      newLookupTable = await pieProgram.addBasketInfoToAddressLookupTable(
+        raydium,
+        connection,
+        admin,
+        tokens[i].ammId,
+        basketId,
+        newLookupTable
+      );
+    }
+
+    if (!addressLookupTableMap.has(basketId.toString())) {
+      addressLookupTableMap.set(basketId.toString(), newLookupTable);
+    }
+
     const createBasketTxResult = await sendAndConfirmTransaction(
       connection,
       createBasketTx,
@@ -203,6 +229,22 @@ describe("pie", () => {
       );
     }
 
+    let addressLookupTable = addressLookupTableMap.get(basketId.toString());
+    const lut = (await connection.getAddressLookupTable(addressLookupTable))
+        .value;
+
+    const { vaults, tx: createBasketVaultTx} = await pieProgram.createBasketVaultAccounts(admin.publicKey, createBasketArgs, basketId)
+    await finalizeTransaction(
+        connection,
+        admin,
+        createBasketVaultTx,
+        [lut]
+    );
+
+    if (vaults.length > 0) {
+      await addAddressesToTable(connection, admin, addressLookupTable, vaults)
+    }
+
     const basket = await pieProgram.getBasketConfig(basketId);
     assert.equal(basket.components.length, createBasketArgs.components.length);
     assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
@@ -225,23 +267,42 @@ describe("pie", () => {
     table.printTable();
   });
 
-  it("Buy Component", async () => {
+  it("Buy Component Normal", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
+    const { tokenAccount: nativeMintAta, tx} = await getOrCreateNativeMintATA(connection, admin.publicKey, admin.publicKey)
+    const wrappedSolIx = await wrappedSOLInstruction(
+        admin.publicKey,
+        totalSolTobuy,
+    );
+    tx.add(...wrappedSolIx)
+
+    await sendAndConfirmTransaction(
+        connection,
+        tx,
+        [admin],
+        {
+          skipPreflight: true,
+          commitment: "confirmed",
+        }
+    );
+
     for (let i = 0; i < basketConfigData.components.length; i++) {
-      const buyComponentTx = await pieProgram.buyComponent(
+      let txs = new Transaction();
+      txs.add(await pieProgram.buyComponent(
         admin.publicKey,
         basketId,
         1 * LAMPORTS_PER_SOL,
-        200000000,
+        2000000,
         raydium,
         tokens[i].ammId
-      );
+      ));
 
       const buyComponentTxResult = await sendAndConfirmTransaction(
         connection,
-        buyComponentTx,
+        txs,
         [admin],
         {
           skipPreflight: true,
@@ -259,6 +320,67 @@ describe("pie", () => {
       basketId
     );
     userFundTable.printTable();
+  });
+
+  it("Buy Component Using look up table", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    let addressLookupTable: PublicKey;
+    const addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+    const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
+    const { tokenAccount: nativeMintAta, tx } = await getOrCreateNativeMintATA(connection, admin.publicKey, admin.publicKey)
+    const wrappedSolIx = await wrappedSOLInstruction(
+        admin.publicKey,
+        totalSolTobuy,
+    );
+    tx.add(...wrappedSolIx);
+
+    for (let i = 0; i < basketConfigData.components.length; i++) {
+      const buyComponentTx = await pieProgram.buyComponent(
+        admin.publicKey,
+        basketId,
+        1 * LAMPORTS_PER_SOL,
+        20000000,
+        raydium,
+        tokens[i].ammId
+      );
+      tx.add(buyComponentTx);
+    }
+
+    if (addressLookupTableMap.has(basketId.toString())) {
+      addressLookupTable = addressLookupTableMap.get(basketId.toString());
+      const lut = (await connection.getAddressLookupTable(addressLookupTable))
+        .value;
+      addressLookupTablesAccount.push(lut);
+    }
+
+    tx.add(unwrapSolIx(nativeMintAta, admin.publicKey))
+
+    await finalizeTransaction(
+      connection,
+      admin,
+      tx,
+      addressLookupTablesAccount
+    );
+
+    const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
+
+    const table = new Table({
+      columns: [
+        { name: "mint", alignment: "left", color: "cyan" },
+        { name: "amount", alignment: "right", color: "green" },
+      ],
+    });
+
+    for (let i = 0; i < userFund.components.length; i++) {
+      let component = userFund.components[i];
+      table.addRow({
+        mint: component.mint.toBase58(),
+        amount: component.amount.toString(),
+      });
+    }
+    table.printTable();
   });
 
   it("Mint Basket", async () => {
@@ -336,7 +458,7 @@ describe("pie", () => {
       0,
       raydium,
       tokens[1].ammId,
-      true
+        true
     );
 
     const sellComponentTxResult = await sendAndConfirmTransaction(
@@ -360,6 +482,64 @@ describe("pie", () => {
       basketId
     );
     userFundTable.printTable();
+  });
+
+  it("Sell component using lookup table", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
+    let addressLookupTable: PublicKey;
+    const addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+
+    const tx = new Transaction();
+    for (let i = 0; i < userFund.components.length; i++) {
+      const sellComponentTx = await pieProgram.sellComponent(
+        admin.publicKey,
+        userFund.components[i].mint,
+        basketId,
+        userFund.components[i].amount.toNumber(),
+        0,
+        raydium,
+        tokens[i].ammId,
+        true
+      );
+      tx.add(sellComponentTx);
+    }
+
+    if (addressLookupTableMap.has(basketId.toString())) {
+      addressLookupTable = addressLookupTableMap.get(basketId.toString());
+      const lut = (await connection.getAddressLookupTable(addressLookupTable))
+        .value;
+      addressLookupTablesAccount.push(lut);
+    }
+
+    await finalizeTransaction(
+      connection,
+      admin,
+      tx,
+      addressLookupTablesAccount
+    );
+
+    const userFundAfter = await pieProgram.getUserFund(
+      admin.publicKey,
+      basketId
+    );
+
+    const table = new Table({
+      columns: [
+        { name: "mint", alignment: "left", color: "cyan" },
+        { name: "amount", alignment: "right", color: "green" },
+      ],
+    });
+
+    for (let i = 0; i < userFundAfter.components.length; i++) {
+      let component = userFundAfter.components[i];
+      table.addRow({
+        mint: component.mint.toBase58(),
+        amount: component.amount.toString(),
+      });
+    }
+    table.printTable();
   });
 
   it("Start rebalance basket", async () => {
@@ -391,18 +571,19 @@ describe("pie", () => {
     basketMintTable.printTable();
   });
 
-  it("Executing rebalance basket by selling component last component", async () => {
+  it("Executing rebalance basket by selling the first component", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
-    const component = basketConfigData.components[1];
+    const component = basketConfigData.components[0];
 
     const vaultComponentAccount = await getAssociatedTokenAddress(
       component.mint,
       basketConfigPDA,
       true
     );
+
     const vaultComponentsBalance = await connection.getTokenAccountBalance(
       vaultComponentAccount,
       "confirmed"
@@ -411,13 +592,14 @@ describe("pie", () => {
     const executeRebalanceTx = await pieProgram.executeRebalancing(
       admin.publicKey,
       false,
-      Number(vaultComponentsBalance.value.amount),
-      0,
-      tokens[1].ammId,
+      vaultComponentsBalance.value.amount,
+      "0",
+      tokens[0].ammId,
       basketId,
-      new PublicKey(tokens[1].mint),
+      new PublicKey(tokens[0].mint),
       raydium
     );
+
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
       executeRebalanceTx,
@@ -440,7 +622,9 @@ describe("pie", () => {
     basketMintTable.printTable();
   });
 
-  it("Executing rebalance basket by buying component 4", async () => {
+  it("Executing rebalance basket by buying component 5", async () => {
+    const isBuy = true;
+    const newBasketBuy = tokens[5];
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
@@ -455,28 +639,42 @@ describe("pie", () => {
 
     const executeRebalanceTx = await pieProgram.executeRebalancing(
       admin.publicKey,
-      true,
-      Number(vaultWrappedSolBalance.value.amount) / 2,
-      20,
-      tokens[3].ammId,
+      isBuy,
+        (new BN(vaultWrappedSolBalance.value.amount)).div(new BN(2)).toString(),
+      "20",
+      newBasketBuy.ammId,
       basketId,
-      new PublicKey(tokens[3].mint),
+      new PublicKey(newBasketBuy.mint),
       raydium
     );
+
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
       executeRebalanceTx,
       [admin],
       {
-        skipPreflight: true,
+        skipPreflight: false,
         commitment: "confirmed",
       }
     );
 
+    //add basket info to lookup table when buy new basket token to config
+    if (isBuy) {
+      const lookupTable = addressLookupTableMap.get(basketId.toString());
+
+      await pieProgram.addBasketInfoToAddressLookupTable(
+        raydium,
+        connection,
+        admin,
+        newBasketBuy.ammId,
+        basketId,
+        lookupTable
+      );
+    }
+
     console.log(
       `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
     );
-
     console.log(`Basket config ${basketId.toString()} data: `);
     const basketMintTable = await showBasketConfigTable(
       connection,
@@ -489,13 +687,16 @@ describe("pie", () => {
   it("Stop rebalance basket", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
+    const basketPDA = pieProgram.basketConfigPDA(basketId)
+    const  { tokenAccount: nativeAta, tx: txs } = await getOrCreateNativeMintATA(connection, admin.publicKey, basketPDA)
     const stopRebalanceTx = await pieProgram.stopRebalancing(
       admin.publicKey,
       basketId
     );
+    txs.add(stopRebalanceTx)
     const stopRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
-      stopRebalanceTx,
+      txs,
       [admin],
       {
         skipPreflight: true,
@@ -507,7 +708,6 @@ describe("pie", () => {
     );
 
     const basketConfig = await pieProgram.getBasketConfig(basketId);
-    console.log(basketConfig.components);
     assert.equal(basketConfig.isRebalancing, false);
   });
 });
