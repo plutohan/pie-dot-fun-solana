@@ -97,7 +97,7 @@ describe("pie", () => {
       await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
 
       const programState = await pieProgram.getProgramState();
-      assert.equal(programState.mintRedeemFeePercentage.toNumber(), 1000);
+      assert.equal(programState.creatorFeePercentage.toNumber(), 1000);
       assert.equal(programState.platformFeePercentage.toNumber(), 1000);
     });
     it("should fail if not admin", async () => {
