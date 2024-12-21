@@ -389,7 +389,7 @@ export type Pie = {
         },
         {
           "name": "clmmProgram",
-          "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
         },
         {
           "name": "platformFeeTokenAccount",
@@ -850,7 +850,7 @@ export type Pie = {
         },
         {
           "name": "clmmProgram",
-          "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
         },
         {
           "name": "ammConfig",
@@ -1430,7 +1430,7 @@ export type Pie = {
         },
         {
           "name": "clmmProgram",
-          "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
         },
         {
           "name": "platformFeeTokenAccount",

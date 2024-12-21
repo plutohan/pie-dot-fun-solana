@@ -28,4 +28,5 @@ raydium-cpmm-cpi = { path = "../../modules/cpmm-cpi", features = [
 raydium-clmm-cpi = { path = "../../modules/clmm-cpi", features = [
     "no-entrypoint",
     "cpi",
+    "devnet"
 ] }
