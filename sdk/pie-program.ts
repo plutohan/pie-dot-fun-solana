@@ -465,7 +465,7 @@ export class PieProgram {
         tx.add(buyComponentTx);
 
         if(unwrapSol && inputMint === NATIVE_MINT) {
-            tx.add(unwrapSolIx(inputTokenAccount, userSourceOwner))
+            tx.add(unwrapSolIx(userSourceOwner, userSourceOwner))
         }
         return tx;
     }
