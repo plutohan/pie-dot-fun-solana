@@ -33,7 +33,7 @@ pub fn transfer_fees<'info>(
     source_account: &AccountInfo<'info>,
     platform_fee_account: &AccountInfo<'info>,
     creator_fee_account: &AccountInfo<'info>,
-    user_account: &AccountInfo<'info>,
+    authority: &AccountInfo<'info>,
     token_program: &AccountInfo<'info>,
     platform_fee_amount: u64,
     creator_fee_amount: u64,
@@ -43,7 +43,7 @@ pub fn transfer_fees<'info>(
         transfer_from_user_to_pool_vault(
             source_account,
             platform_fee_account,
-            user_account,
+            authority,
             token_program,
             platform_fee_amount,
         )?;
@@ -54,7 +54,7 @@ pub fn transfer_fees<'info>(
         transfer_from_user_to_pool_vault(
             source_account,
             creator_fee_account,
-            user_account,
+            authority,
             token_program,
             creator_fee_amount,
         )?;

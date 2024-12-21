@@ -15,7 +15,7 @@ import {
   PieProgram,
 } from "../sdk/pie-program";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { tokens } from "./utils/token_test";
+import { tokens, tokensCpmm } from "./utils/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
 import {
@@ -142,24 +142,99 @@ describe("pie", () => {
     }
   });
 
-  it("Create Basket", async () => {
+  // it("Create Basket", async () => {
+  //   const components: BasketComponent[] = [
+  //     {
+  //       mint: new PublicKey(tokens[0].mint),
+  //       quantityInSysDecimal: new BN(1 * 10 ** 6),
+  //     },
+  //     {
+  //       mint: new PublicKey(tokens[1].mint),
+  //       quantityInSysDecimal: new BN(2 * 10 ** 6),
+  //     },
+  //     {
+  //       mint: new PublicKey(tokens[2].mint),
+  //       quantityInSysDecimal: new BN(3 * 10 ** 6),
+  //     },
+  //   ];
+
+  //   const createBasketArgs: CreateBasketArgs = {
+  //     name: "Basket Name Test",
+  //     symbol: "BNS",
+  //     uri: "test",
+  //     components: components,
+  //     decimals: 6,
+  //     rebalancer: admin.publicKey,
+  //   };
+
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter;
+  //   const createBasketTx = await pieProgram.createBasket(
+  //     admin.publicKey,
+  //     createBasketArgs,
+  //     basketId
+  //   );
+  //   const createBasketTxResult = await sendAndConfirmTransaction(
+  //     connection,
+  //     createBasketTx,
+  //     [admin],
+  //     { skipPreflight: true, commitment: "confirmed" }
+  //   );
+  //   console.log(
+  //     `Basket created at tx: https://explorer.solana.com/tx/${createBasketTxResult}?cluster=devnet`
+  //   );
+
+  //   //create creator fee token account if needed
+  //   const { tx: outputTx } = await getOrCreateTokenAccountTx(
+  //     connection,
+  //     new PublicKey(NATIVE_MINT),
+  //     admin.publicKey,
+  //     admin.publicKey
+  //   );
+
+  //   if (outputTx.signatures.length !== 0) {
+  //     const createCreatorFeeTokenAccountTxResult =
+  //       await sendAndConfirmTransaction(connection, outputTx, [admin], {
+  //         skipPreflight: true,
+  //         commitment: "confirmed",
+  //       });
+  //     console.log(
+  //       `Creator fee token account created at tx: https://explorer.solana.com/tx/${createCreatorFeeTokenAccountTxResult}?cluster=devnet`
+  //     );
+  //   }
+
+  //   const basket = await pieProgram.getBasketConfig(basketId);
+  //   assert.equal(basket.components.length, createBasketArgs.components.length);
+  //   assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
+  //   assert.equal(basket.id.toString(), basketId.toString());
+  //   assert.equal(basket.rebalancer.toString(), admin.publicKey.toString());
+  //   const table = new Table({
+  //     columns: [
+  //       { name: "mint", alignment: "left", color: "cyan" },
+  //       { name: "quantity", alignment: "right", color: "green" },
+  //     ],
+  //   });
+
+  //   for (let i = 0; i < basket.components.length; i++) {
+  //     let component = basket.components[i];
+  //     table.addRow({
+  //       mint: component.mint.toBase58(),
+  //       quantity: component.quantityInSysDecimal.toString(),
+  //     });
+  //   }
+  //   table.printTable();
+  // });
+
+  it("Create Basket of CPMM token", async () => {
     const components: BasketComponent[] = [
       {
-        mint: new PublicKey(tokens[0].mint),
+        mint: new PublicKey(tokensCpmm[0].mint),
         quantityInSysDecimal: new BN(1 * 10 ** 6),
-      },
-      {
-        mint: new PublicKey(tokens[1].mint),
-        quantityInSysDecimal: new BN(2 * 10 ** 6),
-      },
-      {
-        mint: new PublicKey(tokens[2].mint),
-        quantityInSysDecimal: new BN(3 * 10 ** 6),
       },
     ];
 
     const createBasketArgs: CreateBasketArgs = {
-      name: "Basket Name Test",
+      name: "Basket CPMM",
       symbol: "BNS",
       uri: "test",
       components: components,
@@ -223,6 +298,42 @@ describe("pie", () => {
       });
     }
     table.printTable();
+  });
+
+  it("Buy Component CPMM", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    for (let i = 0; i < basketConfigData.components.length; i++) {
+      const buyComponentTx = await pieProgram.buyComponentCpmm(
+        admin.publicKey,
+        basketId,
+        1 * LAMPORTS_PER_SOL,
+        200000000,
+        raydium,
+        tokensCpmm[i].poolId
+      );
+
+      const buyComponentTxResult = await sendAndConfirmTransaction(
+        connection,
+        buyComponentTx,
+        [admin],
+        {
+          skipPreflight: true,
+          commitment: "confirmed",
+        }
+      );
+
+      console.log(
+        `Buy component CPMM at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
+      );
+    }
+    const userFundTable = await showUserFundTable(
+      pieProgram,
+      admin.publicKey,
+      basketId
+    );
+    userFundTable.printTable();
   });
 
   it("Buy Component", async () => {
@@ -336,6 +447,43 @@ describe("pie", () => {
       0,
       raydium,
       tokens[1].ammId,
+      true
+    );
+
+    const sellComponentTxResult = await sendAndConfirmTransaction(
+      connection,
+      sellComponentTx,
+      [admin],
+      {
+        skipPreflight: true,
+        commitment: "confirmed",
+      }
+    );
+
+    console.log(
+      `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
+    );
+
+    console.log("User fund after sell component basket: ");
+    const userFundTable = await showUserFundTable(
+      pieProgram,
+      admin.publicKey,
+      basketId
+    );
+    userFundTable.printTable();
+  });
+
+    it("Sell Component CPMM", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const sellComponentTx = await pieProgram.sellComponentCpmm(
+      admin.publicKey,
+      basketId,
+      new PublicKey(tokensCpmm[0].mint),
+      10 * 1000000,
+      0,
+      raydium,
+      tokensCpmm[0].poolId,
       true
     );
 

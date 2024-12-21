@@ -8,7 +8,6 @@ use raydium_cpmm_cpi::{
     cpi,
     program::RaydiumCpmm,
     states::{AmmConfig, ObservationState, PoolState},
-    AUTH_SEED,
 };
 
 use crate::{
@@ -50,12 +49,7 @@ pub struct BuyComponentCpmm<'info> {
     pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: pool vault and lp mint authority
-    #[account(
-    seeds = [
-        AUTH_SEED.as_bytes(),
-    ],
-    bump,
-    )]
+    #[account(mut)]
     pub authority: UncheckedAccount<'info>,
 
     /// The factory state to read protocol fees
@@ -76,15 +70,15 @@ pub struct BuyComponentCpmm<'info> {
 
     /// The vault token account for input token
     #[account(
-    mut,
-    constraint = input_vault.key() == pool_state.load()?.token_0_vault || input_vault.key() == pool_state.load()?.token_1_vault
+        mut,
+        constraint = input_vault.key() == pool_state.load()?.token_0_vault || input_vault.key() == pool_state.load()?.token_1_vault
     )]
     pub input_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The vault token account for output token
     #[account(
-    mut,
-    constraint = output_vault.key() == pool_state.load()?.token_0_vault || output_vault.key() == pool_state.load()?.token_1_vault
+        mut,
+        constraint = output_vault.key() == pool_state.load()?.token_0_vault || output_vault.key() == pool_state.load()?.token_1_vault
     )]
     pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -165,7 +159,7 @@ pub fn buy_component_cpmm(
         &ctx.accounts.user_token_source.to_account_info(),
         &ctx.accounts.platform_fee_token_account.to_account_info(),
         &ctx.accounts.creator_token_account.to_account_info(),
-        &ctx.accounts.user_token_source.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
         &ctx.accounts.input_token_program.to_account_info(),
         platform_fee_amount,
         creator_fee_amount,

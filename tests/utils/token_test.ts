@@ -3,6 +3,7 @@ export interface TokenInfo {
   name: string;
   mint: string;
   ammId?: string;
+  poolId?: string;
   lut?: PublicKey;
 }
 export const tokens: TokenInfo[] = [
@@ -18,12 +19,7 @@ export const tokens: TokenInfo[] = [
     lut: new PublicKey("GJvyvjPdBwsUweWhJTy8vvB6Xeg4Snxm18GdLQtsErT7"),
     ammId: "BdWKgVNQxgVbTPMiQqyCczZxDcAgioWPpWFNWQn3Xc7A",
   },
-  {
-    name: "DOOM",
-    mint: "7RVCJ4G4jXoSftvaJaGA3amKPAdwbbJWTcPWLFrbHcEn",
-    lut: new PublicKey("9AThUzZRti6zaf9RDguSSzDiXfVsyDfXvQDMjqCWZPgb"),
-    ammId: "F9yAGLqScH6iA95kFJxTjRuqoK69TPbvGrAKBKzKHjSa",
-  },
+
   {
     name: "DEVTMAC",
     mint: "Afn8YB1p4NsoZeS5XJBZ18LTfEy5NFPwN46wapZcBQr6",
@@ -128,4 +124,18 @@ export const tokens: TokenInfo[] = [
     lut: new PublicKey("9681WP1PiAXFJPEfZ36uMAdfVebcCMEe2Zu6rj4th5gA"),
     ammId: "AkudHW16bjPc1bB7N5L6GHQGKt9Z3oG9iHJj48tLWS5g",
   },
+  {
+    name: "DOOM",
+    mint: "7RVCJ4G4jXoSftvaJaGA3amKPAdwbbJWTcPWLFrbHcEn",
+    lut: new PublicKey("9AThUzZRti6zaf9RDguSSzDiXfVsyDfXvQDMjqCWZPgb"),
+    ammId: "F9yAGLqScH6iA95kFJxTjRuqoK69TPbvGrAKBKzKHjSa",
+  },
 ];
+
+export  const tokensCpmm: TokenInfo[] = [
+  {
+    name: "USDC",
+    mint: "5QiDKfdEHAqAMEDMEs48izW8WFKdGnMA3BmoHrQgyhcw",
+    poolId: "CYPPokMaPmrtxBqhavd3gW7xJvPetUFgVKSmwLy13XjA",
+  },
+]

@@ -1,5 +1,5 @@
 {
-  "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH",
+  "address": "7HBXX3T4LRrzKY5UoqFhnkBm28SmnjDJ475sn67Dd5CL",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -140,7 +140,7 @@
         {
           "name": "amm_program",
           "writable": true,
-          "address": "HWy1jotHpo6UqeQxx49dpYYdQB8wj9Qk9MdxwjLvDHB8"
+          "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
         },
         {
           "name": "system_program",
@@ -225,42 +225,7 @@
         },
         {
           "name": "authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  95,
-                  97,
-                  110,
-                  100,
-                  95,
-                  108,
-                  112,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  95,
-                  115,
-                  101,
-                  101,
-                  100
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "amm_config",
@@ -307,7 +272,8 @@
           "name": "input_token_program",
           "docs": [
             "SPL program for input token transfers: Token Program"
-          ]
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "output_token_program",
@@ -336,7 +302,7 @@
         },
         {
           "name": "cp_swap_program",
-          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
+          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
         },
         {
           "name": "system_program",
@@ -692,42 +658,7 @@
         },
         {
           "name": "authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  95,
-                  97,
-                  110,
-                  100,
-                  95,
-                  108,
-                  112,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  95,
-                  115,
-                  101,
-                  101,
-                  100
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "amm_config",
@@ -803,7 +734,7 @@
         },
         {
           "name": "cp_swap_program",
-          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
+          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
         }
       ],
       "args": [
@@ -1306,42 +1237,7 @@
         },
         {
           "name": "authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  95,
-                  97,
-                  110,
-                  100,
-                  95,
-                  108,
-                  112,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  95,
-                  115,
-                  101,
-                  101,
-                  100
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "amm_config",
@@ -1394,7 +1290,8 @@
           "name": "output_token_program",
           "docs": [
             "SPL program for output token transfers: Token"
-          ]
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "input_token_mint",
@@ -1417,15 +1314,7 @@
         },
         {
           "name": "cp_swap_program",
-          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "token_2022_program",
-          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
         },
         {
           "name": "system_program",
