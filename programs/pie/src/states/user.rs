@@ -16,7 +16,7 @@ impl UserFund {
     /// Adds `amount` of the given `mint` to `self.components`.
     /// - If `mint` already exists in `components`, it increments the existing amount.
     /// - Otherwise, it creates a new `UserComponent`, provided we haven’t hit `MAX_COMPONENTS`.
-    pub fn update_component(&mut self, mint: Pubkey, amount: u64) -> Result<()> {
+    pub fn upsert_component(&mut self, mint: Pubkey, amount: u64) -> Result<()> {
         if let Some(asset) = self.components.iter_mut().find(|component| component.mint == mint) {
             asset.amount = asset
                 .amount

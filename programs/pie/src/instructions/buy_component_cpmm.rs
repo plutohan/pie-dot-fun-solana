@@ -11,7 +11,10 @@ use raydium_cpmm_cpi::{
 };
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees}, BasketConfig, BuyComponentEvent, ProgramState, UserFund, NATIVE_MINT
+    constant::USER_FUND,
+    error::PieError,
+    utils::{calculate_fee_amount, transfer_fees},
+    BasketConfig, BuyComponentEvent, ProgramState, UserFund, NATIVE_MINT,
 };
 
 #[derive(Accounts)]
@@ -156,7 +159,7 @@ pub fn buy_component_cpmm(
 
     ctx.accounts
         .user_fund
-        .update_component(ctx.accounts.output_token_mint.key(), amount_received)?;
+        .upsert_component(ctx.accounts.output_token_mint.key(), amount_received)?;
 
     emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

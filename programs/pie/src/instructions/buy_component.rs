@@ -199,7 +199,7 @@ pub fn buy_component(
     )?;
     ctx.accounts
         .user_fund
-        .update_component(ctx.accounts.mint_out.key(), amount_received)?;
+        .upsert_component(ctx.accounts.mint_out.key(), amount_received)?;
 
     emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
