@@ -10,7 +10,6 @@ import {
     Connection,
     Keypair,
     PublicKey,
-    Signer,
     Transaction,
 } from "@solana/web3.js";
 import {Pie} from "../target/types/pie";
@@ -24,16 +23,13 @@ import {
 import {Owner, Raydium} from "@raydium-io/raydium-sdk-v2";
 import {
     getOrCreateTokenAccountTx, unwrapSolIx,
-    wrappedSOLInstruction,
 } from "../tests/utils/helper";
 import {tokens} from "../tests/utils/token_test";
-import {max} from "bn.js";
 import {
     addAddressesToTable,
     createLookupTable,
     findAddressesInTable,
 } from "../tests/utils/lookupTable";
-import {bo} from "@raydium-io/raydium-sdk-v2/lib/api-7264fa6b";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -363,7 +359,6 @@ export class PieProgram {
                 basketConfig
             );
             tx.add(outputTx);
-            vaults.push(outputTokenAccount)
             vaults.push(outputTokenAccount)
         }
 
