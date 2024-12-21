@@ -23,4 +23,5 @@ anchor-spl = { version = "0.30.1", features = ["metadata"] }
 raydium-cpmm-cpi = { path = "../../modules/cpmm-cpi", features = [
     "no-entrypoint",
     "cpi",
+    "devnet"
 ] }

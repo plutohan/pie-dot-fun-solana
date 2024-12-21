@@ -5,7 +5,6 @@ use raydium_cpmm_cpi::{
     cpi,
     program::RaydiumCpmm,
     states::{AmmConfig, ObservationState, PoolState},
-    AUTH_SEED,
 };
 
 use crate::utils::Calculator;
@@ -27,12 +26,7 @@ pub struct ExecuteRebalancingCpmm<'info> {
     #[account(mut)]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
     /// CHECK: pool vault and lp mint authority
-    #[account(
-        seeds = [
-            AUTH_SEED.as_bytes(),
-        ],
-        bump,
-    )]
+    #[account(mut)]
     pub authority: UncheckedAccount<'info>,
 
     /// The factory state to read protocol fees

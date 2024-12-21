@@ -8,7 +8,6 @@ use raydium_cpmm_cpi::{
     cpi,
     program::RaydiumCpmm,
     states::{AmmConfig, ObservationState, PoolState},
-    AUTH_SEED,
 };
 
 use crate::{
@@ -54,12 +53,7 @@ pub struct SellComponentCpmm<'info> {
     pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: pool vault and lp mint authority
-    #[account(
-    seeds = [
-        AUTH_SEED.as_bytes(),
-    ],
-    bump,
-    )]
+    #[account(mut)]
     pub authority: UncheckedAccount<'info>,
 
     /// The factory state to read protocol fees
@@ -147,7 +141,7 @@ pub fn sell_component_cpmm(
         &[ctx.accounts.basket_config.bump],
     ]];
     let cpi_accounts = cpi::accounts::Swap {
-        payer: ctx.accounts.user.to_account_info(),
+        payer: ctx.accounts.basket_config.to_account_info(),
         authority: ctx.accounts.authority.to_account_info(),
         amm_config: ctx.accounts.amm_config.to_account_info(),
         pool_state: ctx.accounts.pool_state.to_account_info(),
