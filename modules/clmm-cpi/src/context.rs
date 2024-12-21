@@ -14,11 +14,11 @@ pub struct SwapSingle<'info> {
 
     /// The factory state to read protocol fees
     #[account(address = pool_state.load()?.amm_config)]
-    pub amm_config: Box<Account<'info, AmmConfig>>,
+    pub amm_config: Box<Account<'info, ClmmAmmConfig>>,
 
     /// The program account of the pool in which the swap will be performed
     #[account(mut)]
-    pub pool_state: AccountLoader<'info, PoolState>,
+    pub pool_state: AccountLoader<'info, ClmmPoolState>,
 
     /// The user token account for input token
     #[account(
@@ -50,7 +50,7 @@ pub struct SwapSingle<'info> {
 
     /// The program account for the most recent oracle observation
     #[account(mut, address = pool_state.load()?.observation_key)]
-    pub observation_state: AccountLoader<'info, ObservationState>,
+    pub observation_state: AccountLoader<'info, ClmmObservationState>,
 
     /// SPL program for token transfers
     pub token_program: Program<'info, Token>,
@@ -66,11 +66,11 @@ pub struct SwapSingleV2<'info> {
 
     /// The factory state to read protocol fees
     #[account(address = pool_state.load()?.amm_config)]
-    pub amm_config: Box<Account<'info, AmmConfig>>,
+    pub amm_config: Box<Account<'info, ClmmAmmConfig>>,
 
     /// The program account of the pool in which the swap will be performed
     #[account(mut)]
-    pub pool_state: AccountLoader<'info, PoolState>,
+    pub pool_state: AccountLoader<'info, ClmmPoolState>,
 
     /// The user token account for input token
     #[account(mut)]
@@ -90,7 +90,7 @@ pub struct SwapSingleV2<'info> {
 
     /// The program account for the most recent oracle observation
     #[account(mut, address = pool_state.load()?.observation_key)]
-    pub observation_state: AccountLoader<'info, ObservationState>,
+    pub observation_state: AccountLoader<'info, ClmmObservationState>,
 
     /// SPL program for token transfers
     pub token_program: Program<'info, Token>,

@@ -15,13 +15,21 @@ import {
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Owner, PoolUtils, Raydium } from "@raydium-io/raydium-sdk-v2";
 import {
+  getPdaExBitmapAccount,
+  getPdaObservationId,
+  Owner,
+  PoolUtils,
+  Raydium,
+} from "@raydium-io/raydium-sdk-v2";
+import {
+  buildClmmRemainingAccounts,
   getOrCreateTokenAccountTx,
   unwrapSolIx,
   wrappedSOLInstruction,
 } from "../tests/utils/helper";
 import { addAddressesToTable, createLookupTable, findAddressesInTable } from "../tests/utils/lookupTable";
+import { tokens } from "../tests/fixtures/devnet/token_test";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -114,6 +122,7 @@ export class PieProgram {
       this.program.programId
     )[0];
   }
+
   async getProgramState(): Promise<ProgramState | null> {
     try {
       return await this.accounts.programState.fetch(this.programStatePDA);
@@ -254,18 +263,18 @@ export class PieProgram {
   /**
    * Updates the fee. 10000 = 100% => 1000 = 1%
    * @param admin - The admin account.
-   * @param newMintRedeemFeePercentage - The new mint redeem fee percentage.
+   * @param newCreatorFeePercentage - The new creator fee percentage.
    * @param newPlatformFeePercentage - The new platform fee percentage.
    * @returns A promise that resolves to a transaction.
    */
   async updateFee(
     admin: PublicKey,
-    newMintRedeemFeePercentage: number,
+    newCreatorFeePercentage: number,
     newPlatformFeePercentage: number
   ): Promise<Transaction> {
     return await this.program.methods
       .updateFee(
-        new BN(newMintRedeemFeePercentage),
+        new BN(newCreatorFeePercentage),
         new BN(newPlatformFeePercentage)
       )
       .accounts({ admin, programState: this.programStatePDA })
@@ -286,6 +295,38 @@ export class PieProgram {
       .updatePlatformFeeWallet(newPlatformFeeWallet)
       .accounts({ admin, programState: this.programStatePDA })
       .transaction();
+  }
+
+  /**
+   * Creates vaults account for all basket.
+   * @param creator - The creator account.
+   * @param args - The basket arguments.
+   * @param basketId - The basket ID.
+   * @returns A promise that resolves to a transaction.
+   */
+  async createBasketVaultAccounts(
+    creator: PublicKey,
+    args: CreateBasketArgs,
+    basketId: BN
+  ): Promise<{ vaults: PublicKey[]; tx: Transaction }> {
+    const basketConfig = this.basketConfigPDA(basketId);
+
+    const tx = new Transaction();
+    const vaults: PublicKey[] = [];
+
+    for (let i = 0; i < args.components.length; i++) {
+      const { tokenAccount: outputTokenAccount, tx: outputTx } =
+        await getOrCreateTokenAccountTx(
+          this.connection,
+          new PublicKey(args.components[i].mint),
+          creator,
+          basketConfig
+        );
+      tx.add(outputTx);
+      vaults.push(outputTokenAccount);
+    }
+
+    return { vaults, tx };
   }
 
   /**
@@ -431,8 +472,8 @@ export class PieProgram {
   }
 
   /**
-   * Buys a component using CLMM from Raydium.
-   * @param userSourceOwner - The user source owner account.
+   * Buys a component CPMM.
+   * @param user - The user source owner account.
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
@@ -440,42 +481,31 @@ export class PieProgram {
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
-  async buyComponentClmm(
+  async buyComponentCpmm(
     user: PublicKey,
     basketId: BN,
-    maxAmountIn: BN,
-    amountOut: BN,
+    maxAmountIn: number,
+    amountOut: number,
     raydium: Raydium,
-	outputMint: PublicKey,
     poolId: string
   ): Promise<Transaction> {
     const tx = new Transaction();
-    const data = await raydium.clmm.getPoolInfoFromRpc(poolId)
-	const poolInfo = data.poolInfo
-    const poolKeys = data.poolKeys
-    const clmmPoolInfo = data.computePoolInfo
-    const tickCache = data.tickData
-
+    const data = await raydium.clmm.getPoolInfoFromRpc(poolId);
     const basketConfig = this.basketConfigPDA(basketId);
 
-	const { remainingAccounts, ...res } = PoolUtils.computeAmountIn({
-		poolInfo: clmmPoolInfo,
-		tickArrayCache: tickCache[poolId],
-		amountOut,
-		baseMint: outputMint,
-		slippage: 0.01,
-		epochInfo: await raydium.fetchEpochInfo(),
-	  })
+    const poolKeys = data.poolKeys;
+    const poolInfo = data.poolInfo;
+    const baseIn = NATIVE_MINT.toString() === poolKeys.mintA.address;
 
-	const [mintIn, mintOut] =
-	  outputMint.toBase58() === poolInfo.mintB.address
-		? [poolInfo.mintA, poolInfo.mintB]
-		: [poolInfo.mintB, poolInfo.mintA]
+    console.log('data: ', data)
+    const [mintA, mintB] = [
+      new PublicKey(poolInfo.mintA.address),
+      new PublicKey(poolInfo.mintB.address),
+    ];
 
-	const [mintAVault, mintBVault] = [new PublicKey(poolKeys.vault.A), new PublicKey(poolKeys.vault.B)];
-    const [mintA, mintB] = [new PublicKey(poolInfo.mintA.address), new PublicKey(poolInfo.mintB.address)];
-    const isInputMintA = poolInfo.mintA.address === outputMint.toBase58();
-
+    const [mintIn, mintOut] = baseIn
+      ? [poolKeys.mintA.address, poolKeys.mintB.address]
+      : [poolKeys.mintB.address, poolKeys.mintA.address];
 
     const inputTokenAccount = getAssociatedTokenAddressSync(
       new PublicKey(mintIn),
@@ -492,6 +522,110 @@ export class PieProgram {
       );
 
     tx.add(outputTx);
+    const wrappedSolIx = await wrappedSOLInstruction(user, maxAmountIn);
+    tx.add(...wrappedSolIx);
+    const buyComponentTx = await this.program.methods
+      .buyComponentCpmm(new BN(maxAmountIn), new BN(amountOut))
+      .accountsPartial({
+        user: user,
+        programState: this.programStatePDA,
+        basketConfig: basketConfig,
+        userFund: this.userFundPDA(user, basketId),
+        mintOut: mintOut,
+        ammConfig: new PublicKey(poolKeys.config.id),
+        poolState: new PublicKey(poolInfo.id),
+        userTokenSource: inputTokenAccount,
+        vaultTokenDestination: outputTokenAccount,
+        inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
+        outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
+        inputTokenProgram: new PublicKey(
+          poolInfo[baseIn ? "mintA" : "mintB"].programId ?? TOKEN_PROGRAM_ID
+        ),
+        outputTokenProgram: new PublicKey(
+          poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
+        ),
+        inputTokenMint: baseIn ? mintA : mintB,
+        outputTokenMint: baseIn ? mintB : mintA,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
+        observationState: getPdaObservationId(
+          new PublicKey(poolInfo.programId),
+          new PublicKey(poolInfo.id)
+        ).publicKey,
+      })
+      .transaction();
+
+    tx.add(buyComponentTx);
+    return tx;
+  }
+
+  /**
+   * Buys a component using CLMM from Raydium.
+   * @param userSourceOwner - The user source owner account.
+   * @param basketId - The basket ID.
+   * @param maxAmountIn - The maximum amount in.
+   * @param amountOut - The amount out.
+   * @param raydium - The Raydium instance.
+   * @param ammId - The AMM ID.
+   * @returns A promise that resolves to a transaction.
+   */
+  async buyComponentClmm(
+    user: PublicKey,
+    basketId: BN,
+    maxAmountIn: BN,
+    amountOut: BN,
+    raydium: Raydium,
+    outputMint: PublicKey,
+    poolId: string
+  ): Promise<Transaction> {
+    const tx = new Transaction();
+    const data = await raydium.clmm.getPoolInfoFromRpc(poolId);
+    const poolInfo = data.poolInfo;
+    const poolKeys = data.poolKeys;
+    const clmmPoolInfo = data.computePoolInfo;
+    const tickCache = data.tickData;
+
+    const basketConfig = this.basketConfigPDA(basketId);
+
+    const { remainingAccounts, ...res } = PoolUtils.computeAmountIn({
+      poolInfo: clmmPoolInfo,
+      tickArrayCache: tickCache[poolId],
+      amountOut,
+      baseMint: outputMint,
+      slippage: 0.01,
+      epochInfo: await raydium.fetchEpochInfo(),
+    });
+
+    const [programId, id] = [
+      new PublicKey(poolInfo.programId),
+      new PublicKey(poolInfo.id),
+    ];
+
+    const [mintAVault, mintBVault] = [
+      new PublicKey(poolKeys.vault.A),
+      new PublicKey(poolKeys.vault.B),
+    ];
+    const [mintA, mintB] = [
+      new PublicKey(poolInfo.mintA.address),
+      new PublicKey(poolInfo.mintB.address),
+    ];
+    const isInputMintA = poolInfo.mintA.address === outputMint.toBase58();
+
+    const inputTokenAccount = getAssociatedTokenAddressSync(
+      new PublicKey(isInputMintA ? mintA : mintB),
+      user,
+      false
+    );
+
+    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+      await getOrCreateTokenAccountTx(
+        this.connection,
+        new PublicKey(isInputMintA ? mintB : mintA),
+        user,
+        basketConfig
+      );
+
+    tx.add(outputTx);
     const wrappedSolIx = await wrappedSOLInstruction(
       user,
       maxAmountIn.toNumber()
@@ -501,21 +635,27 @@ export class PieProgram {
       .buyComponent(new BN(maxAmountIn), new BN(amountOut))
       .accountsPartial({
         user: user,
-		userFund: this.userFundPDA(user, basketId),
+        userFund: this.userFundPDA(user, basketId),
         programState: this.programStatePDA,
         basketConfig: basketConfig,
-		platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
         creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
-		ammConfig: new PublicKey(poolKeys.config.id),
-		poolState: new PublicKey(poolKeys.id),
-		userTokenSource: inputTokenAccount,
+        ammConfig: new PublicKey(poolKeys.config.id),
+        poolState: new PublicKey(poolKeys.id),
+        userTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
-		inputVault: isInputMintA ? mintBVault : mintAVault,
-		outputVault: isInputMintA ? mintAVault : mintBVault,
-		observationState: new PublicKey(clmmPoolInfo.observationId),
-		inputVaultMint: isInputMintA ? mintA : mintB,
-		outputVaultMint: isInputMintA ? mintB : mintA,
+        inputVault: isInputMintA ? mintBVault : mintAVault,
+        outputVault: isInputMintA ? mintAVault : mintBVault,
+        observationState: new PublicKey(clmmPoolInfo.observationId),
+        inputVaultMint: isInputMintA ? mintA : mintB,
+        outputVaultMint: isInputMintA ? mintB : mintA,
       })
+      .remainingAccounts(
+        await buildClmmRemainingAccounts(
+          remainingAccounts,
+          getPdaExBitmapAccount(programId, id).publicKey
+        )
+      )
       .transaction();
 
     tx.add(buyComponentTx);
@@ -603,6 +743,102 @@ export class PieProgram {
       .transaction();
     tx.add(sellComponentTx);
 
+    if (unwrappedSol) {
+      tx.add(createCloseAccountInstruction(outputTokenAccount, user, user));
+    }
+    return tx;
+  }
+
+  /**
+   * Sell a component CPMM.
+   * @param user - The user also payer.
+   * @param basketId - The basket ID.
+   * @param maxAmountIn - The maximum amount in.
+   * @param amountOut - The amount out.
+   * @param raydium - The Raydium instance.
+   * @param ammId - The AMM ID.
+   * @returns A promise that resolves to a transaction.
+   */
+  async sellComponentCpmm(
+    user: PublicKey,
+    basketId: BN,
+    inputMint: PublicKey,
+    amountIn: number,
+    minimumAmountOut: number,
+    raydium: Raydium,
+    poolId: string,
+    unwrappedSol: boolean
+  ): Promise<Transaction> {
+    const tx = new Transaction();
+    const basketConfig = this.basketConfigPDA(basketId);
+    const basketMint = this.basketMintPDA(basketId);
+
+    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+
+    const poolKeys = data.poolKeys;
+    const poolInfo = data.poolInfo;
+    const baseIn = inputMint.toString() === poolKeys.mintA.address;
+
+    const [mintA, mintB] = [
+      new PublicKey(poolInfo.mintA.address),
+      new PublicKey(poolInfo.mintB.address),
+    ];
+
+    const [mintIn, mintOut] = baseIn
+      ? [poolKeys.mintA.address, poolKeys.mintB.address]
+      : [poolKeys.mintB.address, poolKeys.mintA.address];
+
+    const inputTokenAccount = getAssociatedTokenAddressSync(
+      new PublicKey(mintIn),
+      basketConfig,
+      true
+    );
+
+    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+      await getOrCreateTokenAccountTx(
+        this.connection,
+        new PublicKey(mintOut),
+        user,
+        user
+      );
+
+    tx.add(outputTx);
+    const wrappedSolIx = await wrappedSOLInstruction(user, amountIn);
+    tx.add(...wrappedSolIx);
+    const sellComponentTx = await this.program.methods
+      .sellComponentCpmm(new BN(amountIn), new BN(minimumAmountOut))
+      .accountsPartial({
+        user: user,
+        programState: this.programStatePDA,
+        basketConfig: basketConfig,
+        userFund: this.userFundPDA(user, basketId),
+        mintOut: mintOut,
+        basketMint: basketMint,
+        authority: new PublicKey(poolKeys.authority),
+        ammConfig: new PublicKey(poolKeys.config.id),
+        poolState: new PublicKey(poolInfo.id),
+        vaultTokenSource: inputTokenAccount,
+        userTokenDestination: outputTokenAccount,
+        inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
+        outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
+        inputTokenProgram: new PublicKey(
+          poolInfo[baseIn ? "mintA" : "mintB"].programId ?? TOKEN_PROGRAM_ID
+        ),
+        outputTokenProgram: new PublicKey(
+          poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
+        ),
+        inputTokenMint: baseIn ? mintA : mintB,
+        outputTokenMint: baseIn ? mintB : mintA,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
+        observationState: getPdaObservationId(
+          new PublicKey(poolInfo.programId),
+          new PublicKey(poolInfo.id)
+        ).publicKey,
+      })
+      .transaction();
+
+    tx.add(sellComponentTx);
     if (unwrappedSol) {
       tx.add(createCloseAccountInstruction(outputTokenAccount, user, user));
     }

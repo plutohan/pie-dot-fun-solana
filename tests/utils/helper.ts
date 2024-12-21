@@ -224,6 +224,18 @@ export async function getTokenAccount(
   return await getAssociatedTokenAddress(mint, owner, true);
 }
 
+export async function buildClmmRemainingAccounts(
+  tickArray: PublicKey[],
+  exTickArrayBitmap?: PublicKey,
+): Promise<any> {
+  const remainingAccounts = [
+    ...(exTickArrayBitmap ? [{ pubkey: exTickArrayBitmap, isSigner: false, isWritable: true }] : []),
+    ...tickArray.map((i) => ({ pubkey: i, isSigner: false, isWritable: true })),
+  ];
+
+  return remainingAccounts
+}
+
 export async function wrappedSOLInstruction(
   recipient: PublicKey,
   amount: number

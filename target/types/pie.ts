@@ -165,168 +165,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "buyComponentCpmm",
-      "discriminator": [
-        115,
-        78,
-        207,
-        10,
-        209,
-        37,
-        153,
-        204
-      ],
-      "accounts": [
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "userFund",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  117,
-                  115,
-                  101,
-                  114,
-                  95,
-                  102,
-                  117,
-                  110,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "account",
-                "path": "basket_config.id",
-                "account": "basketConfig"
-              }
-            ]
-          }
-        },
-        {
-          "name": "programState",
-          "writable": true
-        },
-        {
-          "name": "basketConfig",
-          "writable": true
-        },
-        {
-          "name": "platformFeeTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "creatorTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "writable": true
-        },
-        {
-          "name": "ammConfig",
-          "docs": [
-            "The factory state to read protocol fees"
-          ]
-        },
-        {
-          "name": "poolState",
-          "docs": [
-            "The program account of the pool in which the swap will be performed"
-          ],
-          "writable": true
-        },
-        {
-          "name": "userTokenSource",
-          "docs": [
-            "The user token account for input token"
-          ],
-          "writable": true
-        },
-        {
-          "name": "vaultTokenDestination",
-          "docs": [
-            "The user token account for output token"
-          ],
-          "writable": true
-        },
-        {
-          "name": "inputVault",
-          "docs": [
-            "The vault token account for input token"
-          ],
-          "writable": true
-        },
-        {
-          "name": "outputVault",
-          "docs": [
-            "The vault token account for output token"
-          ],
-          "writable": true
-        },
-        {
-          "name": "inputTokenProgram",
-          "docs": [
-            "SPL program for input token transfers: Token Program"
-          ],
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "outputTokenProgram",
-          "docs": [
-            "SPL program for output token transfers: Token or Token 2022 Program"
-          ]
-        },
-        {
-          "name": "inputTokenMint",
-          "docs": [
-            "The mint of input token"
-          ]
-        },
-        {
-          "name": "outputTokenMint",
-          "docs": [
-            "The mint of output token"
-          ]
-        },
-        {
-          "name": "observationState",
-          "docs": [
-            "The program account for the most recent oracle observation"
-          ],
-          "writable": true
-        },
-        {
-          "name": "cpSwapProgram",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "maxAmountIn",
-          "type": "u64"
-        },
-        {
-          "name": "amountOut",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "buyComponentClmm",
       "discriminator": [
         127,
@@ -493,6 +331,168 @@ export type Pie = {
         {
           "name": "sqrtPriceLimitX64",
           "type": "u128"
+        }
+      ]
+    },
+    {
+      "name": "buyComponentCpmm",
+      "discriminator": [
+        115,
+        78,
+        207,
+        10,
+        209,
+        37,
+        153,
+        204
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "programState",
+          "writable": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "platformFeeTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "creatorTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true
+        },
+        {
+          "name": "ammConfig",
+          "docs": [
+            "The factory state to read protocol fees"
+          ]
+        },
+        {
+          "name": "poolState",
+          "docs": [
+            "The program account of the pool in which the swap will be performed"
+          ],
+          "writable": true
+        },
+        {
+          "name": "userTokenSource",
+          "docs": [
+            "The user token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vaultTokenDestination",
+          "docs": [
+            "The user token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "inputVault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "outputVault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "inputTokenProgram",
+          "docs": [
+            "SPL program for input token transfers: Token Program"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "outputTokenProgram",
+          "docs": [
+            "SPL program for output token transfers: Token or Token 2022 Program"
+          ]
+        },
+        {
+          "name": "inputTokenMint",
+          "docs": [
+            "The mint of input token"
+          ]
+        },
+        {
+          "name": "outputTokenMint",
+          "docs": [
+            "The mint of output token"
+          ]
+        },
+        {
+          "name": "observationState",
+          "docs": [
+            "The program account for the most recent oracle observation"
+          ],
+          "writable": true
+        },
+        {
+          "name": "cpSwapProgram",
+          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "maxAmountIn",
+          "type": "u64"
+        },
+        {
+          "name": "amountOut",
+          "type": "u64"
         }
       ]
     },
@@ -950,6 +950,155 @@ export type Pie = {
         {
           "name": "sqrtPriceLimitX64",
           "type": "u128"
+        }
+      ]
+    },
+    {
+      "name": "executeRebalancingCpmm",
+      "discriminator": [
+        42,
+        103,
+        61,
+        222,
+        56,
+        146,
+        65,
+        245
+      ],
+      "accounts": [
+        {
+          "name": "rebalancer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketMint",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true
+        },
+        {
+          "name": "ammConfig",
+          "docs": [
+            "The factory state to read protocol fees"
+          ]
+        },
+        {
+          "name": "poolState",
+          "docs": [
+            "The program account of the pool in which the swap will be performed"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vaultTokenSource",
+          "docs": [
+            "The user token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vaultTokenDestination",
+          "docs": [
+            "The user token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "inputVault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "outputVault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "inputTokenProgram",
+          "docs": [
+            "SPL program for input token transfers"
+          ]
+        },
+        {
+          "name": "outputTokenProgram",
+          "docs": [
+            "SPL program for output token transfers"
+          ]
+        },
+        {
+          "name": "inputTokenMint",
+          "docs": [
+            "The mint of input token"
+          ]
+        },
+        {
+          "name": "outputTokenMint",
+          "docs": [
+            "The mint of output token"
+          ]
+        },
+        {
+          "name": "observationState",
+          "docs": [
+            "The program account for the most recent oracle observation"
+          ],
+          "writable": true
+        },
+        {
+          "name": "cpSwapProgram",
+          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+        }
+      ],
+      "args": [
+        {
+          "name": "isBuy",
+          "type": "bool"
+        },
+        {
+          "name": "amountIn",
+          "type": "u64"
+        },
+        {
+          "name": "amountOut",
+          "type": "u64"
         }
       ]
     },
@@ -1542,6 +1691,172 @@ export type Pie = {
       ]
     },
     {
+      "name": "sellComponentCpmm",
+      "discriminator": [
+        11,
+        116,
+        40,
+        242,
+        74,
+        48,
+        254,
+        95
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "programState",
+          "writable": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "basketMint",
+          "writable": true
+        },
+        {
+          "name": "platformFeeTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "creatorTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true
+        },
+        {
+          "name": "ammConfig",
+          "docs": [
+            "The factory state to read protocol fees"
+          ]
+        },
+        {
+          "name": "poolState",
+          "docs": [
+            "The program account of the pool in which the swap will be performed"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vaultTokenSource",
+          "docs": [
+            "The user token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "userTokenDestination",
+          "docs": [
+            "The user token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "inputVault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "outputVault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "inputTokenProgram",
+          "docs": [
+            "SPL program for input token transfers: Token 2022 or Token"
+          ]
+        },
+        {
+          "name": "outputTokenProgram",
+          "docs": [
+            "SPL program for output token transfers: Token"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "inputTokenMint",
+          "docs": [
+            "The mint of input token"
+          ]
+        },
+        {
+          "name": "outputTokenMint",
+          "docs": [
+            "The mint of output token"
+          ]
+        },
+        {
+          "name": "observationState",
+          "docs": [
+            "The program account for the most recent oracle observation"
+          ],
+          "writable": true
+        },
+        {
+          "name": "cpSwapProgram",
+          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amountIn",
+          "type": "u64"
+        },
+        {
+          "name": "minimumAmountOut",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "startRebalancing",
       "discriminator": [
         146,
@@ -1993,6 +2308,45 @@ export type Pie = {
       ]
     },
     {
+      "name": "clmmAmmConfig",
+      "discriminator": [
+        75,
+        211,
+        86,
+        87,
+        158,
+        94,
+        26,
+        117
+      ]
+    },
+    {
+      "name": "clmmObservationState",
+      "discriminator": [
+        224,
+        11,
+        155,
+        151,
+        110,
+        143,
+        131,
+        4
+      ]
+    },
+    {
+      "name": "clmmPoolState",
+      "discriminator": [
+        72,
+        5,
+        179,
+        44,
+        85,
+        39,
+        26,
+        234
+      ]
+    },
+    {
       "name": "observationState",
       "discriminator": [
         122,
@@ -2343,6 +2697,11 @@ export type Pie = {
       "code": 6014,
       "name": "conversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
+    },
+    {
+      "code": 6015,
+      "name": "invalidBasketMint",
+      "msg": "Invalid basket mint"
     }
   ],
   "types": [
@@ -2362,58 +2721,70 @@ export type Pie = {
             "type": "u8"
           },
           {
+            "name": "disableCreatePool",
+            "docs": [
+              "Status to control if new pool can be create"
+            ],
+            "type": "bool"
+          },
+          {
             "name": "index",
+            "docs": [
+              "Config index"
+            ],
             "type": "u16"
-          },
-          {
-            "name": "owner",
-            "docs": [
-              "Address of the protocol owner"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "protocolFeeRate",
-            "docs": [
-              "The protocol fee"
-            ],
-            "type": "u32"
           },
           {
             "name": "tradeFeeRate",
             "docs": [
               "The trade fee, denominated in hundredths of a bip (10^-6)"
             ],
-            "type": "u32"
+            "type": "u64"
           },
           {
-            "name": "tickSpacing",
+            "name": "protocolFeeRate",
             "docs": [
-              "The tick spacing"
+              "The protocol fee"
             ],
-            "type": "u16"
+            "type": "u64"
           },
           {
             "name": "fundFeeRate",
             "docs": [
               "The fund fee, denominated in hundredths of a bip (10^-6)"
             ],
-            "type": "u32"
+            "type": "u64"
           },
           {
-            "name": "paddingU32",
-            "type": "u32"
+            "name": "createPoolFee",
+            "docs": [
+              "Fee for create a new pool"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "protocolOwner",
+            "docs": [
+              "Address of the protocol fee owner"
+            ],
+            "type": "pubkey"
           },
           {
             "name": "fundOwner",
+            "docs": [
+              "Address of the fund fee owner"
+            ],
             "type": "pubkey"
           },
           {
             "name": "padding",
+            "docs": [
+              "padding"
+            ],
             "type": {
               "array": [
                 "u64",
-                3
+                16
               ]
             }
           }
@@ -2527,227 +2898,81 @@ export type Pie = {
       }
     },
     {
-      "name": "createBasketArgs",
+      "name": "clmmAmmConfig",
+      "docs": [
+        "Holds the current owner of the factory"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "components",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "basketComponent"
-                }
-              }
-            }
-          },
-          {
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "name": "symbol",
-            "type": "string"
-          },
-          {
-            "name": "uri",
-            "type": "string"
-          },
-          {
-            "name": "decimals",
+            "name": "bump",
+            "docs": [
+              "Bump to identify PDA"
+            ],
             "type": "u8"
           },
           {
-            "name": "rebalancer",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "createBasketEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
+            "name": "index",
+            "type": "u16"
           },
           {
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "name": "symbol",
-            "type": "string"
-          },
-          {
-            "name": "uri",
-            "type": "string"
-          },
-          {
-            "name": "creator",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "components",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "basketComponent"
-                }
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "executeRebalancingClmmEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "isBuy",
-            "type": "bool"
-          },
-          {
-            "name": "initialSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "initialDestinationBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalDestinationBalance",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "executeRebalancingEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "isBuy",
-            "type": "bool"
-          },
-          {
-            "name": "initialSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "initialDestinationBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalDestinationBalance",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "mintBasketTokenEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "observation",
-      "docs": [
-        "The element of observations in ObservationState"
-      ],
-      "serialization": "bytemuckunsafe",
-      "repr": {
-        "kind": "c",
-        "packed": true
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "blockTimestamp",
+            "name": "owner",
             "docs": [
-              "The block timestamp of the observation"
+              "Address of the protocol owner"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "protocolFeeRate",
+            "docs": [
+              "The protocol fee"
             ],
             "type": "u32"
           },
           {
-            "name": "sqrtPriceX64",
+            "name": "tradeFeeRate",
             "docs": [
-              "the price of the observation timestamp, Q64.64"
+              "The trade fee, denominated in hundredths of a bip (10^-6)"
             ],
-            "type": "u128"
+            "type": "u32"
           },
           {
-            "name": "cumulativeTimePriceX64",
+            "name": "tickSpacing",
             "docs": [
-              "the cumulative of price during the duration time, Q64.64"
+              "The tick spacing"
             ],
-            "type": "u128"
+            "type": "u16"
+          },
+          {
+            "name": "fundFeeRate",
+            "docs": [
+              "The fund fee, denominated in hundredths of a bip (10^-6)"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "paddingU32",
+            "type": "u32"
+          },
+          {
+            "name": "fundOwner",
+            "type": "pubkey"
           },
           {
             "name": "padding",
-            "docs": [
-              "padding for feature update"
-            ],
-            "type": "u128"
+            "type": {
+              "array": [
+                "u64",
+                3
+              ]
+            }
           }
         ]
       }
     },
     {
-      "name": "observationState",
+      "name": "clmmObservationState",
       "serialization": "bytemuckunsafe",
       "repr": {
         "kind": "c",
@@ -2759,7 +2984,7 @@ export type Pie = {
           {
             "name": "initialized",
             "docs": [
-              "Whether the ObservationState is initialized"
+              "Whether the ClmmObservationState is initialized"
             ],
             "type": "bool"
           },
@@ -2776,7 +3001,7 @@ export type Pie = {
               "array": [
                 {
                   "defined": {
-                    "name": "observation"
+                    "name": "raydium_clmm_cpi::states::Observation"
                   }
                 },
                 1000
@@ -2799,7 +3024,7 @@ export type Pie = {
       }
     },
     {
-      "name": "poolState",
+      "name": "clmmPoolState",
       "docs": [
         "The pool state",
         "",
@@ -3049,6 +3274,399 @@ export type Pie = {
           },
           {
             "name": "padding2",
+            "type": {
+              "array": [
+                "u64",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "createBasketArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "basketComponent"
+                }
+              }
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "decimals",
+            "type": "u8"
+          },
+          {
+            "name": "rebalancer",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "createBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "basketComponent"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "executeRebalancingClmmEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "isBuy",
+            "type": "bool"
+          },
+          {
+            "name": "initialSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "initialDestinationBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalDestinationBalance",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "executeRebalancingEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "isBuy",
+            "type": "bool"
+          },
+          {
+            "name": "initialSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "initialDestinationBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalDestinationBalance",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "mintBasketTokenEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "observationState",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c",
+        "packed": true
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "initialized",
+            "docs": [
+              "Whether the ObservationState is initialized"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "observationIndex",
+            "docs": [
+              "the most-recently updated index of the observations array"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "poolId",
+            "type": "pubkey"
+          },
+          {
+            "name": "observations",
+            "docs": [
+              "observation array"
+            ],
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "raydium_cpmm_cpi::states::Observation"
+                  }
+                },
+                100
+              ]
+            }
+          },
+          {
+            "name": "padding",
+            "docs": [
+              "padding for feature update"
+            ],
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "poolState",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c",
+        "packed": true
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ammConfig",
+            "docs": [
+              "Which config the pool belongs"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "poolCreator",
+            "docs": [
+              "pool creator"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "token0Vault",
+            "docs": [
+              "Token A"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "token1Vault",
+            "docs": [
+              "Token B"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "lpMint",
+            "docs": [
+              "Pool tokens are issued when A or B tokens are deposited.",
+              "Pool tokens can be withdrawn back to the original A or B token."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "token0Mint",
+            "docs": [
+              "Mint information for token A"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "token1Mint",
+            "docs": [
+              "Mint information for token B"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "token0Program",
+            "docs": [
+              "token_0 program"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "token1Program",
+            "docs": [
+              "token_1 program"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "observationKey",
+            "docs": [
+              "observation account to store oracle data"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "authBump",
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Bitwise representation of the state of the pool",
+              "bit0, 1: disable deposit(vaule is 1), 0: normal",
+              "bit1, 1: disable withdraw(vaule is 2), 0: normal",
+              "bit2, 1: disable swap(vaule is 4), 0: normal"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "lpMintDecimals",
+            "type": "u8"
+          },
+          {
+            "name": "mint0Decimals",
+            "docs": [
+              "mint0 and mint1 decimals"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "mint1Decimals",
+            "type": "u8"
+          },
+          {
+            "name": "lpSupply",
+            "docs": [
+              "lp mint supply"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "protocolFeesToken0",
+            "docs": [
+              "The amounts of token_0 and token_1 that are owed to the liquidity provider."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "protocolFeesToken1",
+            "type": "u64"
+          },
+          {
+            "name": "fundFeesToken0",
+            "type": "u64"
+          },
+          {
+            "name": "fundFeesToken1",
+            "type": "u64"
+          },
+          {
+            "name": "openTime",
+            "docs": [
+              "The timestamp allowed for swap in the pool."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "docs": [
+              "padding for future updates"
+            ],
             "type": {
               "array": [
                 "u64",
@@ -3450,6 +4068,87 @@ export type Pie = {
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "raydium_clmm_cpi::states::Observation",
+      "docs": [
+        "The element of observations in ClmmObservationState"
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c",
+        "packed": true
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "blockTimestamp",
+            "docs": [
+              "The block timestamp of the observation"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "sqrtPriceX64",
+            "docs": [
+              "the price of the observation timestamp, Q64.64"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "cumulativeTimePriceX64",
+            "docs": [
+              "the cumulative of price during the duration time, Q64.64"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "padding",
+            "docs": [
+              "padding for feature update"
+            ],
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "raydium_cpmm_cpi::states::Observation",
+      "docs": [
+        "The element of observations in ObservationState"
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c",
+        "packed": true
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "blockTimestamp",
+            "docs": [
+              "The block timestamp of the observation"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "cumulativeToken0PriceX32",
+            "docs": [
+              "the cumulative of token0 price during the duration time, Q32.32, the remaining 64 bit for overflow"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "cumulativeToken1PriceX32",
+            "docs": [
+              "the cumulative of token1 price during the duration time, Q32.32, the remaining 64 bit for overflow"
+            ],
+            "type": "u128"
           }
         ]
       }

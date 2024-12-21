@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constant::{MAX_COMPONENTS, USER_FUND},
+    constant::USER_FUND,
     error::PieError,
-    utils::{calculate_fee_amount, transfer_from_user_to_pool_vault},
-    BasketConfig, ProgramState, UserComponent, UserFund, NATIVE_MINT,
+    utils::{calculate_fee_amount, transfer_fees},
+    BasketConfig, ProgramState, UserFund, NATIVE_MINT,
 };
 use anchor_spl::memo::Memo;
 use anchor_spl::token::Token;
@@ -13,7 +13,7 @@ use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 use raydium_clmm_cpi::{
     cpi,
     program::RaydiumClmm,
-    states::{AmmConfig, ObservationState, PoolState},
+    states::{ClmmAmmConfig, ClmmObservationState, ClmmPoolState},
 };
 
 #[derive(Accounts)]
@@ -52,11 +52,11 @@ pub struct BuyComponentClmm<'info> {
 
     /// The factory state to read protocol fees
     #[account(address = pool_state.load()?.amm_config)]
-    pub amm_config: Box<Account<'info, AmmConfig>>,
+    pub amm_config: Box<Account<'info, ClmmAmmConfig>>,
 
     /// The program account of the pool in which the swap will be performed
     #[account(mut)]
-    pub pool_state: AccountLoader<'info, PoolState>,
+    pub pool_state: AccountLoader<'info, ClmmPoolState>,
 
     /// The user token account for input token
     #[account(mut)]
@@ -76,7 +76,7 @@ pub struct BuyComponentClmm<'info> {
 
     /// The program account for the most recent oracle observation
     #[account(mut, address = pool_state.load()?.observation_key)]
-    pub observation_state: AccountLoader<'info, ObservationState>,
+    pub observation_state: AccountLoader<'info, ClmmObservationState>,
 
     /// SPL program for token transfers
     pub token_program: Program<'info, Token>,
@@ -162,47 +162,20 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
     let (platform_fee_amount, creator_fee_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_swapped)?;
 
-    // Transfer platform fee to platform fee wallet
-    if platform_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_source.to_account_info(),
-            &ctx.accounts.platform_fee_token_account.to_account_info(),
-            &&ctx.accounts.user.to_account_info(),
-            &ctx.accounts.token_program.to_account_info(),
-            platform_fee_amount,
-        )?;
-    }
+    //transfer fees for creator and platform fee
+    transfer_fees(
+        &ctx.accounts.user_token_source.to_account_info(),
+        &ctx.accounts.platform_fee_token_account.to_account_info(),
+        &ctx.accounts.creator_token_account.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.token_program.to_account_info(),
+        platform_fee_amount,
+        creator_fee_amount,
+    )?;
 
-    // Transfer creator fee to creator
-    if creator_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_source.to_account_info(),
-            &ctx.accounts.creator_token_account.to_account_info(),
-            &&ctx.accounts.user.to_account_info(),
-            &ctx.accounts.token_program.to_account_info(),
-            creator_fee_amount,
-        )?;
-    }
-
-    let user_fund = &mut ctx.accounts.user_fund;
-
-    if let Some(asset) = user_fund
-        .components
-        .iter_mut()
-        .find(|a| a.mint == ctx.accounts.output_vault.key())
-    {
-        asset.amount = asset.amount.checked_add(amount_received).unwrap();
-    } else {
-        require!(
-            user_fund.components.len() < MAX_COMPONENTS as usize,
-            PieError::MaxAssetsExceeded
-        );
-
-        user_fund.components.push(UserComponent {
-            mint: ctx.accounts.output_vault.key(),
-            amount: amount_received,
-        });
-    }
+    ctx.accounts
+        .user_fund
+        .upsert_component(ctx.accounts.output_vault_mint.key(), amount_received)?;
 
     emit!(BuyComponentClmmEvent {
         basket_id: ctx.accounts.basket_config.id,

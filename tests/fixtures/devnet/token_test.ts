@@ -122,3 +122,11 @@ export  const tokensCpmm: TokenInfo[] = [
     poolId: "CYPPokMaPmrtxBqhavd3gW7xJvPetUFgVKSmwLy13XjA",
   },
 ]
+
+export const tokensClmm: TokenInfo[] = [
+  {
+    name: "test",
+    mint: "686P1DCV27RYVkiq5rgh74nQqWfV5W6itB2gBJtqNPHy",
+    poolId: "HRn16fqH3gR8xXgxgRxHY4M2unraFYTapgz8JLJRAvck",
+  },
+]
