@@ -7,7 +7,7 @@ use raydium_cpmm_cpi::{
     states::{AmmConfig, ObservationState, PoolState},
 };
 
-use crate::utils::Calculator;
+use crate::{utils::Calculator, ExecuteRebalancingEvent};
 use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
 
 #[derive(Accounts)]
@@ -80,17 +80,6 @@ pub struct ExecuteRebalancingCpmm<'info> {
     #[account(mut, address = pool_state.load()?.observation_key)]
     pub observation_state: AccountLoader<'info, ObservationState>,
     pub cp_swap_program: Program<'info, RaydiumCpmm>,
-}
-
-#[event]
-pub struct ExecuteRebalancingCpmmEvent {
-    pub basket_id: u64,
-    pub basket_mint: Pubkey,
-    pub is_buy: bool,
-    pub initial_source_balance: u64,
-    pub initial_destination_balance: u64,
-    pub final_source_balance: u64,
-    pub final_destination_balance: u64,
 }
 
 pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
@@ -185,7 +174,7 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
     let final_source_balance = ctx.accounts.vault_token_source.amount;
     let final_destination_balance = ctx.accounts.vault_token_destination.amount;
 
-    emit!(ExecuteRebalancingCpmmEvent {
+    emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
         is_buy,

@@ -11,10 +11,7 @@ use raydium_cpmm_cpi::{
 };
 
 use crate::{
-    constant::USER_FUND,
-    error::PieError,
-    utils::{calculate_fee_amount, transfer_fees},
-    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT,
+    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees}, BasketConfig, ProgramState, SellComponentEvent, UserFund, BASKET_CONFIG, NATIVE_MINT
 };
 
 #[derive(Accounts)]
@@ -32,7 +29,10 @@ pub struct SellComponentCpmm<'info> {
     #[account(mut)]
     pub program_state: Box<Account<'info, ProgramState>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = basket_config.mint == basket_mint.key() @PieError::InvalidBasketMint
+    )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(mut)]
@@ -109,14 +109,6 @@ pub struct SellComponentCpmm<'info> {
     pub system_program: Program<'info, System>,
 }
 
-#[event]
-pub struct SellComponentCpmmEvent {
-    pub basket_id: u64,
-    pub user: Pubkey,
-    pub mint: Pubkey,
-    pub amount: u64,
-}
-
 pub fn sell_component_cpmm(
     ctx: Context<SellComponentCpmm>,
     amount_in: u64,
@@ -186,7 +178,7 @@ pub fn sell_component_cpmm(
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount_in).unwrap();
 
-    emit!(SellComponentCpmmEvent {
+    emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.input_token_mint.key(),

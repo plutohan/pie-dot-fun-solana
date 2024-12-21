@@ -26,7 +26,10 @@ pub struct SellComponentContext<'info> {
     #[account(mut)]
     pub program_state: Box<Account<'info, ProgramState>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = basket_config.mint == basket_mint.key() @PieError::InvalidBasketMint
+    )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(mut)]

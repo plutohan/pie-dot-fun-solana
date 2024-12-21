@@ -5,10 +5,10 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::{MAX_COMPONENTS, USER_FUND},
+    constant::USER_FUND,
     error::PieError,
     utils::{calculate_fee_amount, swap_base_out, transfer_fees, SwapBaseOut},
-    BasketConfig, ProgramState, UserComponent, UserFund, NATIVE_MINT,
+    BasketConfig, ProgramState, UserFund, NATIVE_MINT,
 };
 
 #[derive(Accounts)]
@@ -197,25 +197,9 @@ pub fn buy_component(
         platform_fee_amount,
         creator_fee_amount,
     )?;
-    let user_fund = &mut ctx.accounts.user_fund;
-
-    if let Some(asset) = user_fund
-        .components
-        .iter_mut()
-        .find(|a| a.mint == ctx.accounts.mint_out.key())
-    {
-        asset.amount = asset.amount.checked_add(amount_received).unwrap();
-    } else {
-        require!(
-            user_fund.components.len() < MAX_COMPONENTS as usize,
-            PieError::MaxAssetsExceeded
-        );
-
-        user_fund.components.push(UserComponent {
-            mint: ctx.accounts.mint_out.key(),
-            amount: amount_received,
-        });
-    }
+    ctx.accounts
+        .user_fund
+        .update_component(ctx.accounts.mint_out.key(), amount_received)?;
 
     emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

@@ -46,4 +46,7 @@ pub enum PieError {
 
     #[msg("Conversion to u64 failed with an overflow or underflow")]
     ConversionFailure,
+
+    #[msg("Invalid basket mint")]
+    InvalidBasketMint,
 }

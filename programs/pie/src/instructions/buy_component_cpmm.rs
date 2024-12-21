@@ -11,10 +11,7 @@ use raydium_cpmm_cpi::{
 };
 
 use crate::{
-    constant::{MAX_COMPONENTS, USER_FUND},
-    error::PieError,
-    utils::{calculate_fee_amount, transfer_fees},
-    BasketConfig, ProgramState, UserComponent, UserFund, NATIVE_MINT,
+    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees}, BasketConfig, BuyComponentEvent, ProgramState, UserFund, NATIVE_MINT
 };
 
 #[derive(Accounts)]
@@ -105,14 +102,6 @@ pub struct BuyComponentCpmm<'info> {
     pub system_program: Program<'info, System>,
 }
 
-#[event]
-pub struct BuyComponentCpmmEvent {
-    pub basket_id: u64,
-    pub user: Pubkey,
-    pub mint: Pubkey,
-    pub amount: u64,
-}
-
 pub fn buy_component_cpmm(
     ctx: Context<BuyComponentCpmm>,
     max_amount_in: u64,
@@ -165,27 +154,11 @@ pub fn buy_component_cpmm(
         creator_fee_amount,
     )?;
 
-    let user_fund = &mut ctx.accounts.user_fund;
+    ctx.accounts
+        .user_fund
+        .update_component(ctx.accounts.output_token_mint.key(), amount_received)?;
 
-    if let Some(asset) = user_fund
-        .components
-        .iter_mut()
-        .find(|a| a.mint == ctx.accounts.output_token_mint.key())
-    {
-        asset.amount = asset.amount.checked_add(amount_received).unwrap();
-    } else {
-        require!(
-            user_fund.components.len() < MAX_COMPONENTS as usize,
-            PieError::MaxAssetsExceeded
-        );
-
-        user_fund.components.push(UserComponent {
-            mint: ctx.accounts.output_token_mint.key(),
-            amount: amount_received,
-        });
-    }
-
-    emit!(BuyComponentCpmmEvent {
+    emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.output_token_mint.key(),
