@@ -21,6 +21,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   mintTo,
   NATIVE_MINT,
+  TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   transfer,
 } from "@solana/spl-token";
@@ -226,14 +227,16 @@ export async function getTokenAccount(
 
 export async function buildClmmRemainingAccounts(
   tickArray: PublicKey[],
-  exTickArrayBitmap?: PublicKey,
+  exTickArrayBitmap?: PublicKey
 ): Promise<any> {
   const remainingAccounts = [
-    ...(exTickArrayBitmap ? [{ pubkey: exTickArrayBitmap, isSigner: false, isWritable: true }] : []),
+    ...(exTickArrayBitmap
+      ? [{ pubkey: exTickArrayBitmap, isSigner: false, isWritable: true }]
+      : []),
     ...tickArray.map((i) => ({ pubkey: i, isSigner: false, isWritable: true })),
   ];
 
-  return remainingAccounts
+  return remainingAccounts;
 }
 
 export async function wrappedSOLInstruction(
@@ -347,7 +350,9 @@ export async function getOrCreateTokenAccountTx(
   payer: PublicKey,
   owner: PublicKey
 ): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
-  const tokenAccount = await getAssociatedTokenAddress(mint, owner, true);
+  const programId = await isToken2022Mint(connection, mint) ? TOKEN_2022_PROGRAM_ID: TOKEN_PROGRAM_ID ;
+  console.log('programId: ', await isToken2022Mint(connection, mint))
+  const tokenAccount = await getAssociatedTokenAddress(mint, owner, true, programId);
   let transaction = new Transaction();
   try {
     await getAccount(connection, tokenAccount, "confirmed");
@@ -364,6 +369,17 @@ export async function getOrCreateTokenAccountTx(
     );
   }
   return { tokenAccount: tokenAccount, tx: transaction };
+}
+
+export async function isToken2022Mint(
+  connection: Connection,
+  mint: PublicKey
+): Promise<boolean> {
+  const accountInfo = await connection.getAccountInfo(mint);
+  if (accountInfo.owner.toString() == TOKEN_2022_PROGRAM_ID.toString()) {
+    return true;
+  }
+  return false;
 }
 
 export function unwrapSolIx(

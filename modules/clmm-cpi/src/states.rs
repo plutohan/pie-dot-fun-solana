@@ -11,7 +11,7 @@ pub const TICK_ARRAY_SEED: &str = "tick_array";
 // Seed to derive account address and signature
 pub const OBSERVATION_SEED: &str = "observation";
 
-// Number of ClmmObservationState element
+// Number of ObservationState element
 pub const OBSERVATION_NUM: usize = 1000;
 pub const TICK_ARRAY_SIZE_USIZE: usize = 60;
 pub const TICK_ARRAY_SIZE: i32 = 60;
@@ -23,7 +23,7 @@ pub const FEE_RATE_DENOMINATOR_VALUE: u32 = 1_000_000;
 /// Holds the current owner of the factory
 #[account]
 #[derive(Default, Debug)]
-pub struct ClmmAmmConfig {
+pub struct AmmConfig {
     /// Bump to identify PDA
     pub bump: u8,
     pub index: u16,
@@ -43,7 +43,7 @@ pub struct ClmmAmmConfig {
     pub padding: [u64; 3],
 }
 
-impl ClmmAmmConfig {
+impl AmmConfig {
     pub const LEN: usize = 8 + 1 + 2 + 32 + 4 + 4 + 2 + 64;
 }
 
@@ -54,7 +54,7 @@ impl ClmmAmmConfig {
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
 #[derive(Default, Debug)]
-pub struct ClmmPoolState {
+pub struct PoolState {
     /// Bump to identify PDA
     pub bump: [u8; 1],
     // Which config the pool belongs
@@ -138,7 +138,7 @@ pub struct ClmmPoolState {
     pub padding2: [u64; 32],
 }
 
-impl ClmmPoolState {
+impl PoolState {
     pub const LEN: usize = 8
         + 1
         + 32 * 7
@@ -293,7 +293,7 @@ impl TickState {
 
 const EXTENSION_TICKARRAY_BITMAP_SIZE: usize = 14;
 
-/// The element of observations in ClmmObservationState
+/// The element of observations in ObservationState
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
 #[derive(Default, Debug)]
@@ -313,8 +313,8 @@ impl Observation {
 
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
-pub struct ClmmObservationState {
-    /// Whether the ClmmObservationState is initialized
+pub struct ObservationState {
+    /// Whether the ObservationState is initialized
     pub initialized: bool,
     pub pool_id: Pubkey,
     /// observation array
@@ -323,6 +323,6 @@ pub struct ClmmObservationState {
     pub padding: [u128; 5],
 }
 
-impl ClmmObservationState {
+impl ObservationState {
     pub const LEN: usize = 8 + 1 + 32 + (Observation::LEN * OBSERVATION_NUM) + 16 * 5;
 }

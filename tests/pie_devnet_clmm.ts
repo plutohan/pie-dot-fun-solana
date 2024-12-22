@@ -259,4 +259,41 @@ describe("pie", () => {
     );
     userFundTable.printTable();
   });
+
+  it("Sell Component CLMM", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    for (let i = 0; i < basketConfigData.components.length; i++) {
+      const sellComponentClmmTx = await pieProgram.sellComponentClmm(
+        admin.publicKey,
+        basketId,
+        new BN(20000),
+        raydium,
+        new PublicKey(tokensClmm[i].mint),
+        tokensClmm[i].poolId,
+        false
+      );
+
+      const sellComponentClmmTxResult = await sendAndConfirmTransaction(
+        connection,
+        sellComponentClmmTx,
+        [admin],
+        {
+          skipPreflight: true,
+          commitment: "confirmed",
+        }
+      );
+
+      console.log(
+        `Sell component CLMM at tx: https://explorer.solana.com/tx/${sellComponentClmmTxResult}?cluster=devnet`
+      );
+    }
+    const userFundTable = await showUserFundTable(
+      pieProgram,
+      admin.publicKey,
+      basketId
+    );
+    userFundTable.printTable();
+  });
 });

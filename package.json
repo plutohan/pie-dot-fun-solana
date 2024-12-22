@@ -17,7 +17,8 @@
     "@solana/web3.js": "^1.95.5",
     "axios": "^1.7.9",
     "bs58": "^6.0.0",
-    "console-table-printer": "^2.12.1"
+    "console-table-printer": "^2.12.1",
+    "decimal.js": "^10.4.3"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",

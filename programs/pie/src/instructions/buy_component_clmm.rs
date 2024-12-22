@@ -1,10 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constant::USER_FUND,
-    error::PieError,
-    utils::{calculate_fee_amount, transfer_fees},
-    BasketConfig, ProgramState, UserFund, NATIVE_MINT,
+    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees}, BasketConfig, BuyComponentEvent, ProgramState, UserFund, NATIVE_MINT
 };
 use anchor_spl::memo::Memo;
 use anchor_spl::token::Token;
@@ -13,7 +10,6 @@ use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 use raydium_clmm_cpi::{
     cpi,
     program::RaydiumClmm,
-    states::{ClmmAmmConfig, ClmmObservationState, ClmmPoolState},
 };
 
 #[derive(Accounts)]
@@ -50,13 +46,13 @@ pub struct BuyComponentClmm<'info> {
     )]
     pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The factory state to read protocol fees
-    #[account(address = pool_state.load()?.amm_config)]
-    pub amm_config: Box<Account<'info, ClmmAmmConfig>>,
-
-    /// The program account of the pool in which the swap will be performed
+    /// CHECK: Safe. amm_config Account
     #[account(mut)]
-    pub pool_state: AccountLoader<'info, ClmmPoolState>,
+    pub amm_config: AccountInfo<'info>,
+
+    /// CHECK: Safe. pool_state Account
+    #[account(mut)]
+    pub pool_state: AccountInfo<'info>,
 
     /// The user token account for input token
     #[account(mut)]
@@ -74,9 +70,9 @@ pub struct BuyComponentClmm<'info> {
     #[account(mut)]
     pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The program account for the most recent oracle observation
-    #[account(mut, address = pool_state.load()?.observation_key)]
-    pub observation_state: AccountLoader<'info, ClmmObservationState>,
+    /// CHECK: Safe. observation_state Account
+    #[account(mut)]
+    pub observation_state: AccountInfo<'info>,
 
     /// SPL program for token transfers
     pub token_program: Program<'info, Token>,
@@ -103,14 +99,6 @@ pub struct BuyComponentClmm<'info> {
     // tick_array_account_1
     // tick_array_account_2
     // tick_array_account_...
-}
-
-#[event]
-pub struct BuyComponentClmmEvent {
-    pub basket_id: u64,
-    pub user: Pubkey,
-    pub mint: Pubkey,
-    pub amount: u64,
 }
 
 pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
@@ -177,7 +165,7 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
         .user_fund
         .upsert_component(ctx.accounts.output_vault_mint.key(), amount_received)?;
 
-    emit!(BuyComponentClmmEvent {
+    emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.output_vault.key(),

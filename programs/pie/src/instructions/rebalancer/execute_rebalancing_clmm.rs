@@ -6,12 +6,11 @@ use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 use raydium_clmm_cpi::{
     cpi,
     program::RaydiumClmm,
-    states::{ClmmAmmConfig, ClmmObservationState, ClmmPoolState},
 };
 
 use crate::utils::Calculator;
 use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
-use crate::{ProgramState, NATIVE_MINT};
+use crate::{ExecuteRebalancingEvent, ProgramState, NATIVE_MINT};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancingClmm<'info> {
@@ -48,13 +47,13 @@ pub struct ExecuteRebalancingClmm<'info> {
 
     pub clmm_program: Program<'info, RaydiumClmm>,
 
-    /// The factory state to read protocol fees
-    #[account(address = pool_state.load()?.amm_config)]
-    pub amm_config: Box<Account<'info, ClmmAmmConfig>>,
-
-    /// The program account of the pool in which the swap will be performed
+    /// CHECK: Safe. amm_config Account
     #[account(mut)]
-    pub pool_state: AccountLoader<'info, ClmmPoolState>,
+    pub amm_config: AccountInfo<'info>,
+
+    /// CHECK: Safe. pool_state Account
+    #[account(mut)]
+    pub pool_state: AccountInfo<'info>,
 
     /// The user token account for input token
     #[account(mut)]
@@ -72,9 +71,9 @@ pub struct ExecuteRebalancingClmm<'info> {
     #[account(mut)]
     pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The program account for the most recent oracle observation
-    #[account(mut, address = pool_state.load()?.observation_key)]
-    pub observation_state: AccountLoader<'info, ClmmObservationState>,
+    /// CHECK: Safe. observation_state Account
+    #[account(mut)]
+    pub observation_state: AccountInfo<'info>,
 
     /// SPL program for token transfers
     pub token_program: Program<'info, Token>,
@@ -103,17 +102,6 @@ pub struct ExecuteRebalancingClmm<'info> {
     // tick_array_account_...
 }
 
-#[event]
-pub struct ExecuteRebalancingClmmEvent {
-    pub basket_id: u64,
-    pub basket_mint: Pubkey,
-    pub is_buy: bool,
-    pub initial_source_balance: u64,
-    pub initial_destination_balance: u64,
-    pub final_source_balance: u64,
-    pub final_destination_balance: u64,
-}
-
 pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingClmm<'info>>,
     is_buy: bool,
@@ -135,7 +123,7 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
     let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
 
     let cpi_accounts = cpi::accounts::SwapSingleV2 {
-        payer: ctx.accounts.rebalancer.to_account_info(),
+        payer: basket_config.to_account_info(),
         amm_config: ctx.accounts.amm_config.to_account_info(),
         pool_state: ctx.accounts.pool_state.to_account_info(),
         input_token_account: ctx.accounts.vault_token_source.to_account_info(),
@@ -219,7 +207,7 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
     let final_source_balance = ctx.accounts.vault_token_source.amount;
     let final_destination_balance = ctx.accounts.vault_token_destination.amount;
 
-    emit!(ExecuteRebalancingClmmEvent {
+    emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
         is_buy,

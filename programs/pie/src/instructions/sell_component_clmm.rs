@@ -3,13 +3,10 @@ use anchor_spl::memo::Memo;
 use anchor_spl::token::Token;
 use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 
-use raydium_clmm_cpi::{
-    cpi,
-    program::RaydiumClmm,
-    states::{ClmmAmmConfig, ClmmObservationState, ClmmPoolState},
-};
+use raydium_clmm_cpi::{cpi, program::RaydiumClmm};
 
 use crate::utils::transfer_fees;
+use crate::SellComponentEvent;
 use crate::{
     constant::USER_FUND, error::PieError, utils::calculate_fee_amount, BasketConfig, ProgramState,
     UserFund, BASKET_CONFIG, NATIVE_MINT,
@@ -30,7 +27,10 @@ pub struct SellComponentClmm<'info> {
     #[account(mut)]
     pub program_state: Box<Account<'info, ProgramState>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = basket_config.mint == basket_mint.key() @PieError::InvalidBasketMint
+    )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(mut)]
@@ -53,13 +53,13 @@ pub struct SellComponentClmm<'info> {
 
     pub system_program: Program<'info, System>,
 
-    /// The factory state to read protocol fees
-    #[account(address = pool_state.load()?.amm_config)]
-    pub amm_config: Box<Account<'info, ClmmAmmConfig>>,
-
-    /// The program account of the pool in which the swap will be performed
+    /// CHECK: Safe. amm_config Account
     #[account(mut)]
-    pub pool_state: AccountLoader<'info, ClmmPoolState>,
+    pub amm_config: AccountInfo<'info>,
+
+    /// CHECK: Safe. pool_state Account
+    #[account(mut)]
+    pub pool_state: AccountInfo<'info>,
 
     /// The user token account for input token
     #[account(mut)]
@@ -77,9 +77,9 @@ pub struct SellComponentClmm<'info> {
     #[account(mut)]
     pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The program account for the most recent oracle observation
-    #[account(mut, address = pool_state.load()?.observation_key)]
-    pub observation_state: AccountLoader<'info, ClmmObservationState>,
+    /// CHECK: Safe. observation_state Account
+    #[account(mut)]
+    pub observation_state: AccountInfo<'info>,
 
     /// SPL program for token transfers
     pub token_program: Program<'info, Token>,
@@ -108,14 +108,6 @@ pub struct SellComponentClmm<'info> {
     // tick_array_account_...
 }
 
-#[event]
-pub struct SellComponentClmmEvent {
-    pub basket_id: u64,
-    pub user: Pubkey,
-    pub mint: Pubkey,
-    pub amount: u64,
-}
-
 pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, SellComponentClmm<'info>>,
     amount: u64,
@@ -142,7 +134,7 @@ pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
     ]];
 
     let cpi_accounts = cpi::accounts::SwapSingleV2 {
-        payer: ctx.accounts.user.to_account_info(),
+        payer: ctx.accounts.basket_config.to_account_info(),
         amm_config: ctx.accounts.amm_config.to_account_info(),
         pool_state: ctx.accounts.pool_state.to_account_info(),
         input_token_account: ctx.accounts.vault_token_source.to_account_info(),
@@ -194,7 +186,7 @@ pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount).unwrap();
 
-    emit!(SellComponentClmmEvent {
+    emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.input_vault_mint.key(),
