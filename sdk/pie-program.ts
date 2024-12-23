@@ -77,21 +77,25 @@ export class PieProgram {
 
   basketConfigPDA(basketId: BN): PublicKey {
     return PublicKey.findProgramAddressSync(
-      [Buffer.from(BASKET_CONFIG), basketId.toBuffer("be", 8)],
+      [Buffer.from(BASKET_CONFIG), basketId.toArrayLike(Buffer, "be", 8)],
       this.program.programId
     )[0];
   }
 
   basketMintPDA(basketId: BN): PublicKey {
     return PublicKey.findProgramAddressSync(
-      [Buffer.from(BASKET_MINT), basketId.toBuffer("be", 8)],
+      [Buffer.from(BASKET_MINT), basketId.toArrayLike(Buffer, "be", 8)],
       this.program.programId
     )[0];
   }
 
   userFundPDA(user: PublicKey, basketId: BN): PublicKey {
     return PublicKey.findProgramAddressSync(
-      [Buffer.from(USER_FUND), user.toBuffer(), basketId.toBuffer("be", 8)],
+      [
+        Buffer.from(USER_FUND),
+        user.toBuffer(),
+        basketId.toArrayLike(Buffer, "be", 8),
+      ],
       this.program.programId
     )[0];
   }
