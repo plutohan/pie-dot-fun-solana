@@ -10,7 +10,8 @@ import {
 } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction, createCloseAccountInstruction,
+  createAssociatedTokenAccountInstruction,
+  createCloseAccountInstruction,
   createMint,
   createSyncNativeInstruction,
   getAccount,
@@ -23,11 +24,12 @@ import {
   TOKEN_PROGRAM_ID,
   transfer,
 } from "@solana/spl-token";
-import {BasketComponent} from "../pie";
-import {BN} from "@coral-xyz/anchor";
-import {Raydium} from "@raydium-io/raydium-sdk-v2";
-import {PieProgram} from "../../sdk/pie-program";
-import {Table} from "console-table-printer";
+import { BasketComponent } from "../pie";
+import { BN } from "@coral-xyz/anchor";
+import { Raydium, API_URLS } from "@raydium-io/raydium-sdk-v2";
+import { PieProgram } from "../../sdk/pie-program";
+import { Table } from "console-table-printer";
+import axios from "axios";
 
 export async function createUserWithLamports(
   connection: Connection,
@@ -184,10 +186,7 @@ export async function getRaydiumPoolAccounts(
       user
     );
   if (inputMint.equals(NATIVE_MINT)) {
-    const wrappedSolIx = await wrappedSOLInstruction(
-      user,
-      amountIn
-    );
+    const wrappedSolIx = await wrappedSOLInstruction(user, amountIn);
     outputIxs.push(...wrappedSolIx);
   }
 
@@ -219,18 +218,18 @@ export async function getOrCreateTokenAccountIx(
 }
 
 export async function getTokenAccount(
-    mint: PublicKey,
-    owner: PublicKey
+  mint: PublicKey,
+  owner: PublicKey
 ): Promise<PublicKey> {
-  return await getAssociatedTokenAddress(mint, owner, true)
+  return await getAssociatedTokenAddress(mint, owner, true);
 }
 
 export async function wrappedSOLInstruction(
   recipient: PublicKey,
   amount: number
-) : Promise<TransactionInstruction[]>{
-  let ixs: TransactionInstruction[] = []
-  const ata = await getTokenAccount(NATIVE_MINT, recipient)
+): Promise<TransactionInstruction[]> {
+  let ixs: TransactionInstruction[] = [];
+  const ata = await getTokenAccount(NATIVE_MINT, recipient);
   ixs.push(
     SystemProgram.transfer({
       fromPubkey: recipient,
@@ -331,10 +330,10 @@ export async function showBasketVaultsTable(
 }
 
 export async function getOrCreateTokenAccountTx(
-    connection: Connection,
-    mint: PublicKey,
-    payer: PublicKey,
-    owner: PublicKey
+  connection: Connection,
+  mint: PublicKey,
+  payer: PublicKey,
+  owner: PublicKey
 ): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
   const tokenAccount = await getAssociatedTokenAddress(mint, owner, true);
   let transaction = new Transaction();
@@ -342,33 +341,91 @@ export async function getOrCreateTokenAccountTx(
     await getAccount(connection, tokenAccount, "confirmed");
   } catch (error) {
     transaction.add(
-        createAssociatedTokenAccountInstruction(
-            payer,
-            tokenAccount,
-            owner,
-            mint,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        )
+      createAssociatedTokenAccountInstruction(
+        payer,
+        tokenAccount,
+        owner,
+        mint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )
     );
   }
   return { tokenAccount: tokenAccount, tx: transaction };
 }
 
-export function unwrapSolIx(acc: PublicKey, destination: PublicKey) : TransactionInstruction {
-  return createCloseAccountInstruction(
-      acc,
-      destination,
-      destination
-  )
+export function unwrapSolIx(
+  acc: PublicKey,
+  destination: PublicKey
+): TransactionInstruction {
+  return createCloseAccountInstruction(acc, destination, destination);
 }
 
-export async function getOrCreateNativeMintATA(connection: Connection, payer: PublicKey, owner: PublicKey) : Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
+export async function getOrCreateNativeMintATA(
+  connection: Connection,
+  payer: PublicKey,
+  owner: PublicKey
+): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
   const { tokenAccount, tx } = await getOrCreateTokenAccountTx(
-      connection,
-      new PublicKey(NATIVE_MINT),
-      payer,
-      owner
+    connection,
+    new PublicKey(NATIVE_MINT),
+    payer,
+    owner
   );
   return { tokenAccount, tx };
+}
+
+export function getExplorerUrl(txid: string, endpoint: string) {
+  const clusterParam = endpoint.includes("devnet") ? "?cluster=devnet" : "";
+  return `https://solscan.io/tx/${txid}${clusterParam}`;
+}
+
+interface SwapCompute {
+  id: string;
+  success: boolean;
+  version: "V0" | "V1";
+  openTime?: undefined;
+  msg?: undefined;
+  data?: {
+    swapType: "BaseIn" | "BaseOut";
+    inputMint: string;
+    inputAmount: string;
+    outputMint: string;
+    outputAmount: string;
+    otherAmountThreshold: string;
+    slippageBps: number;
+    priceImpactPct: number;
+    routePlan: {
+      poolId: string;
+      inputMint: string;
+      outputMint: string;
+      feeMint: string;
+      feeRate: number;
+      feeAmount: string;
+    }[];
+  };
+}
+
+export async function getSwapData({
+  isBuy,
+  inputMint,
+  outputMint,
+  amount,
+  slippage,
+}: {
+  isBuy: boolean;
+  inputMint: string;
+  outputMint: string;
+  amount: number;
+  slippage: number;
+}): Promise<SwapCompute> {
+  const { data: swapResponse } = await axios.get<SwapCompute>(
+    `${API_URLS.SWAP_HOST}/compute/${
+      isBuy ? "swap-base-out" : "swap-base-in"
+    }?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${
+      slippage * 100
+    }&txVersion=V0`
+  );
+
+  return swapResponse;
 }

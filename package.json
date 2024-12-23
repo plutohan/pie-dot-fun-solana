@@ -4,6 +4,7 @@
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "test-devnet": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_devnet.ts",
+    "test-mainnet": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_mainnet.ts",
     "test-server": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_server.ts",
     "deploy-devnet": "anchor deploy --program-name pie --provider.cluster https://api.devnet.solana.com",
     "rebuild": "rm -rf target && anchor build && anchor keys list && anchor keys sync && anchor build"
@@ -13,6 +14,7 @@
     "@raydium-io/raydium-sdk-v2": "0.1.79-alpha",
     "@solana/spl-token": "^0.4.9",
     "@solana/web3.js": "^1.95.5",
+    "axios": "^1.7.9",
     "bs58": "^6.0.0",
     "console-table-printer": "^2.12.1"
   },

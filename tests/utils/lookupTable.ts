@@ -8,6 +8,7 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
+import { getExplorerUrl } from "./helper";
 
 export async function finalizeTransaction(
   connection: Connection,
@@ -37,11 +38,17 @@ export async function finalizeTransaction(
 
   if (confirmation.value.err) {
     console.log(
-      `❌ Transaction Error at tx: https://explorer.solana.com/tx/${txid}?cluster=devnet`
+      `❌ Transaction Error at tx: ${getExplorerUrl(
+        txid,
+        connection.rpcEndpoint
+      )}`
     );
   } else {
     console.log(
-      `🎉 Transaction Successfully Confirmed at tx: https://explorer.solana.com/tx/${txid}?cluster=devnet`
+      `🎉 Transaction Successfully Confirmed at tx: ${getExplorerUrl(
+        txid,
+        connection.rpcEndpoint
+      )}`
     );
   }
 }
@@ -94,6 +101,11 @@ export async function addAddressesToTable(
   lookupTableAddress: PublicKey,
   addresses: PublicKey[]
 ) {
+  if (addresses.length === 0) {
+    return;
+  }
+  console.log(`adding ${addresses.length} addresses to lookup table`);
+
   const addAddressesInstruction = AddressLookupTableProgram.extendLookupTable({
     payer: signer.publicKey,
     authority: signer.publicKey,
@@ -102,7 +114,10 @@ export async function addAddressesToTable(
   });
   await createAndSendV0Tx(connection, signer, [addAddressesInstruction]);
   console.log(
-    `Add account to lookup table https://explorer.solana.com/address/${lookupTableAddress.toString()}?cluster=devnet`
+    `Add account to lookup table ${getExplorerUrl(
+      lookupTableAddress.toString(),
+      connection.rpcEndpoint
+    )}`
   );
 }
 
