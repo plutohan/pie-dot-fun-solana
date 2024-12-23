@@ -390,15 +390,23 @@ export class PieProgram {
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
-  async buyComponent(
-    userSourceOwner: PublicKey,
-    basketId: BN,
-    maxAmountIn: number,
-    amountOut: number,
-    raydium: Raydium,
-    ammId: string,
-    unwrapSol: boolean = true
-  ): Promise<Transaction> {
+  async buyComponent({
+    userSourceOwner,
+    basketId,
+    maxAmountIn,
+    amountOut,
+    raydium,
+    ammId,
+    unwrapSol = true,
+  }: {
+    userSourceOwner: PublicKey;
+    basketId: BN;
+    maxAmountIn: number;
+    amountOut: number;
+    raydium: Raydium;
+    ammId: string;
+    unwrapSol?: boolean;
+  }): Promise<Transaction> {
     const tx = new Transaction();
     const data = await raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
@@ -565,16 +573,27 @@ export class PieProgram {
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
-  async sellComponent(
-    user: PublicKey,
-    inputMint: PublicKey,
-    basketId: BN,
-    amountIn: number,
-    minimumAmountOut: number,
-    raydium: Raydium,
-    ammId: string,
-    unwrappedSol: boolean
-  ): Promise<Transaction> {
+  async sellComponent({
+    user,
+    inputMint,
+    basketId,
+    amountIn,
+    minimumAmountOut,
+    raydium,
+    ammId,
+    createNativeMintATA,
+    unwrapSol,
+  }: {
+    user: PublicKey;
+    inputMint: PublicKey;
+    basketId: BN;
+    amountIn: number;
+    minimumAmountOut: number;
+    raydium: Raydium;
+    ammId: string;
+    createNativeMintATA?: boolean;
+    unwrapSol?: boolean;
+  }): Promise<Transaction> {
     const tx = new Transaction();
     const basketMint = this.basketMintPDA(basketId);
     const data = await raydium.liquidity.getPoolInfoFromRpc({
@@ -595,7 +614,7 @@ export class PieProgram {
       true
     );
 
-    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+    const { tokenAccount: outputTokenAccount, tx: createNativeMintATATx } =
       await getOrCreateTokenAccountTx(
         this.connection,
         new PublicKey(mintOut),
@@ -603,7 +622,10 @@ export class PieProgram {
         user
       );
 
-    tx.add(outputTx);
+    if (createNativeMintATA) {
+      tx.add(createNativeMintATATx);
+    }
+
     const sellComponentTx = await this.program.methods
       .sellComponent(new BN(amountIn), new BN(minimumAmountOut))
       .accountsPartial({
@@ -635,7 +657,7 @@ export class PieProgram {
       .transaction();
     tx.add(sellComponentTx);
 
-    if (unwrappedSol) {
+    if (unwrapSol) {
       tx.add(createCloseAccountInstruction(outputTokenAccount, user, user));
     }
     return tx;

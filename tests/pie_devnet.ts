@@ -413,14 +413,14 @@ describe("pie", () => {
     for (let i = 0; i < basketConfigData.components.length; i++) {
       let txs = new Transaction();
       txs.add(
-        await pieProgram.buyComponent(
-          admin.publicKey,
+        await pieProgram.buyComponent({
+          userSourceOwner: admin.publicKey,
           basketId,
-          1 * LAMPORTS_PER_SOL,
-          2000000,
+          maxAmountIn: 1 * LAMPORTS_PER_SOL,
+          amountOut: 2000000,
           raydium,
-          tokens[i].ammId
-        )
+          ammId: tokens[i].ammId,
+        })
       );
 
       const buyComponentTxResult = await sendAndConfirmTransaction(
@@ -464,14 +464,14 @@ describe("pie", () => {
     tx.add(...wrappedSolIx);
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
-      const buyComponentTx = await pieProgram.buyComponent(
-        admin.publicKey,
+      const buyComponentTx = await pieProgram.buyComponent({
+        userSourceOwner: admin.publicKey,
         basketId,
-        1 * LAMPORTS_PER_SOL,
-        20000000,
+        maxAmountIn: 1 * LAMPORTS_PER_SOL,
+        amountOut: 20000000,
         raydium,
-        tokens[i].ammId
-      );
+        ammId: tokens[i].ammId,
+      });
       tx.add(buyComponentTx);
     }
 
@@ -577,16 +577,16 @@ describe("pie", () => {
   it("Sell Component", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const sellComponentTx = await pieProgram.sellComponent(
-      admin.publicKey,
-      new PublicKey(tokens[1].mint),
+    const sellComponentTx = await pieProgram.sellComponent({
+      user: admin.publicKey,
+      inputMint: new PublicKey(tokens[1].mint),
       basketId,
-      10 * 1000000,
-      0,
+      amountIn: 10 * 1000000,
+      minimumAmountOut: 0,
       raydium,
-      tokens[1].ammId,
-      true
-    );
+      ammId: tokens[1].ammId,
+      createNativeMintATA: true,
+    });
 
     const sellComponentTxResult = await sendAndConfirmTransaction(
       connection,
@@ -620,16 +620,16 @@ describe("pie", () => {
 
     const tx = new Transaction();
     for (let i = 0; i < userFund.components.length; i++) {
-      const sellComponentTx = await pieProgram.sellComponent(
-        admin.publicKey,
-        userFund.components[i].mint,
+      const sellComponentTx = await pieProgram.sellComponent({
+        user: admin.publicKey,
+        inputMint: userFund.components[i].mint,
         basketId,
-        userFund.components[i].amount.toNumber(),
-        0,
+        amountIn: userFund.components[i].amount.toNumber(),
+        minimumAmountOut: 0,
         raydium,
-        tokens[i].ammId,
-        true
-      );
+        ammId: tokens[i].ammId,
+        createNativeMintATA: true,
+      });
       tx.add(sellComponentTx);
     }
 
