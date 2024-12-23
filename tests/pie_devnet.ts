@@ -17,7 +17,7 @@ import {
   PieProgram,
 } from "../sdk/pie-program";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { tokens, tokensCpmm } from "./utils/token_test";
+import { tokens, tokensCpmm } from "./fixtures/devnet/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
