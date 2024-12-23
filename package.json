@@ -7,7 +7,8 @@
     "test-mainnet": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_mainnet.ts",
     "test-server": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_server.ts",
     "deploy-devnet": "anchor deploy --program-name pie --provider.cluster https://api.devnet.solana.com",
-    "rebuild": "rm -rf target && anchor build && anchor keys list && anchor keys sync && anchor build"
+    "rebuild": "rm -rf target && anchor build && anchor keys list && anchor keys sync && anchor build",
+    "rebuild-devnet": "rm -rf target && anchor build -- --features devnet && anchor keys list && anchor keys sync && anchor build -- --features devnet "
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",

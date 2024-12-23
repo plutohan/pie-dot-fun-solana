@@ -5,10 +5,10 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::{MAX_COMPONENTS, USER_FUND},
+    constant::USER_FUND,
     error::PieError,
-    utils::{calculate_fee_amount, swap_base_out, transfer_from_user_to_pool_vault, SwapBaseOut},
-    BasketConfig, ProgramState, UserComponent, UserFund, NATIVE_MINT,
+    utils::{calculate_fee_amount, swap_base_out, transfer_fees, SwapBaseOut},
+    BasketConfig, ProgramState, UserFund, NATIVE_MINT,
 };
 
 #[derive(Accounts)]
@@ -98,6 +98,10 @@ pub struct BuyComponentContext<'info> {
 
     pub token_program: Program<'info, Token>,
     /// CHECK: Safe. amm_program
+    #[account(
+        mut,
+        address = crate::raydium_amm::id(),
+    )]
     pub amm_program: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
@@ -183,47 +187,19 @@ pub fn buy_component(
     let (platform_fee_amount, creator_fee_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_swapped)?;
 
-    // Transfer platform fee to platform fee wallet
-    if platform_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_source.to_account_info(),
-            &ctx.accounts.platform_fee_token_account.to_account_info(),
-            &&ctx.accounts.user_source_owner.to_account_info(),
-            &ctx.accounts.token_program.to_account_info(),
-            platform_fee_amount,
-        )?;
-    }
-
-    // Transfer creator fee to creator
-    if creator_fee_amount > 0 {
-        transfer_from_user_to_pool_vault(
-            &ctx.accounts.user_token_source.to_account_info(),
-            &ctx.accounts.creator_token_account.to_account_info(),
-            &&ctx.accounts.user_source_owner.to_account_info(),
-            &ctx.accounts.token_program.to_account_info(),
-            creator_fee_amount,
-        )?;
-    }
-
-    let user_fund = &mut ctx.accounts.user_fund;
-
-    if let Some(asset) = user_fund
-        .components
-        .iter_mut()
-        .find(|a| a.mint == ctx.accounts.mint_out.key())
-    {
-        asset.amount = asset.amount.checked_add(amount_received).unwrap();
-    } else {
-        require!(
-            user_fund.components.len() < MAX_COMPONENTS as usize,
-            PieError::MaxAssetsExceeded
-        );
-
-        user_fund.components.push(UserComponent {
-            mint: ctx.accounts.mint_out.key(),
-            amount: amount_received,
-        });
-    }
+    //transfer fees for creator and platform fee
+    transfer_fees(
+        &ctx.accounts.user_token_source.to_account_info(),
+        &ctx.accounts.platform_fee_token_account.to_account_info(),
+        &ctx.accounts.creator_token_account.to_account_info(),
+        &ctx.accounts.user_source_owner.to_account_info(),
+        &ctx.accounts.token_program.to_account_info(),
+        platform_fee_amount,
+        creator_fee_amount,
+    )?;
+    ctx.accounts
+        .user_fund
+        .upsert_component(ctx.accounts.mint_out.key(), amount_received)?;
 
     emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
