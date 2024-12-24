@@ -1,1 +1,0 @@
-anchor deploy --program-name pie --provider.cluster https://api.devnet.solana.com
