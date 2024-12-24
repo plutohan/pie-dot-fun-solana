@@ -64,11 +64,60 @@ export type Pie = {
         },
         {
           "name": "programState",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basketConfig",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
         },
         {
           "name": "mintOut",
@@ -215,11 +264,60 @@ export type Pie = {
         },
         {
           "name": "programState",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basketConfig",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
         },
         {
           "name": "systemProgram",
@@ -255,7 +353,7 @@ export type Pie = {
         {
           "name": "vaultTokenDestination",
           "docs": [
-            "The user token account for output token"
+            "The vault token account destination for output token"
           ],
           "writable": true
         },
@@ -377,11 +475,60 @@ export type Pie = {
         },
         {
           "name": "programState",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basketConfig",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
         },
         {
           "name": "platformFeeTokenAccount",
@@ -1551,15 +1698,60 @@ export type Pie = {
         },
         {
           "name": "programState",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basketConfig",
-          "writable": true
-        },
-        {
-          "name": "basketMint",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
         },
         {
           "name": "clmmProgram",
@@ -2338,19 +2530,6 @@ export type Pie = {
   ],
   "events": [
     {
-      "name": "buyComponentClmmEvent",
-      "discriminator": [
-        225,
-        145,
-        103,
-        197,
-        71,
-        109,
-        221,
-        255
-      ]
-    },
-    {
       "name": "buyComponentEvent",
       "discriminator": [
         106,
@@ -2374,19 +2553,6 @@ export type Pie = {
         139,
         96,
         55
-      ]
-    },
-    {
-      "name": "executeRebalancingClmmEvent",
-      "discriminator": [
-        152,
-        132,
-        253,
-        68,
-        214,
-        188,
-        138,
-        112
       ]
     },
     {
@@ -2426,19 +2592,6 @@ export type Pie = {
         114,
         243,
         112
-      ]
-    },
-    {
-      "name": "sellComponentClmmEvent",
-      "discriminator": [
-        8,
-        67,
-        30,
-        160,
-        240,
-        184,
-        212,
-        234
       ]
     },
     {
@@ -2787,30 +2940,6 @@ export type Pie = {
       }
     },
     {
-      "name": "buyComponentClmmEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "buyComponentEvent",
       "type": {
         "kind": "struct",
@@ -2910,42 +3039,6 @@ export type Pie = {
                 }
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "executeRebalancingClmmEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "isBuy",
-            "type": "bool"
-          },
-          {
-            "name": "initialSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "initialDestinationBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalDestinationBalance",
-            "type": "u64"
           }
         ]
       }
@@ -3323,30 +3416,6 @@ export type Pie = {
           },
           {
             "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "sellComponentClmmEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
             "type": "pubkey"
           },
           {

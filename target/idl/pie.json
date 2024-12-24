@@ -1,5 +1,5 @@
 {
-  "address": "GaVmHaXqUU7xmFDLyQNhn9rv7ZH26XNr9cpmQhqz2CsV",
+  "address": "CBJ9f8V75qxj2GfC3gWz2UH8iXR4HymNToezs14mazVf",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -58,11 +58,60 @@
         },
         {
           "name": "program_state",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basket_config",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "BasketConfig"
+              }
+            ]
+          }
         },
         {
           "name": "mint_out",
@@ -209,11 +258,60 @@
         },
         {
           "name": "program_state",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basket_config",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "BasketConfig"
+              }
+            ]
+          }
         },
         {
           "name": "system_program",
@@ -249,7 +347,7 @@
         {
           "name": "vault_token_destination",
           "docs": [
-            "The user token account for output token"
+            "The vault token account destination for output token"
           ],
           "writable": true
         },
@@ -371,11 +469,60 @@
         },
         {
           "name": "program_state",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basket_config",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "BasketConfig"
+              }
+            ]
+          }
         },
         {
           "name": "platform_fee_token_account",
@@ -1545,15 +1692,60 @@
         },
         {
           "name": "program_state",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basket_config",
-          "writable": true
-        },
-        {
-          "name": "basket_mint",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "BasketConfig"
+              }
+            ]
+          }
         },
         {
           "name": "clmm_program",
@@ -2332,19 +2524,6 @@
   ],
   "events": [
     {
-      "name": "BuyComponentClmmEvent",
-      "discriminator": [
-        225,
-        145,
-        103,
-        197,
-        71,
-        109,
-        221,
-        255
-      ]
-    },
-    {
       "name": "BuyComponentEvent",
       "discriminator": [
         106,
@@ -2368,19 +2547,6 @@
         139,
         96,
         55
-      ]
-    },
-    {
-      "name": "ExecuteRebalancingClmmEvent",
-      "discriminator": [
-        152,
-        132,
-        253,
-        68,
-        214,
-        188,
-        138,
-        112
       ]
     },
     {
@@ -2420,19 +2586,6 @@
         114,
         243,
         112
-      ]
-    },
-    {
-      "name": "SellComponentClmmEvent",
-      "discriminator": [
-        8,
-        67,
-        30,
-        160,
-        240,
-        184,
-        212,
-        234
       ]
     },
     {
@@ -2781,30 +2934,6 @@
       }
     },
     {
-      "name": "BuyComponentClmmEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basket_id",
-            "type": "u64"
-          },
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "BuyComponentEvent",
       "type": {
         "kind": "struct",
@@ -2904,42 +3033,6 @@
                 }
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "ExecuteRebalancingClmmEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basket_id",
-            "type": "u64"
-          },
-          {
-            "name": "basket_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "is_buy",
-            "type": "bool"
-          },
-          {
-            "name": "initial_source_balance",
-            "type": "u64"
-          },
-          {
-            "name": "initial_destination_balance",
-            "type": "u64"
-          },
-          {
-            "name": "final_source_balance",
-            "type": "u64"
-          },
-          {
-            "name": "final_destination_balance",
-            "type": "u64"
           }
         ]
       }
@@ -3317,30 +3410,6 @@
           },
           {
             "name": "basket_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "SellComponentClmmEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basket_id",
-            "type": "u64"
-          },
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
             "type": "pubkey"
           },
           {
