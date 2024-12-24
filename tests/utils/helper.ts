@@ -351,7 +351,6 @@ export async function getOrCreateTokenAccountTx(
   owner: PublicKey
 ): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
   const programId = await isToken2022Mint(connection, mint) ? TOKEN_2022_PROGRAM_ID: TOKEN_PROGRAM_ID ;
-  console.log('programId: ', await isToken2022Mint(connection, mint))
   const tokenAccount = await getAssociatedTokenAddress(mint, owner, true, programId);
   let transaction = new Transaction();
   try {
@@ -384,9 +383,10 @@ export async function isToken2022Mint(
 
 export function unwrapSolIx(
   acc: PublicKey,
-  destination: PublicKey
+  destination: PublicKey,
+  authority: PublicKey
 ): TransactionInstruction {
-  return createCloseAccountInstruction(acc, destination, destination);
+  return createCloseAccountInstruction(acc, destination, authority);
 }
 
 export async function getOrCreateNativeMintATA(

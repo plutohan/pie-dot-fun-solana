@@ -412,17 +412,31 @@ describe("pie", () => {
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
       let txs = new Transaction();
-      txs.add(
-        await pieProgram.buyComponent({
-          userSourceOwner: admin.publicKey,
-          basketId,
-          maxAmountIn: 1 * LAMPORTS_PER_SOL,
-          amountOut: 2000000,
-          raydium,
-          ammId: tokens[i].ammId,
-        })
-      );
-
+      if(i == basketConfigData.components.length) {
+        txs.add(
+          await pieProgram.buyComponent({
+            userSourceOwner: admin.publicKey,
+            basketId,
+            maxAmountIn: 1 * LAMPORTS_PER_SOL,
+            amountOut: 2000000,
+            raydium,
+            ammId: tokens[i].ammId,
+            unwrapSol: true
+          })
+        );
+      } else {
+        txs.add(
+          await pieProgram.buyComponent({
+            userSourceOwner: admin.publicKey,
+            basketId,
+            maxAmountIn: 1 * LAMPORTS_PER_SOL,
+            amountOut: 2000000,
+            raydium,
+            ammId: tokens[i].ammId,
+            unwrapSol: false
+          })
+        );  
+      }
       const buyComponentTxResult = await sendAndConfirmTransaction(
         connection,
         txs,
@@ -482,8 +496,8 @@ describe("pie", () => {
       addressLookupTablesAccount.push(lut);
     }
 
-    tx.add(unwrapSolIx(nativeMintAta, admin.publicKey));
-
+    tx.add(unwrapSolIx(nativeMintAta, admin.publicKey, admin.publicKey));
+    console.log('addressLookupTablesAccount; ', addressLookupTablesAccount)
     await finalizeTransaction(
       connection,
       admin,
@@ -574,308 +588,308 @@ describe("pie", () => {
     userFundTable.printTable();
   });
 
-  it("Sell Component", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const sellComponentTx = await pieProgram.sellComponent({
-      user: admin.publicKey,
-      inputMint: new PublicKey(tokens[1].mint),
-      basketId,
-      amountIn: 10 * 1000000,
-      minimumAmountOut: 0,
-      raydium,
-      ammId: tokens[1].ammId,
-      createNativeMintATA: true,
-    });
+  // it("Sell Component", async () => {
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
+  //   const sellComponentTx = await pieProgram.sellComponent({
+  //     user: admin.publicKey,
+  //     inputMint: new PublicKey(tokens[1].mint),
+  //     basketId,
+  //     amountIn: 10 * 1000000,
+  //     minimumAmountOut: 0,
+  //     raydium,
+  //     ammId: tokens[1].ammId,
+  //     createNativeMintATA: true,
+  //   });
 
-    const sellComponentTxResult = await sendAndConfirmTransaction(
-      connection,
-      sellComponentTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
+  //   const sellComponentTxResult = await sendAndConfirmTransaction(
+  //     connection,
+  //     sellComponentTx,
+  //     [admin],
+  //     {
+  //       skipPreflight: true,
+  //       commitment: "confirmed",
+  //     }
+  //   );
 
-    console.log(
-      `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
-    );
+  //   console.log(
+  //     `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
+  //   );
 
-    console.log("User fund after sell component basket: ");
-    const userFundTable = await showUserFundTable(
-      pieProgram,
-      admin.publicKey,
-      basketId
-    );
-    userFundTable.printTable();
-  });
+  //   console.log("User fund after sell component basket: ");
+  //   const userFundTable = await showUserFundTable(
+  //     pieProgram,
+  //     admin.publicKey,
+  //     basketId
+  //   );
+  //   userFundTable.printTable();
+  // });
 
-  it("Sell component using lookup table", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
-    let addressLookupTable: PublicKey;
-    const addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+  // it("Sell component using lookup table", async () => {
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
+  //   const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
+  //   let addressLookupTable: PublicKey;
+  //   const addressLookupTablesAccount: AddressLookupTableAccount[] = [];
 
-    const tx = new Transaction();
-    for (let i = 0; i < userFund.components.length; i++) {
-      const sellComponentTx = await pieProgram.sellComponent({
-        user: admin.publicKey,
-        inputMint: userFund.components[i].mint,
-        basketId,
-        amountIn: userFund.components[i].amount.toNumber(),
-        minimumAmountOut: 0,
-        raydium,
-        ammId: tokens[i].ammId,
-        createNativeMintATA: true,
-      });
-      tx.add(sellComponentTx);
-    }
+  //   const tx = new Transaction();
+  //   for (let i = 0; i < userFund.components.length; i++) {
+  //     const sellComponentTx = await pieProgram.sellComponent({
+  //       user: admin.publicKey,
+  //       inputMint: userFund.components[i].mint,
+  //       basketId,
+  //       amountIn: userFund.components[i].amount.toNumber(),
+  //       minimumAmountOut: 0,
+  //       raydium,
+  //       ammId: tokens[i].ammId,
+  //       createNativeMintATA: true,
+  //     });
+  //     tx.add(sellComponentTx);
+  //   }
 
-    if (addressLookupTableMap.has(basketId.toString())) {
-      addressLookupTable = addressLookupTableMap.get(basketId.toString());
-      const lut = (await connection.getAddressLookupTable(addressLookupTable))
-        .value;
-      addressLookupTablesAccount.push(lut);
-    }
+  //   if (addressLookupTableMap.has(basketId.toString())) {
+  //     addressLookupTable = addressLookupTableMap.get(basketId.toString());
+  //     const lut = (await connection.getAddressLookupTable(addressLookupTable))
+  //       .value;
+  //     addressLookupTablesAccount.push(lut);
+  //   }
 
-    await finalizeTransaction(
-      connection,
-      admin,
-      tx,
-      addressLookupTablesAccount
-    );
+  //   await finalizeTransaction(
+  //     connection,
+  //     admin,
+  //     tx,
+  //     addressLookupTablesAccount
+  //   );
 
-    const userFundAfter = await pieProgram.getUserFund(
-      admin.publicKey,
-      basketId
-    );
+  //   const userFundAfter = await pieProgram.getUserFund(
+  //     admin.publicKey,
+  //     basketId
+  //   );
 
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "amount", alignment: "right", color: "green" },
-      ],
-    });
+  //   const table = new Table({
+  //     columns: [
+  //       { name: "mint", alignment: "left", color: "cyan" },
+  //       { name: "amount", alignment: "right", color: "green" },
+  //     ],
+  //   });
 
-    for (let i = 0; i < userFundAfter.components.length; i++) {
-      let component = userFundAfter.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        amount: component.amount.toString(),
-      });
-    }
-    table.printTable();
-  });
+  //   for (let i = 0; i < userFundAfter.components.length; i++) {
+  //     let component = userFundAfter.components[i];
+  //     table.addRow({
+  //       mint: component.mint.toBase58(),
+  //       amount: component.amount.toString(),
+  //     });
+  //   }
+  //   table.printTable();
+  // });
 
-  it("Sell Component CPMM", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const sellComponentTx = await pieProgram.sellComponentCpmm(
-      admin.publicKey,
-      basketId,
-      new PublicKey(tokensCpmm[0].mint),
-      10 * 1000000,
-      0,
-      raydium,
-      tokensCpmm[0].poolId,
-      true
-    );
+  // // it("Sell Component CPMM", async () => {
+  // //   const programState = await pieProgram.getProgramState();
+  // //   const basketId = programState.basketCounter.sub(new BN(1));
+  // //   const sellComponentTx = await pieProgram.sellComponentCpmm(
+  // //     admin.publicKey,
+  // //     basketId,
+  // //     new PublicKey(tokensCpmm[0].mint),
+  // //     10 * 1000000,
+  // //     0,
+  // //     raydium,
+  // //     tokensCpmm[0].poolId,
+  // //     true
+  // //   );
 
-    const sellComponentTxResult = await sendAndConfirmTransaction(
-      connection,
-      sellComponentTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
+  // //   const sellComponentTxResult = await sendAndConfirmTransaction(
+  // //     connection,
+  // //     sellComponentTx,
+  // //     [admin],
+  // //     {
+  // //       skipPreflight: true,
+  // //       commitment: "confirmed",
+  // //     }
+  // //   );
 
-    console.log(
-      `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
-    );
+  // //   console.log(
+  // //     `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
+  // //   );
 
-    console.log("User fund after sell component basket: ");
-    const userFundTable = await showUserFundTable(
-      pieProgram,
-      admin.publicKey,
-      basketId
-    );
-    userFundTable.printTable();
-  });
+  // //   console.log("User fund after sell component basket: ");
+  // //   const userFundTable = await showUserFundTable(
+  // //     pieProgram,
+  // //     admin.publicKey,
+  // //     basketId
+  // //   );
+  // //   userFundTable.printTable();
+  // // });
 
-  it("Start rebalance basket", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const startRebalanceTx = await pieProgram.startRebalancing(
-      admin.publicKey,
-      basketId
-    );
-    const startRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      startRebalanceTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
+  // it("Start rebalance basket", async () => {
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
+  //   const startRebalanceTx = await pieProgram.startRebalancing(
+  //     admin.publicKey,
+  //     basketId
+  //   );
+  //   const startRebalanceTxResult = await sendAndConfirmTransaction(
+  //     connection,
+  //     startRebalanceTx,
+  //     [admin],
+  //     {
+  //       skipPreflight: true,
+  //       commitment: "confirmed",
+  //     }
+  //   );
 
-    console.log(
-      `Start rebalance at tx: https://explorer.solana.com/tx/${startRebalanceTxResult}?cluster=devnet`
-    );
+  //   console.log(
+  //     `Start rebalance at tx: https://explorer.solana.com/tx/${startRebalanceTxResult}?cluster=devnet`
+  //   );
 
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
-  });
+  //   const basketMintTable = await showBasketConfigTable(
+  //     connection,
+  //     pieProgram,
+  //     basketId
+  //   );
+  //   basketMintTable.printTable();
+  // });
 
-  it("Executing rebalance basket by selling the first component", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
-    const basketConfigData = await pieProgram.getBasketConfig(basketId);
-    const component = basketConfigData.components[0];
+  // it("Executing rebalance basket by selling the first component", async () => {
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
+  //   const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
+  //   const basketConfigData = await pieProgram.getBasketConfig(basketId);
+  //   const component = basketConfigData.components[0];
 
-    const vaultComponentAccount = await getAssociatedTokenAddress(
-      component.mint,
-      basketConfigPDA,
-      true
-    );
+  //   const vaultComponentAccount = await getAssociatedTokenAddress(
+  //     component.mint,
+  //     basketConfigPDA,
+  //     true
+  //   );
 
-    const vaultComponentsBalance = await connection.getTokenAccountBalance(
-      vaultComponentAccount,
-      "confirmed"
-    );
+  //   const vaultComponentsBalance = await connection.getTokenAccountBalance(
+  //     vaultComponentAccount,
+  //     "confirmed"
+  //   );
 
-    const executeRebalanceTx = await pieProgram.executeRebalancing(
-      admin.publicKey,
-      false,
-      vaultComponentsBalance.value.amount,
-      "0",
-      tokens[0].ammId,
-      basketId,
-      new PublicKey(tokens[0].mint),
-      raydium
-    );
+  //   const executeRebalanceTx = await pieProgram.executeRebalancing(
+  //     admin.publicKey,
+  //     false,
+  //     vaultComponentsBalance.value.amount,
+  //     "0",
+  //     tokens[0].ammId,
+  //     basketId,
+  //     new PublicKey(tokens[0].mint),
+  //     raydium
+  //   );
 
-    const executeRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      executeRebalanceTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
+  //   const executeRebalanceTxResult = await sendAndConfirmTransaction(
+  //     connection,
+  //     executeRebalanceTx,
+  //     [admin],
+  //     {
+  //       skipPreflight: true,
+  //       commitment: "confirmed",
+  //     }
+  //   );
 
-    console.log(
-      `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
-    );
-    console.log(`Basket config ${basketId.toString()} data: `);
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
-  });
+  //   console.log(
+  //     `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
+  //   );
+  //   console.log(`Basket config ${basketId.toString()} data: `);
+  //   const basketMintTable = await showBasketConfigTable(
+  //     connection,
+  //     pieProgram,
+  //     basketId
+  //   );
+  //   basketMintTable.printTable();
+  // });
 
-  it("Executing rebalance basket by buying component 5", async () => {
-    const isBuy = true;
-    const newBasketBuy = tokens[5];
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
-    const vaultWrappedSolAccount = await getAssociatedTokenAddress(
-      NATIVE_MINT,
-      basketConfigPDA,
-      true
-    );
-    const vaultWrappedSolBalance = await connection.getTokenAccountBalance(
-      vaultWrappedSolAccount
-    );
+  // it("Executing rebalance basket by buying component 5", async () => {
+  //   const isBuy = true;
+  //   const newBasketBuy = tokens[5];
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
+  //   const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
+  //   const vaultWrappedSolAccount = await getAssociatedTokenAddress(
+  //     NATIVE_MINT,
+  //     basketConfigPDA,
+  //     true
+  //   );
+  //   const vaultWrappedSolBalance = await connection.getTokenAccountBalance(
+  //     vaultWrappedSolAccount
+  //   );
 
-    const executeRebalanceTx = await pieProgram.executeRebalancing(
-      admin.publicKey,
-      isBuy,
-      new BN(vaultWrappedSolBalance.value.amount).div(new BN(2)).toString(),
-      "20",
-      newBasketBuy.ammId,
-      basketId,
-      new PublicKey(newBasketBuy.mint),
-      raydium
-    );
+  //   const executeRebalanceTx = await pieProgram.executeRebalancing(
+  //     admin.publicKey,
+  //     isBuy,
+  //     new BN(vaultWrappedSolBalance.value.amount).div(new BN(2)).toString(),
+  //     "20",
+  //     newBasketBuy.ammId,
+  //     basketId,
+  //     new PublicKey(newBasketBuy.mint),
+  //     raydium
+  //   );
 
-    const executeRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      executeRebalanceTx,
-      [admin],
-      {
-        skipPreflight: false,
-        commitment: "confirmed",
-      }
-    );
+  //   const executeRebalanceTxResult = await sendAndConfirmTransaction(
+  //     connection,
+  //     executeRebalanceTx,
+  //     [admin],
+  //     {
+  //       skipPreflight: false,
+  //       commitment: "confirmed",
+  //     }
+  //   );
 
-    //add basket info to lookup table when buy new basket token to config
-    if (isBuy) {
-      const lookupTable = addressLookupTableMap.get(basketId.toString());
+  //   //add basket info to lookup table when buy new basket token to config
+  //   if (isBuy) {
+  //     const lookupTable = addressLookupTableMap.get(basketId.toString());
 
-      await pieProgram.addBasketInfoToAddressLookupTable(
-        raydium,
-        connection,
-        admin,
-        newBasketBuy.ammId,
-        basketId,
-        lookupTable
-      );
-    }
+  //     await pieProgram.addBasketInfoToAddressLookupTable(
+  //       raydium,
+  //       connection,
+  //       admin,
+  //       newBasketBuy.ammId,
+  //       basketId,
+  //       lookupTable
+  //     );
+  //   }
 
-    console.log(
-      `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
-    );
-    console.log(`Basket config ${basketId.toString()} data: `);
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
-  });
+  //   console.log(
+  //     `Executing rebalance at tx: https://explorer.solana.com/tx/${executeRebalanceTxResult}?cluster=devnet`
+  //   );
+  //   console.log(`Basket config ${basketId.toString()} data: `);
+  //   const basketMintTable = await showBasketConfigTable(
+  //     connection,
+  //     pieProgram,
+  //     basketId
+  //   );
+  //   basketMintTable.printTable();
+  // });
 
-  it("Stop rebalance basket", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketPDA = pieProgram.basketConfigPDA(basketId);
-    const { tokenAccount: nativeAta, tx: txs } = await getOrCreateNativeMintATA(
-      connection,
-      admin.publicKey,
-      basketPDA
-    );
-    const stopRebalanceTx = await pieProgram.stopRebalancing(
-      admin.publicKey,
-      basketId
-    );
-    txs.add(stopRebalanceTx);
-    const stopRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      txs,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
-    console.log(
-      `Stop rebalance at tx: https://explorer.solana.com/tx/${stopRebalanceTxResult}?cluster=devnet`
-    );
+  // it("Stop rebalance basket", async () => {
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
+  //   const basketPDA = pieProgram.basketConfigPDA(basketId);
+  //   const { tokenAccount: nativeAta, tx: txs } = await getOrCreateNativeMintATA(
+  //     connection,
+  //     admin.publicKey,
+  //     basketPDA
+  //   );
+  //   const stopRebalanceTx = await pieProgram.stopRebalancing(
+  //     admin.publicKey,
+  //     basketId
+  //   );
+  //   txs.add(stopRebalanceTx);
+  //   const stopRebalanceTxResult = await sendAndConfirmTransaction(
+  //     connection,
+  //     txs,
+  //     [admin],
+  //     {
+  //       skipPreflight: true,
+  //       commitment: "confirmed",
+  //     }
+  //   );
+  //   console.log(
+  //     `Stop rebalance at tx: https://explorer.solana.com/tx/${stopRebalanceTxResult}?cluster=devnet`
+  //   );
 
-    const basketConfig = await pieProgram.getBasketConfig(basketId);
-    assert.equal(basketConfig.isRebalancing, false);
-  });
+  //   const basketConfig = await pieProgram.getBasketConfig(basketId);
+  //   assert.equal(basketConfig.isRebalancing, false);
+  // });
 });

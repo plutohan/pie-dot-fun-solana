@@ -3,13 +3,13 @@ use anchor_spl::{
     token::{Token, TokenAccount},
     token_interface::Mint,
 };
+use raydium_amm_cpi::{
+    library::{swap_base_in, swap_base_out},
+    SwapBaseIn, SwapBaseOut,
+};
 
 use crate::utils::Calculator;
-use crate::{
-    error::PieError,
-    utils::{swap_base_in, swap_base_out, SwapBaseIn, SwapBaseOut},
-    BasketComponent, BasketConfig, BASKET_CONFIG,
-};
+use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancing<'info> {
@@ -196,11 +196,13 @@ pub fn execute_swap<'a: 'info, 'info>(
 
         let token_mint = accounts.vault_token_destination.mint;
         let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(accounts.vault_token_destination.amount).checked_div(total_supply.try_into().unwrap()).unwrap();
-        
+            Calculator::apply_sys_decimal(accounts.vault_token_destination.amount)
+                .checked_div(total_supply.try_into().unwrap())
+                .unwrap();
+
         // **New validation step:** Ensure quantity_in_sys_decimal is not zero.
         require!(quantity_in_sys_decimal > 0, PieError::InvalidQuantity);
-        
+
         if let Some(component) = basket_config
             .components
             .iter_mut()
@@ -270,7 +272,9 @@ pub fn execute_swap<'a: 'info, 'info>(
 
         let token_mint = accounts.vault_token_source.mint;
         let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(accounts.vault_token_source.amount).checked_div(total_supply.try_into().unwrap()).unwrap();
+            Calculator::apply_sys_decimal(accounts.vault_token_source.amount)
+                .checked_div(total_supply.try_into().unwrap())
+                .unwrap();
 
         if quantity_in_sys_decimal == 0 {
             basket_config.components.retain(|c| c.mint != token_mint);

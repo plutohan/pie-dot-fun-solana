@@ -22,14 +22,15 @@ export async function finalizeTransaction(
     recentBlockhash: latestBlockhash.blockhash,
     instructions: transaction.instructions,
   }).compileToV0Message(lookupTables);
-
   const transactionV0 = new VersionedTransaction(messageV0);
   transactionV0.sign([keyPair]);
+  console.log('tx len', transactionV0.serialize().length);
 
   const txid = await connection.sendTransaction(transactionV0, {
     maxRetries: 5,
     skipPreflight: true,
   });
+
   const confirmation = await connection.confirmTransaction({
     signature: txid,
     blockhash: latestBlockhash.blockhash,

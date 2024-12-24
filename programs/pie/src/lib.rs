@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("CBJ9f8V75qxj2GfC3gWz2UH8iXR4HymNToezs14mazVf");
+declare_id!("HVAahYDQmzUnVybFs2EPd2c2NF3kVTDK47L2fAcjv2Ei");
 
 pub mod constant;
 pub mod error;
@@ -11,28 +11,13 @@ pub mod utils;
 use constant::*;
 use instructions::*;
 use states::*;
-pub mod raydium_amm_address {
-    #[cfg(not(any(feature = "devnet")))]
-    anchor_lang::declare_id!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
-    #[cfg(feature = "devnet")]
-    anchor_lang::declare_id!("HWy1jotHpo6UqeQxx49dpYYdQB8wj9Qk9MdxwjLvDHB8");
-}
-declare_id!("Aa4nMgn2p4qfnr4TmszSn5ydUhmfW34QjDBLVAFHWvYL");
 
-pub mod raydium_amm {
+pub mod raydium_amm_address {
     use anchor_lang::prelude::declare_id;
     #[cfg(feature = "devnet")]
     declare_id!("HWy1jotHpo6UqeQxx49dpYYdQB8wj9Qk9MdxwjLvDHB8");
     #[cfg(not(feature = "devnet"))]
     declare_id!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
-}
-
-pub mod raydium_clmm {
-    use anchor_lang::prelude::declare_id;
-    #[cfg(feature = "devnet")]
-    declare_id!("CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK");
-    #[cfg(not(feature = "devnet"))]
-    declare_id!("devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH");
 }
 
 #[program]

@@ -17,8 +17,11 @@ use crate::{
 pub struct CreateBasketContext<'info> {
     #[account(mut)]
     pub creator: Signer<'info>,
-
-    #[account(mut, seeds = [PROGRAM_STATE], bump)]
+    #[account(
+        mut, 
+        seeds = [PROGRAM_STATE], 
+        bump = program_state.bump 
+    )]
     pub program_state: Account<'info, ProgramState>,
 
     #[account(

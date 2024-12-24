@@ -3,12 +3,13 @@ use anchor_spl::{
     token::{Token, TokenAccount},
     token_interface::Mint,
 };
+use raydium_amm_cpi::{library::swap_base_in, SwapBaseIn};
 
 use crate::{
     constant::USER_FUND,
     error::PieError,
-    utils::{calculate_fee_amount, swap_base_in, transfer_fees, SwapBaseIn},
-    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT,
+    utils::{calculate_fee_amount, transfer_fees},
+    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
