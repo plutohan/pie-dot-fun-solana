@@ -3,12 +3,13 @@ use anchor_spl::{
     token::{Token, TokenAccount},
     token_interface::Mint,
 };
+use raydium_amm_cpi::{library::swap_base_in, SwapBaseIn};
 
 use crate::{
     constant::USER_FUND,
     error::PieError,
-    utils::{calculate_fee_amount, swap_base_in, transfer_fees, SwapBaseIn},
-    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT,
+    utils::{calculate_fee_amount, transfer_fees},
+    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -23,7 +24,11 @@ pub struct SellComponentContext<'info> {
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+         seeds = [PROGRAM_STATE], 
+        bump = program_state.bump
+    )]
     pub program_state: Box<Account<'info, ProgramState>>,
 
     #[account(
@@ -97,6 +102,10 @@ pub struct SellComponentContext<'info> {
 
     pub token_program: Program<'info, Token>,
     /// CHECK: Safe. amm_program
+    #[account(
+        mut,
+        address = crate::raydium_amm_address::id(),
+    )]
     pub amm_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }

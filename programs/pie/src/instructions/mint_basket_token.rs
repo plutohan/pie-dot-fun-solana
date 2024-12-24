@@ -49,8 +49,12 @@ pub struct MintBasketTokenEvent {
 }
 
 pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, basket_token_amount: u64) -> Result<()> {
+
+
     let user_fund = &mut ctx.accounts.user_fund;
     let basket_config = &mut ctx.accounts.basket_config;
+
+    require!(!basket_config.is_rebalancing, PieError::RebalancingInProgress);
 
     let mut amount_can_mint = u64::MAX;
 
