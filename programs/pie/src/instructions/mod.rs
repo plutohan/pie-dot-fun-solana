@@ -13,6 +13,9 @@ pub use buy_component::*;
 pub mod buy_component_cpmm;
 pub use buy_component_cpmm::*;
 
+pub mod buy_component_clmm;
+pub use buy_component_clmm::*;
+
 pub mod mint_basket_token;
 pub use mint_basket_token::*;
 
@@ -24,3 +27,6 @@ pub use sell_component::*;
 
 pub mod sell_component_cpmm;
 pub use sell_component_cpmm::*;
+
+pub mod sell_component_clmm;
+pub use sell_component_clmm::*;

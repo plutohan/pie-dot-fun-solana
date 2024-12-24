@@ -1,14 +1,11 @@
 use anchor_lang::{prelude::*, solana_program};
 use anchor_spl::{
-    token::{Token, TokenAccount},
-    token_interface::Mint,
+    token::Token,
+    token_interface::{Mint, TokenAccount},
 };
 
 use crate::{
-    constant::USER_FUND,
-    error::PieError,
-    utils::{calculate_fee_amount, swap_base_out, transfer_fees, SwapBaseOut},
-    BasketConfig, ProgramState, UserFund, NATIVE_MINT,
+    constant::USER_FUND, error::PieError, utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, swap_base_out, transfer_fees, SwapBaseOut}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE
 };
 
 #[derive(Accounts)]
@@ -23,9 +20,17 @@ pub struct BuyComponentContext<'info> {
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
-    #[account(mut)]
+    #[account(
+        mut, 
+        seeds = [PROGRAM_STATE], 
+        bump = program_state.bump
+    )]    
     pub program_state: Box<Account<'info, ProgramState>>,
-    #[account(mut)]
+    #[account(        
+        mut,
+        seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
+        bump    
+    )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
     #[account(mut)]
     pub mint_out: Box<InterfaceAccount<'info, Mint>>,
@@ -71,14 +76,14 @@ pub struct BuyComponentContext<'info> {
         token::authority = user_source_owner,
         token::mint = NATIVE_MINT,
     )]
-    pub user_token_source: Box<Account<'info, TokenAccount>>,
+    pub user_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
         token::mint = mint_out,
         token::authority = basket_config
     )]
-    pub vault_token_destination: Box<Account<'info, TokenAccount>>,
+    pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: Safe. user source token Account
     #[account(
@@ -86,7 +91,7 @@ pub struct BuyComponentContext<'info> {
         token::authority = program_state.platform_fee_wallet,
         token::mint = NATIVE_MINT,
     )]
-    pub platform_fee_token_account: Box<Account<'info, TokenAccount>>,
+    pub platform_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: Safe. user source token Account
     #[account(
@@ -94,7 +99,7 @@ pub struct BuyComponentContext<'info> {
         token::authority = basket_config.creator,
         token::mint = NATIVE_MINT,
     )]
-    pub creator_token_account: Box<Account<'info, TokenAccount>>,
+    pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     /// CHECK: Safe. amm_program
@@ -178,11 +183,12 @@ pub fn buy_component(
     ctx.accounts.user_token_source.reload()?;
     ctx.accounts.vault_token_destination.reload()?;
 
-    let balance_in_after = ctx.accounts.user_token_source.amount;
-    let balance_out_after = ctx.accounts.vault_token_destination.amount;
-
-    let amount_swapped = balance_in_before.checked_sub(balance_in_after).unwrap();
-    let amount_received = balance_out_after.checked_sub(balance_out_before).unwrap();
+    let (amount_swapped, amount_received) = calculate_amounts_swapped_and_received(
+        &ctx.accounts.user_token_source,
+        &ctx.accounts.vault_token_destination,
+        balance_in_before,
+        balance_out_before,
+    )?;
 
     let (platform_fee_amount, creator_fee_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_swapped)?;

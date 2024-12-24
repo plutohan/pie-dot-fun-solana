@@ -165,6 +165,168 @@ export type Pie = {
       ]
     },
     {
+      "name": "buyComponentClmm",
+      "discriminator": [
+        127,
+        193,
+        97,
+        76,
+        119,
+        244,
+        119,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "programState",
+          "writable": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "clmmProgram",
+          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+        },
+        {
+          "name": "platformFeeTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "creatorTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "ammConfig",
+          "writable": true
+        },
+        {
+          "name": "poolState",
+          "writable": true
+        },
+        {
+          "name": "userTokenSource",
+          "docs": [
+            "The user token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vaultTokenDestination",
+          "docs": [
+            "The user token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "inputVault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "outputVault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "observationState",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "docs": [
+            "SPL program for token transfers"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "tokenProgram2022",
+          "docs": [
+            "SPL program 2022 for token transfers"
+          ],
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "memoProgram",
+          "docs": [
+            "memo program"
+          ],
+          "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+        },
+        {
+          "name": "inputVaultMint",
+          "docs": [
+            "The mint of token vault 0"
+          ]
+        },
+        {
+          "name": "outputVaultMint",
+          "docs": [
+            "The mint of token vault 1"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "otherAmountThreshold",
+          "type": "u64"
+        },
+        {
+          "name": "sqrtPriceLimitX64",
+          "type": "u128"
+        }
+      ]
+    },
+    {
       "name": "buyComponentCpmm",
       "discriminator": [
         115,
@@ -606,6 +768,172 @@ export type Pie = {
         {
           "name": "amountOut",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "executeRebalancingClmm",
+      "discriminator": [
+        12,
+        132,
+        199,
+        198,
+        129,
+        253,
+        73,
+        197
+      ],
+      "accounts": [
+        {
+          "name": "rebalancer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tokenMint",
+          "writable": true
+        },
+        {
+          "name": "basketMint",
+          "writable": true
+        },
+        {
+          "name": "platformFeeTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "creatorTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "clmmProgram",
+          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+        },
+        {
+          "name": "ammConfig",
+          "writable": true
+        },
+        {
+          "name": "poolState",
+          "writable": true
+        },
+        {
+          "name": "vaultTokenSource",
+          "docs": [
+            "The user token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vaultTokenDestination",
+          "docs": [
+            "The user token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "inputVault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "outputVault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "observationState",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "docs": [
+            "SPL program for token transfers"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "tokenProgram2022",
+          "docs": [
+            "SPL program 2022 for token transfers"
+          ],
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "memoProgram",
+          "docs": [
+            "memo program"
+          ],
+          "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+        },
+        {
+          "name": "inputVaultMint",
+          "docs": [
+            "The mint of token vault 0"
+          ]
+        },
+        {
+          "name": "outputVaultMint",
+          "docs": [
+            "The mint of token vault 1"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "isBuy",
+          "type": "bool"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "otherAmountThreshold",
+          "type": "u64"
+        },
+        {
+          "name": "sqrtPriceLimitX64",
+          "type": "u128"
         }
       ]
     },
@@ -1169,6 +1497,172 @@ export type Pie = {
         {
           "name": "minimumAmountOut",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "sellComponentClmm",
+      "discriminator": [
+        32,
+        156,
+        82,
+        195,
+        145,
+        199,
+        215,
+        229
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "programState",
+          "writable": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "basketMint",
+          "writable": true
+        },
+        {
+          "name": "clmmProgram",
+          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+        },
+        {
+          "name": "platformFeeTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "creatorTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "ammConfig",
+          "writable": true
+        },
+        {
+          "name": "poolState",
+          "writable": true
+        },
+        {
+          "name": "userTokenDestination",
+          "docs": [
+            "The user token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vaultTokenSource",
+          "docs": [
+            "The user token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "inputVault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "outputVault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "observationState",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "docs": [
+            "SPL program for token transfers"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "tokenProgram2022",
+          "docs": [
+            "SPL program 2022 for token transfers"
+          ],
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "memoProgram",
+          "docs": [
+            "memo program"
+          ],
+          "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+        },
+        {
+          "name": "inputVaultMint",
+          "docs": [
+            "The mint of token vault 0"
+          ]
+        },
+        {
+          "name": "outputVaultMint",
+          "docs": [
+            "The mint of token vault 1"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "otherAmountThreshold",
+          "type": "u64"
+        },
+        {
+          "name": "sqrtPriceLimitX64",
+          "type": "u128"
         }
       ]
     },
@@ -1844,16 +2338,16 @@ export type Pie = {
   ],
   "events": [
     {
-      "name": "buyComponentCpmmEvent",
+      "name": "buyComponentClmmEvent",
       "discriminator": [
-        193,
-        129,
-        245,
-        63,
-        3,
-        238,
-        125,
-        41
+        225,
+        145,
+        103,
+        197,
+        71,
+        109,
+        221,
+        255
       ]
     },
     {
@@ -1883,16 +2377,16 @@ export type Pie = {
       ]
     },
     {
-      "name": "executeRebalancingCpmmEvent",
+      "name": "executeRebalancingClmmEvent",
       "discriminator": [
-        8,
-        254,
-        75,
-        73,
         152,
-        63,
-        77,
-        46
+        132,
+        253,
+        68,
+        214,
+        188,
+        138,
+        112
       ]
     },
     {
@@ -1935,16 +2429,16 @@ export type Pie = {
       ]
     },
     {
-      "name": "sellComponentCpmmEvent",
+      "name": "sellComponentClmmEvent",
       "discriminator": [
-        49,
-        25,
-        42,
+        8,
+        67,
+        30,
+        160,
+        240,
+        184,
         212,
-        215,
-        17,
-        221,
-        118
+        234
       ]
     },
     {
@@ -2140,6 +2634,11 @@ export type Pie = {
       "code": 6014,
       "name": "conversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
+    },
+    {
+      "code": 6015,
+      "name": "invalidBasketMint",
+      "msg": "Invalid basket mint"
     }
   ],
   "types": [
@@ -2288,7 +2787,7 @@ export type Pie = {
       }
     },
     {
-      "name": "buyComponentCpmmEvent",
+      "name": "buyComponentClmmEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2416,7 +2915,7 @@ export type Pie = {
       }
     },
     {
-      "name": "executeRebalancingCpmmEvent",
+      "name": "executeRebalancingClmmEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2834,7 +3333,7 @@ export type Pie = {
       }
     },
     {
-      "name": "sellComponentCpmmEvent",
+      "name": "sellComponentClmmEvent",
       "type": {
         "kind": "struct",
         "fields": [

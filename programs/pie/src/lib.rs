@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("7HBXX3T4LRrzKY5UoqFhnkBm28SmnjDJ475sn67Dd5CL");
+declare_id!("GaVmHaXqUU7xmFDLyQNhn9rv7ZH26XNr9cpmQhqz2CsV");
 
 pub mod constant;
 pub mod error;
@@ -109,6 +109,21 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, BuyComponentClmm<'info>>,
+        amount: u64,
+        other_amount_threshold: u64,
+        sqrt_price_limit_x64: u128,
+    ) -> Result<()> {
+        instructions::buy_component_clmm(
+            ctx,
+            amount,
+            other_amount_threshold,
+            sqrt_price_limit_x64,
+        )?;
+        Ok(())
+    }
+
     pub fn sell_component(
         ctx: Context<SellComponentContext>,
         amount_in: u64,
@@ -124,6 +139,21 @@ pub mod pie {
         minimum_amount_out: u64,
     ) -> Result<()> {
         instructions::sell_component_cpmm(ctx, amount_in, minimum_amount_out)?;
+        Ok(())
+    }
+
+    pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, SellComponentClmm<'info>>,
+        amount: u64,
+        other_amount_threshold: u64,
+        sqrt_price_limit_x64: u128,
+    ) -> Result<()> {
+        instructions::sell_component_clmm(
+            ctx,
+            amount,
+            other_amount_threshold,
+            sqrt_price_limit_x64,
+        )?;
         Ok(())
     }
 
@@ -149,6 +179,23 @@ pub mod pie {
         amount_out: u64,
     ) -> Result<()> {
         instructions::execute_rebalancing_cpmm(ctx, is_buy, amount_in, amount_out)?;
+        Ok(())
+    }
+
+    pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingClmm<'info>>,
+        is_buy: bool,
+        amount: u64,
+        other_amount_threshold: u64,
+        sqrt_price_limit_x64: u128,
+    ) -> Result<()> {
+        instructions::execute_rebalancing_clmm(
+            ctx,
+            is_buy,
+            amount,
+            other_amount_threshold,
+            sqrt_price_limit_x64,
+        )?;
         Ok(())
     }
 

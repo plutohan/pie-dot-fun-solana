@@ -1,5 +1,5 @@
 {
-  "address": "7HBXX3T4LRrzKY5UoqFhnkBm28SmnjDJ475sn67Dd5CL",
+  "address": "GaVmHaXqUU7xmFDLyQNhn9rv7ZH26XNr9cpmQhqz2CsV",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -155,6 +155,168 @@
         {
           "name": "amount_out",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "buy_component_clmm",
+      "discriminator": [
+        127,
+        193,
+        97,
+        76,
+        119,
+        244,
+        119,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user_fund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "BasketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_state",
+          "writable": true
+        },
+        {
+          "name": "basket_config",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "clmm_program",
+          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+        },
+        {
+          "name": "platform_fee_token_account",
+          "writable": true
+        },
+        {
+          "name": "creator_token_account",
+          "writable": true
+        },
+        {
+          "name": "amm_config",
+          "writable": true
+        },
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "user_token_source",
+          "docs": [
+            "The user token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_token_destination",
+          "docs": [
+            "The user token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "input_vault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "output_vault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "observation_state",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "SPL program for token transfers"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "token_program_2022",
+          "docs": [
+            "SPL program 2022 for token transfers"
+          ],
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "memo_program",
+          "docs": [
+            "memo program"
+          ],
+          "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+        },
+        {
+          "name": "input_vault_mint",
+          "docs": [
+            "The mint of token vault 0"
+          ]
+        },
+        {
+          "name": "output_vault_mint",
+          "docs": [
+            "The mint of token vault 1"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "other_amount_threshold",
+          "type": "u64"
+        },
+        {
+          "name": "sqrt_price_limit_x64",
+          "type": "u128"
         }
       ]
     },
@@ -600,6 +762,172 @@
         {
           "name": "amount_out",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "execute_rebalancing_clmm",
+      "discriminator": [
+        12,
+        132,
+        199,
+        198,
+        129,
+        253,
+        73,
+        197
+      ],
+      "accounts": [
+        {
+          "name": "rebalancer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "program_state",
+          "writable": true
+        },
+        {
+          "name": "basket_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "BasketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_mint",
+          "writable": true
+        },
+        {
+          "name": "basket_mint",
+          "writable": true
+        },
+        {
+          "name": "platform_fee_token_account",
+          "writable": true
+        },
+        {
+          "name": "creator_token_account",
+          "writable": true
+        },
+        {
+          "name": "clmm_program",
+          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+        },
+        {
+          "name": "amm_config",
+          "writable": true
+        },
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "vault_token_source",
+          "docs": [
+            "The user token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_token_destination",
+          "docs": [
+            "The user token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "input_vault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "output_vault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "observation_state",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "SPL program for token transfers"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "token_program_2022",
+          "docs": [
+            "SPL program 2022 for token transfers"
+          ],
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "memo_program",
+          "docs": [
+            "memo program"
+          ],
+          "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+        },
+        {
+          "name": "input_vault_mint",
+          "docs": [
+            "The mint of token vault 0"
+          ]
+        },
+        {
+          "name": "output_vault_mint",
+          "docs": [
+            "The mint of token vault 1"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "is_buy",
+          "type": "bool"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "other_amount_threshold",
+          "type": "u64"
+        },
+        {
+          "name": "sqrt_price_limit_x64",
+          "type": "u128"
         }
       ]
     },
@@ -1163,6 +1491,172 @@
         {
           "name": "minimum_amount_out",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "sell_component_clmm",
+      "discriminator": [
+        32,
+        156,
+        82,
+        195,
+        145,
+        199,
+        215,
+        229
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user_fund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "BasketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_state",
+          "writable": true
+        },
+        {
+          "name": "basket_config",
+          "writable": true
+        },
+        {
+          "name": "basket_mint",
+          "writable": true
+        },
+        {
+          "name": "clmm_program",
+          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+        },
+        {
+          "name": "platform_fee_token_account",
+          "writable": true
+        },
+        {
+          "name": "creator_token_account",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "amm_config",
+          "writable": true
+        },
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "user_token_destination",
+          "docs": [
+            "The user token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_token_source",
+          "docs": [
+            "The user token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "input_vault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "output_vault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true
+        },
+        {
+          "name": "observation_state",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "SPL program for token transfers"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "token_program_2022",
+          "docs": [
+            "SPL program 2022 for token transfers"
+          ],
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "memo_program",
+          "docs": [
+            "memo program"
+          ],
+          "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+        },
+        {
+          "name": "input_vault_mint",
+          "docs": [
+            "The mint of token vault 0"
+          ]
+        },
+        {
+          "name": "output_vault_mint",
+          "docs": [
+            "The mint of token vault 1"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "other_amount_threshold",
+          "type": "u64"
+        },
+        {
+          "name": "sqrt_price_limit_x64",
+          "type": "u128"
         }
       ]
     },
@@ -1838,16 +2332,16 @@
   ],
   "events": [
     {
-      "name": "BuyComponentCpmmEvent",
+      "name": "BuyComponentClmmEvent",
       "discriminator": [
-        193,
-        129,
-        245,
-        63,
-        3,
-        238,
-        125,
-        41
+        225,
+        145,
+        103,
+        197,
+        71,
+        109,
+        221,
+        255
       ]
     },
     {
@@ -1877,16 +2371,16 @@
       ]
     },
     {
-      "name": "ExecuteRebalancingCpmmEvent",
+      "name": "ExecuteRebalancingClmmEvent",
       "discriminator": [
-        8,
-        254,
-        75,
-        73,
         152,
-        63,
-        77,
-        46
+        132,
+        253,
+        68,
+        214,
+        188,
+        138,
+        112
       ]
     },
     {
@@ -1929,16 +2423,16 @@
       ]
     },
     {
-      "name": "SellComponentCpmmEvent",
+      "name": "SellComponentClmmEvent",
       "discriminator": [
-        49,
-        25,
-        42,
+        8,
+        67,
+        30,
+        160,
+        240,
+        184,
         212,
-        215,
-        17,
-        221,
-        118
+        234
       ]
     },
     {
@@ -2134,6 +2628,11 @@
       "code": 6014,
       "name": "ConversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidBasketMint",
+      "msg": "Invalid basket mint"
     }
   ],
   "types": [
@@ -2282,7 +2781,7 @@
       }
     },
     {
-      "name": "BuyComponentCpmmEvent",
+      "name": "BuyComponentClmmEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2410,7 +2909,7 @@
       }
     },
     {
-      "name": "ExecuteRebalancingCpmmEvent",
+      "name": "ExecuteRebalancingClmmEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2828,7 +3327,7 @@
       }
     },
     {
-      "name": "SellComponentCpmmEvent",
+      "name": "SellComponentClmmEvent",
       "type": {
         "kind": "struct",
         "fields": [
