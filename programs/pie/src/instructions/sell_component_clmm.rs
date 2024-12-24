@@ -6,7 +6,7 @@ use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 use raydium_clmm_cpi::{cpi, program::RaydiumClmm};
 
 use crate::utils::transfer_fees;
-use crate::SellComponentEvent;
+use crate::{SellComponentEvent, PROGRAM_STATE};
 use crate::{
     constant::USER_FUND, error::PieError, utils::calculate_fee_amount, BasketConfig, ProgramState,
     UserFund, BASKET_CONFIG, NATIVE_MINT,
@@ -24,17 +24,18 @@ pub struct SellComponentClmm<'info> {
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
 
-    #[account(mut)]
+    #[account(
+        mut, 
+        seeds = [PROGRAM_STATE], 
+        bump = program_state.bump
+    )]    
     pub program_state: Box<Account<'info, ProgramState>>,
-
     #[account(
         mut,
-        constraint = basket_config.mint == basket_mint.key() @PieError::InvalidBasketMint
+        seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
+        bump        
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
-
-    #[account(mut)]
-    pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
     pub clmm_program: Program<'info, RaydiumClmm>,
     #[account(
@@ -66,7 +67,8 @@ pub struct SellComponentClmm<'info> {
     pub user_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The user token account for output token
-    #[account(mut)]
+    #[account(mut,
+    )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The vault token account for input token

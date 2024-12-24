@@ -11,10 +11,7 @@ use raydium_cpmm_cpi::{
 };
 
 use crate::{
-    constant::USER_FUND,
-    error::PieError,
-    utils::{calculate_fee_amount, transfer_fees},
-    BasketConfig, BuyComponentEvent, ProgramState, UserFund, NATIVE_MINT,
+    constant::USER_FUND, error::PieError, utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees}, BasketConfig, BuyComponentEvent, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE
 };
 
 #[derive(Accounts)]
@@ -29,9 +26,17 @@ pub struct BuyComponentCpmm<'info> {
         bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
-    #[account(mut)]
+    #[account(
+        mut, 
+        seeds = [PROGRAM_STATE], 
+        bump = program_state.bump
+    )]
     pub program_state: Box<Account<'info, ProgramState>>,
-    #[account(mut)]
+    #[account(        
+        mut,
+        seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
+        bump    
+    )]    
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
@@ -137,11 +142,12 @@ pub fn buy_component_cpmm(
     ctx.accounts.user_token_source.reload()?;
     ctx.accounts.vault_token_destination.reload()?;
 
-    let balance_in_after = ctx.accounts.user_token_source.amount;
-    let balance_out_after = ctx.accounts.vault_token_destination.amount;
-
-    let amount_swapped = balance_in_before.checked_sub(balance_in_after).unwrap();
-    let amount_received = balance_out_after.checked_sub(balance_out_before).unwrap();
+    let (amount_swapped, amount_received) = calculate_amounts_swapped_and_received(
+        &ctx.accounts.user_token_source,
+        &ctx.accounts.vault_token_destination,
+        balance_in_before,
+        balance_out_before,
+    )?;
 
     let (platform_fee_amount, creator_fee_amount) =
         calculate_fee_amount(&ctx.accounts.program_state, amount_swapped)?;

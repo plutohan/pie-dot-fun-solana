@@ -1,5 +1,8 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self};
+use anchor_spl::{
+    token::{self},
+    token_interface::TokenAccount,
+};
 
 use crate::{ProgramState, BASIS_POINTS};
 
@@ -75,4 +78,19 @@ pub fn calculate_fee_amount(program_state: &ProgramState, amount: u64) -> Result
         .checked_div(BASIS_POINTS)
         .unwrap();
     Ok((platform_fee_amount, creator_fee_amount))
+}
+
+pub fn calculate_amounts_swapped_and_received<'info>(
+    token_source: &Box<InterfaceAccount<'info, TokenAccount>>,
+    token_destination: &Box<InterfaceAccount<'info, TokenAccount>>,
+    balance_in_before: u64,
+    balance_out_before: u64,
+) -> Result<(u64, u64)> {
+    let balance_in_after = token_source.amount;
+    let balance_out_after = token_destination.amount;
+
+    let amount_swapped = balance_in_before.checked_sub(balance_in_after).unwrap();
+    let amount_received = balance_out_after.checked_sub(balance_out_before).unwrap();
+
+    Ok((amount_swapped, amount_received))
 }

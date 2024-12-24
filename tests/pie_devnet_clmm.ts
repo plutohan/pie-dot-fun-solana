@@ -17,7 +17,6 @@ import {
   PieProgram,
 } from "../sdk/pie-program";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { tokens, tokensClmm, tokensCpmm } from "./utils/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
@@ -31,6 +30,7 @@ import {
   wrappedSOLInstruction,
 } from "./utils/helper";
 import { addAddressesToTable, finalizeTransaction } from "./utils/lookupTable";
+import { tokensClmm } from "./fixtures/devnet/token_test";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
