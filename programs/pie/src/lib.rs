@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("GaVmHaXqUU7xmFDLyQNhn9rv7ZH26XNr9cpmQhqz2CsV");
+declare_id!("CBJ9f8V75qxj2GfC3gWz2UH8iXR4HymNToezs14mazVf");
 
 pub mod constant;
 pub mod error;
