@@ -118,7 +118,7 @@ export const tokens: TokenInfo[] = [
 export  const tokensCpmm: TokenInfo[] = [
   {
     name: "USDC",
-    mint: "5QiDKfdEHAqAMEDMEs48izW8WFKdGnMA3BmoHrQgyhcw",
+    mint: "89mBo8Foha8gWx5tmdiYWekGGyQvdcmQaS2PjpcBfser",
     poolId: "CYPPokMaPmrtxBqhavd3gW7xJvPetUFgVKSmwLy13XjA",
   },
 ]

@@ -101,7 +101,7 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
     let initial_source_balance = ctx.accounts.vault_token_source.amount;
     let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
     let cpi_accounts = cpi::accounts::Swap {
-        payer: ctx.accounts.rebalancer.to_account_info(),
+        payer: basket_config.to_account_info(),
         authority: ctx.accounts.authority.to_account_info(),
         amm_config: ctx.accounts.amm_config.to_account_info(),
         pool_state: ctx.accounts.pool_state.to_account_info(),
