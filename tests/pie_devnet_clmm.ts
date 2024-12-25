@@ -93,11 +93,7 @@ describe("pie", () => {
 
     if (programState.platformFeePercentage.toNumber() == 0) {
       // platform fee 5% and creator fee 5%
-      const updateFeeTx = await pieProgram.updateFee(
-        admin.publicKey,
-        500,
-        500
-      );
+      const updateFeeTx = await pieProgram.updateFee(admin.publicKey, 500, 500);
       const updateFeeTxResult = await sendAndConfirmTransaction(
         connection,
         updateFeeTx,
@@ -153,7 +149,7 @@ describe("pie", () => {
       {
         mint: new PublicKey(tokensClmm[0].mint),
         quantityInSysDecimal: new BN(1 * 10 ** 6),
-      }
+      },
     ];
 
     const createBasketArgs: CreateBasketArgs = {
@@ -200,7 +196,7 @@ describe("pie", () => {
         `Creator fee token account created at tx: https://explorer.solana.com/tx/${createCreatorFeeTokenAccountTxResult}?cluster=devnet`
       );
     }
-
+    //create vault token account
     const basket = await pieProgram.getBasketConfig(basketId);
     assert.equal(basket.components.length, createBasketArgs.components.length);
     assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
@@ -215,6 +211,29 @@ describe("pie", () => {
 
     for (let i = 0; i < basket.components.length; i++) {
       let component = basket.components[i];
+      //create creator fee token account if needed
+      const { tx: createVaultTokenAccountTx } = await getOrCreateTokenAccountTx(
+        connection,
+        new PublicKey(component.mint),
+        admin.publicKey,
+        pieProgram.basketConfigPDA(basketId)
+      );
+
+      if (outputTx.signatures.length !== 0) {
+        const createCreatorFeeTokenAccountTxResult =
+          await sendAndConfirmTransaction(
+            connection,
+            createVaultTokenAccountTx,
+            [admin],
+            {
+              skipPreflight: true,
+              commitment: "confirmed",
+            }
+          );
+        console.log(
+          `Creator fee token account created at tx: https://explorer.solana.com/tx/${createCreatorFeeTokenAccountTxResult}?cluster=devnet`
+        );
+      }
       table.addRow({
         mint: component.mint.toBase58(),
         quantity: component.quantityInSysDecimal.toString(),

@@ -209,6 +209,22 @@ describe("pie", () => {
       );
     }
 
+    let newLookupTable: PublicKey;
+
+    for (let i = 0; i < createBasketArgs.components.length; i++) {
+      newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable(
+        raydium,
+        connection,
+        admin,
+        tokens[i].ammId,
+        basketId,
+        newLookupTable
+      );
+    }
+
+    if (!addressLookupTableMap.has(basketId.toString())) {
+      addressLookupTableMap.set(basketId.toString(), newLookupTable);
+    }
     const basket = await pieProgram.getBasketConfig(basketId);
     assert.equal(basket.components.length, createBasketArgs.components.length);
     assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
@@ -272,7 +288,7 @@ describe("pie", () => {
     let newLookupTable: PublicKey;
 
     for (let i = 0; i < createBasketArgs.components.length; i++) {
-      newLookupTable = await pieProgram.addBasketInfoToAddressLookupTable(
+      newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable(
         raydium,
         connection,
         admin,
@@ -353,42 +369,6 @@ describe("pie", () => {
     table.printTable();
   });
 
-  it("Buy Component CPMM", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig(basketId);
-    for (let i = 0; i < basketConfigData.components.length; i++) {
-      const buyComponentTx = await pieProgram.buyComponentCpmm(
-        admin.publicKey,
-        basketId,
-        1 * LAMPORTS_PER_SOL,
-        200000000,
-        raydium,
-        tokensCpmm[i].poolId
-      );
-
-      const buyComponentTxResult = await sendAndConfirmTransaction(
-        connection,
-        buyComponentTx,
-        [admin],
-        {
-          skipPreflight: true,
-          commitment: "confirmed",
-        }
-      );
-
-      console.log(
-        `Buy component CPMM at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
-      );
-    }
-    const userFundTable = await showUserFundTable(
-      pieProgram,
-      admin.publicKey,
-      basketId
-    );
-    userFundTable.printTable();
-  });
-
   it("Buy Component", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
@@ -412,7 +392,7 @@ describe("pie", () => {
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
       let txs = new Transaction();
-      if(i == basketConfigData.components.length) {
+      if (i == basketConfigData.components.length) {
         txs.add(
           await pieProgram.buyComponent({
             userSourceOwner: admin.publicKey,
@@ -421,7 +401,7 @@ describe("pie", () => {
             amountOut: 2000000,
             raydium,
             ammId: tokens[i].ammId,
-            unwrapSol: true
+            unwrapSol: true,
           })
         );
       } else {
@@ -433,9 +413,9 @@ describe("pie", () => {
             amountOut: 2000000,
             raydium,
             ammId: tokens[i].ammId,
-            unwrapSol: false
+            unwrapSol: false,
           })
-        );  
+        );
       }
       const buyComponentTxResult = await sendAndConfirmTransaction(
         connection,
@@ -497,7 +477,7 @@ describe("pie", () => {
     }
 
     tx.add(unwrapSolIx(nativeMintAta, admin.publicKey, admin.publicKey));
-    console.log('addressLookupTablesAccount; ', addressLookupTablesAccount)
+    console.log("addressLookupTablesAccount; ", addressLookupTablesAccount);
     await finalizeTransaction(
       connection,
       admin,

@@ -17,6 +17,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
+  CurveCalculator,
   getPdaExBitmapAccount,
   getPdaObservationId,
   MAX_SQRT_PRICE_X64,
@@ -491,7 +492,6 @@ export class PieProgram {
   async buyComponentCpmm(
     user: PublicKey,
     basketId: BN,
-    maxAmountIn: number,
     amountOut: number,
     raydium: Raydium,
     poolId: string
@@ -502,6 +502,8 @@ export class PieProgram {
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
+    const rpcData = data.rpcData
+
     const baseIn = NATIVE_MINT.toString() === poolKeys.mintA.address;
 
     const [mintA, mintB] = [
@@ -526,12 +528,25 @@ export class PieProgram {
         user,
         basketConfig
       );
-
+    
     tx.add(outputTx);
-    const wrappedSolIx = await wrappedSOLInstruction(user, maxAmountIn);
+
+
+    const swapResult = CurveCalculator.swapBaseOut({
+      poolMintA: poolInfo.mintA,
+      poolMintB: poolInfo.mintB,
+      tradeFeeRate: rpcData.configInfo!.tradeFeeRate,
+      baseReserve: rpcData.baseReserve,
+      quoteReserve: rpcData.quoteReserve,
+      outputMint : mintOut,
+      outputAmount: new BN(amountOut),
+    })
+    //Need to handle this due to slippage 
+    const wrappedSolIx = await wrappedSOLInstruction(user, Math.floor(Math.abs(swapResult.amountIn.toNumber() * 1.1)));
     tx.add(...wrappedSolIx);
-    const buyComponentTx = await this.program.methods
-      .buyComponentCpmm(new BN(maxAmountIn), new BN(amountOut))
+    
+    const buyComponentCpmmTx = await this.program.methods
+      .buyComponentCpmm(swapResult.amountIn, new BN(amountOut))
       .accountsPartial({
         user: user,
         programState: this.programStatePDA,
@@ -540,6 +555,7 @@ export class PieProgram {
         mintOut: mintOut,
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolInfo.id),
+        authority: new PublicKey(poolKeys.authority),
         userTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
         inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
@@ -561,7 +577,7 @@ export class PieProgram {
       })
       .transaction();
 
-    tx.add(buyComponentTx);
+    tx.add(buyComponentCpmmTx);
     return tx;
   }
 
@@ -834,6 +850,9 @@ export class PieProgram {
         userFund: this.userFundPDA(user, basketId),
         mintOut: mintOut,
         basketMint: basketMint,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
+
         authority: new PublicKey(poolKeys.authority),
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolInfo.id),
@@ -849,12 +868,11 @@ export class PieProgram {
         ),
         inputTokenMint: baseIn ? mintA : mintB,
         outputTokenMint: baseIn ? mintB : mintA,
-        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
         observationState: getPdaObservationId(
           new PublicKey(poolInfo.programId),
           new PublicKey(poolInfo.id)
         ).publicKey,
+
       })
       .transaction();
 
@@ -1192,6 +1210,7 @@ export class PieProgram {
         basketConfig: this.basketConfigPDA(basketId),
         tokenMint,
         basketMint,
+        vaultWrappedSol: NATIVE_MINT,
         amm: new PublicKey(ammId),
         ammAuthority: new PublicKey(poolKeys.authority),
         ammOpenOrders: new PublicKey(poolKeys.openOrders),
@@ -1206,9 +1225,111 @@ export class PieProgram {
         marketPcVault: new PublicKey(poolKeys.marketQuoteVault),
         marketVaultSigner: new PublicKey(poolKeys.marketAuthority),
         ammProgram: new PublicKey(poolKeys.programId),
+        
         vaultTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
+      })
+      .transaction();
+    tx.add(executeRebalancingTx);
+    return tx;
+  }
+
+  async executeRebalancingCpmm(
+    rebalancer: PublicKey,
+    isBuy: boolean,
+    amountIn: string,
+    amountOut: string,
+    poolId: string,
+    basketId: BN,
+    tokenMint: PublicKey,
+    raydium: Raydium
+  ): Promise<Transaction | null> {
+    const tx = new Transaction();
+    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+    const basketMint = this.basketMintPDA(basketId);
+    const basketConfig = this.basketConfigPDA(basketId);
+
+    const poolKeys = data.poolKeys;
+    const poolInfo = data.poolInfo;
+    const inputMint = isBuy ? NATIVE_MINT : tokenMint;
+
+    const [mintA, mintB] = [
+      new PublicKey(poolInfo.mintA.address),
+      new PublicKey(poolInfo.mintB.address),
+    ];
+
+
+    const baseIn = inputMint.toString() === poolKeys.mintA.address;
+
+    const [mintIn, mintOut] = baseIn
+      ? [poolKeys.mintA.address, poolKeys.mintB.address]
+      : [poolKeys.mintB.address, poolKeys.mintA.address];
+
+    let inputTokenAccount: PublicKey;
+    let outputTokenAccount: PublicKey;
+    if (isBuy) {
+      inputTokenAccount = getAssociatedTokenAddressSync(
+        new PublicKey(mintIn),
+        basketConfig,
+        true
+      );
+
+      const { tokenAccount, tx: outputTx } = await getOrCreateTokenAccountTx(
+        this.connection,
+        new PublicKey(mintOut),
+        rebalancer,
+        basketConfig
+      );
+      outputTokenAccount = tokenAccount;
+      tx.add(outputTx);
+    } else {
+      inputTokenAccount = getAssociatedTokenAddressSync(
+        new PublicKey(mintIn),
+        basketConfig,
+        true
+      );
+
+      const { tokenAccount, tx: outputTx } = await getOrCreateTokenAccountTx(
+        this.connection,
+        new PublicKey(mintOut),
+        rebalancer,
+        basketConfig
+      );
+
+      outputTokenAccount = tokenAccount;
+      tx.add(outputTx);
+    }
+
+    const executeRebalancingTx = await this.program.methods
+      .executeRebalancingCpmm(isBuy, new BN(amountIn), new BN(amountOut))
+      .accountsPartial({
+        rebalancer,
+        rebalancerState: this.rebalancerStatePDA(rebalancer),
+        basketConfig: this.basketConfigPDA(basketId),
+        tokenMint,
+        basketMint,
         vaultWrappedSol: NATIVE_MINT,
+
+        authority: new PublicKey(poolKeys.authority),
+        ammConfig: new PublicKey(poolKeys.config.id),
+        poolState: new PublicKey(poolInfo.id),
+        inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
+        outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
+        inputTokenProgram: new PublicKey(
+          poolInfo[baseIn ? "mintA" : "mintB"].programId ?? TOKEN_PROGRAM_ID
+        ),
+        outputTokenProgram: new PublicKey(
+          poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
+        ),
+        inputTokenMint: baseIn ? mintA : mintB,
+        outputTokenMint: baseIn ? mintB : mintA,
+        observationState: getPdaObservationId(
+          new PublicKey(poolInfo.programId),
+          new PublicKey(poolInfo.id)
+        ).publicKey,
+
+        vaultTokenSource: inputTokenAccount,
+        vaultTokenDestination: outputTokenAccount,
       })
       .transaction();
     tx.add(executeRebalancingTx);
@@ -1283,7 +1404,7 @@ export class PieProgram {
     return serializedTxs;
   }
 
-  async addBasketInfoToAddressLookupTable(
+  async addRaydiumAmmToAddressLookupTable(
     raydium: Raydium,
     connection: Connection,
     signer: Keypair,
@@ -1319,6 +1440,71 @@ export class PieProgram {
       new PublicKey(poolKeys.marketAuthority),
       new PublicKey(poolKeys.programId),
       TOKEN_PROGRAM_ID,
+    ];
+
+    if (lookupTable) {
+      const addressesStored = await findAddressesInTable(
+        connection,
+        lookupTable
+      );
+      const addressToAdd = addressesKey.filter(
+        (address) => !addressesStored.some((stored) => stored.equals(address))
+      );
+      if (
+        addressToAdd.length + addressesStored.length >=
+        MAX_LOOKUP_TABLE_ADDRESS
+      ) {
+        throw Error("Exceeds 256 addresses of lookup table");
+      }
+      await addAddressesToTable(connection, signer, lookupTable, addressToAdd);
+    } else {
+      const newLookupTable = await createLookupTable(connection, signer);
+      await addAddressesToTable(
+        connection,
+        signer,
+        newLookupTable,
+        addressesKey
+      );
+      return newLookupTable;
+    }
+
+    return lookupTable;
+  }
+
+  async addRaydiumCpmmToAddressLookupTable(
+    raydium: Raydium,
+    connection: Connection,
+    signer: Keypair,
+    poolId: string,
+    basketId: BN,
+    lookupTable?: PublicKey
+  ) {
+    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+    const MAX_LOOKUP_TABLE_ADDRESS = 256;
+    const basketMint = this.basketMintPDA(basketId);
+    const basketConfig = this.basketConfigPDA(basketId);
+
+    const poolKeys = data.poolKeys;
+    const poolInfo = data.poolInfo;
+
+    const addressesKey = [
+      basketMint,
+      basketConfig,
+      new PublicKey(poolKeys.mintA.address),
+      new PublicKey(poolKeys.mintB.address),
+      new PublicKey(poolId),
+      new PublicKey(poolKeys.authority),
+      new PublicKey(poolKeys.config.id),
+      new PublicKey(poolInfo.id),
+      new PublicKey(poolKeys.vault.A),
+      new PublicKey(poolKeys.vault.B),
+      TOKEN_PROGRAM_ID,
+      TOKEN_2022_PROGRAM_ID,
+      new PublicKey(poolKeys.programId),
+      getPdaObservationId(
+        new PublicKey(poolInfo.programId),
+        new PublicKey(poolInfo.id)
+      ).publicKey,
     ];
 
     if (lookupTable) {
