@@ -195,17 +195,24 @@ export async function simulateBundle({
   }
 }
 
-export async function serializeJitoTransaction(
-  recentBlockhash: string,
-  keyPair: Keypair,
-  transaction: Transaction,
-  lookupTables: any,
-  jitoTipAccount?: PublicKey,
-  amountInLamports?: number
-) {
+export async function serializeJitoTransaction({
+  recentBlockhash,
+  signer,
+  transaction,
+  lookupTables,
+  jitoTipAccount,
+  amountInLamports,
+}: {
+  recentBlockhash: string;
+  signer: PublicKey;
+  transaction: Transaction;
+  lookupTables: any;
+  jitoTipAccount?: PublicKey;
+  amountInLamports?: number;
+}) {
   if (jitoTipAccount && amountInLamports) {
     const transferInstruction = SystemProgram.transfer({
-      fromPubkey: keyPair.publicKey,
+      fromPubkey: signer,
       toPubkey: new PublicKey(jitoTipAccount),
       lamports: amountInLamports,
     });
@@ -213,16 +220,27 @@ export async function serializeJitoTransaction(
   }
 
   const messageV0 = new TransactionMessage({
-    payerKey: keyPair.publicKey,
+    payerKey: signer,
     recentBlockhash,
     instructions: transaction.instructions,
   }).compileToV0Message(lookupTables);
 
   const transactionV0 = new VersionedTransaction(messageV0);
 
-  transactionV0.sign([keyPair]);
-
   const encoded = transactionV0.serialize();
+
+  return Buffer.from(encoded).toString("base64");
+}
+
+export async function signSerializedTransaction(
+  serializedTransaction: string,
+  signer: Keypair
+) {
+  const transaction = VersionedTransaction.deserialize(
+    Buffer.from(serializedTransaction, "base64")
+  );
+  transaction.sign([signer]);
+  const encoded = transaction.serialize();
 
   return Buffer.from(encoded).toString("base64");
 }

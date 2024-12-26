@@ -6,7 +6,15 @@ import {
   IdlTypes,
   Program,
 } from "@coral-xyz/anchor";
-import { Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
+import {
+  AddressLookupTableAccount,
+  ComputeBudgetProgram,
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  Transaction,
+} from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import * as PieIDL from "../target/idl/pie.json";
 import {
@@ -22,13 +30,14 @@ import {
   getPdaObservationId,
   MAX_SQRT_PRICE_X64,
   MIN_SQRT_PRICE_X64,
-  Owner,
   PoolUtils,
   Raydium,
 } from "@raydium-io/raydium-sdk-v2";
 import {
   buildClmmRemainingAccounts,
+  getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
+  getSwapData,
   unwrapSolIx,
   wrappedSOLInstruction,
 } from "../tests/utils/helper";
@@ -38,6 +47,16 @@ import {
   findAddressesInTable,
 } from "../tests/utils/lookupTable";
 import { tokens } from "../tests/fixtures/devnet/token_test";
+import {
+  getInflightBundleStatuses,
+  getTipAccounts,
+  serializeJitoTransaction,
+  getTipInformation,
+  sendBundle,
+  simulateBundle,
+  signSerializedTransaction,
+} from "../sdk/jito";
+import { TokenInfo } from "../tests/fixtures/mainnet/token_test";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -502,7 +521,7 @@ export class PieProgram {
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
-    const rpcData = data.rpcData
+    const rpcData = data.rpcData;
 
     const baseIn = NATIVE_MINT.toString() === poolKeys.mintA.address;
 
@@ -528,9 +547,8 @@ export class PieProgram {
         user,
         basketConfig
       );
-    
-    tx.add(outputTx);
 
+    tx.add(outputTx);
 
     const swapResult = CurveCalculator.swapBaseOut({
       poolMintA: poolInfo.mintA,
@@ -538,13 +556,16 @@ export class PieProgram {
       tradeFeeRate: rpcData.configInfo!.tradeFeeRate,
       baseReserve: rpcData.baseReserve,
       quoteReserve: rpcData.quoteReserve,
-      outputMint : mintOut,
+      outputMint: mintOut,
       outputAmount: new BN(amountOut),
-    })
-    //Need to handle this due to slippage 
-    const wrappedSolIx = await wrappedSOLInstruction(user, Math.floor(Math.abs(swapResult.amountIn.toNumber() * 1.1)));
+    });
+    //Need to handle this due to slippage
+    const wrappedSolIx = await wrappedSOLInstruction(
+      user,
+      Math.floor(Math.abs(swapResult.amountIn.toNumber() * 1.1))
+    );
     tx.add(...wrappedSolIx);
-    
+
     const buyComponentCpmmTx = await this.program.methods
       .buyComponentCpmm(swapResult.amountIn, new BN(amountOut))
       .accountsPartial({
@@ -872,7 +893,6 @@ export class PieProgram {
           new PublicKey(poolInfo.programId),
           new PublicKey(poolInfo.id)
         ).publicKey,
-
       })
       .transaction();
 
@@ -1225,7 +1245,7 @@ export class PieProgram {
         marketPcVault: new PublicKey(poolKeys.marketQuoteVault),
         marketVaultSigner: new PublicKey(poolKeys.marketAuthority),
         ammProgram: new PublicKey(poolKeys.programId),
-        
+
         vaultTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
       })
@@ -1257,7 +1277,6 @@ export class PieProgram {
       new PublicKey(poolInfo.mintA.address),
       new PublicKey(poolInfo.mintB.address),
     ];
-
 
     const baseIn = inputMint.toString() === poolKeys.mintA.address;
 
@@ -1536,6 +1555,250 @@ export class PieProgram {
     return lookupTable;
   }
 
+  /**
+   * Creates a bundle of transactions for buying components and minting basket tokens
+   * @param params Bundle creation parameters
+   * @returns Array of serialized transactions
+   */
+  async createBuyAndMintBundle({
+    user,
+    basketId,
+    slippage,
+    mintAmount,
+    raydium,
+    swapsPerBundle,
+    recentBlockhash,
+    tokenInfo,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    slippage: number;
+    mintAmount: number;
+    raydium: Raydium;
+    swapsPerBundle: number;
+    recentBlockhash: string;
+    tokenInfo: TokenInfo[];
+  }): Promise<string[]> {
+    const tipAccounts = await getTipAccounts();
+    const tipInformation = await getTipInformation();
+    const serializedTxs: string[] = [];
+    let tx = new Transaction();
+    let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+    const basketConfigData = await this.getBasketConfig(basketId);
+    const swapDatas = [];
+    basketConfigData.components.forEach((component) => {
+      const swapData = getSwapData({
+        isBuy: true,
+        inputMint: NATIVE_MINT.toBase58(),
+        outputMint: component.mint.toBase58(),
+        amount: component.quantityInSysDecimal
+          .mul(new BN(mintAmount))
+          .div(new BN(10 ** 6))
+          .toNumber(),
+        slippage,
+      });
+      swapDatas.push(swapData);
+    });
+
+    const swapDatasResult = await Promise.all(swapDatas);
+
+    // Calculate total amount needed
+    const totalAmountIn = swapDatasResult.reduce(
+      (acc, curr) => acc + Number(curr.data.inputAmount),
+      0
+    );
+
+    // Create WSOL account and wrap SOL
+    const { tokenAccount: wsolAccount, tx: createWsolAtaTx } =
+      await getOrCreateTokenAccountTx(
+        this.connection,
+        new PublicKey(NATIVE_MINT),
+        user,
+        user
+      );
+
+    if (createWsolAtaTx.instructions.length > 0) {
+      tx.add(createWsolAtaTx);
+    }
+
+    const wrappedSolIx = await wrappedSOLInstruction(
+      user,
+      totalAmountIn * 10 // @TODO: Investigate multiplier requirement
+    );
+    tx.add(...wrappedSolIx);
+
+    // Process each component
+    for (let i = 0; i < swapDatasResult.length; i++) {
+      if (i > 0 && i % swapsPerBundle === 0) {
+        const serializedTx = await serializeJitoTransaction({
+          recentBlockhash,
+          transaction: tx,
+          lookupTables: addressLookupTablesAccount,
+          signer: user,
+        });
+        serializedTxs.push(serializedTx);
+
+        tx = new Transaction();
+        addressLookupTablesAccount = [];
+      }
+
+      const buyComponentTx = await this.buyComponent({
+        userSourceOwner: user,
+        basketId,
+        maxAmountIn: totalAmountIn, // @TODO: Use swapDatasResult[i].data.inputAmount with slippage
+        amountOut: Number(swapDatasResult[i].data.outputAmount),
+        raydium,
+        ammId: tokenInfo[i].ammId,
+        unwrapSol: false,
+      });
+      tx.add(buyComponentTx);
+
+      const lut = (
+        await this.connection.getAddressLookupTable(
+          new PublicKey(tokenInfo[i].lut)
+        )
+      ).value;
+      addressLookupTablesAccount.push(lut);
+
+      // Handle final transaction in bundle
+      if (i === swapDatas.length - 1) {
+        const mintBasketTokenTx = await this.mintBasketToken(
+          user,
+          basketId,
+          mintAmount
+        );
+        tx.add(mintBasketTokenTx);
+
+        tx.add(createCloseAccountInstruction(wsolAccount, user, user));
+
+        const serializedTx = await serializeJitoTransaction({
+          recentBlockhash,
+          transaction: tx,
+          lookupTables: addressLookupTablesAccount,
+          signer: user,
+          jitoTipAccount: new PublicKey(
+            tipAccounts[Math.floor(Math.random() * tipAccounts.length)]
+          ),
+          amountInLamports: Math.floor(
+            tipInformation?.landed_tips_50th_percentile * LAMPORTS_PER_SOL
+          ),
+        });
+        serializedTxs.push(serializedTx);
+      }
+    }
+
+    return serializedTxs;
+  }
+
+  /**
+   * Creates a bundle of transactions for redeeming basket tokens and selling components
+   * @param params Bundle creation parameters
+   * @returns Array of serialized transactions
+   */
+  async createRedeemAndSellBundle({
+    user,
+    basketId,
+    slippage,
+    redeemAmount,
+    raydium,
+    swapsPerBundle,
+    recentBlockhash,
+    tokenInfo,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    slippage: number;
+    redeemAmount: number;
+    raydium: Raydium;
+    swapsPerBundle: number;
+    recentBlockhash: string;
+    tokenInfo: TokenInfo[];
+  }): Promise<string[]> {
+    const tipAccounts = await getTipAccounts();
+    const tipInformation = await getTipInformation();
+    const serializedTxs: string[] = [];
+    let tx = new Transaction();
+    let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+    const swapDatas = [];
+    const basketConfigData = await this.getBasketConfig(basketId);
+    basketConfigData.components.forEach((component) => {
+      const swapData = getSwapData({
+        isBuy: false,
+        inputMint: component.mint.toBase58(),
+        outputMint: NATIVE_MINT.toBase58(),
+        amount: component.quantityInSysDecimal
+          .div(new BN(10 ** 6))
+          .mul(new BN(redeemAmount))
+          .toNumber(),
+        slippage,
+      });
+      swapDatas.push(swapData);
+    });
+
+    const swapDatasResult = await Promise.all(swapDatas);
+
+    // Create native mint ATA
+    const { tokenAccount: nativeMintAta, tx: createNativeMintATATx } =
+      await getOrCreateNativeMintATA(this.connection, user, user);
+
+    for (let i = 0; i < swapDatasResult.length; i++) {
+      if (i === 0) {
+        if (createNativeMintATATx.instructions.length > 0) {
+          tx.add(createNativeMintATATx);
+        }
+        tx.add(await this.redeemBasketToken(user, basketId, redeemAmount));
+      } else if (i % swapsPerBundle === 0) {
+        const serializedTx = await serializeJitoTransaction({
+          recentBlockhash,
+          transaction: tx,
+          lookupTables: addressLookupTablesAccount,
+          signer: user,
+        });
+        serializedTxs.push(serializedTx);
+
+        tx = new Transaction();
+        addressLookupTablesAccount = [];
+      }
+
+      const sellComponentTx = await this.sellComponent({
+        user,
+        inputMint: new PublicKey(swapDatasResult[i].data.inputMint),
+        basketId,
+        amountIn: Number(swapDatasResult[i].data.inputAmount),
+        minimumAmountOut: 0, //@TODO should be Number(swapDatasResult[i].data.outputAmount),
+        raydium,
+        ammId: tokenInfo[i].ammId,
+      });
+      tx.add(sellComponentTx);
+
+      const lut = (
+        await this.connection.getAddressLookupTable(
+          new PublicKey(tokenInfo[i].lut)
+        )
+      ).value;
+      addressLookupTablesAccount.push(lut);
+
+      if (i === swapDatasResult.length - 1) {
+        tx.add(unwrapSolIx(nativeMintAta, user, user));
+
+        const serializedTx = await serializeJitoTransaction({
+          recentBlockhash,
+          transaction: tx,
+          lookupTables: addressLookupTablesAccount,
+          signer: user,
+          jitoTipAccount: new PublicKey(
+            tipAccounts[Math.floor(Math.random() * tipAccounts.length)]
+          ),
+          amountInLamports: Math.floor(
+            tipInformation?.landed_tips_50th_percentile * LAMPORTS_PER_SOL
+          ),
+        });
+        serializedTxs.push(serializedTx);
+      }
+    }
+
+    return serializedTxs;
+  }
   /**
    * Adds an event listener for the 'CreateBasket' event.
    * @param handler - The function to handle the event.
