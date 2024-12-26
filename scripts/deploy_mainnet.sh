@@ -1,1 +1,0 @@
-anchor deploy --program-name pie --provider.cluster mainnet -- --max-sign-attempts 60 --with-compute-unit-price 10000
