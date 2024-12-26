@@ -35,9 +35,11 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import {
   buildClmmRemainingAccounts,
+  checkSwapDataError,
   getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
   getSwapData,
+  SwapCompute,
   unwrapSolIx,
   wrappedSOLInstruction,
 } from "../tests/utils/helper";
@@ -1585,26 +1587,40 @@ export class PieProgram {
     let tx = new Transaction();
     let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
     const basketConfigData = await this.getBasketConfig(basketId);
-    const swapDatas = [];
+    const swapData: Promise<SwapCompute>[] = [];
     basketConfigData.components.forEach((component) => {
-      const swapData = getSwapData({
-        isBuy: true,
-        inputMint: NATIVE_MINT.toBase58(),
-        outputMint: component.mint.toBase58(),
-        amount: component.quantityInSysDecimal
-          .mul(new BN(mintAmount))
-          .div(new BN(10 ** 6))
-          .toNumber(),
-        slippage,
-      });
-      swapDatas.push(swapData);
+      swapData.push(
+        getSwapData({
+          isBuy: true,
+          inputMint: NATIVE_MINT.toBase58(),
+          outputMint: component.mint.toBase58(),
+          amount: component.quantityInSysDecimal
+            .mul(new BN(mintAmount))
+            .div(new BN(10 ** 6))
+            .toNumber(),
+          slippage,
+        })
+      );
     });
 
-    const swapDatasResult = await Promise.all(swapDatas);
+    const swapDataResult = await Promise.all(swapData);
+    checkSwapDataError(swapDataResult);
+
+    //@TODO remove this when other pools are available
+    for (let i = 0; i < swapDataResult.length; i++) {
+      if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
+        console.log(
+          `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
+        );
+        swapDataResult[i].data.otherAmountThreshold = String(
+          Number(swapDataResult[i].data.otherAmountThreshold) * 10
+        );
+      }
+    }
 
     // Calculate total amount needed
-    const totalAmountIn = swapDatasResult.reduce(
-      (acc, curr) => acc + Number(curr.data.inputAmount),
+    const totalAmountIn = swapDataResult.reduce(
+      (acc, curr) => acc + Number(curr.data.otherAmountThreshold),
       0
     );
 
@@ -1621,14 +1637,11 @@ export class PieProgram {
       tx.add(createWsolAtaTx);
     }
 
-    const wrappedSolIx = await wrappedSOLInstruction(
-      user,
-      totalAmountIn * 10 // @TODO: Investigate multiplier requirement
-    );
+    const wrappedSolIx = await wrappedSOLInstruction(user, totalAmountIn);
     tx.add(...wrappedSolIx);
 
     // Process each component
-    for (let i = 0; i < swapDatasResult.length; i++) {
+    for (let i = 0; i < swapDataResult.length; i++) {
       if (i > 0 && i % swapsPerBundle === 0) {
         const serializedTx = await serializeJitoTransaction({
           recentBlockhash,
@@ -1645,8 +1658,8 @@ export class PieProgram {
       const buyComponentTx = await this.buyComponent({
         userSourceOwner: user,
         basketId,
-        maxAmountIn: totalAmountIn, // @TODO: Use swapDatasResult[i].data.inputAmount with slippage
-        amountOut: Number(swapDatasResult[i].data.outputAmount),
+        maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
+        amountOut: Number(swapDataResult[i].data.outputAmount),
         raydium,
         ammId: tokenInfo[i].ammId,
         unwrapSol: false,
@@ -1661,7 +1674,7 @@ export class PieProgram {
       addressLookupTablesAccount.push(lut);
 
       // Handle final transaction in bundle
-      if (i === swapDatas.length - 1) {
+      if (i === swapData.length - 1) {
         const mintBasketTokenTx = await this.mintBasketToken(
           user,
           basketId,
@@ -1719,29 +1732,42 @@ export class PieProgram {
     const serializedTxs: string[] = [];
     let tx = new Transaction();
     let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
-    const swapDatas = [];
+    const swapData = [];
     const basketConfigData = await this.getBasketConfig(basketId);
     basketConfigData.components.forEach((component) => {
-      const swapData = getSwapData({
-        isBuy: false,
-        inputMint: component.mint.toBase58(),
-        outputMint: NATIVE_MINT.toBase58(),
-        amount: component.quantityInSysDecimal
-          .div(new BN(10 ** 6))
-          .mul(new BN(redeemAmount))
-          .toNumber(),
-        slippage,
-      });
-      swapDatas.push(swapData);
+      swapData.push(
+        getSwapData({
+          isBuy: false,
+          inputMint: component.mint.toBase58(),
+          outputMint: NATIVE_MINT.toBase58(),
+          amount: component.quantityInSysDecimal
+            .div(new BN(10 ** 6))
+            .mul(new BN(redeemAmount))
+            .toNumber(),
+          slippage,
+        })
+      );
     });
 
-    const swapDatasResult = await Promise.all(swapDatas);
+    const swapDataResult = await Promise.all(swapData);
+    checkSwapDataError(swapDataResult);
+
+    //@TODO remove this when other pools are available
+    for (let i = 0; i < swapDataResult.length; i++) {
+      if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
+        console.log(
+          `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
+        );
+        swapDataResult[i].data.otherAmountThreshold =
+          swapDataResult[i].data.otherAmountThreshold / 10;
+      }
+    }
 
     // Create native mint ATA
     const { tokenAccount: nativeMintAta, tx: createNativeMintATATx } =
       await getOrCreateNativeMintATA(this.connection, user, user);
 
-    for (let i = 0; i < swapDatasResult.length; i++) {
+    for (let i = 0; i < swapDataResult.length; i++) {
       if (i === 0) {
         if (createNativeMintATATx.instructions.length > 0) {
           tx.add(createNativeMintATATx);
@@ -1762,10 +1788,10 @@ export class PieProgram {
 
       const sellComponentTx = await this.sellComponent({
         user,
-        inputMint: new PublicKey(swapDatasResult[i].data.inputMint),
+        inputMint: new PublicKey(swapDataResult[i].data.inputMint),
         basketId,
-        amountIn: Number(swapDatasResult[i].data.inputAmount),
-        minimumAmountOut: 0, //@TODO should be Number(swapDatasResult[i].data.outputAmount),
+        amountIn: Number(swapDataResult[i].data.inputAmount),
+        minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
         raydium,
         ammId: tokenInfo[i].ammId,
       });
@@ -1778,7 +1804,7 @@ export class PieProgram {
       ).value;
       addressLookupTablesAccount.push(lut);
 
-      if (i === swapDatasResult.length - 1) {
+      if (i === swapDataResult.length - 1) {
         tx.add(unwrapSolIx(nativeMintAta, user, user));
 
         const serializedTx = await serializeJitoTransaction({

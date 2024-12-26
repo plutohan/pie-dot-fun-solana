@@ -350,8 +350,15 @@ export async function getOrCreateTokenAccountTx(
   payer: PublicKey,
   owner: PublicKey
 ): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
-  const programId = await isToken2022Mint(connection, mint) ? TOKEN_2022_PROGRAM_ID: TOKEN_PROGRAM_ID ;
-  const tokenAccount = await getAssociatedTokenAddress(mint, owner, true, programId);
+  const programId = (await isToken2022Mint(connection, mint))
+    ? TOKEN_2022_PROGRAM_ID
+    : TOKEN_PROGRAM_ID;
+  const tokenAccount = await getAssociatedTokenAddress(
+    mint,
+    owner,
+    true,
+    programId
+  );
   let transaction = new Transaction();
   try {
     await getAccount(connection, tokenAccount, "confirmed");
@@ -408,7 +415,7 @@ export function getExplorerUrl(txid: string, endpoint: string) {
   return `https://solscan.io/tx/${txid}${clusterParam}`;
 }
 
-interface SwapCompute {
+export interface SwapCompute {
   id: string;
   success: boolean;
   version: "V0" | "V1";
@@ -456,4 +463,12 @@ export async function getSwapData({
   );
 
   return swapResponse;
+}
+
+export function checkSwapDataError(swapData: SwapCompute[]) {
+  for (let i = 0; i < swapData.length; i++) {
+    if (!swapData[i].success) {
+      throw new Error(swapData[i].msg);
+    }
+  }
 }

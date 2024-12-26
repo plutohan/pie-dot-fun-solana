@@ -5,8 +5,10 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  sendAndConfirmRawTransaction,
   sendAndConfirmTransaction,
   Transaction,
+  VersionedMessage,
 } from "@solana/web3.js";
 import mainnetAdmin from "../.config/solana/id.json";
 import { assert } from "chai";
@@ -44,7 +46,7 @@ describe("pie", () => {
     microLamports: priorityFee,
   });
   const swapsPerBundle = 3;
-  const slippage = 100;
+  const slippage = 10;
 
   let raydium: Raydium;
 
@@ -263,7 +265,7 @@ describe("pie", () => {
     console.log({ userBaksetTokenBalanceBefore });
 
     const serializedSignedTxs: string[] = [];
-    const mintAmount = 100000;
+    const mintAmount = 200000;
     const recentBlockhash = await connection.getLatestBlockhash("finalized");
 
     console.log("creating bundle...");
@@ -399,44 +401,46 @@ describe("pie", () => {
     }
 
     if (bundleId) {
-      let interval = setInterval(async () => {
-        const statuses = await getInflightBundleStatuses([bundleId]);
-        console.log(JSON.stringify({ statuses }));
-        if (statuses?.value[0]?.status === "Landed") {
-          console.log("bundle confirmed");
-          clearInterval(interval);
+      await new Promise<void>((resolve) => {
+        let interval = setInterval(async () => {
+          const statuses = await getInflightBundleStatuses([bundleId]);
+          console.log(JSON.stringify({ statuses }));
+          if (statuses?.value[0]?.status === "Landed") {
+            console.log("bundle confirmed");
+            clearInterval(interval);
 
-          const userFund = await pieProgram.getUserFund(
-            admin.publicKey,
-            basketId
-          );
+            const userFund = await pieProgram.getUserFund(
+              admin.publicKey,
+              basketId
+            );
 
-          const table = new Table({
-            columns: [
-              { name: "mint", alignment: "left", color: "cyan" },
-              { name: "amount", alignment: "right", color: "green" },
-            ],
-          });
-
-          for (let i = 0; i < userFund.components.length; i++) {
-            let component = userFund.components[i];
-            table.addRow({
-              mint: component.mint.toBase58(),
-              amount: component.amount.toString(),
+            const table = new Table({
+              columns: [
+                { name: "mint", alignment: "left", color: "cyan" },
+                { name: "amount", alignment: "right", color: "green" },
+              ],
             });
-          }
-          table.printTable();
 
-          const userSolBalanceAfter = await connection.getBalance(
-            admin.publicKey
-          );
-          const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance(
-            basketConfigData.mint,
-            admin.publicKey
-          );
-          console.log({ userSolBalanceAfter, userBaksetTokenBalanceAfter });
-        }
-      }, 1000);
+            for (let i = 0; i < userFund.components.length; i++) {
+              let component = userFund.components[i];
+              table.addRow({
+                mint: component.mint.toBase58(),
+                amount: component.amount.toString(),
+              });
+            }
+            table.printTable();
+
+            const userBaksetTokenBalanceAfter =
+              await pieProgram.getTokenBalance(
+                basketConfigData.mint,
+                admin.publicKey
+              );
+            console.log({ userBaksetTokenBalanceAfter });
+
+            resolve();
+          }
+        }, 1000);
+      });
     }
   });
 
