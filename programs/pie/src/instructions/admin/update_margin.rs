@@ -6,7 +6,6 @@ use crate::{error::PieError, ProgramState, PROGRAM_STATE};
 pub struct UpdateRebalanceMarginContext<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
-
     #[account(
         mut,
         seeds = [PROGRAM_STATE],

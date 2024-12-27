@@ -16,21 +16,18 @@ use crate::{
 pub struct SellComponentContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-
     #[account(
         mut,
         seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
-        bump
+        bump = user_fund.bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
-
     #[account(
         mut,
          seeds = [PROGRAM_STATE], 
         bump = program_state.bump
     )]
     pub program_state: Box<Account<'info, ProgramState>>,
-
     #[account(
         mut,
         constraint = basket_config.mint == basket_mint.key() @PieError::InvalidBasketMint
@@ -216,8 +213,6 @@ pub fn sell_component(
     
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount_in).unwrap();
-    // Remove components with zero amount
-    user_fund.components.retain(|component| component.amount > 0);
 
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

@@ -23,7 +23,7 @@ pub struct MintBasketTokenContext<'info> {
     #[account(
         mut,
         seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
-        bump
+        bump = user_fund.bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(

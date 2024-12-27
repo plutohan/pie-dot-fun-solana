@@ -18,7 +18,7 @@ pub struct ExecuteRebalancingCpmm<'info> {
     #[account(
         mut,
         seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
-        bump,
+        bump = basket_config.bump,
         constraint = basket_config.rebalancer == rebalancer.key() @ PieError::Unauthorized
     )]
     pub basket_config: Account<'info, BasketConfig>,

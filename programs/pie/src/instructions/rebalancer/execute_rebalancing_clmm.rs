@@ -10,13 +10,17 @@ use raydium_clmm_cpi::{
 
 use crate::utils::Calculator;
 use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
-use crate::{ExecuteRebalancingEvent, ProgramState, NATIVE_MINT};
+use crate::{ExecuteRebalancingEvent, ProgramState, NATIVE_MINT, PROGRAM_STATE};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancingClmm<'info> {
     #[account(mut)]
     pub rebalancer: Signer<'info>,
-    #[account(mut)]
+    #[account(        
+        mut, 
+        seeds = [PROGRAM_STATE], 
+        bump = program_state.bump 
+    )]
     pub program_state: Box<Account<'info, ProgramState>>,
     #[account(
         mut,
