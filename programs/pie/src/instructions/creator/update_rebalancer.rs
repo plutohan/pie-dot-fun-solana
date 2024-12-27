@@ -28,10 +28,6 @@ pub fn update_rebalancer(
     ctx: Context<UpdateRebalancerContext>,
     new_rebalancer: Pubkey,
 ) -> Result<()> {
-    require!(
-        ctx.accounts.creator.key() == ctx.accounts.basket_config.creator,
-        PieError::Unauthorized
-    );
 
     ctx.accounts.basket_config.rebalancer = new_rebalancer;
 
