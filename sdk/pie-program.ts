@@ -39,6 +39,7 @@ import {
   getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
   getSwapData,
+  isValidTransaction,
   SwapCompute,
   unwrapSolIx,
   wrappedSOLInstruction,
@@ -59,6 +60,7 @@ import {
   signSerializedTransaction,
 } from "../sdk/jito";
 import { TokenInfo } from "../tests/fixtures/mainnet/token_test";
+import { RebalanceInfo } from "../tests/fixtures/mainnet/token_rebalance_test";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -1103,7 +1105,6 @@ export class PieProgram {
     basketId: BN
   ): Promise<Transaction> {
     const basketConfigData = await this.getBasketConfig(basketId);
-
     if (!basketConfigData) {
       return null;
     } else {
@@ -1162,16 +1163,27 @@ export class PieProgram {
    * @param raydium - The Raydium instance.
    * @returns A promise that resolves to a transaction or null.
    */
-  async executeRebalancing(
-    rebalancer: PublicKey,
-    isBuy: boolean,
-    amountIn: string,
-    amountOut: string,
-    ammId: string,
-    basketId: BN,
-    tokenMint: PublicKey,
-    raydium: Raydium
-  ): Promise<Transaction | null> {
+  async executeRebalancing({
+    rebalancer,
+    isBuy,
+    amountIn,
+    amountOut,
+    ammId,
+    basketId,
+    tokenMint,
+    raydium,
+    createTokenAccount = true,
+  }: {
+    rebalancer: PublicKey;
+    isBuy: boolean;
+    amountIn: string;
+    amountOut: string;
+    ammId: string;
+    basketId: BN;
+    tokenMint: PublicKey;
+    raydium: Raydium;
+    createTokenAccount?: boolean;
+  }): Promise<Transaction | null> {
     const tx = new Transaction();
     const data = await raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
@@ -1205,7 +1217,7 @@ export class PieProgram {
         basketConfig
       );
       outputTokenAccount = tokenAccount;
-      tx.add(outputTx);
+      if (createTokenAccount) tx.add(outputTx);
     } else {
       inputTokenAccount = getAssociatedTokenAddressSync(
         new PublicKey(mintIn),
@@ -1221,7 +1233,7 @@ export class PieProgram {
       );
 
       outputTokenAccount = tokenAccount;
-      tx.add(outputTx);
+      if (createTokenAccount) tx.add(outputTx);
     }
 
     const executeRebalancingTx = await this.program.methods
@@ -1355,74 +1367,6 @@ export class PieProgram {
       .transaction();
     tx.add(executeRebalancingTx);
     return tx;
-  }
-
-  async buildRebalanceTx({
-    basketId,
-    rebalancer,
-    swaps,
-    raydium,
-    withStartRebalance,
-    withStopRebalance,
-  }: {
-    basketId: BN;
-    rebalancer: Keypair;
-    raydium: Raydium;
-    swaps: {
-      mint: PublicKey;
-      isBuy: boolean;
-      amountIn: number;
-      amountOut: number;
-    }[];
-    withStartRebalance?: boolean;
-    withStopRebalance?: boolean;
-  }): Promise<Uint8Array[]> {
-    const serializedTxs = [];
-    const blockhash = await this.connection.getLatestBlockhash();
-
-    for (let i = 0; i < swaps.length; i++) {
-      const tx = new Transaction();
-
-      if (i == 0 && withStartRebalance) {
-        const startRebalanceTx = await this.startRebalancing(
-          rebalancer.publicKey,
-          basketId
-        );
-        tx.add(startRebalanceTx);
-      }
-
-      const swap = swaps[i];
-
-      //@TODO for mainnet we can fetch the ammId from API
-      const ammId = tokens.find((t) => t.mint === swap.mint.toBase58())?.ammId;
-
-      const rebalanceTx = await this.executeRebalancing(
-        rebalancer.publicKey,
-        swap.isBuy,
-        swap.amountIn.toString(),
-        swap.amountOut.toString(),
-        ammId,
-        basketId,
-        swap.mint,
-        raydium
-      );
-      tx.add(rebalanceTx);
-
-      if (i == swaps.length - 1 && withStopRebalance) {
-        const stopRebalanceTx = await this.stopRebalancing(
-          rebalancer.publicKey,
-          basketId
-        );
-        tx.add(stopRebalanceTx);
-      }
-
-      tx.recentBlockhash = blockhash.blockhash;
-      tx.feePayer = rebalancer.publicKey;
-      tx.sign(rebalancer);
-      serializedTxs.push(tx.serialize());
-    }
-
-    return serializedTxs;
   }
 
   async addRaydiumAmmToAddressLookupTable(
@@ -1814,6 +1758,154 @@ export class PieProgram {
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
           signer: user,
+          jitoTipAccount: new PublicKey(
+            tipAccounts[Math.floor(Math.random() * tipAccounts.length)]
+          ),
+          amountInLamports: Math.floor(
+            tipInformation?.landed_tips_50th_percentile * LAMPORTS_PER_SOL
+          ),
+        });
+        serializedTxs.push(serializedTx);
+      }
+    }
+
+    return serializedTxs;
+  }
+
+  async createRebalanceBundle({
+    basketId,
+    rebalancer,
+    raydium,
+    slippage,
+    swapsPerBundle,
+    rebalanceInfo,
+    withStartRebalance,
+    withStopRebalance,
+  }: {
+    rebalancer: PublicKey;
+    basketId: BN;
+    raydium: Raydium;
+    slippage: number;
+    swapsPerBundle: number;
+    rebalanceInfo: RebalanceInfo[];
+    withStartRebalance?: boolean;
+    withStopRebalance?: boolean;
+  }): Promise<string[]> {
+    const tipAccounts = await getTipAccounts();
+    const tipInformation = await getTipInformation();
+    const serializedTxs: string[] = [];
+    let tx = new Transaction();
+    let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+    const swapData: Promise<SwapCompute>[] = [];
+    rebalanceInfo.forEach((rebalance) => {
+      swapData.push(
+        getSwapData({
+          isBuy: rebalance.isBuy,
+          inputMint: rebalance.isBuy ? NATIVE_MINT.toBase58() : rebalance.mint,
+          outputMint: rebalance.isBuy ? rebalance.mint : NATIVE_MINT.toBase58(),
+          amount: Number(rebalance.amount),
+          slippage,
+        })
+      );
+    });
+
+    const swapDataResult = await Promise.all(swapData);
+    console.log(JSON.stringify(swapDataResult));
+    checkSwapDataError(swapDataResult);
+
+    //@TODO remove this when other pools are available
+    for (let i = 0; i < swapDataResult.length; i++) {
+      if (
+        swapDataResult[i].data.routePlan[0].poolId !== rebalanceInfo[i].ammId
+      ) {
+        console.log(
+          `${rebalanceInfo[i].name}'s AMM has little liquidity, increase slippage`
+        );
+        swapDataResult[i].data.otherAmountThreshold = String(
+          Number(swapDataResult[i].data.otherAmountThreshold) * 2
+        );
+      }
+    }
+
+    const blockhash = await this.connection.getLatestBlockhash();
+
+    for (let i = 0; i < rebalanceInfo.length; i++) {
+      if (i === 0) {
+        tx.add(
+          ComputeBudgetProgram.setComputeUnitPrice({
+            microLamports: 200000,
+          })
+        );
+
+        if (withStartRebalance) {
+          const startRebalanceTx = await this.startRebalancing(
+            rebalancer,
+            basketId
+          );
+          if (isValidTransaction(startRebalanceTx)) {
+            tx.add(startRebalanceTx);
+          }
+        }
+
+        const { tx: createNativeMintATATx } = await getOrCreateNativeMintATA(
+          this.connection,
+          rebalancer,
+          this.basketConfigPDA(basketId)
+        );
+
+        if (isValidTransaction(createNativeMintATATx)) {
+          tx.add(createNativeMintATATx);
+        }
+      } else if (i % swapsPerBundle === 0) {
+        const serializedTx = await serializeJitoTransaction({
+          recentBlockhash: blockhash.blockhash,
+          transaction: tx,
+          lookupTables: addressLookupTablesAccount,
+          signer: rebalancer,
+        });
+        serializedTxs.push(serializedTx);
+
+        tx = new Transaction();
+        addressLookupTablesAccount = [];
+      }
+
+      const rebalanceTx = await this.executeRebalancing({
+        rebalancer,
+        isBuy: rebalanceInfo[i].isBuy,
+        amountIn: rebalanceInfo[i].isBuy
+          ? swapDataResult[i].data.otherAmountThreshold
+          : swapDataResult[i].data.inputAmount,
+        amountOut: rebalanceInfo[i].isBuy
+          ? swapDataResult[i].data.outputAmount
+          : swapDataResult[i].data.otherAmountThreshold,
+        ammId: rebalanceInfo[i].ammId,
+        basketId,
+        tokenMint: new PublicKey(rebalanceInfo[i].mint),
+        raydium,
+        createTokenAccount: false,
+      });
+      tx.add(rebalanceTx);
+      const lut = (
+        await this.connection.getAddressLookupTable(
+          new PublicKey(rebalanceInfo[i].lut)
+        )
+      ).value;
+      addressLookupTablesAccount.push(lut);
+
+      if (i == rebalanceInfo.length - 1) {
+        if (withStopRebalance) {
+          const stopRebalanceTx = await this.stopRebalancing(
+            rebalancer,
+            basketId
+          );
+          tx.add(stopRebalanceTx);
+        }
+
+        const serializedTx = await serializeJitoTransaction({
+          recentBlockhash: blockhash.blockhash,
+          transaction: tx,
+          lookupTables: addressLookupTablesAccount,
+          signer: rebalancer,
           jitoTipAccount: new PublicKey(
             tipAccounts[Math.floor(Math.random() * tipAccounts.length)]
           ),

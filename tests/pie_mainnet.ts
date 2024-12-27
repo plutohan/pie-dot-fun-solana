@@ -19,6 +19,7 @@ import {
 } from "../sdk/pie-program";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens } from "./fixtures/mainnet/token_test";
+import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "./utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
@@ -39,7 +40,6 @@ import { QUICKNODE_RPC_URL } from "../sdk/constants";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(mainnetAdmin));
-  const addressLookupTableMap = new Map<string, PublicKey>();
   const connection = new Connection(QUICKNODE_RPC_URL, "confirmed");
   const pieProgram = new PieProgram(connection);
   const priorityFee = 100000;
@@ -47,7 +47,7 @@ describe("pie", () => {
     microLamports: priorityFee,
   });
   const swapsPerBundle = 3;
-  const slippage = 10;
+  const slippage = 100;
 
   let raydium: Raydium;
 
@@ -186,24 +186,25 @@ describe("pie", () => {
 
     console.log("creating lookup tables for each component...");
 
-    const lookupTables = [];
-    for (let i = 0; i < createBasketArgs.components.length; i++) {
-      console.log(
-        `creating lookup table for ${i + 1} of ${
-          createBasketArgs.components.length
-        }`
-      );
-      const lut = await pieProgram.addRaydiumAmmToAddressLookupTable(
-        raydium,
-        connection,
-        admin,
-        tokens[i].ammId,
-        basketId
-      );
-      lookupTables.push(lut.toBase58());
-    }
+    // @TODO uncomment this when needed
+    // const lookupTables = [];
+    // for (let i = 0; i < createBasketArgs.components.length; i++) {
+    //   console.log(
+    //     `creating lookup table for ${i + 1} of ${
+    //       createBasketArgs.components.length
+    //     }`
+    //   );
+    //   const lut = await pieProgram.addRaydiumAmmToAddressLookupTable(
+    //     raydium,
+    //     connection,
+    //     admin,
+    //     tokens[i].ammId,
+    //     basketId
+    //   );
+    //   lookupTables.push(lut.toBase58());
+    // }
 
-    console.log("lookup tables created:", lookupTables);
+    // console.log("lookup tables created:", lookupTables);
 
     const { tx } = await pieProgram.createBasketVaultAccounts(
       admin.publicKey,
@@ -266,7 +267,7 @@ describe("pie", () => {
     console.log({ userBaksetTokenBalanceBefore });
 
     const serializedSignedTxs: string[] = [];
-    const mintAmount = 400000;
+    const mintAmount = 1000000;
 
     console.log("creating bundle...");
     const serializedTxs = await pieProgram.createBuyAndMintBundle({
@@ -377,166 +378,66 @@ describe("pie", () => {
       basketId
     );
     basketMintTable.printTable();
+
+    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance(
+      basketConfigData.mint,
+      admin.publicKey
+    );
+    console.log({ userBaksetTokenBalanceAfter });
   });
 
-  it.skip("Executing rebalance basket by selling the first component", async () => {
+  it("Rebalance basket using Jito bundle", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
-    const basketConfigData = await pieProgram.getBasketConfig(basketId);
 
-    const component = basketConfigData.components[1];
-    console.log("basket vault balance before:");
-    (
-      await showBasketVaultsTable(await pieProgram.getBasketVaults(basketId))
-    ).printTable();
-
-    const vaultComponentAccount = await getAssociatedTokenAddress(
-      component.mint,
-      basketConfigPDA,
-      true
-    );
-    const vaultComponentsBalance = await connection.getTokenAccountBalance(
-      vaultComponentAccount,
-      "confirmed"
-    );
-
-    console.log(vaultComponentsBalance.value.amount.toString());
-
-    const executeRebalanceTx = await pieProgram.executeRebalancing(
-      admin.publicKey,
-      false,
-      vaultComponentsBalance.value.amount.toString(),
-      "0",
-      tokens[1].ammId,
-      basketId,
-      new PublicKey(tokens[1].mint),
-      raydium
-    );
-
-    executeRebalanceTx.add(priorityFeeInstruction);
-
-    const executeRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      executeRebalanceTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
-
-    console.log(
-      `Executing rebalance at tx: ${getExplorerUrl(
-        executeRebalanceTxResult,
-        connection.rpcEndpoint
-      )}`
-    );
-
-    console.log("basket vault balance before:");
-    (
-      await showBasketVaultsTable(await pieProgram.getBasketVaults(basketId))
-    ).printTable();
-  });
-
-  it.skip("Executing rebalance basket by buying component 5", async () => {
-    const isBuy = true;
-    const newBasketBuy = tokens[5];
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
-    const vaultWrappedSolAccount = await getAssociatedTokenAddress(
-      NATIVE_MINT,
-      basketConfigPDA,
-      true
-    );
-    let vaultWrappedSolBalance = await connection.getTokenAccountBalance(
-      vaultWrappedSolAccount
-    );
-
-    console.log(vaultWrappedSolAccount);
-    console.log({ vaultWrappedSolBalance });
-
-    const executeRebalanceTx = await pieProgram.executeRebalancing(
-      admin.publicKey,
-      isBuy,
-      vaultWrappedSolBalance.value.amount.toString(),
-      "1",
-      newBasketBuy.ammId,
-      basketId,
-      new PublicKey(newBasketBuy.mint),
-      raydium
-    );
-
-    executeRebalanceTx.add(
-      ComputeBudgetProgram.setComputeUnitPrice({
-        microLamports: 10_000_000,
-      })
-    );
-
-    const executeRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      executeRebalanceTx,
-      [admin],
-      {
-        skipPreflight: false,
-        commitment: "confirmed",
-      }
-    );
-
-    //add basket info to lookup table when buy new basket token to config
-    if (isBuy) {
-      const lookupTable = addressLookupTableMap.get(basketId.toString());
-
-      await pieProgram.addRaydiumAmmToAddressLookupTable(
-        raydium,
-        connection,
-        admin,
-        newBasketBuy.ammId,
-        basketId,
-        lookupTable
-      );
-    }
-
-    console.log(
-      `Executing rebalance at tx: https://solscan.io/tx/${executeRebalanceTxResult}`
-    );
-    console.log(`Basket config ${basketId.toString()} data: `);
-
-    vaultWrappedSolBalance = await connection.getTokenAccountBalance(
-      vaultWrappedSolAccount
-    );
-    console.log({ vaultWrappedSolBalance });
-
-    const basketMintTable = await showBasketConfigTable(
+    console.log(`basket ${basketId.toString()} data before:`);
+    let basketMintTable = await showBasketConfigTable(
       connection,
       pieProgram,
       basketId
     );
     basketMintTable.printTable();
-  });
 
-  it.skip("Stop rebalance basket", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const stopRebalanceTx = await pieProgram.stopRebalancing(
-      admin.publicKey,
+    const serializedSignedTxs: string[] = [];
+    console.log("creating bundle...");
+    const serializedTxs = await pieProgram.createRebalanceBundle({
+      rebalancer: admin.publicKey,
+      basketId,
+      slippage,
+      swapsPerBundle,
+      rebalanceInfo,
+      raydium,
+      withStartRebalance: true,
+      withStopRebalance: true,
+    });
+
+    console.log("signing bundle...");
+    for (const serializedTx of serializedTxs) {
+      const tx = await signSerializedTransaction(serializedTx, admin);
+      serializedSignedTxs.push(tx);
+    }
+
+    console.log("start simulating bundle...");
+    const bundleSimluationResult = await simulateBundle({
+      encodedTransactions: serializedSignedTxs,
+    });
+
+    console.log(
+      `bundle simulation result: ${JSON.stringify(
+        bundleSimluationResult.value
+      )}`
+    );
+
+    console.log("start sending bundles..!!");
+    const bundleId = await sendBundle(serializedSignedTxs);
+    await startPollingJitoBundle(bundleId);
+
+    console.log(`basket ${basketId.toString()} data after:`);
+    basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
       basketId
     );
-    const stopRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      stopRebalanceTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
-    console.log(
-      `Stop rebalance at tx: https://solscan.io/tx/${stopRebalanceTxResult}`
-    );
-
-    const basketConfig = await pieProgram.getBasketConfig(basketId);
-    assert.equal(basketConfig.isRebalancing, false);
+    basketMintTable.printTable();
   });
 });
