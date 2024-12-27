@@ -1569,7 +1569,6 @@ export class PieProgram {
     mintAmount,
     raydium,
     swapsPerBundle,
-    recentBlockhash,
     tokenInfo,
   }: {
     user: PublicKey;
@@ -1578,7 +1577,6 @@ export class PieProgram {
     mintAmount: number;
     raydium: Raydium;
     swapsPerBundle: number;
-    recentBlockhash: string;
     tokenInfo: TokenInfo[];
   }): Promise<string[]> {
     const tipAccounts = await getTipAccounts();
@@ -1586,6 +1584,9 @@ export class PieProgram {
     const serializedTxs: string[] = [];
     let tx = new Transaction();
     let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+    const recentBlockhash = await this.connection.getLatestBlockhash(
+      "finalized"
+    );
     const basketConfigData = await this.getBasketConfig(basketId);
     const swapData: Promise<SwapCompute>[] = [];
     basketConfigData.components.forEach((component) => {
@@ -1644,7 +1645,7 @@ export class PieProgram {
     for (let i = 0; i < swapDataResult.length; i++) {
       if (i > 0 && i % swapsPerBundle === 0) {
         const serializedTx = await serializeJitoTransaction({
-          recentBlockhash,
+          recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
           signer: user,
@@ -1685,7 +1686,7 @@ export class PieProgram {
         tx.add(createCloseAccountInstruction(wsolAccount, user, user));
 
         const serializedTx = await serializeJitoTransaction({
-          recentBlockhash,
+          recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
           signer: user,
@@ -1715,7 +1716,6 @@ export class PieProgram {
     redeemAmount,
     raydium,
     swapsPerBundle,
-    recentBlockhash,
     tokenInfo,
   }: {
     user: PublicKey;
@@ -1724,7 +1724,6 @@ export class PieProgram {
     redeemAmount: number;
     raydium: Raydium;
     swapsPerBundle: number;
-    recentBlockhash: string;
     tokenInfo: TokenInfo[];
   }): Promise<string[]> {
     const tipAccounts = await getTipAccounts();
@@ -1732,6 +1731,9 @@ export class PieProgram {
     const serializedTxs: string[] = [];
     let tx = new Transaction();
     let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+    const recentBlockhash = await this.connection.getLatestBlockhash(
+      "finalized"
+    );
     const swapData = [];
     const basketConfigData = await this.getBasketConfig(basketId);
     basketConfigData.components.forEach((component) => {
@@ -1775,7 +1777,7 @@ export class PieProgram {
         tx.add(await this.redeemBasketToken(user, basketId, redeemAmount));
       } else if (i % swapsPerBundle === 0) {
         const serializedTx = await serializeJitoTransaction({
-          recentBlockhash,
+          recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
           signer: user,
@@ -1808,7 +1810,7 @@ export class PieProgram {
         tx.add(unwrapSolIx(nativeMintAta, user, user));
 
         const serializedTx = await serializeJitoTransaction({
-          recentBlockhash,
+          recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
           signer: user,

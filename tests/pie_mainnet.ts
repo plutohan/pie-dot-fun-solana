@@ -27,6 +27,7 @@ import {
   getOrCreateTokenAccountTx,
   showBasketConfigTable,
   showBasketVaultsTable,
+  startPollingJitoBundle,
 } from "./utils/helper";
 import {
   getInflightBundleStatuses,
@@ -265,8 +266,7 @@ describe("pie", () => {
     console.log({ userBaksetTokenBalanceBefore });
 
     const serializedSignedTxs: string[] = [];
-    const mintAmount = 200000;
-    const recentBlockhash = await connection.getLatestBlockhash("finalized");
+    const mintAmount = 400000;
 
     console.log("creating bundle...");
     const serializedTxs = await pieProgram.createBuyAndMintBundle({
@@ -276,7 +276,6 @@ describe("pie", () => {
       mintAmount,
       raydium,
       swapsPerBundle,
-      recentBlockhash: recentBlockhash.blockhash,
       tokenInfo: tokens,
     });
 
@@ -303,56 +302,26 @@ describe("pie", () => {
 
     console.log("start sending bundles..!!");
     const bundleId = await sendBundle(serializedSignedTxs);
+    await startPollingJitoBundle(bundleId);
+    console.log(`basket ${basketId.toString()} data:`);
+    const basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
+      basketId
+    );
+    basketMintTable.printTable();
 
-    if (bundleId) {
-      await new Promise<void>((resolve) => {
-        let interval = setInterval(async () => {
-          const statuses = await getInflightBundleStatuses([bundleId]);
-          console.log(JSON.stringify({ statuses }));
-          if (statuses?.value[0]?.status === "Landed") {
-            console.log("bundle confirmed");
-            clearInterval(interval);
-
-            const userFund = await pieProgram.getUserFund(
-              admin.publicKey,
-              basketId
-            );
-
-            const table = new Table({
-              columns: [
-                { name: "mint", alignment: "left", color: "cyan" },
-                { name: "amount", alignment: "right", color: "green" },
-              ],
-            });
-
-            for (let i = 0; i < userFund.components.length; i++) {
-              let component = userFund.components[i];
-              table.addRow({
-                mint: component.mint.toBase58(),
-                amount: component.amount.toString(),
-              });
-            }
-            table.printTable();
-
-            const userBaksetTokenBalanceAfter =
-              await pieProgram.getTokenBalance(
-                basketConfigData.mint,
-                admin.publicKey
-              );
-            console.log({ userBaksetTokenBalanceAfter });
-
-            resolve();
-          }
-        }, 1000);
-      });
-    }
+    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance(
+      basketConfigData.mint,
+      admin.publicKey
+    );
+    console.log({ userBaksetTokenBalanceAfter });
   });
 
   it("Redeem basket token and sell components using Jito bundle", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig(basketId);
-    const recentBlockhash = await connection.getLatestBlockhash("finalized");
     const serializedSignedTxs: string[] = [];
 
     const userSolBalanceBefore = await connection.getBalance(admin.publicKey);
@@ -373,7 +342,6 @@ describe("pie", () => {
       redeemAmount,
       raydium,
       swapsPerBundle,
-      recentBlockhash: recentBlockhash.blockhash,
       tokenInfo: tokens,
     });
 
@@ -400,72 +368,9 @@ describe("pie", () => {
       throw new Error("bundle simulation failed");
     }
 
-    if (bundleId) {
-      await new Promise<void>((resolve) => {
-        let interval = setInterval(async () => {
-          const statuses = await getInflightBundleStatuses([bundleId]);
-          console.log(JSON.stringify({ statuses }));
-          if (statuses?.value[0]?.status === "Landed") {
-            console.log("bundle confirmed");
-            clearInterval(interval);
+    await startPollingJitoBundle(bundleId);
 
-            const userFund = await pieProgram.getUserFund(
-              admin.publicKey,
-              basketId
-            );
-
-            const table = new Table({
-              columns: [
-                { name: "mint", alignment: "left", color: "cyan" },
-                { name: "amount", alignment: "right", color: "green" },
-              ],
-            });
-
-            for (let i = 0; i < userFund.components.length; i++) {
-              let component = userFund.components[i];
-              table.addRow({
-                mint: component.mint.toBase58(),
-                amount: component.amount.toString(),
-              });
-            }
-            table.printTable();
-
-            const userBaksetTokenBalanceAfter =
-              await pieProgram.getTokenBalance(
-                basketConfigData.mint,
-                admin.publicKey
-              );
-            console.log({ userBaksetTokenBalanceAfter });
-
-            resolve();
-          }
-        }, 1000);
-      });
-    }
-  });
-
-  // @TODO: have to fix this test
-  it.skip("Start rebalance basket", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const startRebalanceTx = await pieProgram.startRebalancing(
-      admin.publicKey,
-      basketId
-    );
-    const startRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      startRebalanceTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
-
-    console.log(
-      `Start rebalance at tx: https://solscan.io/tx/${startRebalanceTxResult}`
-    );
-
+    console.log(`basket ${basketId.toString()} data:`);
     const basketMintTable = await showBasketConfigTable(
       connection,
       pieProgram,

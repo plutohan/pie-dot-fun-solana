@@ -6,10 +6,6 @@ export interface TokenInfo {
   ammId?: string;
 }
 
-export const lookupTable = new PublicKey(
-  "5tFQWULzBGjX6x1Kc6TA2Rq8KMg9oLK5yn4fcB4B5yF9"
-);
-
 export const tokens: TokenInfo[] = [
   {
     name: "WIF",
