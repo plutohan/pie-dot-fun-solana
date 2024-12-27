@@ -33,7 +33,11 @@ pub struct MintBasketTokenContext<'info> {
     )]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        token::authority = user,
+        token::mint = basket_config.mint
+    )]
     pub user_basket_token_account: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,

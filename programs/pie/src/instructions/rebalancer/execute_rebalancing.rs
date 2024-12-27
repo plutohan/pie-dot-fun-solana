@@ -22,7 +22,10 @@ pub struct ExecuteRebalancing<'info> {
         constraint = basket_config.rebalancer == rebalancer.key() @ PieError::Unauthorized
     )]
     pub basket_config: Account<'info, BasketConfig>,
-    #[account(mut)]
+    #[account(
+        mut,
+        address = basket_config.mint
+    )]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
     // Raydium AMM accounts
     /// CHECK: Raydium AMM account
