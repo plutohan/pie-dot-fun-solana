@@ -187,6 +187,8 @@ pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
 
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount).unwrap();
+    // Remove components with zero amount
+    user_fund.components.retain(|component| component.amount > 0);
 
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

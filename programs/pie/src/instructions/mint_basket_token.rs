@@ -85,6 +85,8 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, basket_token_amou
                 .ok_or(PieError::InsufficientBalance)?;
         }
     }
+    // Remove components with zero amount
+    user_fund.components.retain(|component| component.amount > 0);
 
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
