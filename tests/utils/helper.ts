@@ -31,6 +31,7 @@ import { Raydium, API_URLS } from "@raydium-io/raydium-sdk-v2";
 import { PieProgram } from "../../sdk/pie-program";
 import { Table } from "console-table-printer";
 import axios from "axios";
+import { getInflightBundleStatuses } from "../../sdk/jito";
 
 export async function createUserWithLamports(
   connection: Connection,
@@ -164,7 +165,6 @@ export async function getRaydiumPoolAccounts(
   const data = await raydium.liquidity.getPoolInfoFromRpc({
     poolId: ammId,
   });
-  console.log(data);
   const poolKeys = data.poolKeys;
 
   const baseIn = inputMint.toString() === poolKeys.mintA.address;
@@ -266,14 +266,13 @@ export async function showBasketConfigTable(
     connection,
     pieProgram.basketMintPDA(basketId)
   );
-
   const table = new Table({
     columns: [
       { name: "mint", alignment: "left", color: "cyan" },
       { name: "basketSupply", alignment: "left", color: "blue" },
       { name: "decimals", alignment: "left", color: "purple" },
       { name: "balance", alignment: "right", color: "green" },
-      { name: "quantity", alignment: "right", color: "yellow" },
+      { name: "quantityInSysDecimal", alignment: "right", color: "yellow" },
     ],
   });
 
@@ -291,7 +290,7 @@ export async function showBasketConfigTable(
       basketSupply: basketMintInfo.supply,
       decimals: basketMintInfo.decimals,
       balance: balance.value.amount,
-      quantity: component.quantityInSysDecimal.toString(),
+      quantityInSysDecimal: component.quantityInSysDecimal.toString(),
     });
   }
 
@@ -350,8 +349,15 @@ export async function getOrCreateTokenAccountTx(
   payer: PublicKey,
   owner: PublicKey
 ): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
-  const programId = await isToken2022Mint(connection, mint) ? TOKEN_2022_PROGRAM_ID: TOKEN_PROGRAM_ID ;
-  const tokenAccount = await getAssociatedTokenAddress(mint, owner, true, programId);
+  const programId = (await isToken2022Mint(connection, mint))
+    ? TOKEN_2022_PROGRAM_ID
+    : TOKEN_PROGRAM_ID;
+  const tokenAccount = await getAssociatedTokenAddress(
+    mint,
+    owner,
+    true,
+    programId
+  );
   let transaction = new Transaction();
   try {
     await getAccount(connection, tokenAccount, "confirmed");
@@ -408,7 +414,7 @@ export function getExplorerUrl(txid: string, endpoint: string) {
   return `https://solscan.io/tx/${txid}${clusterParam}`;
 }
 
-interface SwapCompute {
+export interface SwapCompute {
   id: string;
   success: boolean;
   version: "V0" | "V1";
@@ -456,4 +462,32 @@ export async function getSwapData({
   );
 
   return swapResponse;
+}
+
+export function checkSwapDataError(swapData: SwapCompute[]) {
+  for (let i = 0; i < swapData.length; i++) {
+    if (!swapData[i].success) {
+      throw new Error(swapData[i].msg);
+    }
+  }
+}
+
+export function isValidTransaction(tx: Transaction) {
+  if (!tx) return false;
+  if (!tx.instructions) return false;
+  return tx.instructions.length > 0;
+}
+
+export async function startPollingJitoBundle(bundleId: string) {
+  await new Promise<void>((resolve) => {
+    let interval = setInterval(async () => {
+      const statuses = await getInflightBundleStatuses([bundleId]);
+      console.log(JSON.stringify({ statuses }));
+      if (statuses?.value[0]?.status === "Landed") {
+        console.log("bundle confirmed");
+        clearInterval(interval);
+        resolve();
+      }
+    }, 1000);
+  });
 }
