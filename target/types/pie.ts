@@ -936,7 +936,29 @@ export type Pie = {
         },
         {
           "name": "programState",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basketConfig",
@@ -3057,10 +3079,6 @@ export type Pie = {
             "type": "string"
           },
           {
-            "name": "decimals",
-            "type": "u8"
-          },
-          {
             "name": "rebalancer",
             "type": "pubkey"
           }
@@ -3686,6 +3704,10 @@ export type Pie = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
           {
             "name": "components",
             "type": {

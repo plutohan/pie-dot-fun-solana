@@ -169,7 +169,6 @@ describe("pie", () => {
       symbol: "BNS",
       uri: "test",
       components: components,
-      decimals: 6,
       rebalancer: admin.publicKey,
     };
 
@@ -272,7 +271,6 @@ describe("pie", () => {
       symbol: "BNS",
       uri: "test",
       components: components,
-      decimals: 6,
       rebalancer: admin.publicKey,
     };
 

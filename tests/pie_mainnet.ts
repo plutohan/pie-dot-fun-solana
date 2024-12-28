@@ -157,7 +157,6 @@ describe("pie", () => {
       symbol: "B-1",
       uri: "https://pie.xyz/pie",
       components: components,
-      decimals: 6,
       rebalancer: admin.publicKey,
     };
 
