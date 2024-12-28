@@ -50,9 +50,13 @@ import {
   findAddressesInTable,
 } from "../tests/utils/lookupTable";
 import {
+  getInflightBundleStatuses,
   getTipAccounts,
   serializeJitoTransaction,
   getTipInformation,
+  sendBundle,
+  simulateBundle,
+  signSerializedTransaction,
 } from "../sdk/jito";
 import { TokenInfo } from "../tests/fixtures/mainnet/token_test";
 import { RebalanceInfo } from "../tests/fixtures/mainnet/token_rebalance_test";
@@ -68,6 +72,8 @@ export type CreateBasketEvent = IdlEvents<Pie>["createBasketEvent"];
 export type UpdateRebalancerEvent = IdlEvents<Pie>["updateRebalancerEvent"];
 export type TransferAdminEvent = IdlEvents<Pie>["transferAdminEvent"];
 export type TransferBasketEvent = IdlEvents<Pie>["transferBasketEvent"];
+export type UpdateRebalanceMarginEvent =
+  IdlEvents<Pie>["updateMaxRebalanceMarginEvent"];
 export type ExecuteRebalancingEvent = IdlEvents<Pie>["executeRebalancingEvent"];
 export type StartRebalancingEvent = IdlEvents<Pie>["startRebalancingEvent"];
 export type StopRebalancingEvent = IdlEvents<Pie>["stopRebalancingEvent"];
@@ -1942,6 +1948,16 @@ export class PieProgram {
    */
   onTransferBasket(handler: (event: TransferBasketEvent) => void) {
     this.program.addEventListener("transferBasket", handler);
+  }
+
+  /**
+   * Adds an event listener for the 'UpdateRebalanceMargin' event.
+   * @param handler - The function to handle the event.
+   */
+  onUpdateRebalanceMargin(
+    handler: (event: UpdateRebalanceMarginEvent) => void
+  ) {
+    this.program.addEventListener("updateMaxRebalanceMargin", handler);
   }
 
   /**
