@@ -2315,15 +2315,11 @@ export type Pie = {
       "args": [
         {
           "name": "newCreatorFeePercentage",
-          "type": {
-            "option": "u64"
-          }
+          "type": "u64"
         },
         {
           "name": "newPlatformFeePercentage",
-          "type": {
-            "option": "u64"
-          }
+          "type": "u64"
         }
       ]
     },
@@ -3616,15 +3612,11 @@ export type Pie = {
         "fields": [
           {
             "name": "newCreatorFeePercentage",
-            "type": {
-              "option": "u64"
-            }
+            "type": "u64"
           },
           {
             "name": "newPlatformFeePercentage",
-            "type": {
-              "option": "u64"
-            }
+            "type": "u64"
           }
         ]
       }

@@ -92,14 +92,15 @@ describe("pie", () => {
       const updateFeeTx = await pieProgram.updateFee(
         admin.publicKey,
         1000,
-        1000
+        9000
       );
       await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
 
       const programState = await pieProgram.getProgramState();
       assert.equal(programState.creatorFeePercentage.toNumber(), 1000);
-      assert.equal(programState.platformFeePercentage.toNumber(), 1000);
+      assert.equal(programState.platformFeePercentage.toNumber(), 9000);
     });
+
     it("should fail if not admin", async () => {
       try {
         const updateFeeTx = await pieProgram.updateFee(
@@ -108,19 +109,21 @@ describe("pie", () => {
           1000
         );
         await sendAndConfirmTransaction(connection, updateFeeTx, [newAdmin]);
-      } catch (e) {}
+      } catch (e) {
+        assert.isNotEmpty(e)
+      }
     });
 
     it("should fail if the fee is invalid", async () => {
       try {
         const updateFeeTx = await pieProgram.updateFee(
           admin.publicKey,
-          1000,
+          1000*10**10^4,
           1000
         );
         await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
       } catch (e) {
-        console.log(e);
+        assert.isNotEmpty(e)
       }
     });
   });

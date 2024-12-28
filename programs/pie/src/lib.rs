@@ -61,8 +61,8 @@ pub mod pie {
 
     pub fn update_fee(
         ctx: Context<UpdateFeeContext>,
-        new_creator_fee_percentage: Option<u64>,
-        new_platform_fee_percentage: Option<u64>,
+        new_creator_fee_percentage: u64,
+        new_platform_fee_percentage: u64,
     ) -> Result<()> {
         instructions::update_fee(ctx, new_creator_fee_percentage, new_platform_fee_percentage)?;
         Ok(())

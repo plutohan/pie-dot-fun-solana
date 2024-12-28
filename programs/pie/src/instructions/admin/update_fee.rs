@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{error::PieError, ProgramState, PROGRAM_STATE};
+use crate::{error::PieError, ProgramState, PROGRAM_STATE, BASIS_POINTS};
 
 #[derive(Accounts)]
 pub struct UpdateFeeContext<'info> {
@@ -17,24 +17,20 @@ pub struct UpdateFeeContext<'info> {
 
 #[event]
 pub struct UpdateFeeEvent {
-    pub new_creator_fee_percentage: Option<u64>,
-    pub new_platform_fee_percentage: Option<u64>,
+    pub new_creator_fee_percentage: u64,
+    pub new_platform_fee_percentage: u64,
 }
 
 pub fn update_fee(
     ctx: Context<UpdateFeeContext>,
-    new_creator_fee_percentage: Option<u64>,
-    new_platform_fee_percentage: Option<u64>,
+    new_creator_fee_percentage: u64,
+    new_platform_fee_percentage: u64,
 ) -> Result<()> {
     let program_state = &mut ctx.accounts.program_state;
 
-    if let Some(new_creator_fee_percentage) = new_creator_fee_percentage {
-        program_state.creator_fee_percentage = new_creator_fee_percentage;
-    }
-
-    if let Some(new_platform_fee_percentage) = new_platform_fee_percentage {
-        program_state.platform_fee_percentage = new_platform_fee_percentage;
-    }
+    require!(new_creator_fee_percentage.checked_add(new_platform_fee_percentage).unwrap() <= BASIS_POINTS, PieError::InvalidFee);
+    program_state.creator_fee_percentage = new_creator_fee_percentage;
+    program_state.platform_fee_percentage = new_platform_fee_percentage;
 
     emit!(UpdateFeeEvent {
         new_creator_fee_percentage,
