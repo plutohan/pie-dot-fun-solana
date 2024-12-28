@@ -127,6 +127,7 @@ pub fn buy_component(
     amount_out: u64,
 ) -> Result<()> {
     require!(max_amount_in > 0, PieError::InvalidAmount);
+    let user_fund = &mut ctx.accounts.user_fund;
 
     let balance_in_before = ctx.accounts.user_token_source.amount;
     let balance_out_before = ctx.accounts.vault_token_destination.amount;
@@ -204,8 +205,9 @@ pub fn buy_component(
         platform_fee_amount,
         creator_fee_amount,
     )?;
-    ctx.accounts
-        .user_fund
+
+    user_fund.bump = ctx.bumps.user_fund;
+    user_fund
         .upsert_component(ctx.accounts.mint_out.key(), amount_received)?;
 
     emit!(BuyComponentEvent {

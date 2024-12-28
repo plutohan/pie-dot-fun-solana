@@ -23,7 +23,7 @@ pub struct MintBasketTokenContext<'info> {
     #[account(
         mut,
         seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
-        bump
+        bump = user_fund.bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(
@@ -33,7 +33,11 @@ pub struct MintBasketTokenContext<'info> {
     )]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        token::authority = user,
+        token::mint = basket_config.mint
+    )]
     pub user_basket_token_account: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
@@ -85,6 +89,8 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, basket_token_amou
                 .ok_or(PieError::InsufficientBalance)?;
         }
     }
+    // Remove components with zero amount
+    user_fund.components.retain(|component| component.amount > 0);
 
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,

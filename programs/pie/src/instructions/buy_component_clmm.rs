@@ -123,6 +123,8 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
 
     let balance_in_before = ctx.accounts.user_token_source.amount;
     let balance_out_before = ctx.accounts.vault_token_destination.amount;
+    
+    let user_fund = &mut ctx.accounts.user_fund;
 
     let cpi_accounts = cpi::accounts::SwapSingleV2 {
         payer: ctx.accounts.user.to_account_info(),
@@ -173,9 +175,9 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
         platform_fee_amount,
         creator_fee_amount,
     )?;
-
-    ctx.accounts
-        .user_fund
+    
+    user_fund.bump = ctx.bumps.user_fund;
+    user_fund
         .upsert_component(ctx.accounts.output_vault_mint.key(), amount_received)?;
 
     emit!(BuyComponentEvent {

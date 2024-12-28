@@ -10,7 +10,7 @@ pub struct UpdateRebalancerContext<'info> {
     #[account(
         mut,
         seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
-        bump,
+        bump = basket_config.bump,
         constraint = basket_config.creator == creator.key() @ PieError::Unauthorized
     )]
     pub basket_config: Account<'info, BasketConfig>,
@@ -28,10 +28,6 @@ pub fn update_rebalancer(
     ctx: Context<UpdateRebalancerContext>,
     new_rebalancer: Pubkey,
 ) -> Result<()> {
-    require!(
-        ctx.accounts.creator.key() == ctx.accounts.basket_config.creator,
-        PieError::Unauthorized
-    );
 
     ctx.accounts.basket_config.rebalancer = new_rebalancer;
 

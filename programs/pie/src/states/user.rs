@@ -9,6 +9,7 @@ pub struct UserComponent {
 
 #[account]
 pub struct UserFund {
+    pub bump: u8,
     pub components: Vec<UserComponent>,
 }
 
@@ -35,6 +36,7 @@ impl UserFund {
 
 impl Space for UserFund {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
+        + 1 //bump
         + 4 // vec length
         + (32 + 8) * MAX_COMPONENTS as usize; // vec items
 }
