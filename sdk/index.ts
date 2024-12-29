@@ -1,3 +1,3 @@
 export * from "./pie-program";
-export * from "./jito";
+export * as Jito from "./jito";
 export { BN } from "@coral-xyz/anchor";
