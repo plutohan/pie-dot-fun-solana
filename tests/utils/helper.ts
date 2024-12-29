@@ -261,10 +261,10 @@ export async function showBasketConfigTable(
   pieProgram: PieProgram,
   basketId: BN
 ) {
-  const basketConfig = await pieProgram.getBasketConfig(basketId);
+  const basketConfig = await pieProgram.getBasketConfig({ basketId });
   const basketMintInfo = await getMint(
     connection,
-    pieProgram.basketMintPDA(basketId)
+    pieProgram.basketMintPDA({ basketId })
   );
   const table = new Table({
     columns: [
@@ -279,7 +279,7 @@ export async function showBasketConfigTable(
   for (let i = 0; i < basketConfig.components.length; i++) {
     const vaultTokenPDA = getAssociatedTokenAddressSync(
       basketConfig.components[i].mint,
-      pieProgram.basketConfigPDA(basketId),
+      pieProgram.basketConfigPDA({ basketId }),
       true
     );
     const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
@@ -302,7 +302,7 @@ export async function showUserFundTable(
   userPubkey: PublicKey,
   basketId: BN
 ) {
-  const userFund = await pieProgram.getUserFund(userPubkey, basketId);
+  const userFund = await pieProgram.getUserFund({ user: userPubkey, basketId });
 
   const table = new Table({
     columns: [

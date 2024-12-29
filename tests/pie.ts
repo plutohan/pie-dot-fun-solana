@@ -42,7 +42,7 @@ describe("pie", () => {
     ]);
     await sleep(1);
 
-    const initTx = await pieProgram.initialize(admin.publicKey);
+    const initTx = await pieProgram.initialize({ admin: admin.publicKey });
 
     await sendAndConfirmTransaction(connection, initTx, [admin]);
 
@@ -53,10 +53,10 @@ describe("pie", () => {
 
   describe("transfer_admin", () => {
     it("should be transfer with new admin", async () => {
-      const transferTx = await pieProgram.transferAdmin(
-        admin.publicKey,
-        newAdmin.publicKey
-      );
+      const transferTx = await pieProgram.transferAdmin({
+        admin: admin.publicKey,
+        newAdmin: newAdmin.publicKey,
+      });
       await sendAndConfirmTransaction(connection, transferTx, [admin]);
 
       let programState = await pieProgram.getProgramState();
@@ -66,10 +66,10 @@ describe("pie", () => {
       );
 
       //transfer back
-      const transferBackTx = await pieProgram.transferAdmin(
-        newAdmin.publicKey,
-        admin.publicKey
-      );
+      const transferBackTx = await pieProgram.transferAdmin({
+        admin: newAdmin.publicKey,
+        newAdmin: admin.publicKey,
+      });
       await sendAndConfirmTransaction(connection, transferBackTx, [newAdmin]);
 
       programState = await pieProgram.getProgramState();
@@ -78,10 +78,10 @@ describe("pie", () => {
 
     it("should fail if the admin is unauthorized", async () => {
       try {
-        const transferTx = await pieProgram.transferAdmin(
-          newAdmin.publicKey,
-          admin.publicKey
-        );
+        const transferTx = await pieProgram.transferAdmin({
+          admin: newAdmin.publicKey,
+          newAdmin: admin.publicKey,
+        });
         await sendAndConfirmTransaction(connection, transferTx, [newAdmin]);
       } catch (e) {}
     });
@@ -89,11 +89,11 @@ describe("pie", () => {
 
   describe("update_fee", () => {
     it("should update fee", async () => {
-      const updateFeeTx = await pieProgram.updateFee(
-        admin.publicKey,
-        1000,
-        9000
-      );
+      const updateFeeTx = await pieProgram.updateFee({
+        admin: admin.publicKey,
+        newCreatorFeePercentage: 1000,
+        newPlatformFeePercentage: 9000,
+      });
       await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
 
       const programState = await pieProgram.getProgramState();
@@ -103,27 +103,27 @@ describe("pie", () => {
 
     it("should fail if not admin", async () => {
       try {
-        const updateFeeTx = await pieProgram.updateFee(
-          newAdmin.publicKey,
-          1000,
-          1000
-        );
+        const updateFeeTx = await pieProgram.updateFee({
+          admin: newAdmin.publicKey,
+          newCreatorFeePercentage: 1000,
+          newPlatformFeePercentage: 1000,
+        });
         await sendAndConfirmTransaction(connection, updateFeeTx, [newAdmin]);
       } catch (e) {
-        assert.isNotEmpty(e)
+        assert.isNotEmpty(e);
       }
     });
 
     it("should fail if the fee is invalid", async () => {
       try {
-        const updateFeeTx = await pieProgram.updateFee(
-          admin.publicKey,
-          1000*10**10^4,
-          1000
-        );
+        const updateFeeTx = await pieProgram.updateFee({
+          admin: admin.publicKey,
+          newCreatorFeePercentage: (1000 * 10 ** 10) ^ 4,
+          newPlatformFeePercentage: 1000,
+        });
         await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
       } catch (e) {
-        assert.isNotEmpty(e)
+        assert.isNotEmpty(e);
       }
     });
   });
@@ -131,10 +131,10 @@ describe("pie", () => {
   describe("update_platform_fee_wallet", () => {
     it("should update platform fee wallet", async () => {
       const updatePlatformFeeWalletTx =
-        await pieProgram.updatePlatformFeeWallet(
-          admin.publicKey,
-          platformFeeWallet.publicKey
-        );
+        await pieProgram.updatePlatformFeeWallet({
+          admin: admin.publicKey,
+          newPlatformFeeWallet: platformFeeWallet.publicKey,
+        });
       await sendAndConfirmTransaction(connection, updatePlatformFeeWalletTx, [
         admin,
       ]);
@@ -149,10 +149,10 @@ describe("pie", () => {
     it("should fail if not admin", async () => {
       try {
         const updatePlatformFeeWalletTx =
-          await pieProgram.updatePlatformFeeWallet(
-            newAdmin.publicKey,
-            platformFeeWallet.publicKey
-          );
+          await pieProgram.updatePlatformFeeWallet({
+            admin: newAdmin.publicKey,
+            newPlatformFeeWallet: platformFeeWallet.publicKey,
+          });
         await sendAndConfirmTransaction(connection, updatePlatformFeeWalletTx, [
           newAdmin,
         ]);
@@ -179,18 +179,18 @@ describe("pie", () => {
         };
         const programState = await pieProgram.getProgramState();
         const basketId = programState.basketCounter;
-        const createBasketTx = await pieProgram.createBasket(
-          admin.publicKey,
-          createBasketArgs,
-          basketId
-        );
+        const createBasketTx = await pieProgram.createBasket({
+          creator: admin.publicKey,
+          args: createBasketArgs,
+          basketId,
+        });
 
         await sendAndConfirmTransaction(connection, createBasketTx, [admin]);
 
-        const basketConfig = pieProgram.basketConfigPDA(basketId);
+        const basketConfig = pieProgram.basketConfigPDA({ basketId });
 
-        const basketMint = pieProgram.basketMintPDA(basketId);
-        const basketConfigData = await pieProgram.getBasketConfig(basketId);
+        const basketMint = pieProgram.basketMintPDA({ basketId });
+        const basketConfigData = await pieProgram.getBasketConfig({ basketId });
         assert.equal(
           basketConfigData.creator.toBase58(),
           admin.publicKey.toBase58()
@@ -223,11 +223,11 @@ describe("pie", () => {
         };
         const programState = await pieProgram.getProgramState();
         const basketId = programState.basketCounter;
-        const createBasketTx = await pieProgram.createBasket(
-          admin.publicKey,
-          createBasketArgs,
-          basketId
-        );
+        const createBasketTx = await pieProgram.createBasket({
+          creator: admin.publicKey,
+          args: createBasketArgs,
+          basketId,
+        });
         await sendAndConfirmTransaction(connection, createBasketTx, [admin]);
       });
 
@@ -258,23 +258,23 @@ describe("pie", () => {
       };
       const programState = await pieProgram.getProgramState();
       const basketId = programState.basketCounter;
-      const createBasketTx = await pieProgram.createBasket(
-        admin.publicKey,
-        createBasketArgs,
-        basketId
-      );
+      const createBasketTx = await pieProgram.createBasket({
+        creator: admin.publicKey,
+        args: createBasketArgs,
+        basketId,
+      });
       await sendAndConfirmTransaction(connection, createBasketTx, [admin]);
-      const basketState = await pieProgram.getBasketConfig(basketId);
+      const basketState = await pieProgram.getBasketConfig({ basketId });
       console.assert(
         basketState.rebalancer.toBase58(),
         admin.publicKey.toBase58()
       );
 
-      const updateRebalancerTx = await pieProgram.updateRebalancer(
-        admin.publicKey,
+      const updateRebalancerTx = await pieProgram.updateRebalancer({
+        creator: admin.publicKey,
         basketId,
-        rebalancer.publicKey
-      );
+        newRebalancer: rebalancer.publicKey,
+      });
       await sendAndConfirmTransaction(connection, updateRebalancerTx, [admin]);
       console.assert(
         basketState.rebalancer.toBase58(),

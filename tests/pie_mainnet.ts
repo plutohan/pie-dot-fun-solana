@@ -54,7 +54,9 @@ describe("pie", () => {
 
     if (!programState) {
       console.log("initializing program...");
-      const initializeTx = await pieProgram.initialize(admin.publicKey);
+      const initializeTx = await pieProgram.initialize({
+        admin: admin.publicKey,
+      });
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,
         initializeTx,
@@ -80,21 +82,21 @@ describe("pie", () => {
 
     if (rebalanceMarginLamports == 0) {
       console.log("adding updating rebalance margin tx...");
-      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin(
-        admin.publicKey,
-        0.5 * LAMPORTS_PER_SOL
-      );
+      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin({
+        admin: admin.publicKey,
+        newMargin: 0.5 * LAMPORTS_PER_SOL,
+      });
       setUpTx.add(updateRebalanceMarginTx);
     }
 
     if (programState.platformFeePercentage.toNumber() == 0) {
       console.log("adding updating fee tx...");
       // mint redeem fee 1% and platform fee 0.5%
-      const updateFeeTx = await pieProgram.updateFee(
-        admin.publicKey,
-        1000,
-        500
-      );
+      const updateFeeTx = await pieProgram.updateFee({
+        admin: admin.publicKey,
+        newCreatorFeePercentage: 1000,
+        newPlatformFeePercentage: 500,
+      });
       setUpTx.add(updateFeeTx);
     }
 
@@ -119,10 +121,10 @@ describe("pie", () => {
     ) {
       console.log("adding update platform fee wallet tx...");
       const updatePlatformFeeWalletTx =
-        await pieProgram.updatePlatformFeeWallet(
-          admin.publicKey,
-          admin.publicKey
-        );
+        await pieProgram.updatePlatformFeeWallet({
+          admin: admin.publicKey,
+          newPlatformFeeWallet: admin.publicKey,
+        });
       setUpTx.add(updatePlatformFeeWalletTx);
     }
 
@@ -158,11 +160,11 @@ describe("pie", () => {
     const basketId = programState.basketCounter;
 
     console.log("creating basket...");
-    const createBasketTx = await pieProgram.createBasket(
-      admin.publicKey,
-      createBasketArgs,
-      basketId
-    );
+    const createBasketTx = await pieProgram.createBasket({
+      creator: admin.publicKey,
+      args: createBasketArgs,
+      basketId,
+    });
 
     createBasketTx.add(priorityFeeInstruction);
 
@@ -199,11 +201,11 @@ describe("pie", () => {
 
     // console.log("lookup tables created:", lookupTables);
 
-    const { tx } = await pieProgram.createBasketVaultAccounts(
-      admin.publicKey,
-      createBasketArgs,
-      basketId
-    );
+    const { tx } = await pieProgram.createBasketVaultAccounts({
+      creator: admin.publicKey,
+      args: createBasketArgs,
+      basketId,
+    });
 
     if (tx.instructions.length > 0) {
       console.log("creating vault accounts..");
@@ -226,7 +228,7 @@ describe("pie", () => {
       );
     }
 
-    const basket = await pieProgram.getBasketConfig(basketId);
+    const basket = await pieProgram.getBasketConfig({ basketId });
     assert.equal(basket.components.length, createBasketArgs.components.length);
     assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
     assert.equal(basket.id.toString(), basketId.toString());
@@ -251,12 +253,12 @@ describe("pie", () => {
   it("Buy components and mint basket token using Jito bundle", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
 
-    const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance(
-      basketConfigData.mint,
-      admin.publicKey
-    );
+    const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance({
+      mint: basketConfigData.mint,
+      owner: admin.publicKey,
+    });
     console.log({ userBaksetTokenBalanceBefore });
 
     const serializedSignedTxs: string[] = [];
@@ -304,24 +306,24 @@ describe("pie", () => {
     );
     basketMintTable.printTable();
 
-    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance(
-      basketConfigData.mint,
-      admin.publicKey
-    );
+    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance({
+      mint: basketConfigData.mint,
+      owner: admin.publicKey,
+    });
     console.log({ userBaksetTokenBalanceAfter });
   });
 
   it("Redeem basket token and sell components using Jito bundle", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
     const serializedSignedTxs: string[] = [];
 
     const userSolBalanceBefore = await connection.getBalance(admin.publicKey);
-    const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance(
-      basketConfigData.mint,
-      admin.publicKey
-    );
+    const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance({
+      mint: basketConfigData.mint,
+      owner: admin.publicKey,
+    });
 
     console.log({ userSolBalanceBefore, userBaksetTokenBalanceBefore });
 
@@ -370,10 +372,10 @@ describe("pie", () => {
     );
     basketMintTable.printTable();
 
-    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance(
-      basketConfigData.mint,
-      admin.publicKey
-    );
+    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance({
+      mint: basketConfigData.mint,
+      owner: admin.publicKey,
+    });
     console.log({ userBaksetTokenBalanceAfter });
   });
 

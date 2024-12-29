@@ -44,7 +44,9 @@ describe("pie", () => {
     let programState = await pieProgram.getProgramState();
 
     if (!programState) {
-      const initializeTx = await pieProgram.initialize(admin.publicKey);
+      const initializeTx = await pieProgram.initialize({
+        admin: admin.publicKey,
+      });
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,
         initializeTx,
@@ -66,10 +68,10 @@ describe("pie", () => {
       ? programState.rebalanceMarginLamports.toNumber()
       : 0;
     if (rebalanceMarginLamports == 0) {
-      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin(
-        admin.publicKey,
-        0.5 * LAMPORTS_PER_SOL
-      );
+      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin({
+        admin: admin.publicKey,
+        newMargin: 0.5 * LAMPORTS_PER_SOL,
+      });
       const updateRebalanceMarginTxResult = await sendAndConfirmTransaction(
         connection,
         updateRebalanceMarginTx,
@@ -86,7 +88,11 @@ describe("pie", () => {
 
     if (programState.platformFeePercentage.toNumber() == 0) {
       // platform fee 5% and creator fee 5%
-      const updateFeeTx = await pieProgram.updateFee(admin.publicKey, 500, 500);
+      const updateFeeTx = await pieProgram.updateFee({
+        admin: admin.publicKey,
+        newCreatorFeePercentage: 500,
+        newPlatformFeePercentage: 500,
+      });
       const updateFeeTxResult = await sendAndConfirmTransaction(
         connection,
         updateFeeTx,
@@ -121,10 +127,10 @@ describe("pie", () => {
       new PublicKey("11111111111111111111111111111111").toBase58()
     ) {
       const updatePlatformFeeWalletTx =
-        await pieProgram.updatePlatformFeeWallet(
-          admin.publicKey,
-          admin.publicKey
-        );
+        await pieProgram.updatePlatformFeeWallet({
+          admin: admin.publicKey,
+          newPlatformFeeWallet: admin.publicKey,
+        });
       const updatePlatformFeeWalletTxResult = await sendAndConfirmTransaction(
         connection,
         updatePlatformFeeWalletTx,
@@ -156,11 +162,11 @@ describe("pie", () => {
 
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter;
-    const createBasketTx = await pieProgram.createBasket(
-      admin.publicKey,
-      createBasketArgs,
-      basketId
-    );
+    const createBasketTx = await pieProgram.createBasket({
+      creator: admin.publicKey,
+      args: createBasketArgs,
+      basketId,
+    });
     const createBasketTxResult = await sendAndConfirmTransaction(
       connection,
       createBasketTx,
@@ -190,7 +196,7 @@ describe("pie", () => {
       );
     }
     //create vault token account
-    const basket = await pieProgram.getBasketConfig(basketId);
+    const basket = await pieProgram.getBasketConfig({ basketId });
     assert.equal(basket.components.length, createBasketArgs.components.length);
     assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
     assert.equal(basket.id.toString(), basketId.toString());
@@ -209,7 +215,7 @@ describe("pie", () => {
         connection,
         new PublicKey(component.mint),
         admin.publicKey,
-        pieProgram.basketConfigPDA(basketId)
+        pieProgram.basketConfigPDA({ basketId })
       );
 
       if (outputTx.signatures.length !== 0) {
@@ -238,16 +244,16 @@ describe("pie", () => {
   it("Buy Component CLMM", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
     for (let i = 0; i < basketConfigData.components.length; i++) {
-      const buyComponentTx = await pieProgram.buyComponentClmm(
-        admin.publicKey,
+      const buyComponentTx = await pieProgram.buyComponentClmm({
+        user: admin.publicKey,
         basketId,
-        new BN(1 * LAMPORTS_PER_SOL),
-        new BN(200000000),
-        new PublicKey(tokensClmm[i].mint),
-        tokensClmm[i].poolId
-      );
+        maxAmountIn: new BN(1 * LAMPORTS_PER_SOL),
+        amountOut: new BN(200000000),
+        outputMint: new PublicKey(tokensClmm[i].mint),
+        poolId: tokensClmm[i].poolId,
+      });
 
       const buyComponentTxResult = await sendAndConfirmTransaction(
         connection,
@@ -274,16 +280,16 @@ describe("pie", () => {
   it("Sell Component CLMM", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
     for (let i = 0; i < basketConfigData.components.length; i++) {
-      const sellComponentClmmTx = await pieProgram.sellComponentClmm(
-        admin.publicKey,
+      const sellComponentClmmTx = await pieProgram.sellComponentClmm({
+        user: admin.publicKey,
         basketId,
-        new BN(20000),
-        new PublicKey(tokensClmm[i].mint),
-        tokensClmm[i].poolId,
-        false
-      );
+        amountIn: new BN(20000),
+        inputMint: new PublicKey(tokensClmm[i].mint),
+        poolId: tokensClmm[i].poolId,
+        unwrappedSol: false,
+      });
 
       const sellComponentClmmTxResult = await sendAndConfirmTransaction(
         connection,
