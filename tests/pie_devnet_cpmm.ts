@@ -491,15 +491,17 @@ describe("pie", () => {
       vaultWrappedSolAccount
     );
 
-    const executeRebalanceTx = await pieProgram.executeRebalancing(
-      admin.publicKey,
+    const executeRebalanceTx = await pieProgram.executeRebalancing({
+      rebalancer: admin.publicKey,
       isBuy,
-      new BN(vaultWrappedSolBalance.value.amount).div(new BN(2)).toString(),
-      "20",
-      newBasketBuy.ammId,
+      amountIn: new BN(vaultWrappedSolBalance.value.amount)
+        .div(new BN(2))
+        .toString(),
+      amountOut: "20",
+      ammId: newBasketBuy.ammId,
       basketId,
-      new PublicKey(newBasketBuy.mint)
-    );
+      tokenMint: new PublicKey(newBasketBuy.mint),
+    });
 
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
