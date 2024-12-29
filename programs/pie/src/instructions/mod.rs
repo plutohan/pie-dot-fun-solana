@@ -30,3 +30,9 @@ pub use sell_component_cpmm::*;
 
 pub mod sell_component_clmm;
 pub use sell_component_clmm::*;
+
+pub mod deposit_wsol;
+pub use deposit_wsol::*;
+
+pub mod withdraw_wsol;
+pub use withdraw_wsol::*;

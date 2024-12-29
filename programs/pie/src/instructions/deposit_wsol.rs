@@ -1,0 +1,81 @@
+use anchor_lang::prelude::*;
+use anchor_spl::{
+    token::Token, token_interface::{Mint, TokenAccount}
+};
+
+use crate::{
+    constant::USER_FUND, utils::transfer_from_user_to_pool_vault, BasketConfig, UserFund, BASKET_CONFIG, NATIVE_MINT, 
+};
+
+#[derive(Accounts)]
+pub struct DepositWsol<'info> {
+  #[account(mut)]
+  pub user: Signer<'info>,
+
+  #[account(
+      mut,
+      seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
+      bump = user_fund.bump
+  )]
+  pub user_fund: Box<Account<'info, UserFund>>,
+
+  #[account(        
+    mut,
+    seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
+    bump    
+  )]
+  pub basket_config: Box<Account<'info, BasketConfig>>,
+
+    #[account(
+      mut,
+      address = NATIVE_MINT
+    )]
+    pub wsol_mint: InterfaceAccount<'info, Mint>,
+    #[account(
+        mut,
+        token::mint = wsol_mint,
+        token::authority = user
+    )]
+    pub user_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(
+      mut,
+      token::mint = NATIVE_MINT,
+      token::authority = basket_config
+  )]
+  pub vault_wsol_account:  Box<InterfaceAccount<'info, TokenAccount>>,
+
+  pub token_program: Program<'info, Token>,
+  pub system_program: Program<'info, System>,
+}
+
+#[event]
+pub struct DepositWsolEvent {
+    pub basket_id: u64,
+    pub user: Pubkey,
+    pub amount: u64,
+}
+
+pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
+    let user_fund = &mut ctx.accounts.user_fund;
+
+    transfer_from_user_to_pool_vault(
+        &ctx.accounts.user_wsol_account.to_account_info(),
+        &ctx.accounts.vault_wsol_account.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.token_program,
+        amount
+    )?;
+
+    user_fund.upsert_component(
+        ctx.accounts.wsol_mint.key(),
+        amount
+    )?;
+    emit!(DepositWsolEvent {
+        basket_id: ctx.accounts.basket_config.id,
+        user: ctx.accounts.user.key(),
+        amount
+    });
+
+    Ok(())
+}

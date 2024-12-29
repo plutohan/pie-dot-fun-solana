@@ -1,0 +1,98 @@
+use anchor_lang::prelude::*;
+use anchor_spl::{
+    token::Token, token_interface::{Mint, TokenAccount}
+};
+
+use crate::{
+    constant::USER_FUND, error::PieError, utils::transfer_from_pool_vault_to_user, BasketConfig, UserFund, BASKET_CONFIG, NATIVE_MINT 
+};
+
+#[derive(Accounts)]
+pub struct WithdrawSol<'info> {
+  #[account(mut)]
+  pub user: Signer<'info>,
+
+  #[account(
+      mut,
+      seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
+      bump = user_fund.bump
+  )]
+  pub user_fund: Box<Account<'info, UserFund>>,
+
+  #[account(        
+    mut,
+    seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
+    bump    
+  )]
+  pub basket_config: Box<Account<'info, BasketConfig>>,
+
+    #[account(
+      mut,
+      address = NATIVE_MINT
+    )]
+    pub wsol_mint: InterfaceAccount<'info, Mint>,
+    #[account(
+        mut,
+        token::mint = wsol_mint,
+        token::authority = user
+    )]
+    pub user_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(
+      mut,
+      token::mint = NATIVE_MINT,
+      token::authority = basket_config
+  )]
+  pub vault_wsol_account:  Box<InterfaceAccount<'info, TokenAccount>>,
+
+  pub token_program: Program<'info, Token>,
+  pub system_program: Program<'info, System>,
+}
+
+#[event]
+pub struct WithdrawWsolEvent {
+    pub basket_id: u64,
+    pub user: Pubkey,
+    pub amount: u64,
+}
+
+pub fn withdraw_wsol(ctx: Context<WithdrawSol>, amount: u64) -> Result<()> {
+    let user_fund = &mut ctx.accounts.user_fund;
+
+    let component = user_fund
+    .components
+    .iter_mut()
+    .find(|a| a.mint == ctx.accounts.wsol_mint.key())
+    .ok_or(PieError::ComponentNotFound)?;
+
+    require!(component.amount >= amount, PieError::InsufficientBalance);
+
+    let signer: &[&[&[u8]]] = &[&[
+        BASKET_CONFIG,
+        &ctx.accounts.basket_config.id.to_be_bytes(),
+        &[ctx.accounts.basket_config.bump],
+    ]];
+
+
+    transfer_from_pool_vault_to_user(
+        &ctx.accounts.vault_wsol_account.to_account_info(),
+        &ctx.accounts.user_wsol_account.to_account_info(),
+        &ctx.accounts.basket_config.to_account_info(),
+        &ctx.accounts.token_program,
+        amount,
+        signer
+    )?;
+
+    // Update user's component balance
+    component.amount = component.amount.checked_sub(amount).unwrap();
+    // Remove components with zero amount
+    user_fund.components.retain(|component| component.amount > 0);
+
+    emit!(WithdrawWsolEvent {
+        basket_id: ctx.accounts.basket_config.id,
+        user: ctx.accounts.user.key(),
+        amount
+    });
+
+    Ok(())
+}
