@@ -38,14 +38,7 @@ describe("pie", () => {
   const addressLookupTableMap = new Map<string, PublicKey>();
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-  const pieProgram = new PieProgram(connection);
-
-  let raydium: Raydium;
-
-  beforeEach(async () => {
-    //init raydium
-    raydium = await initSdk(connection, "devnet");
-  });
+  const pieProgram = new PieProgram(connection, "devnet");
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
@@ -213,7 +206,6 @@ describe("pie", () => {
 
     for (let i = 0; i < createBasketArgs.components.length; i++) {
       newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable(
-        raydium,
         connection,
         admin,
         tokens[i].ammId,
@@ -289,7 +281,6 @@ describe("pie", () => {
 
     for (let i = 0; i < createBasketArgs.components.length; i++) {
       newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable(
-        raydium,
         connection,
         admin,
         tokens[i].ammId,
@@ -399,7 +390,6 @@ describe("pie", () => {
             basketId,
             maxAmountIn: 1 * LAMPORTS_PER_SOL,
             amountOut: 2000000,
-            raydium,
             ammId: tokens[i].ammId,
             unwrapSol: true,
           })
@@ -411,7 +401,6 @@ describe("pie", () => {
             basketId,
             maxAmountIn: 1 * LAMPORTS_PER_SOL,
             amountOut: 2000000,
-            raydium,
             ammId: tokens[i].ammId,
             unwrapSol: false,
           })
@@ -463,7 +452,6 @@ describe("pie", () => {
         basketId,
         maxAmountIn: 1 * LAMPORTS_PER_SOL,
         amountOut: 20000000,
-        raydium,
         ammId: tokens[i].ammId,
       });
       tx.add(buyComponentTx);

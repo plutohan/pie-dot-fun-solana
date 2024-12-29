@@ -41,20 +41,13 @@ import { QUICKNODE_RPC_URL } from "../sdk/constants";
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(mainnetAdmin));
   const connection = new Connection(QUICKNODE_RPC_URL, "confirmed");
-  const pieProgram = new PieProgram(connection);
+  const pieProgram = new PieProgram(connection, "mainnet-beta");
   const priorityFee = 100000;
   const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: priorityFee,
   });
   const swapsPerBundle = 3;
   const slippage = 100;
-
-  let raydium: Raydium;
-
-  beforeEach(async () => {
-    //init raydium
-    raydium = await initSdk(connection, "mainnet");
-  });
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
@@ -275,7 +268,6 @@ describe("pie", () => {
       basketId,
       slippage,
       mintAmount,
-      raydium,
       swapsPerBundle,
       tokenInfo: tokens,
     });
@@ -341,7 +333,6 @@ describe("pie", () => {
       basketId,
       slippage,
       redeemAmount,
-      raydium,
       swapsPerBundle,
       tokenInfo: tokens,
     });
@@ -406,7 +397,6 @@ describe("pie", () => {
       slippage,
       swapsPerBundle,
       rebalanceInfo,
-      raydium,
       withStartRebalance: true,
       withStopRebalance: true,
     });

@@ -38,14 +38,7 @@ describe("pie", () => {
   const addressLookupTableMap = new Map<string, PublicKey>();
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-  const pieProgram = new PieProgram(connection);
-
-  let raydium: Raydium;
-
-  beforeEach(async () => {
-    //init raydium
-    raydium = await initSdk(connection, "devnet");
-  });
+  const pieProgram = new PieProgram(connection, "devnet");
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
@@ -252,7 +245,6 @@ describe("pie", () => {
         basketId,
         new BN(1 * LAMPORTS_PER_SOL),
         new BN(200000000),
-        raydium,
         new PublicKey(tokensClmm[i].mint),
         tokensClmm[i].poolId
       );
@@ -288,7 +280,6 @@ describe("pie", () => {
         admin.publicKey,
         basketId,
         new BN(20000),
-        raydium,
         new PublicKey(tokensClmm[i].mint),
         tokensClmm[i].poolId,
         false

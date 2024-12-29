@@ -38,14 +38,7 @@ describe("pie", () => {
   const addressLookupTableMap = new Map<string, PublicKey>();
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-  const pieProgram = new PieProgram(connection);
-
-  let raydium: Raydium;
-
-  beforeEach(async () => {
-    //init raydium
-    raydium = await initSdk(connection, "devnet");
-  });
+  const pieProgram = new PieProgram(connection, "devnet");
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
@@ -153,7 +146,7 @@ describe("pie", () => {
       {
         mint: new PublicKey(tokensCpmm[0].mint),
         quantityInSysDecimal: new BN(1 * 10 ** 6),
-      }
+      },
     ];
 
     const createBasketArgs: CreateBasketArgs = {
@@ -178,7 +171,6 @@ describe("pie", () => {
 
     for (let i = 0; i < createBasketArgs.components.length; i++) {
       newLookupTable = await pieProgram.addRaydiumCpmmToAddressLookupTable(
-        raydium,
         connection,
         admin,
         tokensCpmm[i].poolId,
@@ -265,12 +257,11 @@ describe("pie", () => {
     const amountWantToBuy = 2000000;
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
-
       const buyComponentTx = await pieProgram.buyComponentCpmm(
         admin.publicKey,
         basketId,
         amountWantToBuy,
-        raydium,
+
         tokensCpmm[i].poolId
       );
 
@@ -364,8 +355,10 @@ describe("pie", () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
-    
-    const componentToSell = userFund.components.find(component => component.mint.toString() == tokensCpmm[0].mint);
+
+    const componentToSell = userFund.components.find(
+      (component) => component.mint.toString() == tokensCpmm[0].mint
+    );
 
     const sellComponentTx = await pieProgram.sellComponentCpmm(
       admin.publicKey,
@@ -373,7 +366,7 @@ describe("pie", () => {
       componentToSell.mint,
       Math.floor(componentToSell.amount.toNumber() / 2),
       0,
-      raydium,
+
       tokensCpmm[0].poolId,
       true
     );
@@ -455,8 +448,7 @@ describe("pie", () => {
       "0",
       tokensCpmm[0].poolId,
       basketId,
-      new PublicKey(tokensCpmm[0].mint),
-      raydium
+      new PublicKey(tokensCpmm[0].mint)
     );
 
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
@@ -503,8 +495,7 @@ describe("pie", () => {
       "20",
       newBasketBuy.ammId,
       basketId,
-      new PublicKey(newBasketBuy.mint),
-      raydium
+      new PublicKey(newBasketBuy.mint)
     );
 
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
@@ -522,7 +513,6 @@ describe("pie", () => {
       const lookupTable = addressLookupTableMap.get(basketId.toString());
 
       await pieProgram.addRaydiumCpmmToAddressLookupTable(
-        raydium,
         connection,
         admin,
         newBasketBuy.ammId,

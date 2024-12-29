@@ -8,6 +8,7 @@ import {
 } from "@coral-xyz/anchor";
 import {
   AddressLookupTableAccount,
+  Cluster,
   ComputeBudgetProgram,
   Connection,
   Keypair,
@@ -94,7 +95,20 @@ const MPL_TOKEN_METADATA_PROGRAM_ID = new PublicKey(
 );
 
 export class PieProgram {
-  constructor(public readonly connection: Connection) {}
+  constructor(public readonly connection: Connection, cluster: Cluster) {
+    this.loadRaydium(connection, cluster);
+  }
+
+  async loadRaydium(connection: Connection, cluster: Cluster) {
+    this.raydium = await Raydium.load({
+      connection: connection as any,
+      cluster: cluster as any,
+      disableFeatureCheck: true,
+      blockhashCommitment: "finalized",
+    });
+  }
+
+  raydium: Raydium;
 
   get program() {
     return new Program(PieIDL as Idl, { connection: this.connection });
@@ -415,7 +429,6 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
@@ -424,7 +437,6 @@ export class PieProgram {
     basketId,
     maxAmountIn,
     amountOut,
-    raydium,
     ammId,
     unwrapSol = true,
   }: {
@@ -432,12 +444,11 @@ export class PieProgram {
     basketId: BN;
     maxAmountIn: number;
     amountOut: number;
-    raydium: Raydium;
     ammId: string;
     unwrapSol?: boolean;
   }): Promise<Transaction> {
     const tx = new Transaction();
-    const data = await raydium.liquidity.getPoolInfoFromRpc({
+    const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
     const inputMint = NATIVE_MINT;
@@ -508,7 +519,6 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
@@ -516,11 +526,10 @@ export class PieProgram {
     user: PublicKey,
     basketId: BN,
     amountOut: number,
-    raydium: Raydium,
     poolId: string
   ): Promise<Transaction> {
     const tx = new Transaction();
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+    const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
     const basketConfig = this.basketConfigPDA(basketId);
 
     const poolKeys = data.poolKeys;
@@ -612,7 +621,6 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param poolId - The CLMM pool ID.
    * @returns A promise that resolves to a transaction.
    */
@@ -621,14 +629,13 @@ export class PieProgram {
     basketId: BN,
     maxAmountIn: BN,
     amountOut: BN,
-    raydium: Raydium,
     outputMint: PublicKey,
     poolId: string
   ): Promise<Transaction> {
     const tx = new Transaction();
     const basketConfig = this.basketConfigPDA(basketId);
 
-    const data = await raydium.clmm.getPoolInfoFromRpc(poolId);
+    const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
     const poolInfo = data.poolInfo;
     const poolKeys = data.poolKeys;
     const clmmPoolInfo = data.computePoolInfo;
@@ -639,7 +646,7 @@ export class PieProgram {
       amountOut,
       baseMint: outputMint,
       slippage: 0.01,
-      epochInfo: await raydium.fetchEpochInfo(),
+      epochInfo: await this.raydium.fetchEpochInfo(),
     });
 
     let sqrtPriceLimitX64: BN;
@@ -730,7 +737,6 @@ export class PieProgram {
     basketId,
     amountIn,
     minimumAmountOut,
-    raydium,
     ammId,
     createNativeMintATA,
     unwrapSol,
@@ -740,14 +746,13 @@ export class PieProgram {
     basketId: BN;
     amountIn: number;
     minimumAmountOut: number;
-    raydium: Raydium;
     ammId: string;
     createNativeMintATA?: boolean;
     unwrapSol?: boolean;
   }): Promise<Transaction> {
     const tx = new Transaction();
     const basketMint = this.basketMintPDA(basketId);
-    const data = await raydium.liquidity.getPoolInfoFromRpc({
+    const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
 
@@ -816,7 +821,6 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
@@ -826,7 +830,6 @@ export class PieProgram {
     inputMint: PublicKey,
     amountIn: number,
     minimumAmountOut: number,
-    raydium: Raydium,
     poolId: string,
     unwrappedSol: boolean
   ): Promise<Transaction> {
@@ -834,7 +837,7 @@ export class PieProgram {
     const basketConfig = this.basketConfigPDA(basketId);
     const basketMint = this.basketMintPDA(basketId);
 
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+    const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
@@ -913,7 +916,6 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
@@ -921,7 +923,6 @@ export class PieProgram {
     user: PublicKey,
     basketId: BN,
     amountIn: BN,
-    raydium: Raydium,
     inputMint: PublicKey,
     poolId: string,
     unwrappedSol: boolean
@@ -929,7 +930,7 @@ export class PieProgram {
     const tx = new Transaction();
     const basketConfig = this.basketConfigPDA(basketId);
 
-    const data = await raydium.clmm.getPoolInfoFromRpc(poolId);
+    const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
     const poolInfo = data.poolInfo;
     const poolKeys = data.poolKeys;
     const clmmPoolInfo = data.computePoolInfo;
@@ -943,7 +944,7 @@ export class PieProgram {
         amountIn,
         tokenOut: poolInfo[baseIn ? "mintB" : "mintA"],
         slippage: 0.01,
-        epochInfo: await raydium.fetchEpochInfo(),
+        epochInfo: await this.raydium.fetchEpochInfo(),
       });
 
     let sqrtPriceLimitX64: BN;
@@ -1171,7 +1172,6 @@ export class PieProgram {
     ammId,
     basketId,
     tokenMint,
-    raydium,
     createTokenAccount = true,
   }: {
     rebalancer: PublicKey;
@@ -1181,11 +1181,10 @@ export class PieProgram {
     ammId: string;
     basketId: BN;
     tokenMint: PublicKey;
-    raydium: Raydium;
     createTokenAccount?: boolean;
   }): Promise<Transaction | null> {
     const tx = new Transaction();
-    const data = await raydium.liquidity.getPoolInfoFromRpc({
+    const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
 
@@ -1275,11 +1274,10 @@ export class PieProgram {
     amountOut: string,
     poolId: string,
     basketId: BN,
-    tokenMint: PublicKey,
-    raydium: Raydium
+    tokenMint: PublicKey
   ): Promise<Transaction | null> {
     const tx = new Transaction();
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+    const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
     const basketMint = this.basketMintPDA(basketId);
     const basketConfig = this.basketConfigPDA(basketId);
 
@@ -1370,14 +1368,13 @@ export class PieProgram {
   }
 
   async addRaydiumAmmToAddressLookupTable(
-    raydium: Raydium,
     connection: Connection,
     signer: Keypair,
     ammId: string,
     basketId: BN,
     lookupTable?: PublicKey
   ) {
-    const data = await raydium.liquidity.getPoolInfoFromRpc({
+    const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
     const MAX_LOOKUP_TABLE_ADDRESS = 256;
@@ -1437,14 +1434,13 @@ export class PieProgram {
   }
 
   async addRaydiumCpmmToAddressLookupTable(
-    raydium: Raydium,
     connection: Connection,
     signer: Keypair,
     poolId: string,
     basketId: BN,
     lookupTable?: PublicKey
   ) {
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+    const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
     const MAX_LOOKUP_TABLE_ADDRESS = 256;
     const basketMint = this.basketMintPDA(basketId);
     const basketConfig = this.basketConfigPDA(basketId);
@@ -1511,7 +1507,6 @@ export class PieProgram {
     basketId,
     slippage,
     mintAmount,
-    raydium,
     swapsPerBundle,
     tokenInfo,
   }: {
@@ -1519,7 +1514,6 @@ export class PieProgram {
     basketId: BN;
     slippage: number;
     mintAmount: number;
-    raydium: Raydium;
     swapsPerBundle: number;
     tokenInfo: TokenInfo[];
   }): Promise<string[]> {
@@ -1605,7 +1599,6 @@ export class PieProgram {
         basketId,
         maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
         amountOut: Number(swapDataResult[i].data.outputAmount),
-        raydium,
         ammId: tokenInfo[i].ammId,
         unwrapSol: false,
       });
@@ -1658,7 +1651,6 @@ export class PieProgram {
     basketId,
     slippage,
     redeemAmount,
-    raydium,
     swapsPerBundle,
     tokenInfo,
   }: {
@@ -1666,7 +1658,6 @@ export class PieProgram {
     basketId: BN;
     slippage: number;
     redeemAmount: number;
-    raydium: Raydium;
     swapsPerBundle: number;
     tokenInfo: TokenInfo[];
   }): Promise<string[]> {
@@ -1738,7 +1729,6 @@ export class PieProgram {
         basketId,
         amountIn: Number(swapDataResult[i].data.inputAmount),
         minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-        raydium,
         ammId: tokenInfo[i].ammId,
       });
       tx.add(sellComponentTx);
@@ -1775,7 +1765,6 @@ export class PieProgram {
   async createRebalanceBundle({
     basketId,
     rebalancer,
-    raydium,
     slippage,
     swapsPerBundle,
     rebalanceInfo,
@@ -1784,7 +1773,6 @@ export class PieProgram {
   }: {
     rebalancer: PublicKey;
     basketId: BN;
-    raydium: Raydium;
     slippage: number;
     swapsPerBundle: number;
     rebalanceInfo: RebalanceInfo[];
@@ -1881,7 +1869,6 @@ export class PieProgram {
         ammId: rebalanceInfo[i].ammId,
         basketId,
         tokenMint: new PublicKey(rebalanceInfo[i].mint),
-        raydium,
         createTokenAccount: false,
       });
       tx.add(rebalanceTx);
