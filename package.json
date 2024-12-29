@@ -1,4 +1,15 @@
 {
+  "name": "@ao-labs/pie-dot-fun-solana",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ao-labs/pie-dot-fun-solana"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "sdk/pie-program.ts",
+  "author": "ao-labs",
   "license": "ISC",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
