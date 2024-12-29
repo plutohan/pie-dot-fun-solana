@@ -7,8 +7,8 @@ use raydium_cpmm_cpi::{
     states::{AmmConfig, ObservationState, PoolState},
 };
 
-use crate::{utils::Calculator, ExecuteRebalancingEvent};
 use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
+use crate::{utils::Calculator, ExecuteRebalancingEvent};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancingCpmm<'info> {
@@ -98,8 +98,11 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
         &[basket_config.bump],
     ]];
 
+    // Initial balances
     let initial_source_balance = ctx.accounts.vault_token_source.amount;
     let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
+
+    // Prepare CPI accounts
     let cpi_accounts = cpi::accounts::Swap {
         payer: basket_config.to_account_info(),
         authority: ctx.accounts.authority.to_account_info(),
@@ -123,6 +126,7 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
     );
 
     if is_buy {
+        // Perform the buy swap with the original amounts
         cpi::swap_base_output(cpi_context, amount_in, amount_out)?;
         ctx.accounts.vault_token_destination.reload()?;
 
@@ -145,7 +149,12 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
             });
         }
     } else {
-        cpi::swap_base_input(cpi_context, amount_in, amount_out)?;
+        // Calculate the minimum amount to swap only for sell
+        let input_vault_balance = ctx.accounts.input_vault.amount;
+        let min_swap_amount_in = std::cmp::min(amount_in, input_vault_balance);
+
+        // Perform the sell swap with the calculated minimum amount
+        cpi::swap_base_input(cpi_context, min_swap_amount_in, amount_out)?;
 
         ctx.accounts.vault_token_source.reload()?;
 

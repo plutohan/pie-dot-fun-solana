@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "XtrD5KCgV6wCHD9rCaPT6RaUA4SjEAuCSdfRgfNoH1b",
+  "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -2165,32 +2165,6 @@ export type Pie = {
           "signer": true
         },
         {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "vaultWrappedSol",
           "writable": true
         },
@@ -2398,58 +2372,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "updateRebalanceMargin",
-      "discriminator": [
-        230,
-        223,
-        85,
-        5,
-        40,
-        87,
-        87,
-        193
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        }
-      ],
-      "args": [
-        {
-          "name": "newMargin",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "updateRebalancer",
       "discriminator": [
         206,
@@ -2619,6 +2541,19 @@ export type Pie = {
       ]
     },
     {
+      "name": "depositWsolEvent",
+      "discriminator": [
+        196,
+        52,
+        26,
+        9,
+        198,
+        101,
+        172,
+        134
+      ]
+    },
+    {
       "name": "executeRebalancingEvent",
       "discriminator": [
         140,
@@ -2736,19 +2671,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "updateMaxRebalanceMarginEvent",
-      "discriminator": [
-        5,
-        89,
-        213,
-        109,
-        67,
-        201,
-        59,
-        195
-      ]
-    },
-    {
       "name": "updatePlatformFeeWalletEvent",
       "discriminator": [
         202,
@@ -2772,6 +2694,19 @@ export type Pie = {
         132,
         153,
         70
+      ]
+    },
+    {
+      "name": "withdrawWsolEvent",
+      "discriminator": [
+        36,
+        236,
+        197,
+        89,
+        39,
+        95,
+        209,
+        74
       ]
     }
   ],
@@ -3128,6 +3063,26 @@ export type Pie = {
       }
     },
     {
+      "name": "depositWsolEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "executeRebalancingEvent",
       "type": {
         "kind": "struct",
@@ -3463,10 +3418,6 @@ export type Pie = {
             "type": "u64"
           },
           {
-            "name": "rebalanceMarginLamports",
-            "type": "u64"
-          },
-          {
             "name": "creatorFeePercentage",
             "type": "u64"
           },
@@ -3640,18 +3591,6 @@ export type Pie = {
       }
     },
     {
-      "name": "updateMaxRebalanceMarginEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "newMargin",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "updatePlatformFeeWalletEvent",
       "type": {
         "kind": "struct",
@@ -3717,6 +3656,26 @@ export type Pie = {
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "withdrawWsolEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }

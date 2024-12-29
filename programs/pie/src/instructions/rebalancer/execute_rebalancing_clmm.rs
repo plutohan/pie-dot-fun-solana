@@ -123,6 +123,7 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         &basket_config.id.to_be_bytes(),
         &[basket_config.bump],
     ]];
+
     let initial_source_balance = ctx.accounts.vault_token_source.amount;
     let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
 
@@ -149,6 +150,7 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
     .with_remaining_accounts(ctx.remaining_accounts.to_vec());
 
     if is_buy {
+        // Perform a buy swap
         cpi::swap_v2(
             cpi_context,
             amount,
@@ -177,9 +179,14 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
             });
         }
     } else {
+        // Calculate the minimum amount to swap
+        let input_vault_balance = ctx.accounts.vault_token_source.amount;
+        let min_amount = std::cmp::min(amount, input_vault_balance);
+
+        // Perform a sell swap with the calculated minimum amount
         cpi::swap_v2(
             cpi_context,
-            amount,
+            min_amount,
             other_amount_threshold,
             sqrt_price_limit_x64,
             true,

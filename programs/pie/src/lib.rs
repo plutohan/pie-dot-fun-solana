@@ -43,14 +43,6 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn update_rebalance_margin(
-        ctx: Context<UpdateRebalanceMarginContext>,
-        new_margin: u64,
-    ) -> Result<()> {
-        instructions::update_rebalance_margin(ctx, new_margin)?;
-        Ok(())
-    }
-
     pub fn update_platform_fee_wallet(
         ctx: Context<UpdatePlatformFeeWalletContext>,
         new_platform_fee_wallet: Pubkey,
