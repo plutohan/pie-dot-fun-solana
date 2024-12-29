@@ -8,7 +8,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "main": "sdk/pie-program.ts",
+  "main": "sdk/index.ts",
   "author": "ao-labs",
   "license": "ISC",
   "scripts": {
