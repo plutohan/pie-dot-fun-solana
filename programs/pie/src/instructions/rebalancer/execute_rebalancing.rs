@@ -208,11 +208,10 @@ pub fn execute_swap<'a: 'info, 'info>(
     } else {
         if let Some(component) = basket_config.find_component_mut(accounts.vault_token_source.mint)
         {
+            let amount_restore = Calculator::restore_raw_decimal(component.quantity_in_sys_decimal.checked_mul(total_supply.try_into().unwrap()).unwrap());
             let amount_available = min(
                 amount_in,
-                total_supply
-                    .checked_mul(component.quantity_in_sys_decimal.try_into().unwrap())
-                    .unwrap(),
+                amount_restore,
             );
 
             let swap_base_in_inx = swap_base_in(

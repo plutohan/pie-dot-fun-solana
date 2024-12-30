@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use anchor_lang::prelude::*;
 use anchor_spl::memo::Memo;
 use anchor_spl::token::Token;
@@ -8,6 +10,7 @@ use raydium_clmm_cpi::{
     program::RaydiumClmm,
 };
 
+use crate::utils::Calculator;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use crate::{ExecuteRebalancingEvent, ProgramState, NATIVE_MINT, PROGRAM_STATE};
 
@@ -165,22 +168,46 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
             total_supply,
         )?;
     } else {
-        // Perform a sell swap
-        let min_amount = std::cmp::min(amount, ctx.accounts.vault_token_source.amount);
-        cpi::swap_v2(
-            cpi_context,
-            min_amount,
-            other_amount_threshold,
-            sqrt_price_limit_x64,
-            true,
-        )?;
-        ctx.accounts.vault_token_source.reload()?;
 
-        basket_config.upsert_component(
-            ctx.accounts.input_vault_mint.key(),
-            ctx.accounts.vault_token_source.amount,
-            total_supply,
-        )?;
+        if let Some(component) =
+            basket_config.find_component_mut(ctx.accounts.vault_token_source.mint)
+        {
+            let amount_restore = Calculator::restore_raw_decimal(
+                component
+                    .quantity_in_sys_decimal
+                    .checked_mul(total_supply.try_into().unwrap())
+                    .unwrap(),
+            );
+            let amount_available = min(amount, amount_restore);
+
+            cpi::swap_v2(
+                cpi_context,
+                amount_available,
+                other_amount_threshold,
+                sqrt_price_limit_x64,
+                true,
+            )?;
+            ctx.accounts.vault_token_source.reload()?;
+            let token_mint = ctx.accounts.vault_token_source.mint;
+
+            // Simplified using upsert_component or remove_component
+            let quantity_in_sys_decimal =
+                Calculator::apply_sys_decimal(ctx.accounts.vault_token_source.amount)
+                    .checked_div(total_supply.try_into().unwrap())
+                    .unwrap();
+
+            if quantity_in_sys_decimal == 0 {
+                basket_config.remove_component(token_mint);
+            } else {
+                basket_config.upsert_component(
+                    token_mint,
+                    ctx.accounts.vault_token_source.amount,
+                    total_supply,
+                )?;
+            }
+        } else {
+            return Err(PieError::ComponentNotFound.into());
+        }
     }
 
     // Fetch final balances
