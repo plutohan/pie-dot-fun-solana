@@ -5,7 +5,7 @@ use anchor_spl::token::{Mint, Token};
 
 use std::collections::HashSet;
 
-use crate::BASKET_MINT;
+use crate::{BASKET_DECIMALS, BASKET_MINT};
 use crate::{
     constant::{BASKET_CONFIG, PROGRAM_STATE},
     error::PieError,
@@ -38,7 +38,7 @@ pub struct CreateBasketContext<'info> {
         seeds = [BASKET_MINT, &program_state.basket_counter.to_be_bytes()],
         bump,
         payer = creator,
-        mint::decimals = args.decimals,
+        mint::decimals = BASKET_DECIMALS,
         mint::authority = basket_config,
     )]
     pub basket_mint: Account<'info, Mint>,
@@ -63,7 +63,6 @@ pub struct CreateBasketArgs {
     pub name: String,
     pub symbol: String,
     pub uri: String,
-    pub decimals: u8,
     pub rebalancer: Pubkey,
 }
 

@@ -161,7 +161,6 @@ describe("pie", () => {
       symbol: "BNS",
       uri: "test",
       components: components,
-      decimals: 6,
       rebalancer: admin.publicKey,
     };
 
@@ -497,14 +496,16 @@ describe("pie", () => {
     );
 
     const executeRebalanceTx = await pieProgram.executeRebalancing(
-      admin.publicKey,
+    {
+      rebalancer: admin.publicKey,
       isBuy,
-      new BN(vaultWrappedSolBalance.value.amount).div(new BN(2)).toString(),
-      "20",
-      newBasketBuy.ammId,
+      amountIn: new BN(vaultWrappedSolBalance.value.amount).div(new BN(2)).toString(),
+      amountOut: "20",
+      ammId: newBasketBuy.ammId,
       basketId,
-      new PublicKey(newBasketBuy.mint),
+      tokenMint: new PublicKey(newBasketBuy.mint),
       raydium
+    }
     );
 
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
