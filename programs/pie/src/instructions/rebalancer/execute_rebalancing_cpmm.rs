@@ -7,8 +7,8 @@ use raydium_cpmm_cpi::{
     states::{AmmConfig, ObservationState, PoolState},
 };
 
-use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
-use crate::{utils::Calculator, ExecuteRebalancingEvent};
+use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
+use crate::ExecuteRebalancingEvent;
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancingCpmm<'info> {
@@ -126,54 +126,33 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
     );
 
     if is_buy {
-        // Perform the buy swap with the original amounts
+        // Perform the buy swap
         cpi::swap_base_output(cpi_context, amount_in, amount_out)?;
         ctx.accounts.vault_token_destination.reload()?;
 
         let token_mint = ctx.accounts.output_token_mint.key();
-        let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(ctx.accounts.vault_token_destination.amount)
-                .checked_div(total_supply.try_into().unwrap())
-                .unwrap();
 
-        if let Some(component) = basket_config
-            .components
-            .iter_mut()
-            .find(|c| c.mint == token_mint)
-        {
-            component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-        } else {
-            basket_config.components.push(BasketComponent {
-                mint: token_mint,
-                quantity_in_sys_decimal,
-            });
-        }
+        basket_config.upsert_component(
+            token_mint,
+            ctx.accounts.vault_token_destination.amount,
+            total_supply,
+        )?;
     } else {
-        // Calculate the minimum amount to swap only for sell
+        // Perform the sell swap
         let input_vault_balance = ctx.accounts.input_vault.amount;
         let min_swap_amount_in = std::cmp::min(amount_in, input_vault_balance);
 
-        // Perform the sell swap with the calculated minimum amount
         cpi::swap_base_input(cpi_context, min_swap_amount_in, amount_out)?;
 
         ctx.accounts.vault_token_source.reload()?;
 
         let token_mint = ctx.accounts.input_token_mint.key();
-        let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(ctx.accounts.vault_token_source.amount)
-                .checked_div(total_supply.try_into().unwrap())
-                .unwrap();
+        let remaining_balance = ctx.accounts.vault_token_source.amount;
 
-        if quantity_in_sys_decimal == 0 {
-            basket_config.components.retain(|c| c.mint != token_mint);
+        if remaining_balance == 0 {
+            basket_config.remove_component(token_mint);
         } else {
-            if let Some(component) = basket_config
-                .components
-                .iter_mut()
-                .find(|c| c.mint == token_mint)
-            {
-                component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-            }
+            basket_config.upsert_component(token_mint, remaining_balance, total_supply)?;
         }
     }
 

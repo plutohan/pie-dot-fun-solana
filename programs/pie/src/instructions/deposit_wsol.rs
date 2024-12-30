@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    token::Token, token_interface::{Mint, TokenAccount}
+    token::Token, token_interface::TokenAccount
 };
 
 use crate::{
@@ -32,15 +32,9 @@ pub struct DepositWsol<'info> {
         bump    
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
-
-    #[account(
-      mut,
-      address = NATIVE_MINT
-    )]
-    pub wsol_mint: InterfaceAccount<'info, Mint>,
     #[account(
         mut,
-        token::mint = wsol_mint,
+        token::mint = NATIVE_MINT,
         token::authority = user
     )]
     pub user_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
@@ -101,7 +95,7 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
     )?;
 
     user_fund.upsert_component(
-        ctx.accounts.wsol_mint.key(),
+        NATIVE_MINT,
         amount
     )?;
     emit!(DepositWsolEvent {

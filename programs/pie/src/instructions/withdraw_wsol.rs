@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    token::Token, token_interface::{Mint, TokenAccount}
+    token::Token, token_interface::TokenAccount
 };
 
 use crate::{
@@ -33,19 +33,14 @@ pub struct WithdrawSol<'info> {
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
-        #[account(
+    #[account(
         mut,
-        address = NATIVE_MINT
-        )]
-        pub wsol_mint: InterfaceAccount<'info, Mint>,
-        #[account(
-            mut,
-            token::mint = wsol_mint,
-            token::authority = user
-        )]
-        pub user_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
+        token::mint = NATIVE_MINT,
+        token::authority = user
+    )]
+    pub user_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
-        #[account(
+    #[account(
         mut,
         token::mint = NATIVE_MINT,
         token::authority = basket_config
@@ -83,7 +78,7 @@ pub fn withdraw_wsol(ctx: Context<WithdrawSol>, amount: u64) -> Result<()> {
     let component = user_fund
     .components
     .iter_mut()
-    .find(|a| a.mint == ctx.accounts.wsol_mint.key())
+    .find(|a| a.mint == NATIVE_MINT)
     .ok_or(PieError::ComponentNotFound)?;
 
     require!(component.amount >= amount, PieError::InsufficientBalance);

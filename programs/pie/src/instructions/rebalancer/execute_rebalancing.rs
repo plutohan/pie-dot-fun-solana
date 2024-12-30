@@ -11,7 +11,7 @@ use raydium_amm_cpi::{
 };
 
 use crate::utils::Calculator;
-use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
+use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancing<'info> {
@@ -197,38 +197,21 @@ pub fn execute_swap<'a: 'info, 'info>(
         )?;
 
         accounts.vault_token_destination.reload()?;
-
         let token_mint = accounts.vault_token_destination.mint;
-        let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(accounts.vault_token_destination.amount)
-                .checked_div(total_supply.try_into().unwrap())
-                .unwrap();
 
-        // **New validation step:** Ensure quantity_in_sys_decimal is not zero.
-        require!(quantity_in_sys_decimal > 0, PieError::InvalidQuantity);
-
-        if let Some(component) = basket_config
-            .components
-            .iter_mut()
-            .find(|c| c.mint == token_mint)
-        {
-            component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-        } else {
-            basket_config.components.push(BasketComponent {
-                mint: token_mint,
-                quantity_in_sys_decimal,
-            });
-        }
+        // Simplified using upsert_component
+        basket_config.upsert_component(
+            token_mint,
+            accounts.vault_token_destination.amount,
+            total_supply,
+        )?;
     } else {
-        if let Some(component) = basket_config
-            .components
-            .iter()
-            .find(|c| c.mint == accounts.vault_token_source.mint)
+        if let Some(component) = basket_config.find_component_mut(accounts.vault_token_source.mint)
         {
-            let amount_swapped = min(
+            let amount_available = min(
                 amount_in,
                 total_supply
-                    .checked_mul(component.quantity_in_sys_decimal as u64)
+                    .checked_mul(component.quantity_in_sys_decimal.try_into().unwrap())
                     .unwrap(),
             );
 
@@ -250,7 +233,7 @@ pub fn execute_swap<'a: 'info, 'info>(
                 &accounts.vault_token_source.key(),
                 &accounts.vault_token_destination.key(),
                 &basket_config.key(),
-                amount_swapped,
+                amount_available,
                 amount_out,
             )?;
 
@@ -285,23 +268,22 @@ pub fn execute_swap<'a: 'info, 'info>(
             )?;
 
             accounts.vault_token_source.reload()?;
-
             let token_mint = accounts.vault_token_source.mint;
+
+            // Simplified using upsert_component or remove_component
             let quantity_in_sys_decimal =
                 Calculator::apply_sys_decimal(accounts.vault_token_source.amount)
                     .checked_div(total_supply.try_into().unwrap())
                     .unwrap();
 
             if quantity_in_sys_decimal == 0 {
-                basket_config.components.retain(|c| c.mint != token_mint);
+                basket_config.remove_component(token_mint);
             } else {
-                if let Some(component) = basket_config
-                    .components
-                    .iter_mut()
-                    .find(|c| c.mint == token_mint)
-                {
-                    component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-                }
+                basket_config.upsert_component(
+                    token_mint,
+                    accounts.vault_token_source.amount,
+                    total_supply,
+                )?;
             }
         } else {
             return Err(PieError::ComponentNotFound.into());
