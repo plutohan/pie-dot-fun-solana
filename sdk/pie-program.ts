@@ -264,7 +264,6 @@ export class PieProgram {
       }
     );
 
-    console.log(JSON.stringify(tokenAccounts));
 
     return tokenAccounts.value.map((tokenAccount) => ({
       mint: tokenAccount.account.data.parsed.info.mint,
