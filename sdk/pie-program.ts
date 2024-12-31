@@ -88,7 +88,6 @@ const PROGRAM_STATE = "program_state";
 const USER_FUND = "user_fund";
 const BASKET_CONFIG = "basket_config";
 const BASKET_MINT = "basket_mint";
-const REBALANCER_STATE = "rebalancer_state";
 
 const MPL_TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
@@ -164,13 +163,6 @@ export class PieProgram {
         mint.toBuffer(),
       ],
       new PublicKey(MPL_TOKEN_METADATA_PROGRAM_ID)
-    )[0];
-  }
-
-  rebalancerStatePDA({ rebalancer }: { rebalancer: PublicKey }): PublicKey {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from(REBALANCER_STATE), rebalancer.toBuffer()],
-      this.program.programId
     )[0];
   }
 
@@ -1208,7 +1200,6 @@ export class PieProgram {
           .startRebalancing()
           .accountsPartial({
             rebalancer,
-            rebalancerState: this.rebalancerStatePDA({ rebalancer }),
             basketConfig: this.basketConfigPDA({ basketId }),
           })
           .transaction();
@@ -1239,7 +1230,6 @@ export class PieProgram {
       .stopRebalancing()
       .accountsPartial({
         rebalancer,
-        rebalancerState: this.rebalancerStatePDA({ rebalancer }),
         basketConfig: basketPDA,
         vaultWrappedSol: vaultWrappedSol,
         wrappedSolMint: NATIVE_MINT,
@@ -1334,7 +1324,6 @@ export class PieProgram {
       .executeRebalancing(isBuy, new BN(amountIn), new BN(amountOut))
       .accountsPartial({
         rebalancer,
-        rebalancerState: this.rebalancerStatePDA({ rebalancer }),
         basketConfig: this.basketConfigPDA({ basketId }),
         tokenMint,
         basketMint,
@@ -1438,7 +1427,6 @@ export class PieProgram {
       .executeRebalancingCpmm(isBuy, new BN(amountIn), new BN(amountOut))
       .accountsPartial({
         rebalancer,
-        rebalancerState: this.rebalancerStatePDA({ rebalancer }),
         basketConfig: this.basketConfigPDA({ basketId }),
         tokenMint,
         basketMint,
