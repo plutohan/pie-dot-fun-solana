@@ -930,7 +930,29 @@
         },
         {
           "name": "program_state",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "basket_config",
@@ -3051,10 +3073,6 @@
             "type": "string"
           },
           {
-            "name": "decimals",
-            "type": "u8"
-          },
-          {
             "name": "rebalancer",
             "type": "pubkey"
           }
@@ -3680,6 +3698,10 @@
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
           {
             "name": "components",
             "type": {
