@@ -38,20 +38,15 @@ describe("pie", () => {
   const addressLookupTableMap = new Map<string, PublicKey>();
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-  const pieProgram = new PieProgram(connection);
-
-  let raydium: Raydium;
-
-  beforeEach(async () => {
-    //init raydium
-    raydium = await initSdk(connection, "devnet");
-  });
+  const pieProgram = new PieProgram(connection, "devnet");
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
 
     if (!programState) {
-      const initializeTx = await pieProgram.initialize(admin.publicKey);
+      const initializeTx = await pieProgram.initialize({
+        admin: admin.publicKey,
+      });
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,
         initializeTx,
@@ -73,10 +68,10 @@ describe("pie", () => {
       ? programState.rebalanceMarginLamports.toNumber()
       : 0;
     if (rebalanceMarginLamports == 0) {
-      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin(
-        admin.publicKey,
-        0.5 * LAMPORTS_PER_SOL
-      );
+      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin({
+        admin: admin.publicKey,
+        newMargin: 0.5 * LAMPORTS_PER_SOL,
+      });
       const updateRebalanceMarginTxResult = await sendAndConfirmTransaction(
         connection,
         updateRebalanceMarginTx,
@@ -93,11 +88,11 @@ describe("pie", () => {
 
     if (programState.platformFeePercentage.toNumber() == 0) {
       // mint redeem fee 1% and platform fee 0.5%
-      const updateFeeTx = await pieProgram.updateFee(
-        admin.publicKey,
-        1000,
-        500
-      );
+      const updateFeeTx = await pieProgram.updateFee({
+        admin: admin.publicKey,
+        newCreatorFeePercentage: 1000,
+        newPlatformFeePercentage: 500,
+      });
       const updateFeeTxResult = await sendAndConfirmTransaction(
         connection,
         updateFeeTx,
@@ -132,10 +127,10 @@ describe("pie", () => {
       new PublicKey("11111111111111111111111111111111").toBase58()
     ) {
       const updatePlatformFeeWalletTx =
-        await pieProgram.updatePlatformFeeWallet(
-          admin.publicKey,
-          admin.publicKey
-        );
+        await pieProgram.updatePlatformFeeWallet({
+          admin: admin.publicKey,
+          newPlatformFeeWallet: admin.publicKey,
+        });
       const updatePlatformFeeWalletTxResult = await sendAndConfirmTransaction(
         connection,
         updatePlatformFeeWalletTx,
@@ -153,7 +148,7 @@ describe("pie", () => {
       {
         mint: new PublicKey(tokensCpmm[0].mint),
         quantityInSysDecimal: new BN(1 * 10 ** 6),
-      }
+      },
     ];
 
     const createBasketArgs: CreateBasketArgs = {
@@ -166,24 +161,23 @@ describe("pie", () => {
 
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter;
-    const createBasketTx = await pieProgram.createBasket(
-      admin.publicKey,
-      createBasketArgs,
-      basketId
-    );
+    const createBasketTx = await pieProgram.createBasket({
+      creator: admin.publicKey,
+      args: createBasketArgs,
+      basketId,
+    });
 
     //add address to lookup table
     let newLookupTable: PublicKey;
 
     for (let i = 0; i < createBasketArgs.components.length; i++) {
-      newLookupTable = await pieProgram.addRaydiumCpmmToAddressLookupTable(
-        raydium,
+      newLookupTable = await pieProgram.addRaydiumCpmmToAddressLookupTable({
         connection,
-        admin,
-        tokensCpmm[i].poolId,
+        signer: admin,
+        poolId: tokensCpmm[i].poolId,
         basketId,
-        newLookupTable
-      );
+        lookupTable: newLookupTable,
+      });
     }
 
     if (!addressLookupTableMap.has(basketId.toString())) {
@@ -224,18 +218,18 @@ describe("pie", () => {
       .value;
 
     const { vaults, tx: createBasketVaultTx } =
-      await pieProgram.createBasketVaultAccounts(
-        admin.publicKey,
-        createBasketArgs,
-        basketId
-      );
+      await pieProgram.createBasketVaultAccounts({
+        creator: admin.publicKey,
+        args: createBasketArgs,
+        basketId,
+      });
     await finalizeTransaction(connection, admin, createBasketVaultTx, [lut]);
 
     if (vaults.length > 0) {
       await addAddressesToTable(connection, admin, addressLookupTable, vaults);
     }
 
-    const basket = await pieProgram.getBasketConfig(basketId);
+    const basket = await pieProgram.getBasketConfig({ basketId });
     assert.equal(basket.components.length, createBasketArgs.components.length);
     assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
     assert.equal(basket.id.toString(), basketId.toString());
@@ -260,18 +254,16 @@ describe("pie", () => {
   it("Buy Component CPMM", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
     const amountWantToBuy = 2000000;
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
-
-      const buyComponentTx = await pieProgram.buyComponentCpmm(
-        admin.publicKey,
+      const buyComponentTx = await pieProgram.buyComponentCpmm({
+        user: admin.publicKey,
         basketId,
-        amountWantToBuy,
-        raydium,
-        tokensCpmm[i].poolId
-      );
+        amountOut: amountWantToBuy,
+        poolId: tokensCpmm[i].poolId,
+      });
 
       const buyComponentTxResult = await sendAndConfirmTransaction(
         connection,
@@ -299,11 +291,11 @@ describe("pie", () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
 
-    const mintBasketTokenTx = await pieProgram.mintBasketToken(
-      admin.publicKey,
+    const mintBasketTokenTx = await pieProgram.mintBasketToken({
+      user: admin.publicKey,
       basketId,
-      4
-    );
+      amount: 4,
+    });
 
     const mintBasketTokenTxResult = await sendAndConfirmTransaction(
       connection,
@@ -331,11 +323,11 @@ describe("pie", () => {
   it("Redeem Basket Token", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const redeemBasketTokenTx = await pieProgram.redeemBasketToken(
-      admin.publicKey,
+    const redeemBasketTokenTx = await pieProgram.redeemBasketToken({
+      user: admin.publicKey,
       basketId,
-      2
-    );
+      amount: 2,
+    });
 
     const redeemBasketTokenTxResult = await sendAndConfirmTransaction(
       connection,
@@ -362,20 +354,24 @@ describe("pie", () => {
   it("Sell Component CPMM", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const userFund = await pieProgram.getUserFund(admin.publicKey, basketId);
-    
-    const componentToSell = userFund.components.find(component => component.mint.toString() == tokensCpmm[0].mint);
-
-    const sellComponentTx = await pieProgram.sellComponentCpmm(
-      admin.publicKey,
+    const userFund = await pieProgram.getUserFund({
+      user: admin.publicKey,
       basketId,
-      componentToSell.mint,
-      Math.floor(componentToSell.amount.toNumber() / 2),
-      0,
-      raydium,
-      tokensCpmm[0].poolId,
-      true
+    });
+
+    const componentToSell = userFund.components.find(
+      (component) => component.mint.toString() == tokensCpmm[0].mint
     );
+
+    const sellComponentTx = await pieProgram.sellComponentCpmm({
+      user: admin.publicKey,
+      basketId,
+      inputMint: componentToSell.mint,
+      amountIn: Math.floor(componentToSell.amount.toNumber() / 2),
+      minimumAmountOut: 0,
+      poolId: tokensCpmm[0].poolId,
+      unwrappedSol: true,
+    });
 
     const sellComponentTxResult = await sendAndConfirmTransaction(
       connection,
@@ -403,10 +399,10 @@ describe("pie", () => {
   it("Start rebalance basket", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const startRebalanceTx = await pieProgram.startRebalancing(
-      admin.publicKey,
-      basketId
-    );
+    const startRebalanceTx = await pieProgram.startRebalancing({
+      rebalancer: admin.publicKey,
+      basketId,
+    });
     const startRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
       startRebalanceTx,
@@ -432,8 +428,8 @@ describe("pie", () => {
   it("Executing rebalance basket by selling the first component", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
-    const basketConfigData = await pieProgram.getBasketConfig(basketId);
+    const basketConfigPDA = pieProgram.basketConfigPDA({ basketId });
+    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
     const component = basketConfigData.components[0];
 
     const vaultComponentAccount = await getAssociatedTokenAddress(
@@ -447,16 +443,15 @@ describe("pie", () => {
       "confirmed"
     );
 
-    const executeRebalanceTx = await pieProgram.executeRebalancingCpmm(
-      admin.publicKey,
-      false,
-      vaultComponentsBalance.value.amount,
-      "0",
-      tokensCpmm[0].poolId,
+    const executeRebalanceTx = await pieProgram.executeRebalancingCpmm({
+      rebalancer: admin.publicKey,
+      isBuy: false,
+      amountIn: vaultComponentsBalance.value.amount,
+      amountOut: "0",
+      poolId: tokensCpmm[0].poolId,
       basketId,
-      new PublicKey(tokensCpmm[0].mint),
-      raydium
-    );
+      tokenMint: new PublicKey(tokensCpmm[0].mint),
+    });
 
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
@@ -485,7 +480,7 @@ describe("pie", () => {
     const newBasketBuy = tokens[5];
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigPDA = pieProgram.basketConfigPDA(basketId);
+    const basketConfigPDA = pieProgram.basketConfigPDA({ basketId });
     const vaultWrappedSolAccount = await getAssociatedTokenAddress(
       NATIVE_MINT,
       basketConfigPDA,
@@ -495,18 +490,17 @@ describe("pie", () => {
       vaultWrappedSolAccount
     );
 
-    const executeRebalanceTx = await pieProgram.executeRebalancing(
-    {
+    const executeRebalanceTx = await pieProgram.executeRebalancing({
       rebalancer: admin.publicKey,
       isBuy,
-      amountIn: new BN(vaultWrappedSolBalance.value.amount).div(new BN(2)).toString(),
+      amountIn: new BN(vaultWrappedSolBalance.value.amount)
+        .div(new BN(2))
+        .toString(),
       amountOut: "20",
       ammId: newBasketBuy.ammId,
       basketId,
       tokenMint: new PublicKey(newBasketBuy.mint),
-      raydium
-    }
-    );
+    });
 
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
@@ -522,14 +516,13 @@ describe("pie", () => {
     if (isBuy) {
       const lookupTable = addressLookupTableMap.get(basketId.toString());
 
-      await pieProgram.addRaydiumCpmmToAddressLookupTable(
-        raydium,
+      await pieProgram.addRaydiumCpmmToAddressLookupTable({
         connection,
-        admin,
-        newBasketBuy.ammId,
+        signer: admin,
+        poolId: newBasketBuy.ammId,
         basketId,
-        lookupTable
-      );
+        lookupTable,
+      });
     }
 
     console.log(
@@ -547,16 +540,16 @@ describe("pie", () => {
   it("Stop rebalance basket", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const basketPDA = pieProgram.basketConfigPDA(basketId);
+    const basketPDA = pieProgram.basketConfigPDA({ basketId });
     const { tokenAccount: nativeAta, tx: txs } = await getOrCreateNativeMintATA(
       connection,
       admin.publicKey,
       basketPDA
     );
-    const stopRebalanceTx = await pieProgram.stopRebalancing(
-      admin.publicKey,
-      basketId
-    );
+    const stopRebalanceTx = await pieProgram.stopRebalancing({
+      rebalancer: admin.publicKey,
+      basketId,
+    });
     txs.add(stopRebalanceTx);
     const stopRebalanceTxResult = await sendAndConfirmTransaction(
       connection,
@@ -571,7 +564,7 @@ describe("pie", () => {
       `Stop rebalance at tx: https://explorer.solana.com/tx/${stopRebalanceTxResult}?cluster=devnet`
     );
 
-    const basketConfig = await pieProgram.getBasketConfig(basketId);
+    const basketConfig = await pieProgram.getBasketConfig({ basketId });
     assert.equal(basketConfig.isRebalancing, false);
   });
 });
