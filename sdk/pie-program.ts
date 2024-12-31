@@ -244,6 +244,36 @@ export class PieProgram {
     }
   }
 
+  async getAllTokenAccountWithBalance({ owner }: { owner: PublicKey }): Promise<
+    {
+      mint: PublicKey;
+      owner: PublicKey;
+      pubkey: PublicKey;
+      tokenAmount: {
+        amount: string;
+        decimals: number;
+        uiAmount: number;
+        uiAmountString: string;
+      };
+    }[]
+  > {
+    const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
+      owner,
+      {
+        programId: TOKEN_PROGRAM_ID,
+      }
+    );
+
+    console.log(JSON.stringify(tokenAccounts));
+
+    return tokenAccounts.value.map((tokenAccount) => ({
+      mint: tokenAccount.account.data.parsed.info.mint,
+      owner: tokenAccount.account.data.parsed.info.owner,
+      pubkey: tokenAccount.pubkey,
+      tokenAmount: tokenAccount.account.data.parsed.info.tokenAmount,
+    }));
+  }
+
   async getBasketVaults({ basketId }: { basketId: BN }): Promise<
     {
       mint: PublicKey;
