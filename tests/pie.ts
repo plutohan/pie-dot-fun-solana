@@ -30,7 +30,7 @@ describe("pie", () => {
   const rebalancer = Keypair.generate();
   const platformFeeWallet = Keypair.generate();
 
-  const pieProgram = new PieProgram(connection);
+  const pieProgram = new PieProgram(connection, "devnet");
 
   it("is success deploy without admin change", async () => {
     await Promise.all([
@@ -174,7 +174,6 @@ describe("pie", () => {
           symbol: "BNS",
           uri: "test",
           components: basketComponents,
-          decimals: 6,
           rebalancer: admin.publicKey,
         };
         const programState = await pieProgram.getProgramState();
@@ -218,7 +217,6 @@ describe("pie", () => {
           symbol: "BNS",
           uri: "test",
           components: basketComponents,
-          decimals: 6,
           rebalancer: admin.publicKey,
         };
         const programState = await pieProgram.getProgramState();
@@ -253,7 +251,6 @@ describe("pie", () => {
         symbol: "BNS",
         uri: "test",
         components: basketComponents,
-        decimals: 6,
         rebalancer: admin.publicKey,
       };
       const programState = await pieProgram.getProgramState();
