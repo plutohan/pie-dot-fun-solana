@@ -420,6 +420,10 @@ describe("pie", () => {
       )}`
     );
 
+    if (bundleSimluationResult.value.summary !== "succeeded") {
+      throw new Error("bundle simulation failed");
+    }
+
     console.log("start sending bundles..!!");
     const bundleId = await sendBundle(serializedSignedTxs);
     await startPollingJitoBundle(bundleId);
