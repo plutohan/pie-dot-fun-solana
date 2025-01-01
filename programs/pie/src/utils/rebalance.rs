@@ -31,7 +31,9 @@ impl Rebalance {
                 initial_available_source_balance >= amount_in,
                 PieError::InvalidAmount
             );
-            unminted_source_balance = initial_available_source_balance - vault_token_source.amount;
+            unminted_source_balance = initial_available_source_balance
+                .checked_sub(vault_token_source.amount)
+                .unwrap();
         } else {
             return Err(PieError::ComponentNotFound.into());
         }
@@ -44,8 +46,9 @@ impl Rebalance {
                     .checked_mul(basket_total_supply.try_into().unwrap())
                     .unwrap(),
             );
-            unminted_destination_balance =
-                initial_available_destination_balance - vault_token_destination.amount;
+            unminted_destination_balance = initial_available_destination_balance
+                .checked_sub(vault_token_destination.amount)
+                .unwrap();
         }
 
         Ok((
@@ -66,9 +69,14 @@ impl Rebalance {
         vault_token_destination.reload()?;
 
         // calculate final available balances
-        let final_available_source_balance = vault_token_source.amount - unminted_source_balance;
-        let final_available_destination_balance =
-            vault_token_destination.amount - unminted_destination_balance;
+        let final_available_source_balance = vault_token_source
+            .amount
+            .checked_sub(unminted_source_balance)
+            .unwrap();
+        let final_available_destination_balance = vault_token_destination
+            .amount
+            .checked_sub(unminted_destination_balance)
+            .unwrap();
 
         Ok((
             final_available_source_balance,
