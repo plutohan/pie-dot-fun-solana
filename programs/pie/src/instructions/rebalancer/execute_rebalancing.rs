@@ -114,7 +114,7 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
         initial_available_destination_balance,
         unminted_source_balance,
         unminted_destination_balance,
-    ) = Rebalance::prepare_rebalancing(
+    ) = Rebalance::calculate_initial_balances(
         &mut ctx.accounts.basket_config,
         &ctx.accounts.vault_token_source,
         &ctx.accounts.vault_token_destination,
@@ -125,14 +125,31 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     execute_swap(&ctx.accounts, is_buy, amount_in, amount_out, signer)?;
 
     let (final_available_source_balance, final_available_destination_balance) =
-        Rebalance::finalize_rebalancing(
-            &mut ctx.accounts.basket_config,
+        Rebalance::calculate_final_balances(
             &mut ctx.accounts.vault_token_source,
             &mut ctx.accounts.vault_token_destination,
-            basket_total_supply,
             unminted_source_balance,
             unminted_destination_balance,
         )?;
+
+    // remove input component if final available balance is 0
+    if final_available_source_balance == 0 {
+        ctx.accounts
+            .basket_config
+            .remove_component(ctx.accounts.vault_token_source.mint);
+    } else {
+        ctx.accounts.basket_config.upsert_component(
+            ctx.accounts.vault_token_source.mint,
+            final_available_source_balance,
+            basket_total_supply,
+        )?;
+    }
+
+    ctx.accounts.basket_config.upsert_component(
+        ctx.accounts.vault_token_destination.mint,
+        final_available_destination_balance,
+        basket_total_supply,
+    )?;
 
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,

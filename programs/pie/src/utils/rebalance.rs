@@ -7,7 +7,7 @@ use anchor_spl::token::TokenAccount;
 pub struct Rebalance {}
 
 impl Rebalance {
-    pub fn prepare_rebalancing(
+    pub fn calculate_initial_balances(
         basket_config: &mut BasketConfig,
         vault_token_source: &Account<'_, TokenAccount>,
         vault_token_destination: &Account<'_, TokenAccount>,
@@ -56,11 +56,9 @@ impl Rebalance {
         ))
     }
 
-    pub fn finalize_rebalancing(
-        basket_config: &mut BasketConfig,
+    pub fn calculate_final_balances(
         vault_token_source: &mut Account<'_, TokenAccount>,
         vault_token_destination: &mut Account<'_, TokenAccount>,
-        basket_total_supply: u64,
         unminted_source_balance: u64,
         unminted_destination_balance: u64,
     ) -> Result<(u64, u64)> {
@@ -71,23 +69,6 @@ impl Rebalance {
         let final_available_source_balance = vault_token_source.amount - unminted_source_balance;
         let final_available_destination_balance =
             vault_token_destination.amount - unminted_destination_balance;
-
-        // remove input component if final available balance is 0
-        if final_available_source_balance == 0 {
-            basket_config.remove_component(vault_token_source.mint);
-        } else {
-            basket_config.upsert_component(
-                vault_token_source.mint,
-                final_available_source_balance,
-                basket_total_supply,
-            )?;
-        }
-
-        basket_config.upsert_component(
-            vault_token_destination.mint,
-            final_available_destination_balance,
-            basket_total_supply,
-        )?;
 
         Ok((
             final_available_source_balance,
