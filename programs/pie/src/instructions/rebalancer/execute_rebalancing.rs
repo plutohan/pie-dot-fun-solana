@@ -1,5 +1,5 @@
-use std::cmp::min;
-
+use crate::utils::Rebalance;
+use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use anchor_lang::{prelude::*, solana_program};
 use anchor_spl::{
     token::{Token, TokenAccount},
@@ -9,9 +9,6 @@ use raydium_amm_cpi::{
     library::{swap_base_in, swap_base_out},
     SwapBaseIn, SwapBaseOut,
 };
-
-use crate::utils::Calculator;
-use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancing<'info> {
@@ -88,60 +85,76 @@ pub struct ExecuteRebalancingEvent {
     pub basket_id: u64,
     pub basket_mint: Pubkey,
     pub is_buy: bool,
-    pub initial_source_balance: u64,
-    pub initial_destination_balance: u64,
-    pub final_source_balance: u64,
-    pub final_destination_balance: u64,
+    pub initial_available_source_balance: u64,
+    pub initial_available_destination_balance: u64,
+    pub final_available_source_balance: u64,
+    pub final_available_destination_balance: u64,
 }
 
 pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
-    mut ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
+    ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
     is_buy: bool,
     amount_in: u64,
     amount_out: u64,
 ) -> Result<()> {
-    let basket_config = &ctx.accounts.basket_config;
-    require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
+    require!(
+        ctx.accounts.basket_config.is_rebalancing,
+        PieError::NotInRebalancing
+    );
 
+    let basket_total_supply = ctx.accounts.basket_mint.supply;
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
         &ctx.accounts.basket_config.id.to_be_bytes(),
         &[ctx.accounts.basket_config.bump],
     ]];
 
-    let initial_source_balance = ctx.accounts.vault_token_source.amount;
-    let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
+    let (
+        initial_available_source_balance,
+        initial_available_destination_balance,
+        unminted_source_balance,
+        unminted_destination_balance,
+    ) = Rebalance::prepare_rebalancing(
+        &mut ctx.accounts.basket_config,
+        &ctx.accounts.vault_token_source,
+        &ctx.accounts.vault_token_destination,
+        basket_total_supply,
+        amount_in,
+    )?;
 
-    execute_swap(&mut ctx.accounts, is_buy, amount_in, amount_out, signer)?;
+    execute_swap(&ctx.accounts, is_buy, amount_in, amount_out, signer)?;
 
-    // Fetch final balances
-    ctx.accounts.vault_token_source.reload()?;
-    ctx.accounts.vault_token_destination.reload()?;
-    let final_source_balance = ctx.accounts.vault_token_source.amount;
-    let final_destination_balance = ctx.accounts.vault_token_destination.amount;
+    let (final_available_source_balance, final_available_destination_balance) =
+        Rebalance::finalize_rebalancing(
+            &mut ctx.accounts.basket_config,
+            &mut ctx.accounts.vault_token_source,
+            &mut ctx.accounts.vault_token_destination,
+            basket_total_supply,
+            unminted_source_balance,
+            unminted_destination_balance,
+        )?;
 
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
         is_buy,
-        initial_source_balance,
-        initial_destination_balance,
-        final_source_balance,
-        final_destination_balance,
+        initial_available_source_balance,
+        initial_available_destination_balance,
+        final_available_source_balance,
+        final_available_destination_balance,
     });
 
     Ok(())
 }
 
 pub fn execute_swap<'a: 'info, 'info>(
-    accounts: &mut ExecuteRebalancing<'info>,
+    accounts: &ExecuteRebalancing<'info>,
     is_buy: bool,
     amount_in: u64,
     amount_out: u64,
     signer: &[&[&[u8]]],
 ) -> Result<()> {
-    let basket_config = &mut accounts.basket_config;
-    let total_supply = accounts.basket_mint.supply;
+    let basket_config = &accounts.basket_config;
 
     if is_buy {
         let swap_base_out_inx = swap_base_out(
@@ -195,98 +208,57 @@ pub fn execute_swap<'a: 'info, 'info>(
             &ToAccountInfos::to_account_infos(&cpi_context),
             signer,
         )?;
-
-        accounts.vault_token_destination.reload()?;
-        let token_mint = accounts.vault_token_destination.mint;
-
-        // Simplified using upsert_component
-        basket_config.upsert_component(
-            token_mint,
-            accounts.vault_token_destination.amount,
-            total_supply,
-        )?;
     } else {
-        if let Some(component) = basket_config.find_component_mut(accounts.vault_token_source.mint)
-        {
-            let amount_restore = Calculator::restore_raw_decimal(component.quantity_in_sys_decimal.checked_mul(total_supply.try_into().unwrap()).unwrap());
-            let amount_available = min(
-                amount_in,
-                amount_restore,
-            );
+        let swap_base_in_inx = swap_base_in(
+            &accounts.amm_program.key(),
+            &accounts.amm.key(),
+            &accounts.amm_authority.key(),
+            &accounts.amm_open_orders.key(),
+            &accounts.amm_coin_vault.key(),
+            &accounts.amm_pc_vault.key(),
+            &accounts.market_program.key(),
+            &accounts.market.key(),
+            &accounts.market_bids.key(),
+            &accounts.market_asks.key(),
+            &accounts.market_event_queue.key(),
+            &accounts.market_coin_vault.key(),
+            &accounts.market_pc_vault.key(),
+            &accounts.market_vault_signer.key(),
+            &accounts.vault_token_source.key(),
+            &accounts.vault_token_destination.key(),
+            &basket_config.key(),
+            amount_in,
+            amount_out,
+        )?;
 
-            let swap_base_in_inx = swap_base_in(
-                &accounts.amm_program.key(),
-                &accounts.amm.key(),
-                &accounts.amm_authority.key(),
-                &accounts.amm_open_orders.key(),
-                &accounts.amm_coin_vault.key(),
-                &accounts.amm_pc_vault.key(),
-                &accounts.market_program.key(),
-                &accounts.market.key(),
-                &accounts.market_bids.key(),
-                &accounts.market_asks.key(),
-                &accounts.market_event_queue.key(),
-                &accounts.market_coin_vault.key(),
-                &accounts.market_pc_vault.key(),
-                &accounts.market_vault_signer.key(),
-                &accounts.vault_token_source.key(),
-                &accounts.vault_token_destination.key(),
-                &basket_config.key(),
-                amount_available,
-                amount_out,
-            )?;
-
-            let cpi_context = CpiContext::new_with_signer(
-                accounts.amm_program.to_account_info(),
-                SwapBaseIn {
-                    amm: accounts.amm.to_account_info(),
-                    amm_authority: accounts.amm_authority.to_account_info(),
-                    amm_open_orders: accounts.amm_open_orders.to_account_info(),
-                    amm_coin_vault: accounts.amm_coin_vault.to_account_info(),
-                    amm_pc_vault: accounts.amm_pc_vault.to_account_info(),
-                    market_program: accounts.market_program.to_account_info(),
-                    market: accounts.market.to_account_info(),
-                    market_bids: accounts.market_bids.to_account_info(),
-                    market_asks: accounts.market_asks.to_account_info(),
-                    market_event_queue: accounts.market_event_queue.to_account_info(),
-                    market_coin_vault: accounts.market_coin_vault.to_account_info(),
-                    market_pc_vault: accounts.market_pc_vault.to_account_info(),
-                    market_vault_signer: accounts.market_vault_signer.to_account_info(),
-                    user_token_source: accounts.vault_token_source.to_account_info(),
-                    user_token_destination: accounts.vault_token_destination.to_account_info(),
-                    user_source_owner: basket_config.to_account_info(),
-                    token_program: accounts.token_program.to_account_info(),
-                },
-                signer,
-            );
-
-            solana_program::program::invoke_signed(
-                &swap_base_in_inx,
-                &ToAccountInfos::to_account_infos(&cpi_context),
-                signer,
-            )?;
-
-            accounts.vault_token_source.reload()?;
-            let token_mint = accounts.vault_token_source.mint;
-
-            // Simplified using upsert_component or remove_component
-            let quantity_in_sys_decimal =
-                Calculator::apply_sys_decimal(accounts.vault_token_source.amount)
-                    .checked_div(total_supply.try_into().unwrap())
-                    .unwrap();
-
-            if quantity_in_sys_decimal == 0 {
-                basket_config.remove_component(token_mint);
-            } else {
-                basket_config.upsert_component(
-                    token_mint,
-                    accounts.vault_token_source.amount,
-                    total_supply,
-                )?;
-            }
-        } else {
-            return Err(PieError::ComponentNotFound.into());
-        }
+        let cpi_context = CpiContext::new_with_signer(
+            accounts.amm_program.to_account_info(),
+            SwapBaseIn {
+                amm: accounts.amm.to_account_info(),
+                amm_authority: accounts.amm_authority.to_account_info(),
+                amm_open_orders: accounts.amm_open_orders.to_account_info(),
+                amm_coin_vault: accounts.amm_coin_vault.to_account_info(),
+                amm_pc_vault: accounts.amm_pc_vault.to_account_info(),
+                market_program: accounts.market_program.to_account_info(),
+                market: accounts.market.to_account_info(),
+                market_bids: accounts.market_bids.to_account_info(),
+                market_asks: accounts.market_asks.to_account_info(),
+                market_event_queue: accounts.market_event_queue.to_account_info(),
+                market_coin_vault: accounts.market_coin_vault.to_account_info(),
+                market_pc_vault: accounts.market_pc_vault.to_account_info(),
+                market_vault_signer: accounts.market_vault_signer.to_account_info(),
+                user_token_source: accounts.vault_token_source.to_account_info(),
+                user_token_destination: accounts.vault_token_destination.to_account_info(),
+                user_source_owner: basket_config.to_account_info(),
+                token_program: accounts.token_program.to_account_info(),
+            },
+            signer,
+        );
+        solana_program::program::invoke_signed(
+            &swap_base_in_inx,
+            &ToAccountInfos::to_account_infos(&cpi_context),
+            signer,
+        )?;
     }
 
     Ok(())
