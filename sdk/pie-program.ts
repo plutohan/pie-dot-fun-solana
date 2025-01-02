@@ -87,7 +87,11 @@ const MPL_TOKEN_METADATA_PROGRAM_ID = new PublicKey(
 );
 
 export class PieProgram {
-  constructor(public readonly connection: Connection, cluster: Cluster) {
+  private idl = Object.assign({}, PieIDL);
+  raydium: Raydium;
+
+  constructor(public readonly connection: Connection, cluster: Cluster, programId: string = PieIDL.address) {
+    this.idl.address = programId;
     this.loadRaydium(connection, cluster);
   }
 
@@ -100,10 +104,8 @@ export class PieProgram {
     });
   }
 
-  raydium: Raydium;
-
   get program() {
-    return new Program(PieIDL as Idl, { connection: this.connection });
+    return new Program(this.idl as Idl, { connection: this.connection });
   }
 
   get accounts(): any {
