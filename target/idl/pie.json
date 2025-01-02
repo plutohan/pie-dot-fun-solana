@@ -1,5 +1,5 @@
 {
-  "address": "PiEcLbHKGxikrjL8XUwuKAGvGvVctZ8An4LHrzXcy9D",
+  "address": "GCsakoij7Q6JpQTCbCkUHoYYtAHHQ98VTjcRTRskjqxU",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -112,10 +112,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "mint_out",
-          "writable": true
         },
         {
           "name": "amm",

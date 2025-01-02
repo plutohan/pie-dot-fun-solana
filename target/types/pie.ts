@@ -120,10 +120,6 @@ export type Pie = {
           }
         },
         {
-          "name": "mintOut",
-          "writable": true
-        },
-        {
           "name": "amm",
           "writable": true
         },

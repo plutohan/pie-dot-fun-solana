@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program};
 use anchor_spl::{
     token::Token,
-    token_interface::{Mint, TokenAccount},
+    token_interface::TokenAccount,
 };
 use raydium_amm_cpi::{library::swap_base_out, SwapBaseOut};
 
@@ -33,8 +33,6 @@ pub struct BuyComponentContext<'info> {
         bump    
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
-    #[account(mut)]
-    pub mint_out: Box<InterfaceAccount<'info, Mint>>,
     /// CHECK: Safe. amm Account
     #[account(mut)]
     pub amm: AccountInfo<'info>,
@@ -81,7 +79,6 @@ pub struct BuyComponentContext<'info> {
 
     #[account(
         mut,
-        token::mint = mint_out,
         token::authority = basket_config
     )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
@@ -208,12 +205,12 @@ pub fn buy_component(
 
     user_fund.bump = ctx.bumps.user_fund;
     user_fund
-        .upsert_component(ctx.accounts.mint_out.key(), amount_received)?;
+        .upsert_component(ctx.accounts.vault_token_destination.mint.key(), amount_received)?;
 
     emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user_source_owner.key(),
-        mint: ctx.accounts.mint_out.key(),
+        mint: ctx.accounts.vault_token_destination.mint.key(),
         amount: amount_received,
     });
 
