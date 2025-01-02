@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("XtrD5KCgV6wCHD9rCaPT6RaUA4SjEAuCSdfRgfNoH1b");
+declare_id!("PiEcLbHKGxikrjL8XUwuKAGvGvVctZ8An4LHrzXcy9D");
 
 pub mod constant;
 pub mod error;
@@ -18,6 +18,14 @@ pub mod raydium_amm_address {
     declare_id!("HWy1jotHpo6UqeQxx49dpYYdQB8wj9Qk9MdxwjLvDHB8");
     #[cfg(not(feature = "devnet"))]
     declare_id!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
+}
+
+pub mod initial_admin {
+    use anchor_lang::prelude::declare_id;
+    #[cfg(feature = "devnet")]
+    declare_id!("DjCDT99HEZyZuq48wugooYNGBnrB5Nhe93VgAKKBAPDV");
+    #[cfg(not(feature = "devnet"))]
+    declare_id!("6tfUrp38Q5jRysrgLhNadxmrmXVKt7Rz5dC593x1wu1Q");
 }
 
 #[program]

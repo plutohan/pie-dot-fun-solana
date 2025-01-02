@@ -1,8 +1,7 @@
-use crate::constant::{INITIALIZE_ADMIN, PROGRAM_STATE};
+use crate::constant::PROGRAM_STATE;
 use crate::error::PieError;
 use crate::ProgramState;
 use anchor_lang::prelude::*;
-use std::str::FromStr;
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -31,12 +30,7 @@ pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
     program_state.bump = ctx.bumps.program_state;
     program_state.is_initialized = true;
 
-    let admin_address = match Pubkey::from_str(INITIALIZE_ADMIN) {
-        Ok(admin) => admin,
-        Err(_) => return Err(PieError::InvalidInitializeAdminAddress.into()),
-    };
-
-    program_state.admin = admin_address;
+    program_state.admin = crate::initial_admin::id();
 
     program_state.basket_counter = 0;
 
