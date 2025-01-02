@@ -765,7 +765,7 @@ export class PieProgram {
     tx.add(outputTx);
 
     const buyComponentTx = await this.program.methods
-      .buyComponentClmm(new BN(maxAmountIn), new BN(amountOut))
+      .buyComponentClmm(res.maxAmountIn.amount, new BN(amountOut), sqrtPriceLimitX64)
       .accountsPartial({
         user: user,
         userFund: this.userFundPDA({ user, basketId }),
@@ -1630,8 +1630,8 @@ export class PieProgram {
       new PublicKey(poolKeys.mintA.address),
       new PublicKey(poolKeys.mintB.address),
       new PublicKey(poolId),
-      new PublicKey(poolKeys.vaultA),
-      new PublicKey(poolKeys.vaultB),
+      new PublicKey(poolKeys.vault.A),
+      new PublicKey(poolKeys.vault.B),
       new PublicKey(poolKeys.config.id),
       TOKEN_PROGRAM_ID,
       TOKEN_2022_PROGRAM_ID,

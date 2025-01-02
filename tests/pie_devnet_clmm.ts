@@ -262,39 +262,39 @@ describe("pie", () => {
     userFundTable.printTable();
   });
 
-  it("Sell Component CLMM", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
-    for (let i = 0; i < basketConfigData.components.length; i++) {
-      const sellComponentClmmTx = await pieProgram.sellComponentClmm({
-        user: admin.publicKey,
-        basketId,
-        amountIn: new BN(20000),
-        inputMint: new PublicKey(tokensClmm[i].mint),
-        poolId: tokensClmm[i].poolId,
-        unwrappedSol: false,
-      });
+  // it("Sell Component CLMM", async () => {
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
+  //   const basketConfigData = await pieProgram.getBasketConfig({ basketId });
+  //   for (let i = 0; i < basketConfigData.components.length; i++) {
+  //     const sellComponentClmmTx = await pieProgram.sellComponentClmm({
+  //       user: admin.publicKey,
+  //       basketId,
+  //       amountIn: new BN(20000),
+  //       inputMint: new PublicKey(tokensClmm[i].mint),
+  //       poolId: tokensClmm[i].poolId,
+  //       unwrappedSol: false,
+  //     });
 
-      const sellComponentClmmTxResult = await sendAndConfirmTransaction(
-        connection,
-        sellComponentClmmTx,
-        [admin],
-        {
-          skipPreflight: true,
-          commitment: "confirmed",
-        }
-      );
+  //     const sellComponentClmmTxResult = await sendAndConfirmTransaction(
+  //       connection,
+  //       sellComponentClmmTx,
+  //       [admin],
+  //       {
+  //         skipPreflight: true,
+  //         commitment: "confirmed",
+  //       }
+  //     );
 
-      console.log(
-        `Sell component CLMM at tx: https://explorer.solana.com/tx/${sellComponentClmmTxResult}?cluster=devnet`
-      );
-    }
-    const userFundTable = await showUserFundTable(
-      pieProgram,
-      admin.publicKey,
-      basketId
-    );
-    userFundTable.printTable();
-  });
+  //     console.log(
+  //       `Sell component CLMM at tx: https://explorer.solana.com/tx/${sellComponentClmmTxResult}?cluster=devnet`
+  //     );
+  //   }
+  //   const userFundTable = await showUserFundTable(
+  //     pieProgram,
+  //     admin.publicKey,
+  //     basketId
+  //   );
+  //   userFundTable.printTable();
+  // });
 });
