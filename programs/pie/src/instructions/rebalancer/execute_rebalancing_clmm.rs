@@ -8,18 +8,18 @@ use raydium_clmm_cpi::{
     program::RaydiumClmm,
 };
 
-use crate::utils::Calculator;
-use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
+use crate::utils::Rebalance;
+use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use crate::{ExecuteRebalancingEvent, ProgramState, NATIVE_MINT, PROGRAM_STATE};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancingClmm<'info> {
     #[account(mut)]
     pub rebalancer: Signer<'info>,
-    #[account(        
-        mut, 
-        seeds = [PROGRAM_STATE], 
-        bump = program_state.bump 
+    #[account(
+        mut,
+        seeds = [PROGRAM_STATE],
+        bump = program_state.bump
     )]
     pub program_state: Box<Account<'info, ProgramState>>,
     #[account(
@@ -108,7 +108,7 @@ pub struct ExecuteRebalancingClmm<'info> {
 
 pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingClmm<'info>>,
-    is_buy: bool,
+    is_swap_base_out: bool,
     amount: u64,
     other_amount_threshold: u64,
     sqrt_price_limit_x64: u128,
@@ -116,15 +116,28 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
     let basket_config = &mut ctx.accounts.basket_config;
 
     require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
-    let total_supply = ctx.accounts.basket_mint.supply;
+    let basket_total_supply = ctx.accounts.basket_mint.supply;
 
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
         &basket_config.id.to_be_bytes(),
         &[basket_config.bump],
     ]];
-    let initial_source_balance = ctx.accounts.vault_token_source.amount;
-    let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
+
+    let amount_in = if is_swap_base_out { other_amount_threshold } else { amount };
+
+    let (
+        initial_available_source_balance,
+        initial_available_destination_balance,
+        unminted_source_balance,
+        unminted_destination_balance,
+    ) = Rebalance::calculate_initial_balances(
+        basket_config,
+        ctx.accounts.vault_token_source.as_ref(),
+        ctx.accounts.vault_token_destination.as_ref(),
+        basket_total_supply,
+        amount_in,
+    )?;
 
     let cpi_accounts = cpi::accounts::SwapSingleV2 {
         payer: basket_config.to_account_info(),
@@ -146,79 +159,51 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         cpi_accounts,
         signer,
     )
-    .with_remaining_accounts(ctx.remaining_accounts.to_vec());
+        .with_remaining_accounts(ctx.remaining_accounts.to_vec());
 
-    if is_buy {
-        cpi::swap_v2(
-            cpi_context,
-            amount,
-            other_amount_threshold,
-            sqrt_price_limit_x64,
-            false,
+    cpi::swap_v2(
+        cpi_context,
+        amount,
+        other_amount_threshold,
+        sqrt_price_limit_x64,
+        !is_swap_base_out,
+    )?;
+
+    let (final_available_source_balance, final_available_destination_balance) =
+        Rebalance::calculate_final_balances(
+            &mut ctx.accounts.vault_token_source,
+            &mut ctx.accounts.vault_token_destination,
+            unminted_source_balance,
+            unminted_destination_balance,
         )?;
-        ctx.accounts.vault_token_destination.reload()?;
 
-        let token_mint = ctx.accounts.output_vault_mint.key();
-        let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(ctx.accounts.vault_token_destination.amount)
-                .checked_div(total_supply.try_into().unwrap())
-                .unwrap();
-
-        if let Some(component) = basket_config
-            .components
-            .iter_mut()
-            .find(|c| c.mint == token_mint)
-        {
-            component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-        } else {
-            basket_config.components.push(BasketComponent {
-                mint: token_mint,
-                quantity_in_sys_decimal,
-            });
-        }
+    // remove input component if final available balance is 0
+    if final_available_source_balance == 0 {
+        ctx.accounts
+            .basket_config
+            .remove_component(ctx.accounts.vault_token_source.mint);
     } else {
-        cpi::swap_v2(
-            cpi_context,
-            amount,
-            other_amount_threshold,
-            sqrt_price_limit_x64,
-            true,
+        ctx.accounts.basket_config.upsert_component(
+            ctx.accounts.vault_token_source.mint,
+            final_available_source_balance,
+            basket_total_supply,
         )?;
-        ctx.accounts.vault_token_source.reload()?;
-
-        let token_mint = ctx.accounts.input_vault_mint.key();
-        let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(ctx.accounts.vault_token_source.amount)
-                .checked_div(total_supply.try_into().unwrap())
-                .unwrap();
-
-        if quantity_in_sys_decimal == 0 {
-            basket_config.components.retain(|c| c.mint != token_mint);
-        } else {
-            if let Some(component) = basket_config
-                .components
-                .iter_mut()
-                .find(|c| c.mint == token_mint)
-            {
-                component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-            }
-        }
     }
 
-    // Fetch final balances
-    ctx.accounts.vault_token_source.reload()?;
-    ctx.accounts.vault_token_destination.reload()?;
-    let final_source_balance = ctx.accounts.vault_token_source.amount;
-    let final_destination_balance = ctx.accounts.vault_token_destination.amount;
+    ctx.accounts.basket_config.upsert_component(
+        ctx.accounts.vault_token_destination.mint,
+        final_available_destination_balance,
+        basket_total_supply,
+    )?;
 
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
-        is_buy,
-        initial_source_balance,
-        initial_destination_balance,
-        final_source_balance,
-        final_destination_balance,
+        is_swap_base_out,
+        initial_available_source_balance,
+        initial_available_destination_balance,
+        final_available_source_balance,
+        final_available_destination_balance,
     });
 
     Ok(())

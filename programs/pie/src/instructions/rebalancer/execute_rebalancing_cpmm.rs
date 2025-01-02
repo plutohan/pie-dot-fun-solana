@@ -7,8 +7,9 @@ use raydium_cpmm_cpi::{
     states::{AmmConfig, ObservationState, PoolState},
 };
 
-use crate::{utils::Calculator, ExecuteRebalancingEvent};
-use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
+use crate::utils::Rebalance;
+use crate::ExecuteRebalancingEvent;
+use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancingCpmm<'info> {
@@ -47,16 +48,16 @@ pub struct ExecuteRebalancingCpmm<'info> {
 
     /// The vault token account for input token
     #[account(
-    mut,
-    constraint = input_vault.key() == pool_state.load()?.token_0_vault || input_vault.key() == pool_state.load()?.token_1_vault
-)]
+        mut,
+        constraint = input_vault.key() == pool_state.load()?.token_0_vault || input_vault.key() == pool_state.load()?.token_1_vault
+    )]
     pub input_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The vault token account for output token
     #[account(
-    mut,
-    constraint = output_vault.key() == pool_state.load()?.token_0_vault || output_vault.key() == pool_state.load()?.token_1_vault
-)]
+        mut,
+        constraint = output_vault.key() == pool_state.load()?.token_0_vault || output_vault.key() == pool_state.load()?.token_1_vault
+    )]
     pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// SPL program for input token transfers
@@ -67,14 +68,14 @@ pub struct ExecuteRebalancingCpmm<'info> {
 
     /// The mint of input token
     #[account(
-    address = input_vault.mint
-)]
+        address = input_vault.mint
+    )]
     pub input_token_mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The mint of output token
     #[account(
-    address = output_vault.mint
-)]
+        address = output_vault.mint
+    )]
     pub output_token_mint: Box<InterfaceAccount<'info, Mint>>,
     /// The program account for the most recent oracle observation
     #[account(mut, address = pool_state.load()?.observation_key)]
@@ -84,13 +85,13 @@ pub struct ExecuteRebalancingCpmm<'info> {
 
 pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<ExecuteRebalancingCpmm>,
-    is_buy: bool,
+    is_swap_base_out: bool,
     amount_in: u64,
     amount_out: u64,
 ) -> Result<()> {
     let basket_config = &mut ctx.accounts.basket_config;
     require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
-    let total_supply = ctx.accounts.basket_mint.supply;
+    let basket_total_supply = ctx.accounts.basket_mint.supply;
 
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
@@ -98,8 +99,20 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
         &[basket_config.bump],
     ]];
 
-    let initial_source_balance = ctx.accounts.vault_token_source.amount;
-    let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
+    let (
+        initial_available_source_balance,
+        initial_available_destination_balance,
+        unminted_source_balance,
+        unminted_destination_balance,
+    ) = Rebalance::calculate_initial_balances(
+        basket_config,
+        ctx.accounts.vault_token_source.as_ref(),
+        ctx.accounts.vault_token_destination.as_ref(),
+        basket_total_supply,
+        amount_in,
+    )?;
+
+    // Prepare CPI accounts
     let cpi_accounts = cpi::accounts::Swap {
         payer: basket_config.to_account_info(),
         authority: ctx.accounts.authority.to_account_info(),
@@ -122,66 +135,47 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
         signer,
     );
 
-    if is_buy {
+    if is_swap_base_out {
         cpi::swap_base_output(cpi_context, amount_in, amount_out)?;
-        ctx.accounts.vault_token_destination.reload()?;
-
-        let token_mint = ctx.accounts.output_token_mint.key();
-        let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(ctx.accounts.vault_token_destination.amount)
-                .checked_div(total_supply.try_into().unwrap())
-                .unwrap();
-
-        if let Some(component) = basket_config
-            .components
-            .iter_mut()
-            .find(|c| c.mint == token_mint)
-        {
-            component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-        } else {
-            basket_config.components.push(BasketComponent {
-                mint: token_mint,
-                quantity_in_sys_decimal,
-            });
-        }
     } else {
         cpi::swap_base_input(cpi_context, amount_in, amount_out)?;
-
-        ctx.accounts.vault_token_source.reload()?;
-
-        let token_mint = ctx.accounts.input_token_mint.key();
-        let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(ctx.accounts.vault_token_source.amount)
-                .checked_div(total_supply.try_into().unwrap())
-                .unwrap();
-
-        if quantity_in_sys_decimal == 0 {
-            basket_config.components.retain(|c| c.mint != token_mint);
-        } else {
-            if let Some(component) = basket_config
-                .components
-                .iter_mut()
-                .find(|c| c.mint == token_mint)
-            {
-                component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-            }
-        }
     }
 
-    // Fetch final balances
-    ctx.accounts.vault_token_source.reload()?;
-    ctx.accounts.vault_token_destination.reload()?;
-    let final_source_balance = ctx.accounts.vault_token_source.amount;
-    let final_destination_balance = ctx.accounts.vault_token_destination.amount;
+    let (final_available_source_balance, final_available_destination_balance) =
+        Rebalance::calculate_final_balances(
+            &mut ctx.accounts.vault_token_source,
+            &mut ctx.accounts.vault_token_destination,
+            unminted_source_balance,
+            unminted_destination_balance,
+        )?;
+
+    // remove input component if final available balance is 0
+    if final_available_source_balance == 0 {
+        ctx.accounts
+            .basket_config
+            .remove_component(ctx.accounts.vault_token_source.mint);
+    } else {
+        ctx.accounts.basket_config.upsert_component(
+            ctx.accounts.vault_token_source.mint,
+            final_available_source_balance,
+            basket_total_supply,
+        )?;
+    }
+
+    ctx.accounts.basket_config.upsert_component(
+        ctx.accounts.vault_token_destination.mint,
+        final_available_destination_balance,
+        basket_total_supply,
+    )?;
 
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
-        is_buy,
-        initial_source_balance,
-        initial_destination_balance,
-        final_source_balance,
-        final_destination_balance,
+        is_swap_base_out,
+        initial_available_source_balance,
+        initial_available_destination_balance,
+        final_available_source_balance,
+        final_available_destination_balance,
     });
 
     Ok(())

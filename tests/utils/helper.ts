@@ -441,13 +441,13 @@ export interface SwapCompute {
 }
 
 export async function getSwapData({
-  isBuy,
+  isSwapBaseOut,
   inputMint,
   outputMint,
   amount,
   slippage,
 }: {
-  isBuy: boolean;
+  isSwapBaseOut: boolean;
   inputMint: string;
   outputMint: string;
   amount: number;
@@ -455,7 +455,7 @@ export async function getSwapData({
 }): Promise<SwapCompute> {
   const { data: swapResponse } = await axios.get<SwapCompute>(
     `${API_URLS.SWAP_HOST}/compute/${
-      isBuy ? "swap-base-out" : "swap-base-in"
+      isSwapBaseOut ? "swap-base-out" : "swap-base-in"
     }?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${
       slippage * 100
     }&txVersion=V0`

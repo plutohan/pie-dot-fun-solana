@@ -6,7 +6,6 @@ pub struct ProgramState {
     pub admin: Pubkey,
     pub platform_fee_wallet: Pubkey,
     pub basket_counter: u64,
-    pub rebalance_margin_lamports: u64,
     pub creator_fee_percentage: u64,
     pub platform_fee_percentage: u64,
     pub enable_creator: bool,
@@ -19,7 +18,6 @@ impl Space for ProgramState {
         + 32  // admin (Pubkey)
         + 32  // platform_fee_wallet (Pubkey)
         + 8   // basket_counter (u64)
-        + 8   // rebalance_margin_lamports (u64)
         + 8   // creator_fee_percentage (u64)
         + 8   // platform_fee_percentage (u64)
         + 1   // enable_creator (bool)

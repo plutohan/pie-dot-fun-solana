@@ -476,7 +476,7 @@ describe("pie", () => {
   });
 
   it("Executing rebalance basket by buying component 5", async () => {
-    const isBuy = true;
+    const isSwapBaseOut = true;
     const newBasketBuy = tokens[5];
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
@@ -492,7 +492,7 @@ describe("pie", () => {
 
     const executeRebalanceTx = await pieProgram.executeRebalancing({
       rebalancer: admin.publicKey,
-      isBuy,
+      isSwapBaseOut,
       amountIn: new BN(vaultWrappedSolBalance.value.amount)
         .div(new BN(2))
         .toString(),
@@ -513,7 +513,7 @@ describe("pie", () => {
     );
 
     //add basket info to lookup table when buy new basket token to config
-    if (isBuy) {
+    if (isSwapBaseOut) {
       const lookupTable = addressLookupTableMap.get(basketId.toString());
 
       await pieProgram.addRaydiumCpmmToAddressLookupTable({

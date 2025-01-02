@@ -1,5 +1,5 @@
 {
-  "address": "XtrD5KCgV6wCHD9rCaPT6RaUA4SjEAuCSdfRgfNoH1b",
+  "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -897,7 +897,7 @@
       ],
       "args": [
         {
-          "name": "is_buy",
+          "name": "is_swap_base_out",
           "type": "bool"
         },
         {
@@ -1081,7 +1081,7 @@
       ],
       "args": [
         {
-          "name": "is_buy",
+          "name": "is_swap_base_out",
           "type": "bool"
         },
         {
@@ -1234,7 +1234,7 @@
       ],
       "args": [
         {
-          "name": "is_buy",
+          "name": "is_swap_base_out",
           "type": "bool"
         },
         {
@@ -2159,32 +2159,6 @@
           "signer": true
         },
         {
-          "name": "program_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "vault_wrapped_sol",
           "writable": true
         },
@@ -2392,58 +2366,6 @@
       ]
     },
     {
-      "name": "update_rebalance_margin",
-      "discriminator": [
-        230,
-        223,
-        85,
-        5,
-        40,
-        87,
-        87,
-        193
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "program_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        }
-      ],
-      "args": [
-        {
-          "name": "new_margin",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "update_rebalancer",
       "discriminator": [
         206,
@@ -2613,6 +2535,19 @@
       ]
     },
     {
+      "name": "DepositWsolEvent",
+      "discriminator": [
+        196,
+        52,
+        26,
+        9,
+        198,
+        101,
+        172,
+        134
+      ]
+    },
+    {
       "name": "ExecuteRebalancingEvent",
       "discriminator": [
         140,
@@ -2730,19 +2665,6 @@
       ]
     },
     {
-      "name": "UpdateMaxRebalanceMarginEvent",
-      "discriminator": [
-        5,
-        89,
-        213,
-        109,
-        67,
-        201,
-        59,
-        195
-      ]
-    },
-    {
       "name": "UpdatePlatformFeeWalletEvent",
       "discriminator": [
         202,
@@ -2766,6 +2688,19 @@
         132,
         153,
         70
+      ]
+    },
+    {
+      "name": "WithdrawWsolEvent",
+      "discriminator": [
+        36,
+        236,
+        197,
+        89,
+        39,
+        95,
+        209,
+        74
       ]
     }
   ],
@@ -3122,6 +3057,26 @@
       }
     },
     {
+      "name": "DepositWsolEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basket_id",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "ExecuteRebalancingEvent",
       "type": {
         "kind": "struct",
@@ -3135,23 +3090,23 @@
             "type": "pubkey"
           },
           {
-            "name": "is_buy",
+            "name": "is_swap_base_out",
             "type": "bool"
           },
           {
-            "name": "initial_source_balance",
+            "name": "initial_available_source_balance",
             "type": "u64"
           },
           {
-            "name": "initial_destination_balance",
+            "name": "initial_available_destination_balance",
             "type": "u64"
           },
           {
-            "name": "final_source_balance",
+            "name": "final_available_source_balance",
             "type": "u64"
           },
           {
-            "name": "final_destination_balance",
+            "name": "final_available_destination_balance",
             "type": "u64"
           }
         ]
@@ -3457,10 +3412,6 @@
             "type": "u64"
           },
           {
-            "name": "rebalance_margin_lamports",
-            "type": "u64"
-          },
-          {
             "name": "creator_fee_percentage",
             "type": "u64"
           },
@@ -3634,18 +3585,6 @@
       }
     },
     {
-      "name": "UpdateMaxRebalanceMarginEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "new_margin",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "UpdatePlatformFeeWalletEvent",
       "type": {
         "kind": "struct",
@@ -3711,6 +3650,26 @@
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawWsolEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basket_id",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }

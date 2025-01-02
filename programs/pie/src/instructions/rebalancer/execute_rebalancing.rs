@@ -1,15 +1,12 @@
+use crate::utils::Rebalance;
+use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use anchor_lang::{prelude::*, solana_program};
-use anchor_spl::{
-    token::{Token, TokenAccount},
-    token_interface::Mint,
-};
+use anchor_spl::token_interface::TokenAccount;
+use anchor_spl::{token::Token, token_interface::Mint};
 use raydium_amm_cpi::{
     library::{swap_base_in, swap_base_out},
     SwapBaseIn, SwapBaseOut,
 };
-
-use crate::utils::Calculator;
-use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancing<'info> {
@@ -66,10 +63,10 @@ pub struct ExecuteRebalancing<'info> {
     pub market_vault_signer: AccountInfo<'info>,
     /// CHECK: user source token Account
     #[account(mut)]
-    pub vault_token_source: Box<Account<'info, TokenAccount>>,
+    pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub vault_token_destination: Box<Account<'info, TokenAccount>>,
+    pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     /// CHECK: amm_program
@@ -85,63 +82,102 @@ pub struct ExecuteRebalancing<'info> {
 pub struct ExecuteRebalancingEvent {
     pub basket_id: u64,
     pub basket_mint: Pubkey,
-    pub is_buy: bool,
-    pub initial_source_balance: u64,
-    pub initial_destination_balance: u64,
-    pub final_source_balance: u64,
-    pub final_destination_balance: u64,
+    pub is_swap_base_out: bool,
+    pub initial_available_source_balance: u64,
+    pub initial_available_destination_balance: u64,
+    pub final_available_source_balance: u64,
+    pub final_available_destination_balance: u64,
 }
 
 pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
-    mut ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
-    is_buy: bool,
+    ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
+    is_swap_base_out: bool,
     amount_in: u64,
     amount_out: u64,
 ) -> Result<()> {
-    let basket_config = &ctx.accounts.basket_config;
-    require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
+    require!(
+        ctx.accounts.basket_config.is_rebalancing,
+        PieError::NotInRebalancing
+    );
 
+    let basket_total_supply = ctx.accounts.basket_mint.supply;
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
         &ctx.accounts.basket_config.id.to_be_bytes(),
         &[ctx.accounts.basket_config.bump],
     ]];
 
-    let initial_source_balance = ctx.accounts.vault_token_source.amount;
-    let initial_destination_balance = ctx.accounts.vault_token_destination.amount;
+    let (
+        initial_available_source_balance,
+        initial_available_destination_balance,
+        unminted_source_balance,
+        unminted_destination_balance,
+    ) = Rebalance::calculate_initial_balances(
+        &mut ctx.accounts.basket_config,
+        ctx.accounts.vault_token_source.as_ref(),
+        ctx.accounts.vault_token_destination.as_ref(),
+        basket_total_supply,
+        amount_in,
+    )?;
 
-    execute_swap(&mut ctx.accounts, is_buy, amount_in, amount_out, signer)?;
+    execute_swap(
+        &ctx.accounts,
+        is_swap_base_out,
+        amount_in,
+        amount_out,
+        signer,
+    )?;
 
-    // Fetch final balances
-    ctx.accounts.vault_token_source.reload()?;
-    ctx.accounts.vault_token_destination.reload()?;
-    let final_source_balance = ctx.accounts.vault_token_source.amount;
-    let final_destination_balance = ctx.accounts.vault_token_destination.amount;
+    let (final_available_source_balance, final_available_destination_balance) =
+        Rebalance::calculate_final_balances(
+            &mut ctx.accounts.vault_token_source,
+            &mut ctx.accounts.vault_token_destination,
+            unminted_source_balance,
+            unminted_destination_balance,
+        )?;
+
+    // remove input component if final available balance is 0
+    if final_available_source_balance == 0 {
+        ctx.accounts
+            .basket_config
+            .remove_component(ctx.accounts.vault_token_source.mint);
+    } else {
+        ctx.accounts.basket_config.upsert_component(
+            ctx.accounts.vault_token_source.mint,
+            final_available_source_balance,
+            basket_total_supply,
+        )?;
+    }
+
+    ctx.accounts.basket_config.upsert_component(
+        ctx.accounts.vault_token_destination.mint,
+        final_available_destination_balance,
+        basket_total_supply,
+    )?;
 
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
-        is_buy,
-        initial_source_balance,
-        initial_destination_balance,
-        final_source_balance,
-        final_destination_balance,
+        is_swap_base_out,
+        initial_available_source_balance,
+        initial_available_destination_balance,
+        final_available_source_balance,
+        final_available_destination_balance,
     });
 
     Ok(())
 }
 
 pub fn execute_swap<'a: 'info, 'info>(
-    accounts: &mut ExecuteRebalancing<'info>,
-    is_buy: bool,
+    accounts: &ExecuteRebalancing<'info>,
+    is_swap_base_out: bool,
     amount_in: u64,
     amount_out: u64,
     signer: &[&[&[u8]]],
 ) -> Result<()> {
-    let basket_config = &mut accounts.basket_config;
-    let total_supply = accounts.basket_mint.supply;
+    let basket_config = &accounts.basket_config;
 
-    if is_buy {
+    if is_swap_base_out {
         let swap_base_out_inx = swap_base_out(
             &accounts.amm_program.key(),
             &accounts.amm.key(),
@@ -193,30 +229,6 @@ pub fn execute_swap<'a: 'info, 'info>(
             &ToAccountInfos::to_account_infos(&cpi_context),
             signer,
         )?;
-
-        accounts.vault_token_destination.reload()?;
-
-        let token_mint = accounts.vault_token_destination.mint;
-        let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(accounts.vault_token_destination.amount)
-                .checked_div(total_supply.try_into().unwrap())
-                .unwrap();
-
-        // **New validation step:** Ensure quantity_in_sys_decimal is not zero.
-        require!(quantity_in_sys_decimal > 0, PieError::InvalidQuantity);
-
-        if let Some(component) = basket_config
-            .components
-            .iter_mut()
-            .find(|c| c.mint == token_mint)
-        {
-            component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-        } else {
-            basket_config.components.push(BasketComponent {
-                mint: token_mint,
-                quantity_in_sys_decimal,
-            });
-        }
     } else {
         let swap_base_in_inx = swap_base_in(
             &accounts.amm_program.key(),
@@ -263,32 +275,11 @@ pub fn execute_swap<'a: 'info, 'info>(
             },
             signer,
         );
-
         solana_program::program::invoke_signed(
             &swap_base_in_inx,
             &ToAccountInfos::to_account_infos(&cpi_context),
             signer,
         )?;
-
-        accounts.vault_token_source.reload()?;
-
-        let token_mint = accounts.vault_token_source.mint;
-        let quantity_in_sys_decimal =
-            Calculator::apply_sys_decimal(accounts.vault_token_source.amount)
-                .checked_div(total_supply.try_into().unwrap())
-                .unwrap();
-
-        if quantity_in_sys_decimal == 0 {
-            basket_config.components.retain(|c| c.mint != token_mint);
-        } else {
-            if let Some(component) = basket_config
-                .components
-                .iter_mut()
-                .find(|c| c.mint == token_mint)
-            {
-                component.quantity_in_sys_decimal = quantity_in_sys_decimal;
-            }
-        }
     }
 
     Ok(())
