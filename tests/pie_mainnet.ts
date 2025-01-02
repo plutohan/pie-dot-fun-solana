@@ -76,19 +76,6 @@ describe("pie", () => {
 
     const setUpTx = new Transaction();
 
-    const rebalanceMarginLamports = programState
-      ? programState.rebalanceMarginLamports.toNumber()
-      : 0;
-
-    if (rebalanceMarginLamports == 0) {
-      console.log("adding updating rebalance margin tx...");
-      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin({
-        admin: admin.publicKey,
-        newMargin: 0.5 * LAMPORTS_PER_SOL,
-      });
-      setUpTx.add(updateRebalanceMarginTx);
-    }
-
     if (programState.platformFeePercentage.toNumber() == 0) {
       console.log("adding updating fee tx...");
       // mint redeem fee 1% and platform fee 0.5%

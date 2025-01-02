@@ -1373,15 +1373,23 @@ export class PieProgram {
     return tx;
   }
 
-  async executeRebalancingCpmm(
-    rebalancer: PublicKey,
-    isSwapBaseOut: boolean,
-    amountIn: string,
-    amountOut: string,
-    poolId: string,
-    basketId: BN,
-    tokenMint: PublicKey,
-  ): Promise<Transaction | null> {
+  async executeRebalancingCpmm({
+    rebalancer,
+    isSwapBaseOut,
+    amountIn,
+    amountOut,
+    poolId,
+    basketId,
+    tokenMint,
+  }: {
+    rebalancer: PublicKey;
+    isSwapBaseOut: boolean;
+    amountIn: string;
+    amountOut: string;
+    poolId: string;
+    basketId: BN;
+    tokenMint: PublicKey;
+  }): Promise<Transaction | null> {
     const tx = new Transaction();
     const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
     const basketMint = this.basketMintPDA({ basketId });
