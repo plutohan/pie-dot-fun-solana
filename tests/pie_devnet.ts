@@ -64,28 +64,6 @@ describe("pie", () => {
     //fetch again
     programState = await pieProgram.getProgramState();
 
-    const rebalanceMarginLamports = programState
-      ? programState.rebalanceMarginLamports.toNumber()
-      : 0;
-    if (rebalanceMarginLamports == 0) {
-      const updateRebalanceMarginTx = await pieProgram.updateRebalanceMargin({
-        admin: admin.publicKey,
-        newMargin: 0.5 * LAMPORTS_PER_SOL,
-      });
-      const updateRebalanceMarginTxResult = await sendAndConfirmTransaction(
-        connection,
-        updateRebalanceMarginTx,
-        [admin],
-        {
-          skipPreflight: true,
-          commitment: "confirmed",
-        }
-      );
-      console.log(
-        `Rebalance margin updated at tx: https://explorer.solana.com/tx/${updateRebalanceMarginTxResult}?cluster=devnet`
-      );
-    }
-
     if (programState.platformFeePercentage.toNumber() == 0) {
       // mint redeem fee 1% and platform fee 0.5%
       const updateFeeTx = await pieProgram.updateFee({
