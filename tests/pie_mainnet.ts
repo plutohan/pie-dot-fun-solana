@@ -168,24 +168,22 @@ describe("pie", () => {
     console.log("creating lookup tables for each component...");
 
     // @TODO uncomment this when needed
-    // const lookupTables = [];
-    // for (let i = 0; i < createBasketArgs.components.length; i++) {
-    //   console.log(
-    //     `creating lookup table for ${i + 1} of ${
-    //       createBasketArgs.components.length
-    //     }`
-    //   );
-    //   const lut = await pieProgram.addRaydiumAmmToAddressLookupTable(
-    //     raydium,
-    //     connection,
-    //     admin,
-    //     tokens[i].ammId,
-    //     basketId
-    //   );
-    //   lookupTables.push(lut.toBase58());
-    // }
+    const lookupTables = [];
+    for (let i = 0; i < createBasketArgs.components.length; i++) {
+      console.log(
+        `creating lookup table for ${i + 1} of ${
+          createBasketArgs.components.length
+        }`
+      );
+      const lut = await pieProgram.addRaydiumAmmToAddressLookupTable({
+        connection,
+        signer: admin,
+        ammId: tokens[i].ammId,
+      });
+      lookupTables.push(lut.toBase58());
+    }
 
-    // console.log("lookup tables created:", lookupTables);
+    console.log("lookup tables created:", lookupTables);
 
     const { tx } = await pieProgram.createBasketVaultAccounts({
       creator: admin.publicKey,

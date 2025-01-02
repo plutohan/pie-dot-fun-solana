@@ -30,7 +30,10 @@ import {
   unwrapSolIx,
   wrappedSOLInstruction,
 } from "../sdk/utils/helper";
-import { addAddressesToTable, finalizeTransaction } from "../sdk/utils/lookupTable";
+import {
+  addAddressesToTable,
+  finalizeTransaction,
+} from "../sdk/utils/lookupTable";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -188,7 +191,6 @@ describe("pie", () => {
         connection,
         signer: admin,
         ammId: tokens[i].ammId,
-        basketId,
         lookupTable: newLookupTable,
       });
     }
@@ -262,7 +264,6 @@ describe("pie", () => {
         connection,
         signer: admin,
         ammId: tokens[i].ammId,
-        basketId,
         lookupTable: newLookupTable,
       });
     }

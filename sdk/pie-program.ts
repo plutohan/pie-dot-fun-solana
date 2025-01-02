@@ -55,7 +55,7 @@ import {
   serializeJitoTransaction,
   getTipInformation,
 } from "../sdk/jito";
-import {RebalanceInfo, TokenInfo} from "./types";
+import { RebalanceInfo, TokenInfo } from "./types";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -89,7 +89,11 @@ export class PieProgram {
   private idl = Object.assign({}, PieIDL);
   raydium: Raydium;
 
-  constructor(public readonly connection: Connection, cluster: Cluster, programId: string = PieIDL.address) {
+  constructor(
+    public readonly connection: Connection,
+    cluster: Cluster,
+    programId: string = PieIDL.address
+  ) {
     this.idl.address = programId;
     this.loadRaydium(connection, cluster);
   }
@@ -257,7 +261,6 @@ export class PieProgram {
         programId: TOKEN_PROGRAM_ID,
       }
     );
-
 
     return tokenAccounts.value.map((tokenAccount) => ({
       mint: tokenAccount.account.data.parsed.info.mint,
@@ -1489,26 +1492,20 @@ export class PieProgram {
     connection,
     signer,
     ammId,
-    basketId,
     lookupTable,
   }: {
     connection: Connection;
     signer: Keypair;
     ammId: string;
-    basketId: BN;
     lookupTable?: PublicKey;
   }) {
     const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
     const MAX_LOOKUP_TABLE_ADDRESS = 256;
-    const basketMint = this.basketMintPDA({ basketId });
-    const basketConfig = this.basketConfigPDA({ basketId });
     const poolKeys = data.poolKeys;
 
     const addressesKey = [
-      basketMint,
-      basketConfig,
       new PublicKey(poolKeys.mintA.address),
       new PublicKey(poolKeys.mintB.address),
       new PublicKey(ammId),
@@ -1561,30 +1558,88 @@ export class PieProgram {
     connection,
     signer,
     poolId,
-    basketId,
     lookupTable,
   }: {
     connection: Connection;
     signer: Keypair;
     poolId: string;
-    basketId: BN;
     lookupTable?: PublicKey;
   }) {
     const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
     const MAX_LOOKUP_TABLE_ADDRESS = 256;
-    const basketMint = this.basketMintPDA({ basketId });
-    const basketConfig = this.basketConfigPDA({ basketId });
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
 
     const addressesKey = [
-      basketMint,
-      basketConfig,
       new PublicKey(poolKeys.mintA.address),
       new PublicKey(poolKeys.mintB.address),
       new PublicKey(poolId),
       new PublicKey(poolKeys.authority),
+      new PublicKey(poolKeys.config.id),
+      new PublicKey(poolInfo.id),
+      new PublicKey(poolKeys.vault.A),
+      new PublicKey(poolKeys.vault.B),
+      TOKEN_PROGRAM_ID,
+      TOKEN_2022_PROGRAM_ID,
+      new PublicKey(poolKeys.programId),
+      getPdaObservationId(
+        new PublicKey(poolInfo.programId),
+        new PublicKey(poolInfo.id)
+      ).publicKey,
+    ];
+
+    if (lookupTable) {
+      const addressesStored = await findAddressesInTable(
+        connection,
+        lookupTable
+      );
+      const addressToAdd = addressesKey.filter(
+        (address) => !addressesStored.some((stored) => stored.equals(address))
+      );
+      if (
+        addressToAdd.length + addressesStored.length >=
+        MAX_LOOKUP_TABLE_ADDRESS
+      ) {
+        throw Error("Exceeds 256 addresses of lookup table");
+      }
+      await addAddressesToTable(connection, signer, lookupTable, addressToAdd);
+    } else {
+      const newLookupTable = await createLookupTable(connection, signer);
+      await addAddressesToTable(
+        connection,
+        signer,
+        newLookupTable,
+        addressesKey
+      );
+      return newLookupTable;
+    }
+
+    return lookupTable;
+  }
+
+  async addRaydiumClmmToAddressLookupTable({
+    connection,
+    signer,
+    poolId,
+    lookupTable,
+  }: {
+    connection: Connection;
+    signer: Keypair;
+    poolId: string;
+    lookupTable?: PublicKey;
+  }) {
+    const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
+    const MAX_LOOKUP_TABLE_ADDRESS = 256;
+
+    const poolKeys = data.poolKeys;
+    const poolInfo = data.poolInfo;
+
+    const addressesKey = [
+      new PublicKey(poolKeys.mintA.address),
+      new PublicKey(poolKeys.mintB.address),
+      new PublicKey(poolId),
+      new PublicKey(poolKeys.vault),
       new PublicKey(poolKeys.config.id),
       new PublicKey(poolInfo.id),
       new PublicKey(poolKeys.vault.A),
