@@ -44,19 +44,18 @@ import {
   SwapCompute,
   unwrapSolIx,
   wrappedSOLInstruction,
-} from "../tests/utils/helper";
+} from "./utils/helper";
 import {
   addAddressesToTable,
   createLookupTable,
   findAddressesInTable,
-} from "../tests/utils/lookupTable";
+} from "./utils/lookupTable";
 import {
   getTipAccounts,
   serializeJitoTransaction,
   getTipInformation,
 } from "../sdk/jito";
-import { TokenInfo } from "../tests/fixtures/mainnet/token_test";
-import { RebalanceInfo } from "../tests/fixtures/mainnet/token_rebalance_test";
+import {RebalanceInfo, TokenInfo} from "./types";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];

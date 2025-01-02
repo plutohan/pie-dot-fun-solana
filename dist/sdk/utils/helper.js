@@ -32,7 +32,7 @@ const anchor_1 = require("@coral-xyz/anchor");
 const raydium_sdk_v2_1 = require("@raydium-io/raydium-sdk-v2");
 const console_table_printer_1 = require("console-table-printer");
 const axios_1 = __importDefault(require("axios"));
-const jito_1 = require("../../sdk/jito");
+const jito_1 = require("../jito");
 async function createUserWithLamports(connection, lamports) {
     const account = web3_js_1.Keypair.generate();
     const signature = await connection.requestAirdrop(account.publicKey, lamports * web3_js_1.LAMPORTS_PER_SOL);
@@ -220,8 +220,8 @@ function getExplorerUrl(txid, endpoint) {
     const clusterParam = endpoint.includes("devnet") ? "?cluster=devnet" : "";
     return `https://solscan.io/tx/${txid}${clusterParam}`;
 }
-async function getSwapData({ isBuy, inputMint, outputMint, amount, slippage, }) {
-    const { data: swapResponse } = await axios_1.default.get(`${raydium_sdk_v2_1.API_URLS.SWAP_HOST}/compute/${isBuy ? "swap-base-out" : "swap-base-in"}?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippage * 100}&txVersion=V0`);
+async function getSwapData({ isSwapBaseOut, inputMint, outputMint, amount, slippage, }) {
+    const { data: swapResponse } = await axios_1.default.get(`${raydium_sdk_v2_1.API_URLS.SWAP_HOST}/compute/${isSwapBaseOut ? "swap-base-out" : "swap-base-in"}?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippage * 100}&txVersion=V0`);
     return swapResponse;
 }
 function checkSwapDataError(swapData) {

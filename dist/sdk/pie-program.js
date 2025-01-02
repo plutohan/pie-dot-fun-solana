@@ -39,8 +39,8 @@ const web3_js_1 = require("@solana/web3.js");
 const PieIDL = __importStar(require("../target/idl/pie.json"));
 const spl_token_1 = require("@solana/spl-token");
 const raydium_sdk_v2_1 = require("@raydium-io/raydium-sdk-v2");
-const helper_1 = require("../tests/utils/helper");
-const lookupTable_1 = require("../tests/utils/lookupTable");
+const helper_1 = require("./utils/helper");
+const lookupTable_1 = require("./utils/lookupTable");
 const jito_1 = require("../sdk/jito");
 const PROGRAM_STATE = "program_state";
 const USER_FUND = "user_fund";
@@ -48,8 +48,10 @@ const BASKET_CONFIG = "basket_config";
 const BASKET_MINT = "basket_mint";
 const MPL_TOKEN_METADATA_PROGRAM_ID = new web3_js_1.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 class PieProgram {
-    constructor(connection, cluster) {
+    constructor(connection, cluster, programId = PieIDL.address) {
         this.connection = connection;
+        this.idl = Object.assign({}, PieIDL);
+        this.idl.address = programId;
         this.loadRaydium(connection, cluster);
     }
     async loadRaydium(connection, cluster) {
@@ -61,7 +63,7 @@ class PieProgram {
         });
     }
     get program() {
-        return new anchor_1.Program(PieIDL, { connection: this.connection });
+        return new anchor_1.Program(this.idl, { connection: this.connection });
     }
     get accounts() {
         return this.program.account;
@@ -140,7 +142,6 @@ class PieProgram {
         const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(owner, {
             programId: spl_token_1.TOKEN_PROGRAM_ID,
         });
-        console.log(JSON.stringify(tokenAccounts));
         return tokenAccounts.value.map((tokenAccount) => ({
             mint: tokenAccount.account.data.parsed.info.mint,
             owner: tokenAccount.account.data.parsed.info.owner,
@@ -777,7 +778,7 @@ class PieProgram {
     /**
      * Executes rebalancing.
      * @param rebalancer - The rebalancer account.
-     * @param isBuy - Whether to buy or sell.
+     * @param isSwapBaseOut - Whether to buy or sell.
      * @param amountIn - The amount in.
      * @param amountOut - The amount out.
      * @param ammId - The AMM ID.
@@ -786,7 +787,7 @@ class PieProgram {
      * @param raydium - The Raydium instance.
      * @returns A promise that resolves to a transaction or null.
      */
-    async executeRebalancing({ rebalancer, isBuy, amountIn, amountOut, ammId, basketId, tokenMint, createTokenAccount = true, }) {
+    async executeRebalancing({ rebalancer, isSwapBaseOut, amountIn, amountOut, ammId, basketId, tokenMint, createTokenAccount = true, }) {
         const tx = new web3_js_1.Transaction();
         const data = await this.raydium.liquidity.getPoolInfoFromRpc({
             poolId: ammId,
@@ -794,14 +795,14 @@ class PieProgram {
         const basketMint = this.basketMintPDA({ basketId });
         const basketConfig = this.basketConfigPDA({ basketId });
         const poolKeys = data.poolKeys;
-        const inputMint = isBuy ? spl_token_1.NATIVE_MINT : tokenMint;
+        const inputMint = isSwapBaseOut ? spl_token_1.NATIVE_MINT : tokenMint;
         const baseIn = inputMint.toString() === poolKeys.mintA.address;
         const [mintIn, mintOut] = baseIn
             ? [poolKeys.mintA.address, poolKeys.mintB.address]
             : [poolKeys.mintB.address, poolKeys.mintA.address];
         let inputTokenAccount;
         let outputTokenAccount;
-        if (isBuy) {
+        if (isSwapBaseOut) {
             inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), basketConfig, true);
             const { tokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), rebalancer, basketConfig);
             outputTokenAccount = tokenAccount;
@@ -816,7 +817,7 @@ class PieProgram {
                 tx.add(outputTx);
         }
         const executeRebalancingTx = await this.program.methods
-            .executeRebalancing(isBuy, new anchor_1.BN(amountIn), new anchor_1.BN(amountOut))
+            .executeRebalancing(isSwapBaseOut, new anchor_1.BN(amountIn), new anchor_1.BN(amountOut))
             .accountsPartial({
             rebalancer,
             basketConfig: this.basketConfigPDA({ basketId }),
@@ -844,14 +845,14 @@ class PieProgram {
         tx.add(executeRebalancingTx);
         return tx;
     }
-    async executeRebalancingCpmm({ rebalancer, isBuy, amountIn, amountOut, poolId, basketId, tokenMint, }) {
+    async executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amountIn, amountOut, poolId, basketId, tokenMint, }) {
         const tx = new web3_js_1.Transaction();
         const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
         const basketMint = this.basketMintPDA({ basketId });
         const basketConfig = this.basketConfigPDA({ basketId });
         const poolKeys = data.poolKeys;
         const poolInfo = data.poolInfo;
-        const inputMint = isBuy ? spl_token_1.NATIVE_MINT : tokenMint;
+        const inputMint = isSwapBaseOut ? spl_token_1.NATIVE_MINT : tokenMint;
         const [mintA, mintB] = [
             new web3_js_1.PublicKey(poolInfo.mintA.address),
             new web3_js_1.PublicKey(poolInfo.mintB.address),
@@ -862,7 +863,7 @@ class PieProgram {
             : [poolKeys.mintB.address, poolKeys.mintA.address];
         let inputTokenAccount;
         let outputTokenAccount;
-        if (isBuy) {
+        if (isSwapBaseOut) {
             inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), basketConfig, true);
             const { tokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), rebalancer, basketConfig);
             outputTokenAccount = tokenAccount;
@@ -875,7 +876,7 @@ class PieProgram {
             tx.add(outputTx);
         }
         const executeRebalancingTx = await this.program.methods
-            .executeRebalancingCpmm(isBuy, new anchor_1.BN(amountIn), new anchor_1.BN(amountOut))
+            .executeRebalancingCpmm(isSwapBaseOut, new anchor_1.BN(amountIn), new anchor_1.BN(amountOut))
             .accountsPartial({
             rebalancer,
             basketConfig: this.basketConfigPDA({ basketId }),
@@ -999,7 +1000,7 @@ class PieProgram {
         const swapData = [];
         basketConfigData.components.forEach((component) => {
             swapData.push((0, helper_1.getSwapData)({
-                isBuy: true,
+                isSwapBaseOut: true,
                 inputMint: spl_token_1.NATIVE_MINT.toBase58(),
                 outputMint: component.mint.toBase58(),
                 amount: component.quantityInSysDecimal
@@ -1089,7 +1090,7 @@ class PieProgram {
         const basketConfigData = await this.getBasketConfig({ basketId });
         basketConfigData.components.forEach((component) => {
             swapData.push((0, helper_1.getSwapData)({
-                isBuy: false,
+                isSwapBaseOut: false,
                 inputMint: component.mint.toBase58(),
                 outputMint: spl_token_1.NATIVE_MINT.toBase58(),
                 amount: component.quantityInSysDecimal
@@ -1164,9 +1165,13 @@ class PieProgram {
         const swapData = [];
         rebalanceInfo.forEach((rebalance) => {
             swapData.push((0, helper_1.getSwapData)({
-                isBuy: rebalance.isBuy,
-                inputMint: rebalance.isBuy ? spl_token_1.NATIVE_MINT.toBase58() : rebalance.mint,
-                outputMint: rebalance.isBuy ? rebalance.mint : spl_token_1.NATIVE_MINT.toBase58(),
+                isSwapBaseOut: rebalance.isSwapBaseOut,
+                inputMint: rebalance.isSwapBaseOut
+                    ? spl_token_1.NATIVE_MINT.toBase58()
+                    : rebalance.mint,
+                outputMint: rebalance.isSwapBaseOut
+                    ? rebalance.mint
+                    : spl_token_1.NATIVE_MINT.toBase58(),
                 amount: Number(rebalance.amount),
                 slippage,
             }));
@@ -1214,11 +1219,11 @@ class PieProgram {
             }
             const rebalanceTx = await this.executeRebalancing({
                 rebalancer,
-                isBuy: rebalanceInfo[i].isBuy,
-                amountIn: rebalanceInfo[i].isBuy
+                isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+                amountIn: rebalanceInfo[i].isSwapBaseOut
                     ? swapDataResult[i].data.otherAmountThreshold
                     : swapDataResult[i].data.inputAmount,
-                amountOut: rebalanceInfo[i].isBuy
+                amountOut: rebalanceInfo[i].isSwapBaseOut
                     ? swapDataResult[i].data.outputAmount
                     : swapDataResult[i].data.otherAmountThreshold,
                 ammId: rebalanceInfo[i].ammId,
@@ -1277,13 +1282,6 @@ class PieProgram {
      */
     onTransferBasket(handler) {
         this.program.addEventListener("transferBasket", handler);
-    }
-    /**
-     * Adds an event listener for the 'UpdateRebalanceMargin' event.
-     * @param handler - The function to handle the event.
-     */
-    onUpdateRebalanceMargin(handler) {
-        this.program.addEventListener("updateMaxRebalanceMargin", handler);
     }
     /**
      * Adds an event listener for the 'ExecuteRebalancing' event.

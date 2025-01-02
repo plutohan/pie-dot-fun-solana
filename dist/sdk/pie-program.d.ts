@@ -2,8 +2,7 @@ import { BN, Idl, IdlAccounts, IdlEvents, IdlTypes, Program } from "@coral-xyz/a
 import { Cluster, Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { TokenInfo } from "../tests/fixtures/mainnet/token_test";
-import { RebalanceInfo } from "../tests/fixtures/mainnet/token_rebalance_test";
+import { RebalanceInfo, TokenInfo } from "./types";
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
 export type UserFund = IdlAccounts<Pie>["userFund"];
@@ -13,7 +12,6 @@ export type CreateBasketEvent = IdlEvents<Pie>["createBasketEvent"];
 export type UpdateRebalancerEvent = IdlEvents<Pie>["updateRebalancerEvent"];
 export type TransferAdminEvent = IdlEvents<Pie>["transferAdminEvent"];
 export type TransferBasketEvent = IdlEvents<Pie>["transferBasketEvent"];
-export type UpdateRebalanceMarginEvent = IdlEvents<Pie>["updateMaxRebalanceMarginEvent"];
 export type ExecuteRebalancingEvent = IdlEvents<Pie>["executeRebalancingEvent"];
 export type StartRebalancingEvent = IdlEvents<Pie>["startRebalancingEvent"];
 export type StopRebalancingEvent = IdlEvents<Pie>["stopRebalancingEvent"];
@@ -23,9 +21,10 @@ export type MintBasketTokenEvent = IdlEvents<Pie>["mintBasketTokenEvent"];
 export type RedeemBasketTokenEvent = IdlEvents<Pie>["redeemBasketTokenEvent"];
 export declare class PieProgram {
     readonly connection: Connection;
-    constructor(connection: Connection, cluster: Cluster);
-    loadRaydium(connection: Connection, cluster: Cluster): Promise<void>;
+    private idl;
     raydium: Raydium;
+    constructor(connection: Connection, cluster: Cluster, programId?: string);
+    loadRaydium(connection: Connection, cluster: Cluster): Promise<void>;
     get program(): Program<Idl>;
     get accounts(): any;
     get programStatePDA(): PublicKey;
@@ -318,7 +317,7 @@ export declare class PieProgram {
     /**
      * Executes rebalancing.
      * @param rebalancer - The rebalancer account.
-     * @param isBuy - Whether to buy or sell.
+     * @param isSwapBaseOut - Whether to buy or sell.
      * @param amountIn - The amount in.
      * @param amountOut - The amount out.
      * @param ammId - The AMM ID.
@@ -327,9 +326,9 @@ export declare class PieProgram {
      * @param raydium - The Raydium instance.
      * @returns A promise that resolves to a transaction or null.
      */
-    executeRebalancing({ rebalancer, isBuy, amountIn, amountOut, ammId, basketId, tokenMint, createTokenAccount, }: {
+    executeRebalancing({ rebalancer, isSwapBaseOut, amountIn, amountOut, ammId, basketId, tokenMint, createTokenAccount, }: {
         rebalancer: PublicKey;
-        isBuy: boolean;
+        isSwapBaseOut: boolean;
         amountIn: string;
         amountOut: string;
         ammId: string;
@@ -337,9 +336,9 @@ export declare class PieProgram {
         tokenMint: PublicKey;
         createTokenAccount?: boolean;
     }): Promise<Transaction | null>;
-    executeRebalancingCpmm({ rebalancer, isBuy, amountIn, amountOut, poolId, basketId, tokenMint, }: {
+    executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amountIn, amountOut, poolId, basketId, tokenMint, }: {
         rebalancer: PublicKey;
-        isBuy: boolean;
+        isSwapBaseOut: boolean;
         amountIn: string;
         amountOut: string;
         poolId: string;
@@ -415,11 +414,6 @@ export declare class PieProgram {
      * @param handler - The function to handle the event.
      */
     onTransferBasket(handler: (event: TransferBasketEvent) => void): void;
-    /**
-     * Adds an event listener for the 'UpdateRebalanceMargin' event.
-     * @param handler - The function to handle the event.
-     */
-    onUpdateRebalanceMargin(handler: (event: UpdateRebalanceMarginEvent) => void): void;
     /**
      * Adds an event listener for the 'ExecuteRebalancing' event.
      * @param handler - The function to handle the event.

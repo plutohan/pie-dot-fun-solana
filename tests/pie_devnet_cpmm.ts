@@ -19,7 +19,7 @@ import {
 import { CurveCalculator, Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens, tokensCpmm } from "./fixtures/devnet/token_test";
 import { Table } from "console-table-printer";
-import { initSdk } from "./utils/config";
+import { initSdk } from "../sdk/utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
   getOrCreateNativeMintATA,
@@ -29,8 +29,8 @@ import {
   showUserFundTable,
   unwrapSolIx,
   wrappedSOLInstruction,
-} from "./utils/helper";
-import { addAddressesToTable, finalizeTransaction } from "./utils/lookupTable";
+} from "../sdk/utils/helper";
+import { addAddressesToTable, finalizeTransaction } from "../sdk/utils/lookupTable";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));

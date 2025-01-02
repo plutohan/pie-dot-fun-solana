@@ -1,5 +1,4 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Pie } from "../target/types/pie";
 import {
   Connection,
   Keypair,
@@ -8,12 +7,9 @@ import {
 } from "@solana/web3.js";
 import devnetAdmin from "../public/devnet-admin.json";
 import { assert } from "chai";
-import { createBasketComponents } from "./utils/helper";
-import { PieProgram } from "../sdk/pie-program";
+import { createBasketComponents } from "../sdk/utils/helper";
+import {CreateBasketArgs, PieProgram} from "../sdk/pie-program";
 import { getMint } from "@solana/spl-token";
-
-export type BasketComponent = anchor.IdlTypes<Pie>["basketComponent"];
-export type CreateBasketArgs = anchor.IdlTypes<Pie>["createBasketArgs"];
 
 function sleep(s: number) {
   return new Promise((resolve) => setTimeout(resolve, s * 1000));

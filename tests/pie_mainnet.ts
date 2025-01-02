@@ -21,7 +21,7 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens } from "./fixtures/mainnet/token_test";
 import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
 import { Table } from "console-table-printer";
-import { initSdk } from "./utils/config";
+import { initSdk } from "../sdk/utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
   getExplorerUrl,
@@ -29,7 +29,7 @@ import {
   showBasketConfigTable,
   showBasketVaultsTable,
   startPollingJitoBundle,
-} from "./utils/helper";
+} from "../sdk/utils/helper";
 import {
   getInflightBundleStatuses,
   sendBundle,

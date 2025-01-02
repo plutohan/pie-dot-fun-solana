@@ -25,13 +25,12 @@ import {
   TOKEN_PROGRAM_ID,
   transfer,
 } from "@solana/spl-token";
-import { BasketComponent } from "../pie";
 import { BN } from "@coral-xyz/anchor";
 import { Raydium, API_URLS } from "@raydium-io/raydium-sdk-v2";
-import { PieProgram } from "../../sdk/pie-program";
+import {BasketComponent, PieProgram} from "../pie-program";
 import { Table } from "console-table-printer";
 import axios from "axios";
-import { getInflightBundleStatuses } from "../../sdk/jito";
+import { getInflightBundleStatuses } from "../jito";
 
 export async function createUserWithLamports(
   connection: Connection,
