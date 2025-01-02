@@ -649,12 +649,6 @@ export class PieProgram {
       outputMint: mintOut,
       outputAmount: new BN(amountOut),
     });
-    //Need to handle this due to slippage
-    const wrappedSolIx = await wrappedSOLInstruction(
-      user,
-      Math.floor(Math.abs(swapResult.amountIn.toNumber() * 1.1))
-    );
-    tx.add(...wrappedSolIx);
 
     const buyComponentCpmmTx = await this.program.methods
       .buyComponentCpmm(swapResult.amountIn, new BN(amountOut))
@@ -694,7 +688,7 @@ export class PieProgram {
 
   /**
    * Buys a component using CLMM from Raydium.
-   * @param userSourceOwner - The user source owner account.
+   * @param user - The user source owner account.
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
@@ -708,6 +702,7 @@ export class PieProgram {
     amountOut,
     outputMint,
     poolId,
+    slippage,
   }: {
     user: PublicKey;
     basketId: BN;
@@ -715,6 +710,7 @@ export class PieProgram {
     amountOut: BN;
     outputMint: PublicKey;
     poolId: string;
+    slippage: number;
   }): Promise<Transaction> {
     const tx = new Transaction();
     const basketConfig = this.basketConfigPDA({ basketId });
@@ -729,7 +725,7 @@ export class PieProgram {
       tickArrayCache: tickCache[poolId],
       amountOut,
       baseMint: outputMint,
-      slippage: 0.01,
+      slippage,
       epochInfo: await this.raydium.fetchEpochInfo(),
     });
 
@@ -768,13 +764,9 @@ export class PieProgram {
       );
 
     tx.add(outputTx);
-    const wrappedSolIx = await wrappedSOLInstruction(
-      user,
-      maxAmountIn.toNumber()
-    );
-    tx.add(...wrappedSolIx);
+
     const buyComponentTx = await this.program.methods
-      .buyComponent(new BN(maxAmountIn), new BN(amountOut))
+      .buyComponentClmm(new BN(maxAmountIn), new BN(amountOut))
       .accountsPartial({
         user: user,
         userFund: this.userFundPDA({ user, basketId }),
@@ -1639,11 +1631,9 @@ export class PieProgram {
       new PublicKey(poolKeys.mintA.address),
       new PublicKey(poolKeys.mintB.address),
       new PublicKey(poolId),
-      new PublicKey(poolKeys.vault),
+      new PublicKey(poolKeys.vaultA),
+      new PublicKey(poolKeys.vaultB),
       new PublicKey(poolKeys.config.id),
-      new PublicKey(poolInfo.id),
-      new PublicKey(poolKeys.vault.A),
-      new PublicKey(poolKeys.vault.B),
       TOKEN_PROGRAM_ID,
       TOKEN_2022_PROGRAM_ID,
       new PublicKey(poolKeys.programId),
@@ -1731,16 +1721,16 @@ export class PieProgram {
     checkSwapDataError(swapDataResult);
 
     //@TODO remove this when other pools are available
-    for (let i = 0; i < swapDataResult.length; i++) {
-      if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
-        console.log(
-          `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
-        );
-        swapDataResult[i].data.otherAmountThreshold = String(
-          Number(swapDataResult[i].data.otherAmountThreshold) * 10
-        );
-      }
-    }
+    // for (let i = 0; i < swapDataResult.length; i++) {
+    //   if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
+    //     console.log(
+    //       `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
+    //     );
+    //     swapDataResult[i].data.otherAmountThreshold = String(
+    //       Number(swapDataResult[i].data.otherAmountThreshold) * 10
+    //     );
+    //   }
+    // }
 
     // Calculate total amount needed
     const totalAmountIn = swapDataResult.reduce(
@@ -1779,14 +1769,38 @@ export class PieProgram {
         addressLookupTablesAccount = [];
       }
 
-      const buyComponentTx = await this.buyComponent({
-        userSourceOwner: user,
-        basketId,
-        maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
-        amountOut: Number(swapDataResult[i].data.outputAmount),
-        ammId: tokenInfo[i].ammId,
-        unwrapSol: false,
-      });
+      let buyComponentTx;
+      switch (tokenInfo[i].type) {
+        case "amm":
+          buyComponentTx = await this.buyComponent({
+            userSourceOwner: user,
+            basketId,
+            maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
+            amountOut: Number(swapDataResult[i].data.outputAmount),
+            ammId: tokenInfo[i].ammId,
+            unwrapSol: false,
+          });
+          break;
+        case "clmm":
+          buyComponentTx = await this.buyComponentClmm({
+            user,
+            basketId,
+            maxAmountIn: new BN(swapDataResult[i].data.otherAmountThreshold),
+            amountOut: new BN(swapDataResult[i].data.outputAmount),
+            outputMint: new PublicKey(tokenInfo[i].mint),
+            poolId: tokenInfo[i].ammId,
+            slippage,
+          });
+          break;
+        case "cpmm":
+          buyComponentTx = await this.buyComponentCpmm({
+            user,
+            basketId,
+            amountOut: Number(swapDataResult[i].data.outputAmount),
+            poolId: tokenInfo[i].ammId,
+          });
+          break;
+      }
       tx.add(buyComponentTx);
 
       const lut = (
