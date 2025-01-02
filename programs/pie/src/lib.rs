@@ -20,6 +20,14 @@ pub mod raydium_amm_address {
     declare_id!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
 }
 
+pub mod initial_admin {
+    use anchor_lang::prelude::declare_id;
+    #[cfg(feature = "devnet")]
+    declare_id!("DjCDT99HEZyZuq48wugooYNGBnrB5Nhe93VgAKKBAPDV");
+    #[cfg(not(feature = "devnet"))]
+    declare_id!("6tfUrp38Q5jRysrgLhNadxmrmXVKt7Rz5dC593x1wu1Q");
+}
+
 #[program]
 pub mod pie {
 
