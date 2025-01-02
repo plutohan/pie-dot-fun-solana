@@ -8,6 +8,7 @@ import {
 } from "@coral-xyz/anchor";
 import {
   AddressLookupTableAccount,
+  Cluster,
   ComputeBudgetProgram,
   Connection,
   Keypair,
@@ -80,14 +81,26 @@ const PROGRAM_STATE = "program_state";
 const USER_FUND = "user_fund";
 const BASKET_CONFIG = "basket_config";
 const BASKET_MINT = "basket_mint";
-const REBALANCER_STATE = "rebalancer_state";
 
 const MPL_TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 );
 
 export class PieProgram {
-  constructor(public readonly connection: Connection) {}
+  constructor(public readonly connection: Connection, cluster: Cluster) {
+    this.loadRaydium(connection, cluster);
+  }
+
+  async loadRaydium(connection: Connection, cluster: Cluster) {
+    this.raydium = await Raydium.load({
+      connection: connection as any,
+      cluster: cluster as any,
+      disableFeatureCheck: true,
+      blockhashCommitment: "finalized",
+    });
+  }
+
+  raydium: Raydium;
 
   get program() {
     return new Program(PieIDL as Idl, { connection: this.connection });
@@ -104,21 +117,27 @@ export class PieProgram {
     )[0];
   }
 
-  basketConfigPDA(basketId: BN): PublicKey {
+  basketConfigPDA({ basketId }: { basketId: BN }): PublicKey {
     return PublicKey.findProgramAddressSync(
       [Buffer.from(BASKET_CONFIG), basketId.toArrayLike(Buffer, "be", 8)],
       this.program.programId
     )[0];
   }
 
-  basketMintPDA(basketId: BN): PublicKey {
+  basketMintPDA({ basketId }: { basketId: BN }): PublicKey {
     return PublicKey.findProgramAddressSync(
       [Buffer.from(BASKET_MINT), basketId.toArrayLike(Buffer, "be", 8)],
       this.program.programId
     )[0];
   }
 
-  userFundPDA(user: PublicKey, basketId: BN): PublicKey {
+  userFundPDA({
+    user,
+    basketId,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+  }): PublicKey {
     return PublicKey.findProgramAddressSync(
       [
         Buffer.from(USER_FUND),
@@ -129,7 +148,7 @@ export class PieProgram {
     )[0];
   }
 
-  metadataPDA(mint: PublicKey): PublicKey {
+  metadataPDA({ mint }: { mint: PublicKey }): PublicKey {
     return PublicKey.findProgramAddressSync(
       [
         Buffer.from("metadata"),
@@ -137,13 +156,6 @@ export class PieProgram {
         mint.toBuffer(),
       ],
       new PublicKey(MPL_TOKEN_METADATA_PROGRAM_ID)
-    )[0];
-  }
-
-  rebalancerStatePDA(rebalancer: PublicKey): PublicKey {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from(REBALANCER_STATE), rebalancer.toBuffer()],
-      this.program.programId
     )[0];
   }
 
@@ -164,8 +176,12 @@ export class PieProgram {
     return platformFeeTokenAccount;
   }
 
-  async getCreatorFeeTokenAccount(basketId: BN): Promise<PublicKey> {
-    const basketConfig = await this.getBasketConfig(basketId);
+  async getCreatorFeeTokenAccount({
+    basketId,
+  }: {
+    basketId: BN;
+  }): Promise<PublicKey> {
+    const basketConfig = await this.getBasketConfig({ basketId });
     const creatorFeeTokenAccount = getAssociatedTokenAddressSync(
       NATIVE_MINT,
       basketConfig.creator
@@ -173,8 +189,12 @@ export class PieProgram {
     return creatorFeeTokenAccount;
   }
 
-  async getBasketConfig(basketId: BN): Promise<BasketConfig | null> {
-    const basketConfigPDA = this.basketConfigPDA(basketId);
+  async getBasketConfig({
+    basketId,
+  }: {
+    basketId: BN;
+  }): Promise<BasketConfig | null> {
+    const basketConfigPDA = this.basketConfigPDA({ basketId });
     try {
       return await this.accounts.basketConfig.fetch(basketConfigPDA);
     } catch (error) {
@@ -182,8 +202,14 @@ export class PieProgram {
     }
   }
 
-  async getUserFund(user: PublicKey, basketId: BN): Promise<UserFund | null> {
-    const userFundPDA = this.userFundPDA(user, basketId);
+  async getUserFund({
+    user,
+    basketId,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+  }): Promise<UserFund | null> {
+    const userFundPDA = this.userFundPDA({ user, basketId });
     try {
       return await this.accounts.userFund.fetch(userFundPDA);
     } catch (error) {
@@ -191,7 +217,13 @@ export class PieProgram {
     }
   }
 
-  async getTokenBalance(mint: PublicKey, owner: PublicKey): Promise<number> {
+  async getTokenBalance({
+    mint,
+    owner,
+  }: {
+    mint: PublicKey;
+    owner: PublicKey;
+  }): Promise<number> {
     const tokenAccount = getAssociatedTokenAddressSync(mint, owner, true);
 
     try {
@@ -205,29 +237,61 @@ export class PieProgram {
     }
   }
 
-  async getBasketVaults(basketId: BN): Promise<
+  async getAllTokenAccountWithBalance({ owner }: { owner: PublicKey }): Promise<
+    {
+      mint: PublicKey;
+      owner: PublicKey;
+      pubkey: PublicKey;
+      tokenAmount: {
+        amount: string;
+        decimals: number;
+        uiAmount: number;
+        uiAmountString: string;
+      };
+    }[]
+  > {
+    const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
+      owner,
+      {
+        programId: TOKEN_PROGRAM_ID,
+      }
+    );
+
+
+    return tokenAccounts.value.map((tokenAccount) => ({
+      mint: tokenAccount.account.data.parsed.info.mint,
+      owner: tokenAccount.account.data.parsed.info.owner,
+      pubkey: tokenAccount.pubkey,
+      tokenAmount: tokenAccount.account.data.parsed.info.tokenAmount,
+    }));
+  }
+
+  async getBasketVaults({ basketId }: { basketId: BN }): Promise<
     {
       mint: PublicKey;
       balance: number;
     }[]
   > {
-    const basketConfig = await this.getBasketConfig(basketId);
+    const basketConfig = await this.getBasketConfig({ basketId });
 
     const tokenMints = [];
     const tokenBalances: Promise<number>[] = [];
 
     tokenMints.push(NATIVE_MINT);
     tokenBalances.push(
-      this.getTokenBalance(NATIVE_MINT, this.basketConfigPDA(basketId))
+      this.getTokenBalance({
+        mint: NATIVE_MINT,
+        owner: this.basketConfigPDA({ basketId }),
+      })
     );
 
     for (const component of basketConfig.components) {
       tokenMints.push(new PublicKey(component.mint));
       tokenBalances.push(
-        this.getTokenBalance(
-          new PublicKey(component.mint),
-          this.basketConfigPDA(basketId)
-        )
+        this.getTokenBalance({
+          mint: new PublicKey(component.mint),
+          owner: this.basketConfigPDA({ basketId }),
+        })
       );
     }
 
@@ -244,7 +308,7 @@ export class PieProgram {
    * @param admin - The admin account.
    * @returns A promise that resolves to a transaction.
    */
-  async initialize(admin: PublicKey): Promise<Transaction> {
+  async initialize({ admin }: { admin: PublicKey }): Promise<Transaction> {
     const tx = await this.program.methods
       .initialize()
       .accounts({ admin })
@@ -258,10 +322,13 @@ export class PieProgram {
    * @param newAdmin - The new admin account.
    * @returns A promise that resolves to a transaction.
    */
-  async transferAdmin(
-    admin: PublicKey,
-    newAdmin: PublicKey
-  ): Promise<Transaction> {
+  async transferAdmin({
+    admin,
+    newAdmin,
+  }: {
+    admin: PublicKey;
+    newAdmin: PublicKey;
+  }): Promise<Transaction> {
     return await this.program.methods
       .transferAdmin(newAdmin)
       .accounts({ admin })
@@ -274,10 +341,13 @@ export class PieProgram {
    * @param newMargin - The new margin.
    * @returns A promise that resolves to a transaction.
    */
-  async updateRebalanceMargin(
-    admin: PublicKey,
-    newMargin: number
-  ): Promise<Transaction> {
+  async updateRebalanceMargin({
+    admin,
+    newMargin,
+  }: {
+    admin: PublicKey;
+    newMargin: number;
+  }): Promise<Transaction> {
     return await this.program.methods
       .updateRebalanceMargin(new BN(newMargin))
       .accounts({ admin, programState: this.programStatePDA })
@@ -291,11 +361,15 @@ export class PieProgram {
    * @param newPlatformFeePercentage - The new platform fee percentage.
    * @returns A promise that resolves to a transaction.
    */
-  async updateFee(
-    admin: PublicKey,
-    newCreatorFeePercentage: number,
-    newPlatformFeePercentage: number
-  ): Promise<Transaction> {
+  async updateFee({
+    admin,
+    newCreatorFeePercentage,
+    newPlatformFeePercentage,
+  }: {
+    admin: PublicKey;
+    newCreatorFeePercentage: number;
+    newPlatformFeePercentage: number;
+  }): Promise<Transaction> {
     return await this.program.methods
       .updateFee(
         new BN(newCreatorFeePercentage),
@@ -311,10 +385,13 @@ export class PieProgram {
    * @param newPlatformFeeWallet - The new platform fee wallet.
    * @returns A promise that resolves to a transaction.
    */
-  async updatePlatformFeeWallet(
-    admin: PublicKey,
-    newPlatformFeeWallet: PublicKey
-  ): Promise<Transaction> {
+  async updatePlatformFeeWallet({
+    admin,
+    newPlatformFeeWallet,
+  }: {
+    admin: PublicKey;
+    newPlatformFeeWallet: PublicKey;
+  }): Promise<Transaction> {
     return await this.program.methods
       .updatePlatformFeeWallet(newPlatformFeeWallet)
       .accounts({ admin, programState: this.programStatePDA })
@@ -328,12 +405,16 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @returns A promise that resolves to a transaction.
    */
-  async createBasketVaultAccounts(
-    creator: PublicKey,
-    args: CreateBasketArgs,
-    basketId: BN
-  ): Promise<{ vaults: PublicKey[]; tx: Transaction }> {
-    const basketConfig = this.basketConfigPDA(basketId);
+  async createBasketVaultAccounts({
+    creator,
+    args,
+    basketId,
+  }: {
+    creator: PublicKey;
+    args: CreateBasketArgs;
+    basketId: BN;
+  }): Promise<{ vaults: PublicKey[]; tx: Transaction }> {
+    const basketConfig = this.basketConfigPDA({ basketId });
 
     const tx = new Transaction();
     const vaults: PublicKey[] = [];
@@ -360,20 +441,24 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @returns A promise that resolves to a transaction.
    */
-  async createBasket(
-    creator: PublicKey,
-    args: CreateBasketArgs,
-    basketId: BN
-  ): Promise<Transaction> {
-    const basketMint = this.basketMintPDA(basketId);
+  async createBasket({
+    creator,
+    args,
+    basketId,
+  }: {
+    creator: PublicKey;
+    args: CreateBasketArgs;
+    basketId: BN;
+  }): Promise<Transaction> {
+    const basketMint = this.basketMintPDA({ basketId });
 
     const createBasketTx = await this.program.methods
       .createBasket(args)
       .accountsPartial({
         creator,
         programState: this.programStatePDA,
-        metadataAccount: this.metadataPDA(basketMint),
-        basketConfig: this.basketConfigPDA(basketId),
+        metadataAccount: this.metadataPDA({ mint: basketMint }),
+        basketConfig: this.basketConfigPDA({ basketId }),
         basketMint: basketMint,
       })
       .transaction();
@@ -388,16 +473,20 @@ export class PieProgram {
    * @param newRebalancer - New rebalancer in the basket
    * @returns A promise that resolves to a transaction.
    */
-  async updateRebalancer(
-    creator: PublicKey,
-    basketId: BN,
-    newRebalancer: PublicKey
-  ): Promise<Transaction> {
+  async updateRebalancer({
+    creator,
+    basketId,
+    newRebalancer,
+  }: {
+    creator: PublicKey;
+    basketId: BN;
+    newRebalancer: PublicKey;
+  }): Promise<Transaction> {
     return await this.program.methods
       .updateRebalancer(newRebalancer)
       .accountsPartial({
         creator,
-        basketConfig: this.basketConfigPDA(basketId),
+        basketConfig: this.basketConfigPDA({ basketId }),
       })
       .transaction();
   }
@@ -408,7 +497,6 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
@@ -417,7 +505,6 @@ export class PieProgram {
     basketId,
     maxAmountIn,
     amountOut,
-    raydium,
     ammId,
     unwrapSol = true,
   }: {
@@ -425,16 +512,15 @@ export class PieProgram {
     basketId: BN;
     maxAmountIn: number;
     amountOut: number;
-    raydium: Raydium;
     ammId: string;
     unwrapSol?: boolean;
   }): Promise<Transaction> {
     const tx = new Transaction();
-    const data = await raydium.liquidity.getPoolInfoFromRpc({
+    const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
     const inputMint = NATIVE_MINT;
-    const basketConfig = this.basketConfigPDA(basketId);
+    const basketConfig = this.basketConfigPDA({ basketId });
 
     const poolKeys = data.poolKeys;
     const baseIn = inputMint.toString() === poolKeys.mintA.address;
@@ -466,7 +552,7 @@ export class PieProgram {
         basketConfig: basketConfig,
         mintOut: mintOut,
         amm: new PublicKey(ammId),
-        userFund: this.userFundPDA(userSourceOwner, basketId),
+        userFund: this.userFundPDA({ user: userSourceOwner, basketId }),
         ammAuthority: new PublicKey(poolKeys.authority),
         ammOpenOrders: new PublicKey(poolKeys.openOrders),
         ammCoinVault: new PublicKey(poolKeys.vault.A),
@@ -483,7 +569,7 @@ export class PieProgram {
         userTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
       })
       .transaction();
 
@@ -501,20 +587,23 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
-  async buyComponentCpmm(
-    user: PublicKey,
-    basketId: BN,
-    amountOut: number,
-    raydium: Raydium,
-    poolId: string
-  ): Promise<Transaction> {
+  async buyComponentCpmm({
+    user,
+    basketId,
+    amountOut,
+    poolId,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amountOut: number;
+    poolId: string;
+  }): Promise<Transaction> {
     const tx = new Transaction();
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
-    const basketConfig = this.basketConfigPDA(basketId);
+    const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
+    const basketConfig = this.basketConfigPDA({ basketId });
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
@@ -569,7 +658,7 @@ export class PieProgram {
         user: user,
         programState: this.programStatePDA,
         basketConfig: basketConfig,
-        userFund: this.userFundPDA(user, basketId),
+        userFund: this.userFundPDA({ user, basketId }),
         mintOut: mintOut,
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolInfo.id),
@@ -587,7 +676,7 @@ export class PieProgram {
         inputTokenMint: baseIn ? mintA : mintB,
         outputTokenMint: baseIn ? mintB : mintA,
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
         observationState: getPdaObservationId(
           new PublicKey(poolInfo.programId),
           new PublicKey(poolInfo.id)
@@ -605,23 +694,28 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param poolId - The CLMM pool ID.
    * @returns A promise that resolves to a transaction.
    */
-  async buyComponentClmm(
-    user: PublicKey,
-    basketId: BN,
-    maxAmountIn: BN,
-    amountOut: BN,
-    raydium: Raydium,
-    outputMint: PublicKey,
-    poolId: string
-  ): Promise<Transaction> {
+  async buyComponentClmm({
+    user,
+    basketId,
+    maxAmountIn,
+    amountOut,
+    outputMint,
+    poolId,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    maxAmountIn: BN;
+    amountOut: BN;
+    outputMint: PublicKey;
+    poolId: string;
+  }): Promise<Transaction> {
     const tx = new Transaction();
-    const basketConfig = this.basketConfigPDA(basketId);
+    const basketConfig = this.basketConfigPDA({ basketId });
 
-    const data = await raydium.clmm.getPoolInfoFromRpc(poolId);
+    const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
     const poolInfo = data.poolInfo;
     const poolKeys = data.poolKeys;
     const clmmPoolInfo = data.computePoolInfo;
@@ -632,7 +726,7 @@ export class PieProgram {
       amountOut,
       baseMint: outputMint,
       slippage: 0.01,
-      epochInfo: await raydium.fetchEpochInfo(),
+      epochInfo: await this.raydium.fetchEpochInfo(),
     });
 
     let sqrtPriceLimitX64: BN;
@@ -679,11 +773,11 @@ export class PieProgram {
       .buyComponent(new BN(maxAmountIn), new BN(amountOut))
       .accountsPartial({
         user: user,
-        userFund: this.userFundPDA(user, basketId),
+        userFund: this.userFundPDA({ user, basketId }),
         programState: this.programStatePDA,
         basketConfig: basketConfig,
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolKeys.id),
         userTokenSource: inputTokenAccount,
@@ -723,7 +817,6 @@ export class PieProgram {
     basketId,
     amountIn,
     minimumAmountOut,
-    raydium,
     ammId,
     createNativeMintATA,
     unwrapSol,
@@ -733,14 +826,13 @@ export class PieProgram {
     basketId: BN;
     amountIn: number;
     minimumAmountOut: number;
-    raydium: Raydium;
     ammId: string;
     createNativeMintATA?: boolean;
     unwrapSol?: boolean;
   }): Promise<Transaction> {
     const tx = new Transaction();
-    const basketMint = this.basketMintPDA(basketId);
-    const data = await raydium.liquidity.getPoolInfoFromRpc({
+    const basketMint = this.basketMintPDA({ basketId });
+    const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
 
@@ -751,7 +843,7 @@ export class PieProgram {
       ? [poolKeys.mintA.address, poolKeys.mintB.address]
       : [poolKeys.mintB.address, poolKeys.mintA.address];
 
-    const basketConfig = this.basketConfigPDA(basketId);
+    const basketConfig = this.basketConfigPDA({ basketId });
     const inputTokenAccount = getAssociatedTokenAddressSync(
       new PublicKey(mintIn),
       basketConfig,
@@ -775,7 +867,7 @@ export class PieProgram {
         basketMint: basketMint,
         amm: new PublicKey(ammId),
         mintIn: new PublicKey(mintIn),
-        userFund: this.userFundPDA(user, basketId),
+        userFund: this.userFundPDA({ user, basketId }),
         ammAuthority: new PublicKey(poolKeys.authority),
         ammOpenOrders: new PublicKey(poolKeys.openOrders),
         ammCoinVault: new PublicKey(poolKeys.vault.A),
@@ -792,7 +884,7 @@ export class PieProgram {
         userTokenDestination: outputTokenAccount,
         vaultTokenSource: inputTokenAccount,
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
       })
       .transaction();
     tx.add(sellComponentTx);
@@ -809,25 +901,31 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
-  async sellComponentCpmm(
-    user: PublicKey,
-    basketId: BN,
-    inputMint: PublicKey,
-    amountIn: number,
-    minimumAmountOut: number,
-    raydium: Raydium,
-    poolId: string,
-    unwrappedSol: boolean
-  ): Promise<Transaction> {
+  async sellComponentCpmm({
+    user,
+    basketId,
+    inputMint,
+    amountIn,
+    minimumAmountOut,
+    poolId,
+    unwrappedSol,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    inputMint: PublicKey;
+    amountIn: number;
+    minimumAmountOut: number;
+    poolId: string;
+    unwrappedSol: boolean;
+  }): Promise<Transaction> {
     const tx = new Transaction();
-    const basketConfig = this.basketConfigPDA(basketId);
-    const basketMint = this.basketMintPDA(basketId);
+    const basketConfig = this.basketConfigPDA({ basketId });
+    const basketMint = this.basketMintPDA({ basketId });
 
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+    const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
@@ -865,11 +963,11 @@ export class PieProgram {
         user: user,
         programState: this.programStatePDA,
         basketConfig: basketConfig,
-        userFund: this.userFundPDA(user, basketId),
+        userFund: this.userFundPDA({ user, basketId }),
         mintOut: mintOut,
         basketMint: basketMint,
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
 
         authority: new PublicKey(poolKeys.authority),
         ammConfig: new PublicKey(poolKeys.config.id),
@@ -906,23 +1004,28 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
-   * @param raydium - The Raydium instance.
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
-  async sellComponentClmm(
-    user: PublicKey,
-    basketId: BN,
-    amountIn: BN,
-    raydium: Raydium,
-    inputMint: PublicKey,
-    poolId: string,
-    unwrappedSol: boolean
-  ): Promise<Transaction> {
+  async sellComponentClmm({
+    user,
+    basketId,
+    amountIn,
+    inputMint,
+    poolId,
+    unwrappedSol,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amountIn: BN;
+    inputMint: PublicKey;
+    poolId: string;
+    unwrappedSol: boolean;
+  }): Promise<Transaction> {
     const tx = new Transaction();
-    const basketConfig = this.basketConfigPDA(basketId);
+    const basketConfig = this.basketConfigPDA({ basketId });
 
-    const data = await raydium.clmm.getPoolInfoFromRpc(poolId);
+    const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
     const poolInfo = data.poolInfo;
     const poolKeys = data.poolKeys;
     const clmmPoolInfo = data.computePoolInfo;
@@ -936,7 +1039,7 @@ export class PieProgram {
         amountIn,
         tokenOut: poolInfo[baseIn ? "mintB" : "mintA"],
         slippage: 0.01,
-        epochInfo: await raydium.fetchEpochInfo(),
+        epochInfo: await this.raydium.fetchEpochInfo(),
       });
 
     let sqrtPriceLimitX64: BN;
@@ -980,10 +1083,10 @@ export class PieProgram {
         user: user,
         programState: this.programStatePDA,
         basketConfig: basketConfig,
-        userFund: this.userFundPDA(user, basketId),
+        userFund: this.userFundPDA({ user, basketId }),
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorTokenAccount: await this.getCreatorFeeTokenAccount(basketId),
-        basketMint: this.basketMintPDA(basketId),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
+        basketMint: this.basketMintPDA({ basketId }),
 
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolInfo.id),
@@ -1027,15 +1130,19 @@ export class PieProgram {
    * @param amount - The amount.
    * @returns A promise that resolves to a transaction.
    */
-  async mintBasketToken(
-    user: PublicKey,
-    basketId: BN,
-    amount: number
-  ): Promise<Transaction> {
+  async mintBasketToken({
+    user,
+    basketId,
+    amount,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amount: number;
+  }): Promise<Transaction> {
     const tx = new Transaction();
-    const basketMint = this.basketMintPDA(basketId);
-    const basketConfig = this.basketConfigPDA(basketId);
-    const userFund = this.userFundPDA(user, basketId);
+    const basketMint = this.basketMintPDA({ basketId });
+    const basketConfig = this.basketConfigPDA({ basketId });
+    const userFund = this.userFundPDA({ user, basketId });
     const { tokenAccount: userBasketTokenAccount, tx: userBasketTokenTx } =
       await getOrCreateTokenAccountTx(this.connection, basketMint, user, user);
     tx.add(userBasketTokenTx);
@@ -1061,13 +1168,17 @@ export class PieProgram {
    * @param amount - The amount.
    * @returns A promise that resolves to a transaction.
    */
-  async redeemBasketToken(
-    user: PublicKey,
-    basketId: BN,
-    amount: number
-  ): Promise<Transaction> {
-    const basketMint = this.basketMintPDA(basketId);
-    const basketConfig = this.basketConfigPDA(basketId);
+  async redeemBasketToken({
+    user,
+    basketId,
+    amount,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amount: number;
+  }): Promise<Transaction> {
+    const basketMint = this.basketMintPDA({ basketId });
+    const basketConfig = this.basketConfigPDA({ basketId });
     const userBasketTokenAccount = getAssociatedTokenAddressSync(
       basketMint,
       user,
@@ -1079,7 +1190,7 @@ export class PieProgram {
         programState: this.programStatePDA,
         user,
         basketConfig,
-        userFund: this.userFundPDA(user, basketId),
+        userFund: this.userFundPDA({ user, basketId }),
         basketMint,
         userBasketTokenAccount: userBasketTokenAccount,
       })
@@ -1093,11 +1204,14 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @returns A promise that resolves to a transaction.
    */
-  async startRebalancing(
-    rebalancer: PublicKey,
-    basketId: BN
-  ): Promise<Transaction> {
-    const basketConfigData = await this.getBasketConfig(basketId);
+  async startRebalancing({
+    rebalancer,
+    basketId,
+  }: {
+    rebalancer: PublicKey;
+    basketId: BN;
+  }): Promise<Transaction> {
+    const basketConfigData = await this.getBasketConfig({ basketId });
     if (!basketConfigData) {
       return null;
     } else {
@@ -1108,8 +1222,7 @@ export class PieProgram {
           .startRebalancing()
           .accountsPartial({
             rebalancer,
-            rebalancerState: this.rebalancerStatePDA(rebalancer),
-            basketConfig: this.basketConfigPDA(basketId),
+            basketConfig: this.basketConfigPDA({ basketId }),
           })
           .transaction();
       }
@@ -1122,11 +1235,14 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @returns A promise that resolves to a transaction.
    */
-  async stopRebalancing(
-    rebalancer: PublicKey,
-    basketId: BN
-  ): Promise<Transaction> {
-    const basketPDA = this.basketConfigPDA(basketId);
+  async stopRebalancing({
+    rebalancer,
+    basketId,
+  }: {
+    rebalancer: PublicKey;
+    basketId: BN;
+  }): Promise<Transaction> {
+    const basketPDA = this.basketConfigPDA({ basketId });
     const vaultWrappedSol = getAssociatedTokenAddressSync(
       NATIVE_MINT,
       basketPDA,
@@ -1136,7 +1252,6 @@ export class PieProgram {
       .stopRebalancing()
       .accountsPartial({
         rebalancer,
-        rebalancerState: this.rebalancerStatePDA(rebalancer),
         basketConfig: basketPDA,
         vaultWrappedSol: vaultWrappedSol,
         wrappedSolMint: NATIVE_MINT,
@@ -1164,7 +1279,6 @@ export class PieProgram {
     ammId,
     basketId,
     tokenMint,
-    raydium,
     createTokenAccount = true,
   }: {
     rebalancer: PublicKey;
@@ -1174,16 +1288,15 @@ export class PieProgram {
     ammId: string;
     basketId: BN;
     tokenMint: PublicKey;
-    raydium: Raydium;
     createTokenAccount?: boolean;
   }): Promise<Transaction | null> {
     const tx = new Transaction();
-    const data = await raydium.liquidity.getPoolInfoFromRpc({
+    const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
 
-    const basketMint = this.basketMintPDA(basketId);
-    const basketConfig = this.basketConfigPDA(basketId);
+    const basketMint = this.basketMintPDA({ basketId });
+    const basketConfig = this.basketConfigPDA({ basketId });
     const poolKeys = data.poolKeys;
 
     const inputMint = isSwapBaseOut ? NATIVE_MINT : tokenMint;
@@ -1233,8 +1346,7 @@ export class PieProgram {
       .executeRebalancing(isSwapBaseOut, new BN(amountIn), new BN(amountOut))
       .accountsPartial({
         rebalancer,
-        rebalancerState: this.rebalancerStatePDA(rebalancer),
-        basketConfig: this.basketConfigPDA(basketId),
+        basketConfig: this.basketConfigPDA({ basketId }),
         tokenMint,
         basketMint,
         vaultWrappedSol: NATIVE_MINT,
@@ -1269,12 +1381,11 @@ export class PieProgram {
     poolId: string,
     basketId: BN,
     tokenMint: PublicKey,
-    raydium: Raydium
   ): Promise<Transaction | null> {
     const tx = new Transaction();
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
-    const basketMint = this.basketMintPDA(basketId);
-    const basketConfig = this.basketConfigPDA(basketId);
+    const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
+    const basketMint = this.basketMintPDA({ basketId });
+    const basketConfig = this.basketConfigPDA({ basketId });
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
@@ -1334,8 +1445,7 @@ export class PieProgram {
       )
       .accountsPartial({
         rebalancer,
-        rebalancerState: this.rebalancerStatePDA(rebalancer),
-        basketConfig: this.basketConfigPDA(basketId),
+        basketConfig: this.basketConfigPDA({ basketId }),
         tokenMint,
         basketMint,
         vaultWrappedSol: NATIVE_MINT,
@@ -1366,20 +1476,25 @@ export class PieProgram {
     return tx;
   }
 
-  async addRaydiumAmmToAddressLookupTable(
-    raydium: Raydium,
-    connection: Connection,
-    signer: Keypair,
-    ammId: string,
-    basketId: BN,
-    lookupTable?: PublicKey
-  ) {
-    const data = await raydium.liquidity.getPoolInfoFromRpc({
+  async addRaydiumAmmToAddressLookupTable({
+    connection,
+    signer,
+    ammId,
+    basketId,
+    lookupTable,
+  }: {
+    connection: Connection;
+    signer: Keypair;
+    ammId: string;
+    basketId: BN;
+    lookupTable?: PublicKey;
+  }) {
+    const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
     const MAX_LOOKUP_TABLE_ADDRESS = 256;
-    const basketMint = this.basketMintPDA(basketId);
-    const basketConfig = this.basketConfigPDA(basketId);
+    const basketMint = this.basketMintPDA({ basketId });
+    const basketConfig = this.basketConfigPDA({ basketId });
     const poolKeys = data.poolKeys;
 
     const addressesKey = [
@@ -1433,18 +1548,23 @@ export class PieProgram {
     return lookupTable;
   }
 
-  async addRaydiumCpmmToAddressLookupTable(
-    raydium: Raydium,
-    connection: Connection,
-    signer: Keypair,
-    poolId: string,
-    basketId: BN,
-    lookupTable?: PublicKey
-  ) {
-    const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
+  async addRaydiumCpmmToAddressLookupTable({
+    connection,
+    signer,
+    poolId,
+    basketId,
+    lookupTable,
+  }: {
+    connection: Connection;
+    signer: Keypair;
+    poolId: string;
+    basketId: BN;
+    lookupTable?: PublicKey;
+  }) {
+    const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
     const MAX_LOOKUP_TABLE_ADDRESS = 256;
-    const basketMint = this.basketMintPDA(basketId);
-    const basketConfig = this.basketConfigPDA(basketId);
+    const basketMint = this.basketMintPDA({ basketId });
+    const basketConfig = this.basketConfigPDA({ basketId });
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
@@ -1508,7 +1628,6 @@ export class PieProgram {
     basketId,
     slippage,
     mintAmount,
-    raydium,
     swapsPerBundle,
     tokenInfo,
   }: {
@@ -1516,7 +1635,6 @@ export class PieProgram {
     basketId: BN;
     slippage: number;
     mintAmount: number;
-    raydium: Raydium;
     swapsPerBundle: number;
     tokenInfo: TokenInfo[];
   }): Promise<string[]> {
@@ -1528,7 +1646,7 @@ export class PieProgram {
     const recentBlockhash = await this.connection.getLatestBlockhash(
       "finalized"
     );
-    const basketConfigData = await this.getBasketConfig(basketId);
+    const basketConfigData = await this.getBasketConfig({ basketId });
     const swapData: Promise<SwapCompute>[] = [];
     basketConfigData.components.forEach((component) => {
       swapData.push(
@@ -1602,7 +1720,6 @@ export class PieProgram {
         basketId,
         maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
         amountOut: Number(swapDataResult[i].data.outputAmount),
-        raydium,
         ammId: tokenInfo[i].ammId,
         unwrapSol: false,
       });
@@ -1617,11 +1734,11 @@ export class PieProgram {
 
       // Handle final transaction in bundle
       if (i === swapData.length - 1) {
-        const mintBasketTokenTx = await this.mintBasketToken(
+        const mintBasketTokenTx = await this.mintBasketToken({
           user,
           basketId,
-          mintAmount
-        );
+          amount: mintAmount,
+        });
         tx.add(mintBasketTokenTx);
 
         tx.add(createCloseAccountInstruction(wsolAccount, user, user));
@@ -1655,7 +1772,6 @@ export class PieProgram {
     basketId,
     slippage,
     redeemAmount,
-    raydium,
     swapsPerBundle,
     tokenInfo,
   }: {
@@ -1663,7 +1779,6 @@ export class PieProgram {
     basketId: BN;
     slippage: number;
     redeemAmount: number;
-    raydium: Raydium;
     swapsPerBundle: number;
     tokenInfo: TokenInfo[];
   }): Promise<string[]> {
@@ -1676,7 +1791,7 @@ export class PieProgram {
       "finalized"
     );
     const swapData = [];
-    const basketConfigData = await this.getBasketConfig(basketId);
+    const basketConfigData = await this.getBasketConfig({ basketId });
     basketConfigData.components.forEach((component) => {
       swapData.push(
         getSwapData({
@@ -1715,7 +1830,9 @@ export class PieProgram {
         if (createNativeMintATATx.instructions.length > 0) {
           tx.add(createNativeMintATATx);
         }
-        tx.add(await this.redeemBasketToken(user, basketId, redeemAmount));
+        tx.add(
+          await this.redeemBasketToken({ user, basketId, amount: redeemAmount })
+        );
       } else if (i % swapsPerBundle === 0) {
         const serializedTx = await serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
@@ -1735,7 +1852,6 @@ export class PieProgram {
         basketId,
         amountIn: Number(swapDataResult[i].data.inputAmount),
         minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-        raydium,
         ammId: tokenInfo[i].ammId,
       });
       tx.add(sellComponentTx);
@@ -1772,7 +1888,6 @@ export class PieProgram {
   async createRebalanceBundle({
     basketId,
     rebalancer,
-    raydium,
     slippage,
     swapsPerBundle,
     rebalanceInfo,
@@ -1781,7 +1896,6 @@ export class PieProgram {
   }: {
     rebalancer: PublicKey;
     basketId: BN;
-    raydium: Raydium;
     slippage: number;
     swapsPerBundle: number;
     rebalanceInfo: RebalanceInfo[];
@@ -1839,10 +1953,10 @@ export class PieProgram {
         );
 
         if (withStartRebalance) {
-          const startRebalanceTx = await this.startRebalancing(
+          const startRebalanceTx = await this.startRebalancing({
             rebalancer,
-            basketId
-          );
+            basketId,
+          });
           if (isValidTransaction(startRebalanceTx)) {
             tx.add(startRebalanceTx);
           }
@@ -1851,7 +1965,7 @@ export class PieProgram {
         const { tx: createNativeMintATATx } = await getOrCreateNativeMintATA(
           this.connection,
           rebalancer,
-          this.basketConfigPDA(basketId)
+          this.basketConfigPDA({ basketId })
         );
 
         if (isValidTransaction(createNativeMintATATx)) {
@@ -1882,7 +1996,6 @@ export class PieProgram {
         ammId: rebalanceInfo[i].ammId,
         basketId,
         tokenMint: new PublicKey(rebalanceInfo[i].mint),
-        raydium,
         createTokenAccount: false,
       });
       tx.add(rebalanceTx);
@@ -1895,10 +2008,10 @@ export class PieProgram {
 
       if (i == rebalanceInfo.length - 1) {
         if (withStopRebalance) {
-          const stopRebalanceTx = await this.stopRebalancing(
+          const stopRebalanceTx = await this.stopRebalancing({
             rebalancer,
-            basketId
-          );
+            basketId,
+          });
           tx.add(stopRebalanceTx);
         }
 

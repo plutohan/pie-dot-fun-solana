@@ -6,6 +6,7 @@ test-ledger
 .yarn
 .idea
 .local
+.npmrc
 target/*
 !target/idl/
 !target/deploy/*.json
