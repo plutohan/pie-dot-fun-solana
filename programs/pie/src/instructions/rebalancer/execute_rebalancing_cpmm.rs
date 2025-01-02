@@ -7,6 +7,7 @@ use raydium_cpmm_cpi::{
     states::{AmmConfig, ObservationState, PoolState},
 };
 
+use crate::utils::Rebalance;
 use crate::ExecuteRebalancingEvent;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 
