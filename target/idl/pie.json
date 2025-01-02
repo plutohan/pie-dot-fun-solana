@@ -897,7 +897,7 @@
       ],
       "args": [
         {
-          "name": "is_buy",
+          "name": "is_swap_base_out",
           "type": "bool"
         },
         {
@@ -1081,7 +1081,7 @@
       ],
       "args": [
         {
-          "name": "is_buy",
+          "name": "is_swap_base_out",
           "type": "bool"
         },
         {
@@ -1234,7 +1234,7 @@
       ],
       "args": [
         {
-          "name": "is_buy",
+          "name": "is_swap_base_out",
           "type": "bool"
         },
         {
@@ -3090,7 +3090,7 @@
             "type": "pubkey"
           },
           {
-            "name": "is_buy",
+            "name": "is_swap_base_out",
             "type": "bool"
           },
           {

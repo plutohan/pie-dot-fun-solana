@@ -148,34 +148,34 @@ pub mod pie {
 
     pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
-        is_buy: bool,
+        is_swap_base_out: bool,
         amount_in: u64,
         amount_out: u64,
     ) -> Result<()> {
-        instructions::execute_rebalancing(ctx, is_buy, amount_in, amount_out)?;
+        instructions::execute_rebalancing(ctx, is_swap_base_out, amount_in, amount_out)?;
         Ok(())
     }
 
     pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<ExecuteRebalancingCpmm>,
-        is_buy: bool,
+        is_swap_base_out: bool,
         amount_in: u64,
         amount_out: u64,
     ) -> Result<()> {
-        instructions::execute_rebalancing_cpmm(ctx, is_buy, amount_in, amount_out)?;
+        instructions::execute_rebalancing_cpmm(ctx, is_swap_base_out, amount_in, amount_out)?;
         Ok(())
     }
 
     pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingClmm<'info>>,
-        is_buy: bool,
+        is_swap_base_out: bool,
         amount: u64,
         other_amount_threshold: u64,
         sqrt_price_limit_x64: u128,
     ) -> Result<()> {
         instructions::execute_rebalancing_clmm(
             ctx,
-            is_buy,
+            is_swap_base_out,
             amount,
             other_amount_threshold,
             sqrt_price_limit_x64,

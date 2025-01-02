@@ -84,7 +84,7 @@ pub struct ExecuteRebalancing<'info> {
 pub struct ExecuteRebalancingEvent {
     pub basket_id: u64,
     pub basket_mint: Pubkey,
-    pub is_buy: bool,
+    pub is_swap_base_out: bool,
     pub initial_available_source_balance: u64,
     pub initial_available_destination_balance: u64,
     pub final_available_source_balance: u64,
@@ -93,7 +93,7 @@ pub struct ExecuteRebalancingEvent {
 
 pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
-    is_buy: bool,
+    is_swap_base_out: bool,
     amount_in: u64,
     amount_out: u64,
 ) -> Result<()> {
@@ -122,7 +122,13 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
         amount_in,
     )?;
 
-    execute_swap(&ctx.accounts, is_buy, amount_in, amount_out, signer)?;
+    execute_swap(
+        &ctx.accounts,
+        is_swap_base_out,
+        amount_in,
+        amount_out,
+        signer,
+    )?;
 
     let (final_available_source_balance, final_available_destination_balance) =
         Rebalance::calculate_final_balances(
@@ -154,7 +160,7 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
-        is_buy,
+        is_swap_base_out,
         initial_available_source_balance,
         initial_available_destination_balance,
         final_available_source_balance,
@@ -166,14 +172,14 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
 
 pub fn execute_swap<'a: 'info, 'info>(
     accounts: &ExecuteRebalancing<'info>,
-    is_buy: bool,
+    is_swap_base_out: bool,
     amount_in: u64,
     amount_out: u64,
     signer: &[&[&[u8]]],
 ) -> Result<()> {
     let basket_config = &accounts.basket_config;
 
-    if is_buy {
+    if is_swap_base_out {
         let swap_base_out_inx = swap_base_out(
             &accounts.amm_program.key(),
             &accounts.amm.key(),

@@ -779,7 +779,7 @@ describe("pie", () => {
   // });
 
   // it("Executing rebalance basket by buying component 5", async () => {
-  //   const isBuy = true;
+  //   const isSwapBaseOut = true;
   //   const newBasketBuy = tokens[5];
   //   const programState = await pieProgram.getProgramState();
   //   const basketId = programState.basketCounter.sub(new BN(1));
@@ -795,7 +795,7 @@ describe("pie", () => {
 
   //   const executeRebalanceTx = await pieProgram.executeRebalancing(
   //     admin.publicKey,
-  //     isBuy,
+  //     isSwapBaseOut,
   //     new BN(vaultWrappedSolBalance.value.amount).div(new BN(2)).toString(),
   //     "20",
   //     newBasketBuy.ammId,
@@ -815,7 +815,7 @@ describe("pie", () => {
   //   );
 
   //   //add basket info to lookup table when buy new basket token to config
-  //   if (isBuy) {
+  //   if (isSwapBaseOut) {
   //     const lookupTable = addressLookupTableMap.get(basketId.toString());
 
   //     await pieProgram.addBasketInfoToAddressLookupTable(

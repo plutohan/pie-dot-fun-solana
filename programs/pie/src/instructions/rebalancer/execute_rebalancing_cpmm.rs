@@ -85,7 +85,7 @@ pub struct ExecuteRebalancingCpmm<'info> {
 
 pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<ExecuteRebalancingCpmm>,
-    is_buy: bool,
+    is_swap_base_out: bool,
     amount_in: u64,
     amount_out: u64,
 ) -> Result<()> {
@@ -135,7 +135,7 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
         signer,
     );
 
-    if is_buy {
+    if is_swap_base_out {
         cpi::swap_base_output(cpi_context, amount_in, amount_out)?;
     } else {
         cpi::swap_base_input(cpi_context, amount_in, amount_out)?;
@@ -171,7 +171,7 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
-        is_buy,
+        is_swap_base_out,
         initial_available_source_balance,
         initial_available_destination_balance,
         final_available_source_balance,

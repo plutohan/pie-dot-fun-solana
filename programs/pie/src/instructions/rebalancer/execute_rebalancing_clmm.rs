@@ -108,7 +108,7 @@ pub struct ExecuteRebalancingClmm<'info> {
 
 pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingClmm<'info>>,
-    is_buy: bool,
+    is_swap_base_out: bool,
     amount: u64,
     other_amount_threshold: u64,
     sqrt_price_limit_x64: u128,
@@ -124,7 +124,7 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         &[basket_config.bump],
     ]];
 
-    let amount_in = if is_buy { other_amount_threshold } else { amount };
+    let amount_in = if is_swap_base_out { other_amount_threshold } else { amount };
 
     let (
         initial_available_source_balance,
@@ -166,7 +166,7 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         amount,
         other_amount_threshold,
         sqrt_price_limit_x64,
-        !is_buy,
+        !is_swap_base_out,
     )?;
 
     let (final_available_source_balance, final_available_destination_balance) =
@@ -199,7 +199,7 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
-        is_buy,
+        is_swap_base_out,
         initial_available_source_balance,
         initial_available_destination_balance,
         final_available_source_balance,

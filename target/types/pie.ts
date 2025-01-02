@@ -903,7 +903,7 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "isBuy",
+          "name": "isSwapBaseOut",
           "type": "bool"
         },
         {
@@ -1087,7 +1087,7 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "isBuy",
+          "name": "isSwapBaseOut",
           "type": "bool"
         },
         {
@@ -1240,7 +1240,7 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "isBuy",
+          "name": "isSwapBaseOut",
           "type": "bool"
         },
         {
@@ -3096,7 +3096,7 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "isBuy",
+            "name": "isSwapBaseOut",
             "type": "bool"
           },
           {

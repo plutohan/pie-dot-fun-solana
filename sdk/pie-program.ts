@@ -1147,7 +1147,7 @@ export class PieProgram {
   /**
    * Executes rebalancing.
    * @param rebalancer - The rebalancer account.
-   * @param isBuy - Whether to buy or sell.
+   * @param isSwapBaseOut - Whether to buy or sell.
    * @param amountIn - The amount in.
    * @param amountOut - The amount out.
    * @param ammId - The AMM ID.
@@ -1158,7 +1158,7 @@ export class PieProgram {
    */
   async executeRebalancing({
     rebalancer,
-    isBuy,
+    isSwapBaseOut,
     amountIn,
     amountOut,
     ammId,
@@ -1168,7 +1168,7 @@ export class PieProgram {
     createTokenAccount = true,
   }: {
     rebalancer: PublicKey;
-    isBuy: boolean;
+    isSwapBaseOut: boolean;
     amountIn: string;
     amountOut: string;
     ammId: string;
@@ -1186,7 +1186,7 @@ export class PieProgram {
     const basketConfig = this.basketConfigPDA(basketId);
     const poolKeys = data.poolKeys;
 
-    const inputMint = isBuy ? NATIVE_MINT : tokenMint;
+    const inputMint = isSwapBaseOut ? NATIVE_MINT : tokenMint;
 
     const baseIn = inputMint.toString() === poolKeys.mintA.address;
 
@@ -1196,7 +1196,7 @@ export class PieProgram {
 
     let inputTokenAccount: PublicKey;
     let outputTokenAccount: PublicKey;
-    if (isBuy) {
+    if (isSwapBaseOut) {
       inputTokenAccount = getAssociatedTokenAddressSync(
         new PublicKey(mintIn),
         basketConfig,
@@ -1230,7 +1230,7 @@ export class PieProgram {
     }
 
     const executeRebalancingTx = await this.program.methods
-      .executeRebalancing(isBuy, new BN(amountIn), new BN(amountOut))
+      .executeRebalancing(isSwapBaseOut, new BN(amountIn), new BN(amountOut))
       .accountsPartial({
         rebalancer,
         rebalancerState: this.rebalancerStatePDA(rebalancer),
@@ -1263,7 +1263,7 @@ export class PieProgram {
 
   async executeRebalancingCpmm(
     rebalancer: PublicKey,
-    isBuy: boolean,
+    isSwapBaseOut: boolean,
     amountIn: string,
     amountOut: string,
     poolId: string,
@@ -1278,7 +1278,7 @@ export class PieProgram {
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
-    const inputMint = isBuy ? NATIVE_MINT : tokenMint;
+    const inputMint = isSwapBaseOut ? NATIVE_MINT : tokenMint;
 
     const [mintA, mintB] = [
       new PublicKey(poolInfo.mintA.address),
@@ -1293,7 +1293,7 @@ export class PieProgram {
 
     let inputTokenAccount: PublicKey;
     let outputTokenAccount: PublicKey;
-    if (isBuy) {
+    if (isSwapBaseOut) {
       inputTokenAccount = getAssociatedTokenAddressSync(
         new PublicKey(mintIn),
         basketConfig,
@@ -1327,7 +1327,11 @@ export class PieProgram {
     }
 
     const executeRebalancingTx = await this.program.methods
-      .executeRebalancingCpmm(isBuy, new BN(amountIn), new BN(amountOut))
+      .executeRebalancingCpmm(
+        isSwapBaseOut,
+        new BN(amountIn),
+        new BN(amountOut)
+      )
       .accountsPartial({
         rebalancer,
         rebalancerState: this.rebalancerStatePDA(rebalancer),
@@ -1529,7 +1533,7 @@ export class PieProgram {
     basketConfigData.components.forEach((component) => {
       swapData.push(
         getSwapData({
-          isBuy: true,
+          isSwapBaseOut: true,
           inputMint: NATIVE_MINT.toBase58(),
           outputMint: component.mint.toBase58(),
           amount: component.quantityInSysDecimal
@@ -1676,7 +1680,7 @@ export class PieProgram {
     basketConfigData.components.forEach((component) => {
       swapData.push(
         getSwapData({
-          isBuy: false,
+          isSwapBaseOut: false,
           inputMint: component.mint.toBase58(),
           outputMint: NATIVE_MINT.toBase58(),
           amount: component.quantityInSysDecimal
@@ -1793,9 +1797,13 @@ export class PieProgram {
     rebalanceInfo.forEach((rebalance) => {
       swapData.push(
         getSwapData({
-          isBuy: rebalance.isBuy,
-          inputMint: rebalance.isBuy ? NATIVE_MINT.toBase58() : rebalance.mint,
-          outputMint: rebalance.isBuy ? rebalance.mint : NATIVE_MINT.toBase58(),
+          isSwapBaseOut: rebalance.isSwapBaseOut,
+          inputMint: rebalance.isSwapBaseOut
+            ? NATIVE_MINT.toBase58()
+            : rebalance.mint,
+          outputMint: rebalance.isSwapBaseOut
+            ? rebalance.mint
+            : NATIVE_MINT.toBase58(),
           amount: Number(rebalance.amount),
           slippage,
         })
@@ -1864,11 +1872,11 @@ export class PieProgram {
 
       const rebalanceTx = await this.executeRebalancing({
         rebalancer,
-        isBuy: rebalanceInfo[i].isBuy,
-        amountIn: rebalanceInfo[i].isBuy
+        isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+        amountIn: rebalanceInfo[i].isSwapBaseOut
           ? swapDataResult[i].data.otherAmountThreshold
           : swapDataResult[i].data.inputAmount,
-        amountOut: rebalanceInfo[i].isBuy
+        amountOut: rebalanceInfo[i].isSwapBaseOut
           ? swapDataResult[i].data.outputAmount
           : swapDataResult[i].data.otherAmountThreshold,
         ammId: rebalanceInfo[i].ammId,

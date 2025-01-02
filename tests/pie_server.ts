@@ -52,13 +52,13 @@ describe("pie example code for server", () => {
       swaps: [
         {
           mint: basketVaults[2].mint,
-          isBuy: false,
+          isSwapBaseOut: false,
           amountIn: basketVaults[2].balance / 2, // amount to sell
           amountOut: 0, // min output
         },
         {
           mint: basketVaults[3].mint,
-          isBuy: true,
+          isSwapBaseOut: true,
           amountIn: basketVaults[0].balance, // Max Input : vault's SOL balance
           amountOut: 100, // amount to buy
         },
