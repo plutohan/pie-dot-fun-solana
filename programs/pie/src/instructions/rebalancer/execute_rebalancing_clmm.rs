@@ -16,10 +16,10 @@ use crate::{ExecuteRebalancingEvent, ProgramState, NATIVE_MINT, PROGRAM_STATE};
 pub struct ExecuteRebalancingClmm<'info> {
     #[account(mut)]
     pub rebalancer: Signer<'info>,
-    #[account(        
-        mut, 
-        seeds = [PROGRAM_STATE], 
-        bump = program_state.bump 
+    #[account(
+        mut,
+        seeds = [PROGRAM_STATE],
+        bump = program_state.bump
     )]
     pub program_state: Box<Account<'info, ProgramState>>,
     #[account(
@@ -132,13 +132,13 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         unminted_source_balance,
         unminted_destination_balance,
     ) = Rebalance::calculate_initial_balances(
-        &mut ctx.accounts.basket_config,
-        &ctx.accounts.vault_token_source,
-        &ctx.accounts.vault_token_destination,
+        basket_config,
+        ctx.accounts.vault_token_source.as_ref(),
+        ctx.accounts.vault_token_destination.as_ref(),
         basket_total_supply,
         amount_in,
     )?;
-    
+
     let cpi_accounts = cpi::accounts::SwapSingleV2 {
         payer: basket_config.to_account_info(),
         amm_config: ctx.accounts.amm_config.to_account_info(),
@@ -159,7 +159,7 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         cpi_accounts,
         signer,
     )
-    .with_remaining_accounts(ctx.remaining_accounts.to_vec());
+        .with_remaining_accounts(ctx.remaining_accounts.to_vec());
 
     cpi::swap_v2(
         cpi_context,

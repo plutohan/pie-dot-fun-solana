@@ -48,16 +48,16 @@ pub struct ExecuteRebalancingCpmm<'info> {
 
     /// The vault token account for input token
     #[account(
-    mut,
-    constraint = input_vault.key() == pool_state.load()?.token_0_vault || input_vault.key() == pool_state.load()?.token_1_vault
-)]
+        mut,
+        constraint = input_vault.key() == pool_state.load()?.token_0_vault || input_vault.key() == pool_state.load()?.token_1_vault
+    )]
     pub input_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The vault token account for output token
     #[account(
-    mut,
-    constraint = output_vault.key() == pool_state.load()?.token_0_vault || output_vault.key() == pool_state.load()?.token_1_vault
-)]
+        mut,
+        constraint = output_vault.key() == pool_state.load()?.token_0_vault || output_vault.key() == pool_state.load()?.token_1_vault
+    )]
     pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// SPL program for input token transfers
@@ -68,14 +68,14 @@ pub struct ExecuteRebalancingCpmm<'info> {
 
     /// The mint of input token
     #[account(
-    address = input_vault.mint
-)]
+        address = input_vault.mint
+    )]
     pub input_token_mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The mint of output token
     #[account(
-    address = output_vault.mint
-)]
+        address = output_vault.mint
+    )]
     pub output_token_mint: Box<InterfaceAccount<'info, Mint>>,
     /// The program account for the most recent oracle observation
     #[account(mut, address = pool_state.load()?.observation_key)]
@@ -105,9 +105,9 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
         unminted_source_balance,
         unminted_destination_balance,
     ) = Rebalance::calculate_initial_balances(
-        &mut ctx.accounts.basket_config,
-        &ctx.accounts.vault_token_source,
-        &ctx.accounts.vault_token_destination,
+        basket_config,
+        ctx.accounts.vault_token_source.as_ref(),
+        ctx.accounts.vault_token_destination.as_ref(),
         basket_total_supply,
         amount_in,
     )?;

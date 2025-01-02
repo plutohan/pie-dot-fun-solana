@@ -1,5 +1,5 @@
 {
-  "address": "XtrD5KCgV6wCHD9rCaPT6RaUA4SjEAuCSdfRgfNoH1b",
+  "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -3094,19 +3094,19 @@
             "type": "bool"
           },
           {
-            "name": "initial_source_balance",
+            "name": "initial_available_source_balance",
             "type": "u64"
           },
           {
-            "name": "initial_destination_balance",
+            "name": "initial_available_destination_balance",
             "type": "u64"
           },
           {
-            "name": "final_source_balance",
+            "name": "final_available_source_balance",
             "type": "u64"
           },
           {
-            "name": "final_destination_balance",
+            "name": "final_available_destination_balance",
             "type": "u64"
           }
         ]

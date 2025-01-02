@@ -1,10 +1,8 @@
 use crate::utils::Rebalance;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use anchor_lang::{prelude::*, solana_program};
-use anchor_spl::{
-    token::{Token, TokenAccount},
-    token_interface::Mint,
-};
+use anchor_spl::token_interface::TokenAccount;
+use anchor_spl::{token::Token, token_interface::Mint};
 use raydium_amm_cpi::{
     library::{swap_base_in, swap_base_out},
     SwapBaseIn, SwapBaseOut,
@@ -65,10 +63,10 @@ pub struct ExecuteRebalancing<'info> {
     pub market_vault_signer: AccountInfo<'info>,
     /// CHECK: user source token Account
     #[account(mut)]
-    pub vault_token_source: Box<Account<'info, TokenAccount>>,
+    pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub vault_token_destination: Box<Account<'info, TokenAccount>>,
+    pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     /// CHECK: amm_program
@@ -116,8 +114,8 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
         unminted_destination_balance,
     ) = Rebalance::calculate_initial_balances(
         &mut ctx.accounts.basket_config,
-        &ctx.accounts.vault_token_source,
-        &ctx.accounts.vault_token_destination,
+        ctx.accounts.vault_token_source.as_ref(),
+        ctx.accounts.vault_token_destination.as_ref(),
         basket_total_supply,
         amount_in,
     )?;

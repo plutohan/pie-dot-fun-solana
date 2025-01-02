@@ -2,15 +2,16 @@ use crate::error::PieError;
 use crate::utils::Calculator;
 use crate::BasketConfig;
 use anchor_lang::prelude::*;
-use anchor_spl::token::TokenAccount;
+use anchor_spl::token_interface::TokenAccount;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Rebalance {}
 
 impl Rebalance {
     pub fn calculate_initial_balances(
         basket_config: &mut BasketConfig,
-        vault_token_source: &Account<'_, TokenAccount>,
-        vault_token_destination: &Account<'_, TokenAccount>,
+        vault_token_source: &InterfaceAccount<'_, TokenAccount>,
+        vault_token_destination: &InterfaceAccount<'_, TokenAccount>,
         basket_total_supply: u64,
         amount_in: u64,
     ) -> Result<(u64, u64, u64, u64)> {
@@ -62,8 +63,8 @@ impl Rebalance {
     }
 
     pub fn calculate_final_balances(
-        vault_token_source: &mut Account<'_, TokenAccount>,
-        vault_token_destination: &mut Account<'_, TokenAccount>,
+        vault_token_source: &mut InterfaceAccount<'_, TokenAccount>,
+        vault_token_destination: &mut InterfaceAccount<'_, TokenAccount>,
         unminted_source_balance: u64,
         unminted_destination_balance: u64,
     ) -> Result<(u64, u64)> {

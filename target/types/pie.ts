@@ -3100,19 +3100,19 @@ export type Pie = {
             "type": "bool"
           },
           {
-            "name": "initialSourceBalance",
+            "name": "initialAvailableSourceBalance",
             "type": "u64"
           },
           {
-            "name": "initialDestinationBalance",
+            "name": "initialAvailableDestinationBalance",
             "type": "u64"
           },
           {
-            "name": "finalSourceBalance",
+            "name": "finalAvailableSourceBalance",
             "type": "u64"
           },
           {
-            "name": "finalDestinationBalance",
+            "name": "finalAvailableDestinationBalance",
             "type": "u64"
           }
         ]
