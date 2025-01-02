@@ -49,6 +49,10 @@ describe("pie", () => {
   const swapsPerBundle = 3;
   const slippage = 100;
 
+  beforeEach(async () => {
+    await pieProgram.init();
+  });
+
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
 

@@ -91,17 +91,16 @@ export class PieProgram {
 
   constructor(
     public readonly connection: Connection,
-    cluster: Cluster,
+    public readonly cluster: Cluster,
     programId: string = PieIDL.address
   ) {
     this.idl.address = programId;
-    this.loadRaydium(connection, cluster);
   }
 
-  async loadRaydium(connection: Connection, cluster: Cluster) {
+  async init() {
     this.raydium = await Raydium.load({
-      connection: connection as any,
-      cluster: cluster as any,
+      connection: this.connection as any,
+      cluster: this.cluster as any,
       disableFeatureCheck: true,
       blockhashCommitment: "finalized",
     });

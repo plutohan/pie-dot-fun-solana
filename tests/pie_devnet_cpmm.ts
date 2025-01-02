@@ -43,6 +43,10 @@ describe("pie", () => {
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
   const pieProgram = new PieProgram(connection, "devnet");
 
+  beforeEach(async () => {
+    await pieProgram.init();
+  });
+
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
 
