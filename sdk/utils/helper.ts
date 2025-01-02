@@ -27,7 +27,7 @@ import {
 } from "@solana/spl-token";
 import { BN } from "@coral-xyz/anchor";
 import { Raydium, API_URLS } from "@raydium-io/raydium-sdk-v2";
-import {BasketComponent, PieProgram} from "../pie-program";
+import { BasketComponent, PieProgram } from "../pie-program";
 import { Table } from "console-table-printer";
 import axios from "axios";
 import { getInflightBundleStatuses } from "../jito";
@@ -351,15 +351,17 @@ export async function getOrCreateTokenAccountTx(
   const programId = (await isToken2022Mint(connection, mint))
     ? TOKEN_2022_PROGRAM_ID
     : TOKEN_PROGRAM_ID;
+
   const tokenAccount = await getAssociatedTokenAddress(
     mint,
     owner,
     true,
     programId
   );
+
   let transaction = new Transaction();
   try {
-    await getAccount(connection, tokenAccount, "confirmed");
+    await getAccount(connection, tokenAccount, "confirmed", programId);
   } catch (error) {
     transaction.add(
       createAssociatedTokenAccountInstruction(
@@ -367,7 +369,7 @@ export async function getOrCreateTokenAccountTx(
         tokenAccount,
         owner,
         mint,
-        TOKEN_PROGRAM_ID,
+        programId,
         ASSOCIATED_TOKEN_PROGRAM_ID
       )
     );
