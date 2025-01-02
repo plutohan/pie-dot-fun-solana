@@ -18,7 +18,7 @@ import {
 } from "../sdk/pie-program";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { Table } from "console-table-printer";
-import { initSdk } from "./utils/config";
+import { initSdk } from "../sdk/utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
   getOrCreateNativeMintATA,
@@ -28,8 +28,8 @@ import {
   showUserFundTable,
   unwrapSolIx,
   wrappedSOLInstruction,
-} from "./utils/helper";
-import { addAddressesToTable, finalizeTransaction } from "./utils/lookupTable";
+} from "../sdk/utils/helper";
+import { addAddressesToTable, finalizeTransaction } from "../sdk/utils/lookupTable";
 import { tokensClmm } from "./fixtures/devnet/token_test";
 
 describe("pie", () => {

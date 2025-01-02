@@ -1,8 +1,7 @@
 import { Connection, PublicKey, Signer, Transaction, TransactionInstruction } from "@solana/web3.js";
-import { BasketComponent } from "../pie";
 import { BN } from "@coral-xyz/anchor";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { PieProgram } from "../../sdk/pie-program";
+import { BasketComponent, PieProgram } from "../pie-program";
 import { Table } from "console-table-printer";
 export declare function createUserWithLamports(connection: Connection, lamports: number): Promise<Signer>;
 export declare function createNewMint(connection: Connection, creator: Signer, decimals: number): Promise<PublicKey>;
@@ -63,8 +62,8 @@ export interface SwapCompute {
         }[];
     };
 }
-export declare function getSwapData({ isBuy, inputMint, outputMint, amount, slippage, }: {
-    isBuy: boolean;
+export declare function getSwapData({ isSwapBaseOut, inputMint, outputMint, amount, slippage, }: {
+    isSwapBaseOut: boolean;
     inputMint: string;
     outputMint: string;
     amount: number;
