@@ -175,11 +175,30 @@ describe("pie", () => {
           createBasketArgs.components.length
         }`
       );
-      const lut = await pieProgram.addRaydiumAmmToAddressLookupTable({
-        connection,
-        signer: admin,
-        ammId: tokens[i].ammId,
-      });
+      let lut;
+      switch (tokens[i].type) {
+        case "amm":
+          lut = await pieProgram.addRaydiumAmmToAddressLookupTable({
+            connection,
+            signer: admin,
+            ammId: tokens[i].ammId,
+          });
+          break;
+        case "clmm":
+          lut = await pieProgram.addRaydiumClmmToAddressLookupTable({
+            connection,
+            signer: admin,
+            poolId: tokens[i].ammId,
+          });
+          break;
+        case "cpmm":
+          lut = await pieProgram.addRaydiumCpmmToAddressLookupTable({
+            connection,
+            signer: admin,
+            poolId: tokens[i].ammId,
+          });
+          break;
+      }
       lookupTables.push(lut.toBase58());
     }
 
