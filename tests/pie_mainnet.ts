@@ -37,6 +37,10 @@ import {
   signSerializedTransaction,
 } from "../sdk/jito";
 import { QUICKNODE_RPC_URL } from "../sdk/constants";
+import {
+  addAddressesToTable,
+  createLookupTable,
+} from "../sdk/utils/lookupTable";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(mainnetAdmin));
@@ -130,6 +134,18 @@ describe("pie", () => {
       );
       console.log(`Setup tx: https://solscan.io/tx/${setUpTxResult}`);
     }
+
+    if (!pieProgram.sharedLookupTable) {
+      const newLookupTable = await createLookupTable(connection, admin);
+      await addAddressesToTable(connection, admin, newLookupTable, [
+        pieProgram.program.programId,
+        pieProgram.programStatePDA,
+        programState.platformFeeWallet,
+      ]);
+
+      console.log("shared lookup table created:", newLookupTable.toBase58());
+      pieProgram.sharedLookupTable = newLookupTable.toBase58();
+    }
   });
 
   it("Create Basket", async () => {
@@ -207,6 +223,12 @@ describe("pie", () => {
     }
 
     console.log("lookup tables created:", lookupTables);
+
+    console.log("adding basket to shared lookup table...");
+    await pieProgram.addBaksetToSharedLookupTable({
+      basketId,
+      admin,
+    });
 
     const { tx } = await pieProgram.createBasketVaultAccounts({
       creator: admin.publicKey,
