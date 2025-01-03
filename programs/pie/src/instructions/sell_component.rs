@@ -3,7 +3,7 @@ use anchor_spl::{
     token::{Token, TokenAccount},
     token_interface::Mint,
 };
-use raydium_amm_cpi::{library::swap_base_in, SwapBaseIn};
+use raydium_amm_cpi::{library::swap_base_in, program::RaydiumAmm, SwapBaseIn};
 
 use crate::{
     constant::USER_FUND,
@@ -98,12 +98,9 @@ pub struct SellComponentContext<'info> {
     pub creator_token_account: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
-    /// CHECK: Safe. amm_program
-    #[account(
-        mut,
-        address = crate::raydium_amm_address::id(),
-    )]
-    pub amm_program: AccountInfo<'info>,
+    
+    pub amm_program: Program<'info, RaydiumAmm>,
+
     pub system_program: Program<'info, System>,
 }
 

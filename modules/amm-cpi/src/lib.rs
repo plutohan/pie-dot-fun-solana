@@ -29,7 +29,11 @@ pub mod openbook_program_id {
     anchor_lang::declare_id!("EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj");
 }
 
-declare_id!("CxTU5Qy4v355V5tXcM6xG1opZQHFH2b8QHzsMFSM2Gy1");
+use anchor_lang::prelude::declare_id;
+#[cfg(feature = "devnet")]
+declare_id!("HWy1jotHpo6UqeQxx49dpYYdQB8wj9Qk9MdxwjLvDHB8");
+#[cfg(not(feature = "devnet"))]
+declare_id!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
 
 /// The AMM program
 #[derive(Clone)]

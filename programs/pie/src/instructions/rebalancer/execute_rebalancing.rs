@@ -3,6 +3,7 @@ use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use anchor_lang::{prelude::*, solana_program};
 use anchor_spl::token_interface::TokenAccount;
 use anchor_spl::{token::Token, token_interface::Mint};
+use raydium_amm_cpi::program::RaydiumAmm;
 use raydium_amm_cpi::{
     library::{swap_base_in, swap_base_out},
     SwapBaseIn, SwapBaseOut,
@@ -69,12 +70,9 @@ pub struct ExecuteRebalancing<'info> {
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
-    /// CHECK: amm_program
-    #[account(
-        mut,
-        address = crate::raydium_amm_address::id(),
-    )]
-    pub amm_program: AccountInfo<'info>,
+
+    pub amm_program: Program<'info, RaydiumAmm>,
+
     pub system_program: Program<'info, System>,
 }
 

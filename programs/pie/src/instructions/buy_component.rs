@@ -3,7 +3,7 @@ use anchor_spl::{
     token::Token,
     token_interface::{Mint, TokenAccount},
 };
-use raydium_amm_cpi::{library::swap_base_out, SwapBaseOut};
+use raydium_amm_cpi::{library::swap_base_out, program::RaydiumAmm, SwapBaseOut};
 
 use crate::{
     constant::USER_FUND, error::PieError, utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE
@@ -103,12 +103,8 @@ pub struct BuyComponentContext<'info> {
     pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
-    /// CHECK: Safe. amm_program
-    #[account(
-        mut,
-        address = crate::raydium_amm_address::id(),
-    )]
-    pub amm_program: AccountInfo<'info>,
+
+    pub amm_program: Program<'info, RaydiumAmm>,
 
     pub system_program: Program<'info, System>,
 }
