@@ -69,15 +69,22 @@ export async function mintTokenTo(
   to: PublicKey,
   amount: number
 ): Promise<PublicKey> {
+  const programId = (await isToken2022Mint(connection, tokenMint))
+    ? TOKEN_2022_PROGRAM_ID
+    : TOKEN_PROGRAM_ID;
+
   const userTokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,
     payer,
     tokenMint,
     to,
-    true
+    true,
+    undefined,
+    undefined,
+    programId
   );
 
-  const mintInfo = await getMint(connection, tokenMint);
+  const mintInfo = await getMint(connection, tokenMint, undefined, programId);
 
   //mint for dever 3_000_000 tokens
   await mintTo(
@@ -100,10 +107,15 @@ export async function sendTokenTo(
   to: PublicKey,
   amount: number
 ): Promise<String> {
+  const programId = (await isToken2022Mint(connection, tokenMint))
+    ? TOKEN_2022_PROGRAM_ID
+    : TOKEN_PROGRAM_ID;
+
   const sourceTokenAccount = getAssociatedTokenAddressSync(
     tokenMint,
     from,
-    true
+    true,
+    programId
   );
 
   const destinationTokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -111,10 +123,13 @@ export async function sendTokenTo(
     owner,
     tokenMint,
     to,
-    true
+    true,
+    undefined,
+    undefined,
+    programId
   );
 
-  const mintInfo = await getMint(connection, tokenMint);
+  const mintInfo = await getMint(connection, tokenMint, undefined, programId);
 
   const tx = await transfer(
     connection,
@@ -276,10 +291,18 @@ export async function showBasketConfigTable(
   });
 
   for (let i = 0; i < basketConfig.components.length; i++) {
+    const programId = (await isToken2022Mint(
+      connection,
+      basketConfig.components[i].mint
+    ))
+      ? TOKEN_2022_PROGRAM_ID
+      : TOKEN_PROGRAM_ID;
+
     const vaultTokenPDA = getAssociatedTokenAddressSync(
       basketConfig.components[i].mint,
       pieProgram.basketConfigPDA({ basketId }),
-      true
+      true,
+      programId
     );
     const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
 
