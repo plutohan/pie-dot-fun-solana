@@ -26,6 +26,7 @@ exports.getSwapData = getSwapData;
 exports.checkSwapDataError = checkSwapDataError;
 exports.isValidTransaction = isValidTransaction;
 exports.startPollingJitoBundle = startPollingJitoBundle;
+exports.caculateTotalAmountWithFee = caculateTotalAmountWithFee;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const anchor_1 = require("@coral-xyz/anchor");
@@ -195,10 +196,10 @@ async function getOrCreateTokenAccountTx(connection, mint, payer, owner) {
     const tokenAccount = await (0, spl_token_1.getAssociatedTokenAddress)(mint, owner, true, programId);
     let transaction = new web3_js_1.Transaction();
     try {
-        await (0, spl_token_1.getAccount)(connection, tokenAccount, "confirmed");
+        await (0, spl_token_1.getAccount)(connection, tokenAccount, "confirmed", programId);
     }
     catch (error) {
-        transaction.add((0, spl_token_1.createAssociatedTokenAccountInstruction)(payer, tokenAccount, owner, mint, spl_token_1.TOKEN_PROGRAM_ID, spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID));
+        transaction.add((0, spl_token_1.createAssociatedTokenAccountInstruction)(payer, tokenAccount, owner, mint, programId, spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID));
     }
     return { tokenAccount: tokenAccount, tx: transaction };
 }
@@ -250,5 +251,8 @@ async function startPollingJitoBundle(bundleId) {
             }
         }, 1000);
     });
+}
+function caculateTotalAmountWithFee(amount, feePercentageInBasisPoints) {
+    return Math.ceil(amount * (1 + feePercentageInBasisPoints / 10000));
 }
 //# sourceMappingURL=helper.js.map

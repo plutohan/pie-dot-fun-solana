@@ -36,6 +36,7 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import {
   buildClmmRemainingAccounts,
+  caculateTotalAmountWithFee,
   checkSwapDataError,
   getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
@@ -93,7 +94,8 @@ export class PieProgram {
   constructor(
     public readonly connection: Connection,
     public readonly cluster: Cluster,
-    programId: string = PieIDL.address
+    programId: string = PieIDL.address,
+    public sharedLookupTable: string = ""
   ) {
     this.idl.address = programId;
   }
@@ -318,6 +320,26 @@ export class PieProgram {
       .accounts({ admin })
       .transaction();
     return tx;
+  }
+
+  async addBaksetToSharedLookupTable({
+    basketId,
+    admin,
+  }: {
+    basketId: BN;
+    admin: Keypair;
+  }): Promise<void> {
+    const basketConfigPDA = this.basketConfigPDA({ basketId });
+    const basketMintPDA = this.basketMintPDA({ basketId });
+    const creatorFeeTokenAccount = await this.getCreatorFeeTokenAccount({
+      basketId,
+    });
+    await addAddressesToTable(
+      this.connection,
+      admin,
+      new PublicKey(this.sharedLookupTable),
+      [basketConfigPDA, basketMintPDA, creatorFeeTokenAccount]
+    );
   }
 
   /**
@@ -754,12 +776,6 @@ export class PieProgram {
       user,
       false
     );
-
-    const wrappedSolIx = await wrappedSOLInstruction(
-      user,
-      res.maxAmountIn.amount.toNumber()
-    );
-    tx.add(...wrappedSolIx);
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
       await getOrCreateTokenAccountTx(
@@ -1650,6 +1666,7 @@ export class PieProgram {
         new PublicKey(poolInfo.programId),
         new PublicKey(poolInfo.id)
       ).publicKey,
+      new PublicKey(poolKeys.exBitmapAccount),
     ];
 
     if (lookupTable) {
@@ -1681,6 +1698,15 @@ export class PieProgram {
     return lookupTable;
   }
 
+  async generateLookupTableAccount(): Promise<AddressLookupTableAccount[]> {
+    const lut = (
+      await this.connection.getAddressLookupTable(
+        new PublicKey(this.sharedLookupTable)
+      )
+    ).value;
+    return [lut];
+  }
+
   /**
    * Creates a bundle of transactions for buying components and minting basket tokens
    * @param params Bundle creation parameters
@@ -1693,6 +1719,7 @@ export class PieProgram {
     mintAmount,
     swapsPerBundle,
     tokenInfo,
+    feePercentageInBasisPoints,
   }: {
     user: PublicKey;
     basketId: BN;
@@ -1700,12 +1727,14 @@ export class PieProgram {
     mintAmount: number;
     swapsPerBundle: number;
     tokenInfo: TokenInfo[];
+    feePercentageInBasisPoints: number;
   }): Promise<string[]> {
     const tipAccounts = await getTipAccounts();
     const tipInformation = await getTipInformation();
     const serializedTxs: string[] = [];
     let tx = new Transaction();
-    let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+    let addressLookupTablesAccount: AddressLookupTableAccount[] =
+      await this.generateLookupTableAccount();
     const recentBlockhash = await this.connection.getLatestBlockhash(
       "finalized"
     );
@@ -1760,7 +1789,10 @@ export class PieProgram {
       tx.add(createWsolAtaTx);
     }
 
-    const wrappedSolIx = await wrappedSOLInstruction(user, totalAmountIn);
+    const wrappedSolIx = await wrappedSOLInstruction(
+      user,
+      caculateTotalAmountWithFee(totalAmountIn, feePercentageInBasisPoints)
+    );
     tx.add(...wrappedSolIx);
 
     // Process each component
@@ -1775,7 +1807,7 @@ export class PieProgram {
         serializedTxs.push(serializedTx);
 
         tx = new Transaction();
-        addressLookupTablesAccount = [];
+        addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
       let buyComponentTx;
@@ -1872,7 +1904,8 @@ export class PieProgram {
     const tipInformation = await getTipInformation();
     const serializedTxs: string[] = [];
     let tx = new Transaction();
-    let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+    let addressLookupTablesAccount: AddressLookupTableAccount[] =
+      await this.generateLookupTableAccount();
     const recentBlockhash = await this.connection.getLatestBlockhash(
       "finalized"
     );
@@ -1929,7 +1962,7 @@ export class PieProgram {
         serializedTxs.push(serializedTx);
 
         tx = new Transaction();
-        addressLookupTablesAccount = [];
+        addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
       const sellComponentTx = await this.sellComponent({
@@ -1992,7 +2025,8 @@ export class PieProgram {
     const tipInformation = await getTipInformation();
     const serializedTxs: string[] = [];
     let tx = new Transaction();
-    let addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+    let addressLookupTablesAccount: AddressLookupTableAccount[] =
+      await this.generateLookupTableAccount();
     const swapData: Promise<SwapCompute>[] = [];
     rebalanceInfo.forEach((rebalance) => {
       swapData.push(
@@ -2011,7 +2045,7 @@ export class PieProgram {
     });
 
     const swapDataResult = await Promise.all(swapData);
-    console.log(JSON.stringify(swapDataResult));
+
     checkSwapDataError(swapDataResult);
 
     //@TODO remove this when other pools are available
@@ -2067,7 +2101,7 @@ export class PieProgram {
         serializedTxs.push(serializedTx);
 
         tx = new Transaction();
-        addressLookupTablesAccount = [];
+        addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
       const rebalanceTx = await this.executeRebalancing({
