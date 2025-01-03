@@ -80,6 +80,8 @@ pub struct ExecuteRebalancing<'info> {
 pub struct ExecuteRebalancingEvent {
     pub basket_id: u64,
     pub basket_mint: Pubkey,
+    pub input_mint: Pubkey,
+    pub output_mint: Pubkey,
     pub is_swap_base_out: bool,
     pub initial_available_source_balance: u64,
     pub initial_available_destination_balance: u64,
@@ -156,6 +158,8 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
+        input_mint: ctx.accounts.vault_token_source.mint,
+        output_mint: ctx.accounts.vault_token_destination.mint,
         is_swap_base_out,
         initial_available_source_balance,
         initial_available_destination_balance,

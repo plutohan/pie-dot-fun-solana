@@ -171,6 +171,8 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
+        input_mint: ctx.accounts.vault_token_source.mint,
+        output_mint: ctx.accounts.vault_token_destination.mint,
         is_swap_base_out,
         initial_available_source_balance,
         initial_available_destination_balance,

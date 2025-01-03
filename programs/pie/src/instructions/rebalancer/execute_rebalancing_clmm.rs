@@ -3,10 +3,7 @@ use anchor_spl::memo::Memo;
 use anchor_spl::token::Token;
 use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 
-use raydium_clmm_cpi::{
-    cpi,
-    program::RaydiumClmm,
-};
+use raydium_clmm_cpi::{cpi, program::RaydiumClmm};
 
 use crate::utils::Rebalance;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
@@ -124,7 +121,11 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         &[basket_config.bump],
     ]];
 
-    let amount_in = if is_swap_base_out { other_amount_threshold } else { amount };
+    let amount_in = if is_swap_base_out {
+        other_amount_threshold
+    } else {
+        amount
+    };
 
     let (
         initial_available_source_balance,
@@ -159,7 +160,7 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         cpi_accounts,
         signer,
     )
-        .with_remaining_accounts(ctx.remaining_accounts.to_vec());
+    .with_remaining_accounts(ctx.remaining_accounts.to_vec());
 
     cpi::swap_v2(
         cpi_context,
@@ -199,6 +200,8 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
     emit!(ExecuteRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,
         basket_mint: ctx.accounts.basket_mint.key(),
+        input_mint: ctx.accounts.vault_token_source.mint,
+        output_mint: ctx.accounts.vault_token_destination.mint,
         is_swap_base_out,
         initial_available_source_balance,
         initial_available_destination_balance,
