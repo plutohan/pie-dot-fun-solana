@@ -194,7 +194,6 @@ describe("pie", () => {
         connection,
         signer: admin,
         ammId: tokensAmm[i].ammId!,
-        basketId,
         lookupTable: newLookupTable,
       });
     }

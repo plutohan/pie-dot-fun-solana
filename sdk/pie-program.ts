@@ -56,7 +56,7 @@ import {
   serializeJitoTransaction,
   getTipInformation,
 } from "../sdk/jito";
-import {RebalanceInfo, TokenInfo} from "./types";
+import { RebalanceInfo, TokenInfo } from "./types";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -90,15 +90,18 @@ export class PieProgram {
   private idl = Object.assign({}, PieIDL);
   raydium: Raydium;
 
-  constructor(public readonly connection: Connection, cluster: Cluster, programId: string = PieIDL.address) {
+  constructor(
+    public readonly connection: Connection,
+    public readonly cluster: Cluster,
+    programId: string = PieIDL.address
+  ) {
     this.idl.address = programId;
-    this.loadRaydium(connection, cluster);
   }
 
-  async loadRaydium(connection: Connection, cluster: Cluster) {
+  async init() {
     this.raydium = await Raydium.load({
-      connection: connection as any,
-      cluster: cluster as any,
+      connection: this.connection as any,
+      cluster: this.cluster as any,
       disableFeatureCheck: true,
       blockhashCommitment: "finalized",
     });
@@ -258,7 +261,6 @@ export class PieProgram {
         programId: TOKEN_PROGRAM_ID,
       }
     );
-
 
     return tokenAccounts.value.map((tokenAccount) => ({
       mint: tokenAccount.account.data.parsed.info.mint,
@@ -649,12 +651,6 @@ export class PieProgram {
       outputMint: mintOut,
       outputAmount: new BN(amountOut),
     });
-    //Need to handle this due to slippage
-    const wrappedSolIx = await wrappedSOLInstruction(
-      user,
-      Math.floor(Math.abs(swapResult.amountIn.toNumber() * 1.1))
-    );
-    tx.add(...wrappedSolIx);
 
     const buyComponentCpmmTx = await this.program.methods
       .buyComponentCpmm(swapResult.amountIn, new BN(amountOut))
@@ -694,7 +690,7 @@ export class PieProgram {
 
   /**
    * Buys a component using CLMM from Raydium.
-   * @param userSourceOwner - The user source owner account.
+   * @param user - The user source owner account.
    * @param basketId - The basket ID.
    * @param maxAmountIn - The maximum amount in.
    * @param amountOut - The amount out.
@@ -704,17 +700,17 @@ export class PieProgram {
   async buyComponentClmm({
     user,
     basketId,
-    maxAmountIn,
     amountOut,
     outputMint,
     poolId,
+    slippage,
   }: {
     user: PublicKey;
     basketId: BN;
-    maxAmountIn: BN;
     amountOut: BN;
     outputMint: PublicKey;
     poolId: string;
+    slippage: number;
   }): Promise<Transaction> {
     const tx = new Transaction();
     const basketConfig = this.basketConfigPDA({ basketId });
@@ -729,7 +725,7 @@ export class PieProgram {
       tickArrayCache: tickCache[poolId],
       amountOut,
       baseMint: outputMint,
-      slippage: 0.01,
+      slippage,
       epochInfo: await this.raydium.fetchEpochInfo(),
     });
 
@@ -759,6 +755,12 @@ export class PieProgram {
       false
     );
 
+    const wrappedSolIx = await wrappedSOLInstruction(
+      user,
+      res.maxAmountIn.amount.toNumber()
+    );
+    tx.add(...wrappedSolIx);
+
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
       await getOrCreateTokenAccountTx(
         this.connection,
@@ -768,13 +770,13 @@ export class PieProgram {
       );
 
     tx.add(outputTx);
-    const wrappedSolIx = await wrappedSOLInstruction(
-      user,
-      maxAmountIn.toNumber()
-    );
-    tx.add(...wrappedSolIx);
+
     const buyComponentTx = await this.program.methods
-      .buyComponent(new BN(maxAmountIn), new BN(amountOut))
+      .buyComponentClmm(
+        new BN(amountOut),
+        res.maxAmountIn.amount,
+        sqrtPriceLimitX64
+      )
       .accountsPartial({
         user: user,
         userFund: this.userFundPDA({ user, basketId }),
@@ -957,7 +959,6 @@ export class PieProgram {
         user,
         user
       );
-
     tx.add(outputTx);
     const wrappedSolIx = await wrappedSOLInstruction(user, amountIn);
     tx.add(...wrappedSolIx);
@@ -1492,26 +1493,20 @@ export class PieProgram {
     connection,
     signer,
     ammId,
-    basketId,
     lookupTable,
   }: {
     connection: Connection;
     signer: Keypair;
     ammId: string;
-    basketId: BN;
     lookupTable?: PublicKey;
   }) {
     const data = await this.raydium.liquidity.getPoolInfoFromRpc({
       poolId: ammId,
     });
     const MAX_LOOKUP_TABLE_ADDRESS = 256;
-    const basketMint = this.basketMintPDA({ basketId });
-    const basketConfig = this.basketConfigPDA({ basketId });
     const poolKeys = data.poolKeys;
 
     const addressesKey = [
-      basketMint,
-      basketConfig,
       new PublicKey(poolKeys.mintA.address),
       new PublicKey(poolKeys.mintB.address),
       new PublicKey(ammId),
@@ -1564,26 +1559,20 @@ export class PieProgram {
     connection,
     signer,
     poolId,
-    basketId,
     lookupTable,
   }: {
     connection: Connection;
     signer: Keypair;
     poolId: string;
-    basketId: BN;
     lookupTable?: PublicKey;
   }) {
     const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
     const MAX_LOOKUP_TABLE_ADDRESS = 256;
-    const basketMint = this.basketMintPDA({ basketId });
-    const basketConfig = this.basketConfigPDA({ basketId });
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
 
     const addressesKey = [
-      basketMint,
-      basketConfig,
       new PublicKey(poolKeys.mintA.address),
       new PublicKey(poolKeys.mintB.address),
       new PublicKey(poolId),
@@ -1592,6 +1581,68 @@ export class PieProgram {
       new PublicKey(poolInfo.id),
       new PublicKey(poolKeys.vault.A),
       new PublicKey(poolKeys.vault.B),
+      TOKEN_PROGRAM_ID,
+      TOKEN_2022_PROGRAM_ID,
+      new PublicKey(poolKeys.programId),
+      getPdaObservationId(
+        new PublicKey(poolInfo.programId),
+        new PublicKey(poolInfo.id)
+      ).publicKey,
+    ];
+
+    if (lookupTable) {
+      const addressesStored = await findAddressesInTable(
+        connection,
+        lookupTable
+      );
+      const addressToAdd = addressesKey.filter(
+        (address) => !addressesStored.some((stored) => stored.equals(address))
+      );
+      if (
+        addressToAdd.length + addressesStored.length >=
+        MAX_LOOKUP_TABLE_ADDRESS
+      ) {
+        throw Error("Exceeds 256 addresses of lookup table");
+      }
+      await addAddressesToTable(connection, signer, lookupTable, addressToAdd);
+    } else {
+      const newLookupTable = await createLookupTable(connection, signer);
+      await addAddressesToTable(
+        connection,
+        signer,
+        newLookupTable,
+        addressesKey
+      );
+      return newLookupTable;
+    }
+
+    return lookupTable;
+  }
+
+  async addRaydiumClmmToAddressLookupTable({
+    connection,
+    signer,
+    poolId,
+    lookupTable,
+  }: {
+    connection: Connection;
+    signer: Keypair;
+    poolId: string;
+    lookupTable?: PublicKey;
+  }) {
+    const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
+    const MAX_LOOKUP_TABLE_ADDRESS = 256;
+
+    const poolKeys = data.poolKeys;
+    const poolInfo = data.poolInfo;
+
+    const addressesKey = [
+      new PublicKey(poolKeys.mintA.address),
+      new PublicKey(poolKeys.mintB.address),
+      new PublicKey(poolId),
+      new PublicKey(poolKeys.vault.A),
+      new PublicKey(poolKeys.vault.B),
+      new PublicKey(poolKeys.config.id),
       TOKEN_PROGRAM_ID,
       TOKEN_2022_PROGRAM_ID,
       new PublicKey(poolKeys.programId),
@@ -1679,16 +1730,16 @@ export class PieProgram {
     checkSwapDataError(swapDataResult);
 
     //@TODO remove this when other pools are available
-    for (let i = 0; i < swapDataResult.length; i++) {
-      if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
-        console.log(
-          `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
-        );
-        swapDataResult[i].data.otherAmountThreshold = String(
-          Number(swapDataResult[i].data.otherAmountThreshold) * 10
-        );
-      }
-    }
+    // for (let i = 0; i < swapDataResult.length; i++) {
+    //   if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
+    //     console.log(
+    //       `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
+    //     );
+    //     swapDataResult[i].data.otherAmountThreshold = String(
+    //       Number(swapDataResult[i].data.otherAmountThreshold) * 10
+    //     );
+    //   }
+    // }
 
     // Calculate total amount needed
     const totalAmountIn = swapDataResult.reduce(
@@ -1727,14 +1778,37 @@ export class PieProgram {
         addressLookupTablesAccount = [];
       }
 
-      const buyComponentTx = await this.buyComponent({
-        userSourceOwner: user,
-        basketId,
-        maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
-        amountOut: Number(swapDataResult[i].data.outputAmount),
-        ammId: tokenInfo[i].ammId,
-        unwrapSol: false,
-      });
+      let buyComponentTx;
+      switch (tokenInfo[i].type) {
+        case "amm":
+          buyComponentTx = await this.buyComponent({
+            userSourceOwner: user,
+            basketId,
+            maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
+            amountOut: Number(swapDataResult[i].data.outputAmount),
+            ammId: tokenInfo[i].ammId,
+            unwrapSol: false,
+          });
+          break;
+        case "clmm":
+          buyComponentTx = await this.buyComponentClmm({
+            user,
+            basketId,
+            amountOut: new BN(swapDataResult[i].data.outputAmount),
+            outputMint: new PublicKey(tokenInfo[i].mint),
+            poolId: tokenInfo[i].ammId,
+            slippage,
+          });
+          break;
+        case "cpmm":
+          buyComponentTx = await this.buyComponentCpmm({
+            user,
+            basketId,
+            amountOut: Number(swapDataResult[i].data.outputAmount),
+            poolId: tokenInfo[i].ammId,
+          });
+          break;
+      }
       tx.add(buyComponentTx);
 
       const lut = (

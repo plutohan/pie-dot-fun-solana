@@ -17,7 +17,7 @@ import {
   PieProgram,
 } from "../sdk/pie-program";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { tokens, tokensCpmm } from "./fixtures/devnet/token_test";
+import { tokensAmm, tokensCpmm } from "./fixtures/devnet/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "../sdk/utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
@@ -30,7 +30,10 @@ import {
   unwrapSolIx,
   wrappedSOLInstruction,
 } from "../sdk/utils/helper";
-import { addAddressesToTable, finalizeTransaction } from "../sdk/utils/lookupTable";
+import {
+  addAddressesToTable,
+  finalizeTransaction,
+} from "../sdk/utils/lookupTable";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -39,6 +42,10 @@ describe("pie", () => {
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
   const pieProgram = new PieProgram(connection, "devnet");
+
+  beforeEach(async () => {
+    await pieProgram.init();
+  });
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
@@ -124,15 +131,15 @@ describe("pie", () => {
   it("Create Basket", async () => {
     const components: BasketComponent[] = [
       {
-        mint: new PublicKey(tokens[0].mint),
+        mint: new PublicKey(tokensAmm[0].mint),
         quantityInSysDecimal: new BN(1 * 10 ** 6),
       },
       {
-        mint: new PublicKey(tokens[1].mint),
+        mint: new PublicKey(tokensAmm[1].mint),
         quantityInSysDecimal: new BN(2 * 10 ** 6),
       },
       {
-        mint: new PublicKey(tokens[2].mint),
+        mint: new PublicKey(tokensAmm[2].mint),
         quantityInSysDecimal: new BN(3 * 10 ** 6),
       },
     ];
@@ -187,8 +194,7 @@ describe("pie", () => {
       newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable({
         connection,
         signer: admin,
-        ammId: tokens[i].ammId,
-        basketId,
+        ammId: tokensAmm[i].ammId,
         lookupTable: newLookupTable,
       });
     }
@@ -225,15 +231,15 @@ describe("pie", () => {
         quantityInSysDecimal: new BN(1 * 10 ** 6),
       },
       {
-        mint: new PublicKey(tokens[1].mint),
+        mint: new PublicKey(tokensAmm[1].mint),
         quantityInSysDecimal: new BN(2 * 10 ** 6),
       },
       {
-        mint: new PublicKey(tokens[2].mint),
+        mint: new PublicKey(tokensAmm[2].mint),
         quantityInSysDecimal: new BN(3 * 10 ** 6),
       },
       {
-        mint: new PublicKey(tokens[3].mint),
+        mint: new PublicKey(tokensAmm[3].mint),
         quantityInSysDecimal: new BN(3 * 10 ** 6),
       },
     ];
@@ -261,8 +267,7 @@ describe("pie", () => {
       newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable({
         connection,
         signer: admin,
-        ammId: tokens[i].ammId,
-        basketId,
+        ammId: tokensAmm[i].ammId,
         lookupTable: newLookupTable,
       });
     }
@@ -368,7 +373,7 @@ describe("pie", () => {
             basketId,
             maxAmountIn: 1 * LAMPORTS_PER_SOL,
             amountOut: 2000000,
-            ammId: tokens[i].ammId,
+            ammId: tokensAmm[i].ammId,
             unwrapSol: true,
           })
         );
@@ -379,7 +384,7 @@ describe("pie", () => {
             basketId,
             maxAmountIn: 1 * LAMPORTS_PER_SOL,
             amountOut: 2000000,
-            ammId: tokens[i].ammId,
+            ammId: tokensAmm[i].ammId,
             unwrapSol: false,
           })
         );
@@ -430,7 +435,7 @@ describe("pie", () => {
         basketId,
         maxAmountIn: 1 * LAMPORTS_PER_SOL,
         amountOut: 20000000,
-        ammId: tokens[i].ammId,
+        ammId: tokensAmm[i].ammId,
       });
       tx.add(buyComponentTx);
     }
