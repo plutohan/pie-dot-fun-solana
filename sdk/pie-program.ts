@@ -41,6 +41,7 @@ import {
   getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
   getSwapData,
+  getTokenAccount,
   isValidTransaction,
   SwapCompute,
   unwrapSolIx,
@@ -554,10 +555,10 @@ export class PieProgram {
       ? [poolKeys.mintA.address, poolKeys.mintB.address]
       : [poolKeys.mintB.address, poolKeys.mintA.address];
 
-    const inputTokenAccount = getAssociatedTokenAddressSync(
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
       new PublicKey(mintIn),
       userSourceOwner,
-      false
     );
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
@@ -567,7 +568,9 @@ export class PieProgram {
         userSourceOwner,
         basketConfig
       );
-    tx.add(outputTx);
+    if(outputTx) {
+      tx.add(outputTx);
+    }
 
     const buyComponentTx = await this.program.methods
       .buyComponent(new BN(maxAmountIn), new BN(amountOut))

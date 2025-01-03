@@ -114,10 +114,6 @@
           }
         },
         {
-          "name": "mint_out",
-          "writable": true
-        },
-        {
           "name": "amm",
           "writable": true
         },
