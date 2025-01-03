@@ -770,8 +770,8 @@ export class PieProgram {
 
     const buyComponentTx = await this.program.methods
       .buyComponentClmm(
-        res.maxAmountIn.amount,
         new BN(amountOut),
+        res.maxAmountIn.amount,
         sqrtPriceLimitX64
       )
       .accountsPartial({
@@ -1791,7 +1791,6 @@ export class PieProgram {
           buyComponentTx = await this.buyComponentClmm({
             user,
             basketId,
-            maxAmountIn: new BN(swapDataResult[i].data.otherAmountThreshold),
             amountOut: new BN(swapDataResult[i].data.outputAmount),
             outputMint: new PublicKey(tokenInfo[i].mint),
             poolId: tokenInfo[i].ammId,
