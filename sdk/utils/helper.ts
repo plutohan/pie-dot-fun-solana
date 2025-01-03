@@ -492,3 +492,10 @@ export async function startPollingJitoBundle(bundleId: string) {
     }, 1000);
   });
 }
+
+export function caculateTotalAmountWithFee(
+  amount: number,
+  feePercentageInBasisPoints: number
+) {
+  return Math.ceil(amount * (1 + feePercentageInBasisPoints / 10000));
+}

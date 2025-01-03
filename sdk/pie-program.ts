@@ -36,6 +36,7 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import {
   buildClmmRemainingAccounts,
+  caculateTotalAmountWithFee,
   checkSwapDataError,
   getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
@@ -751,12 +752,6 @@ export class PieProgram {
       user,
       false
     );
-
-    const wrappedSolIx = await wrappedSOLInstruction(
-      user,
-      res.maxAmountIn.amount.toNumber()
-    );
-    tx.add(...wrappedSolIx);
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
       await getOrCreateTokenAccountTx(
@@ -1690,6 +1685,7 @@ export class PieProgram {
     mintAmount,
     swapsPerBundle,
     tokenInfo,
+    feePercentageInBasisPoints,
   }: {
     user: PublicKey;
     basketId: BN;
@@ -1697,6 +1693,7 @@ export class PieProgram {
     mintAmount: number;
     swapsPerBundle: number;
     tokenInfo: TokenInfo[];
+    feePercentageInBasisPoints: number;
   }): Promise<string[]> {
     const tipAccounts = await getTipAccounts();
     const tipInformation = await getTipInformation();
@@ -1757,7 +1754,10 @@ export class PieProgram {
       tx.add(createWsolAtaTx);
     }
 
-    const wrappedSolIx = await wrappedSOLInstruction(user, totalAmountIn);
+    const wrappedSolIx = await wrappedSOLInstruction(
+      user,
+      caculateTotalAmountWithFee(totalAmountIn, feePercentageInBasisPoints)
+    );
     tx.add(...wrappedSolIx);
 
     // Process each component
@@ -2008,7 +2008,7 @@ export class PieProgram {
     });
 
     const swapDataResult = await Promise.all(swapData);
-    console.log(JSON.stringify(swapDataResult));
+
     checkSwapDataError(swapDataResult);
 
     //@TODO remove this when other pools are available

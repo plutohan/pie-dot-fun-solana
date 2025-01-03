@@ -279,6 +279,9 @@ describe("pie", () => {
       mintAmount,
       swapsPerBundle,
       tokenInfo: tokens,
+      feePercentageInBasisPoints:
+        programState.platformFeePercentage.toNumber() +
+        programState.creatorFeePercentage.toNumber(),
     });
 
     console.log("signing bundle...");
