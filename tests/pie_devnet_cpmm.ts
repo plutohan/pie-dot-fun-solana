@@ -17,7 +17,7 @@ import {
   PieProgram,
 } from "../sdk/pie-program";
 import { CurveCalculator, Raydium } from "@raydium-io/raydium-sdk-v2";
-import { tokens, tokensCpmm } from "./fixtures/devnet/token_test";
+import { tokensAmm, tokensCpmm } from "./fixtures/devnet/token_test";
 import { Table } from "console-table-printer";
 import { initSdk } from "../sdk/utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
@@ -106,7 +106,6 @@ describe("pie", () => {
         `Platform fee token account created at tx: https://explorer.solana.com/tx/${createPlatformFeeTokenAccountTxResult}?cluster=devnet`
       );
     }
-
     if (
       programState.platformFeeWallet.toBase58() ==
       new PublicKey("11111111111111111111111111111111").toBase58()
@@ -478,7 +477,7 @@ describe("pie", () => {
 
   it("Executing rebalance basket by buying component 5", async () => {
     const isSwapBaseOut = true;
-    const newBasketBuy = tokens[5];
+    const newBasketBuy = tokensAmm[5];
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigPDA = pieProgram.basketConfigPDA({ basketId });

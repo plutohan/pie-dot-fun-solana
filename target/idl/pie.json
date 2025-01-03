@@ -114,10 +114,6 @@
           }
         },
         {
-          "name": "mint_out",
-          "writable": true
-        },
-        {
           "name": "amm",
           "writable": true
         },
@@ -188,7 +184,6 @@
         },
         {
           "name": "amm_program",
-          "writable": true,
           "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
         },
         {
@@ -319,7 +314,7 @@
         },
         {
           "name": "clmm_program",
-          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+          "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
         },
         {
           "name": "platform_fee_token_account",
@@ -611,7 +606,7 @@
         },
         {
           "name": "cp_swap_program",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         },
         {
           "name": "system_program",
@@ -887,7 +882,6 @@
         },
         {
           "name": "amm_program",
-          "writable": true,
           "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
         },
         {
@@ -1003,7 +997,7 @@
         },
         {
           "name": "clmm_program",
-          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+          "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
         },
         {
           "name": "amm_config",
@@ -1229,7 +1223,7 @@
         },
         {
           "name": "cp_swap_program",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         }
       ],
       "args": [
@@ -1688,7 +1682,6 @@
         },
         {
           "name": "amm_program",
-          "writable": true,
           "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
         },
         {
@@ -1815,7 +1808,7 @@
         },
         {
           "name": "clmm_program",
-          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+          "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
         },
         {
           "name": "platform_fee_token_account",
@@ -2066,7 +2059,7 @@
         },
         {
           "name": "cp_swap_program",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         },
         {
           "name": "system_program",

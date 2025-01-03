@@ -6,7 +6,7 @@ export interface TokenInfo {
   poolId?: string;
   lut?: PublicKey;
 }
-export const tokens: TokenInfo[] = [
+export const tokensAmm: TokenInfo[] = [
   {
     name: "PNUT",
     mint: "HttRbw6tw8V7BJ8T29HD6GMK1BFKAqM7eXjTfdgPdGtx",

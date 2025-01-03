@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+  "address": "6tfUrp38Q5jRysrgLhNadxmrmXVKt7Rz5dC593x1wu1Q",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -120,10 +120,6 @@ export type Pie = {
           }
         },
         {
-          "name": "mintOut",
-          "writable": true
-        },
-        {
           "name": "amm",
           "writable": true
         },
@@ -194,7 +190,6 @@ export type Pie = {
         },
         {
           "name": "ammProgram",
-          "writable": true,
           "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
         },
         {
@@ -325,7 +320,7 @@ export type Pie = {
         },
         {
           "name": "clmmProgram",
-          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+          "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
         },
         {
           "name": "platformFeeTokenAccount",
@@ -617,7 +612,7 @@ export type Pie = {
         },
         {
           "name": "cpSwapProgram",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         },
         {
           "name": "systemProgram",
@@ -893,7 +888,6 @@ export type Pie = {
         },
         {
           "name": "ammProgram",
-          "writable": true,
           "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
         },
         {
@@ -1009,7 +1003,7 @@ export type Pie = {
         },
         {
           "name": "clmmProgram",
-          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+          "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
         },
         {
           "name": "ammConfig",
@@ -1235,7 +1229,7 @@ export type Pie = {
         },
         {
           "name": "cpSwapProgram",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         }
       ],
       "args": [
@@ -1694,7 +1688,6 @@ export type Pie = {
         },
         {
           "name": "ammProgram",
-          "writable": true,
           "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
         },
         {
@@ -1821,7 +1814,7 @@ export type Pie = {
         },
         {
           "name": "clmmProgram",
-          "address": "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
+          "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
         },
         {
           "name": "platformFeeTokenAccount",
@@ -2072,7 +2065,7 @@ export type Pie = {
         },
         {
           "name": "cpSwapProgram",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         },
         {
           "name": "systemProgram",

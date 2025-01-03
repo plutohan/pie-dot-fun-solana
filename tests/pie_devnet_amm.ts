@@ -17,15 +17,12 @@ import {
   PieProgram,
 } from "../sdk/pie-program";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { tokensAmm, tokensCpmm } from "./fixtures/devnet/token_test";
+import { tokensAmm } from "./fixtures/devnet/token_test";
 import { Table } from "console-table-printer";
-import { initSdk } from "../sdk/utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
   getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
-  getTokenAccount,
-  showBasketConfigTable,
   showUserFundTable,
   unwrapSolIx,
   wrappedSOLInstruction,
@@ -42,10 +39,6 @@ describe("pie", () => {
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
   const pieProgram = new PieProgram(connection, "devnet");
-
-  beforeEach(async () => {
-    await pieProgram.init();
-  });
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
@@ -71,60 +64,62 @@ describe("pie", () => {
     //fetch again
     programState = await pieProgram.getProgramState();
 
-    if (programState.platformFeePercentage.toNumber() == 0) {
-      // mint redeem fee 1% and platform fee 0.5%
-      const updateFeeTx = await pieProgram.updateFee({
-        admin: admin.publicKey,
-        newCreatorFeePercentage: 1000,
-        newPlatformFeePercentage: 500,
-      });
-      const updateFeeTxResult = await sendAndConfirmTransaction(
-        connection,
-        updateFeeTx,
-        [admin],
-        { skipPreflight: true, commitment: "confirmed" }
-      );
-      console.log(
-        `Fee updated at tx: https://explorer.solana.com/tx/${updateFeeTxResult}?cluster=devnet`
-      );
-    }
-    //create platform fee token account if needed
-    const { tx: outputTx } = await getOrCreateTokenAccountTx(
-      connection,
-      new PublicKey(NATIVE_MINT),
-      admin.publicKey,
-      programState.platformFeeWallet
-    );
-
-    if (outputTx.instructions.length !== 0) {
-      const createPlatformFeeTokenAccountTxResult =
-        await sendAndConfirmTransaction(connection, outputTx, [admin], {
-          skipPreflight: true,
-          commitment: "confirmed",
-        });
-      console.log(
-        `Platform fee token account created at tx: https://explorer.solana.com/tx/${createPlatformFeeTokenAccountTxResult}?cluster=devnet`
-      );
-    }
-
-    if (
-      programState.platformFeeWallet.toBase58() ==
-      new PublicKey("11111111111111111111111111111111").toBase58()
-    ) {
-      const updatePlatformFeeWalletTx =
-        await pieProgram.updatePlatformFeeWallet({
+    if (programState) {
+      if (programState.platformFeePercentage.toNumber() == 0) {
+        // mint redeem fee 1% and platform fee 0.5%
+        const updateFeeTx = await pieProgram.updateFee({
           admin: admin.publicKey,
-          newPlatformFeeWallet: admin.publicKey,
+          newCreatorFeePercentage: 1000,
+          newPlatformFeePercentage: 500,
         });
-      const updatePlatformFeeWalletTxResult = await sendAndConfirmTransaction(
+        const updateFeeTxResult = await sendAndConfirmTransaction(
+          connection,
+          updateFeeTx,
+          [admin],
+          { skipPreflight: true, commitment: "confirmed" }
+        );
+        console.log(
+          `Fee updated at tx: https://explorer.solana.com/tx/${updateFeeTxResult}?cluster=devnet`
+        );
+      }
+      //create platform fee token account if needed
+      const { tx: outputTx } = await getOrCreateTokenAccountTx(
         connection,
-        updatePlatformFeeWalletTx,
-        [admin],
-        { skipPreflight: true, commitment: "confirmed" }
+        new PublicKey(NATIVE_MINT),
+        admin.publicKey,
+        programState.platformFeeWallet
       );
-      console.log(
-        `Platform fee wallet updated at tx: https://explorer.solana.com/tx/${updatePlatformFeeWalletTxResult}?cluster=devnet`
-      );
+
+      if (outputTx) {
+        const createPlatformFeeTokenAccountTxResult =
+          await sendAndConfirmTransaction(connection, outputTx, [admin], {
+            skipPreflight: true,
+            commitment: "confirmed",
+          });
+        console.log(
+          `Platform fee token account created at tx: https://explorer.solana.com/tx/${createPlatformFeeTokenAccountTxResult}?cluster=devnet`
+        );
+      }
+
+      if (
+        programState.platformFeeWallet.toBase58() ==
+        new PublicKey("11111111111111111111111111111111").toBase58()
+      ) {
+        const updatePlatformFeeWalletTx =
+          await pieProgram.updatePlatformFeeWallet({
+            admin: admin.publicKey,
+            newPlatformFeeWallet: admin.publicKey,
+          });
+        const updatePlatformFeeWalletTxResult = await sendAndConfirmTransaction(
+          connection,
+          updatePlatformFeeWalletTx,
+          [admin],
+          { skipPreflight: true, commitment: "confirmed" }
+        );
+        console.log(
+          `Platform fee wallet updated at tx: https://explorer.solana.com/tx/${updatePlatformFeeWalletTxResult}?cluster=devnet`
+        );
+      }
     }
   });
 
@@ -142,6 +137,10 @@ describe("pie", () => {
         mint: new PublicKey(tokensAmm[2].mint),
         quantityInSysDecimal: new BN(3 * 10 ** 6),
       },
+      {
+        mint: new PublicKey(tokensAmm[3].mint),
+        quantityInSysDecimal: new BN(3 * 10 ** 6),
+      },
     ];
 
     const createBasketArgs: CreateBasketArgs = {
@@ -153,7 +152,7 @@ describe("pie", () => {
     };
 
     const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter;
+    const basketId = programState!.basketCounter;
     const createBasketTx = await pieProgram.createBasket({
       creator: admin.publicKey,
       args: createBasketArgs,
@@ -177,7 +176,7 @@ describe("pie", () => {
       admin.publicKey
     );
 
-    if (outputTx.signatures.length !== 0) {
+    if (outputTx) {
       const createCreatorFeeTokenAccountTxResult =
         await sendAndConfirmTransaction(connection, outputTx, [admin], {
           skipPreflight: true,
@@ -188,13 +187,13 @@ describe("pie", () => {
       );
     }
 
-    let newLookupTable: PublicKey;
+    let newLookupTable = new PublicKey("");
 
     for (let i = 0; i < createBasketArgs.components.length; i++) {
       newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable({
         connection,
         signer: admin,
-        ammId: tokensAmm[i].ammId,
+        ammId: tokensAmm[i].ammId!,
         lookupTable: newLookupTable,
       });
     }
@@ -203,344 +202,259 @@ describe("pie", () => {
       addressLookupTableMap.set(basketId.toString(), newLookupTable);
     }
     const basket = await pieProgram.getBasketConfig({ basketId });
-    assert.equal(basket.components.length, createBasketArgs.components.length);
-    assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
-    assert.equal(basket.id.toString(), basketId.toString());
-    assert.equal(basket.rebalancer.toString(), admin.publicKey.toString());
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "quantity", alignment: "right", color: "green" },
-      ],
-    });
-
-    for (let i = 0; i < basket.components.length; i++) {
-      let component = basket.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        quantity: component.quantityInSysDecimal.toString(),
-      });
-    }
-    table.printTable();
-  });
-
-  it("Create Basket of CPMM token", async () => {
-    const components: BasketComponent[] = [
-      {
-        mint: new PublicKey(tokensCpmm[0].mint),
-        quantityInSysDecimal: new BN(1 * 10 ** 6),
-      },
-      {
-        mint: new PublicKey(tokensAmm[1].mint),
-        quantityInSysDecimal: new BN(2 * 10 ** 6),
-      },
-      {
-        mint: new PublicKey(tokensAmm[2].mint),
-        quantityInSysDecimal: new BN(3 * 10 ** 6),
-      },
-      {
-        mint: new PublicKey(tokensAmm[3].mint),
-        quantityInSysDecimal: new BN(3 * 10 ** 6),
-      },
-    ];
-
-    const createBasketArgs: CreateBasketArgs = {
-      name: "Basket CPMM",
-      symbol: "BNS",
-      uri: "test",
-      components: components,
-      rebalancer: admin.publicKey,
-    };
-
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter;
-    const createBasketTx = await pieProgram.createBasket({
-      creator: admin.publicKey,
-      args: createBasketArgs,
-      basketId,
-    });
-
-    //add address to lookup table
-    let newLookupTable: PublicKey;
-
-    for (let i = 0; i < createBasketArgs.components.length; i++) {
-      newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable({
-        connection,
-        signer: admin,
-        ammId: tokensAmm[i].ammId,
-        lookupTable: newLookupTable,
-      });
-    }
-
-    if (!addressLookupTableMap.has(basketId.toString())) {
-      addressLookupTableMap.set(basketId.toString(), newLookupTable);
-    }
-
-    const createBasketTxResult = await sendAndConfirmTransaction(
-      connection,
-      createBasketTx,
-      [admin],
-      { skipPreflight: true, commitment: "confirmed" }
-    );
-    console.log(
-      `Basket created at tx: https://explorer.solana.com/tx/${createBasketTxResult}?cluster=devnet`
-    );
-
-    //create creator fee token account if needed
-    const { tx: outputTx } = await getOrCreateTokenAccountTx(
-      connection,
-      new PublicKey(NATIVE_MINT),
-      admin.publicKey,
-      admin.publicKey
-    );
-
-    if (outputTx.signatures.length !== 0) {
-      const createCreatorFeeTokenAccountTxResult =
-        await sendAndConfirmTransaction(connection, outputTx, [admin], {
-          skipPreflight: true,
-          commitment: "confirmed",
-        });
-      console.log(
-        `Creator fee token account created at tx: https://explorer.solana.com/tx/${createCreatorFeeTokenAccountTxResult}?cluster=devnet`
+    if (basket) {
+      assert.equal(
+        basket.components.length,
+        createBasketArgs.components.length
       );
-    }
-
-    let addressLookupTable = addressLookupTableMap.get(basketId.toString());
-    const lut = (await connection.getAddressLookupTable(addressLookupTable))
-      .value;
-
-    const { vaults, tx: createBasketVaultTx } =
-      await pieProgram.createBasketVaultAccounts({
-        creator: admin.publicKey,
-        args: createBasketArgs,
-        basketId,
+      assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
+      assert.equal(basket.id.toString(), basketId.toString());
+      assert.equal(basket.rebalancer.toString(), admin.publicKey.toString());
+      const table = new Table({
+        columns: [
+          { name: "mint", alignment: "left", color: "cyan" },
+          { name: "quantity", alignment: "right", color: "green" },
+        ],
       });
-    await finalizeTransaction(connection, admin, createBasketVaultTx, [lut]);
 
-    if (vaults.length > 0) {
-      await addAddressesToTable(connection, admin, addressLookupTable, vaults);
-    }
-
-    const basket = await pieProgram.getBasketConfig({ basketId });
-    assert.equal(basket.components.length, createBasketArgs.components.length);
-    assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
-    assert.equal(basket.id.toString(), basketId.toString());
-    assert.equal(basket.rebalancer.toString(), admin.publicKey.toString());
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "quantity", alignment: "right", color: "green" },
-      ],
-    });
-
-    for (let i = 0; i < basket.components.length; i++) {
-      let component = basket.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        quantity: component.quantityInSysDecimal.toString(),
-      });
-    }
-    table.printTable();
-  });
-
-  it("Buy Component", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
-    const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
-    const { tokenAccount: nativeMintAta, tx } = await getOrCreateNativeMintATA(
-      connection,
-      admin.publicKey,
-      admin.publicKey
-    );
-    const wrappedSolIx = await wrappedSOLInstruction(
-      admin.publicKey,
-      totalSolTobuy
-    );
-    tx.add(...wrappedSolIx);
-
-    await sendAndConfirmTransaction(connection, tx, [admin], {
-      skipPreflight: true,
-      commitment: "confirmed",
-    });
-
-    for (let i = 0; i < basketConfigData.components.length; i++) {
-      let txs = new Transaction();
-      if (i == basketConfigData.components.length) {
-        txs.add(
-          await pieProgram.buyComponent({
-            userSourceOwner: admin.publicKey,
-            basketId,
-            maxAmountIn: 1 * LAMPORTS_PER_SOL,
-            amountOut: 2000000,
-            ammId: tokensAmm[i].ammId,
-            unwrapSol: true,
-          })
-        );
-      } else {
-        txs.add(
-          await pieProgram.buyComponent({
-            userSourceOwner: admin.publicKey,
-            basketId,
-            maxAmountIn: 1 * LAMPORTS_PER_SOL,
-            amountOut: 2000000,
-            ammId: tokensAmm[i].ammId,
-            unwrapSol: false,
-          })
-        );
+      for (let i = 0; i < basket.components.length; i++) {
+        let component = basket.components[i];
+        table.addRow({
+          mint: component.mint.toBase58(),
+          quantity: component.quantityInSysDecimal.toString(),
+        });
       }
-      const buyComponentTxResult = await sendAndConfirmTransaction(
-        connection,
-        txs,
-        [admin],
-        {
-          skipPreflight: true,
-          commitment: "confirmed",
-        }
-      );
-
-      console.log(
-        `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
-      );
+      table.printTable();
     }
-    const userFundTable = await showUserFundTable(
-      pieProgram,
-      admin.publicKey,
-      basketId
-    );
-    userFundTable.printTable();
+  });
+
+  it("Buy Component AMM", async () => {
+    const programState = await pieProgram.getProgramState();
+    if (programState) {
+      const basketId = programState.basketCounter.sub(new BN(1));
+      const basketConfigData = await pieProgram.getBasketConfig({ basketId });
+      const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
+      const tx = new Transaction();
+      const { tx: createNativeMintTx } = await getOrCreateNativeMintATA(
+        connection,
+        admin.publicKey,
+        admin.publicKey
+      );
+      if (createNativeMintTx) {
+        tx.add(createNativeMintTx);
+      }
+
+      const wrappedSolIx = await wrappedSOLInstruction(
+        admin.publicKey,
+        totalSolTobuy
+      );
+      tx.add(...wrappedSolIx);
+      const amountToBuy = 2_000_000;
+
+      await sendAndConfirmTransaction(connection, tx, [admin], {
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
+
+      if (basketConfigData) {
+        for (let i = 0; i < basketConfigData.components.length; i++) {
+          let txs = new Transaction();
+          if (i == basketConfigData.components.length) {
+            txs.add(
+              await pieProgram.buyComponent({
+                userSourceOwner: admin.publicKey,
+                basketId,
+                maxAmountIn: 1 * LAMPORTS_PER_SOL,
+                amountOut: amountToBuy,
+                ammId: tokensAmm[i].ammId!,
+                unwrapSol: true,
+              })
+            );
+          } else {
+            txs.add(
+              await pieProgram.buyComponent({
+                userSourceOwner: admin.publicKey,
+                basketId,
+                maxAmountIn: 1 * LAMPORTS_PER_SOL,
+                amountOut: amountToBuy,
+                ammId: tokensAmm[i].ammId!,
+                unwrapSol: false,
+              })
+            );
+          }
+          const buyComponentTxResult = await sendAndConfirmTransaction(
+            connection,
+            txs,
+            [admin],
+            {
+              skipPreflight: true,
+              commitment: "confirmed",
+            }
+          );
+
+          console.log(
+            `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
+          );
+        }
+      }
+      const userFundTable = await showUserFundTable(
+        pieProgram,
+        admin.publicKey,
+        basketId
+      );
+      userFundTable.printTable();
+    }
   });
 
   it("Buy Component Using look up table", async () => {
     const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
-    let addressLookupTable: PublicKey;
-    const addressLookupTablesAccount: AddressLookupTableAccount[] = [];
-    const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
-    const { tokenAccount: nativeMintAta, tx } = await getOrCreateNativeMintATA(
-      connection,
-      admin.publicKey,
-      admin.publicKey
-    );
-    const wrappedSolIx = await wrappedSOLInstruction(
-      admin.publicKey,
-      totalSolTobuy
-    );
-    tx.add(...wrappedSolIx);
+    if (programState) {
+      const basketId = programState.basketCounter.sub(new BN(1));
+      const basketConfigData = await pieProgram.getBasketConfig({ basketId });
+      if (basketConfigData) {
+        const amountToBuy = 2_000_000;
 
-    for (let i = 0; i < basketConfigData.components.length; i++) {
-      const buyComponentTx = await pieProgram.buyComponent({
-        userSourceOwner: admin.publicKey,
-        basketId,
-        maxAmountIn: 1 * LAMPORTS_PER_SOL,
-        amountOut: 20000000,
-        ammId: tokensAmm[i].ammId,
-      });
-      tx.add(buyComponentTx);
-    }
+        let addressLookupTable: PublicKey | undefined;
+        const addressLookupTablesAccount: AddressLookupTableAccount[] = [];
+        const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
+        const tx = new Transaction();
+        const { tokenAccount: nativeMintAta, tx: createNativeMintTx } =
+          await getOrCreateNativeMintATA(
+            connection,
+            admin.publicKey,
+            admin.publicKey
+          );
+        if (createNativeMintTx) {
+          tx.add(createNativeMintTx);
+        }
+        const wrappedSolIx = await wrappedSOLInstruction(
+          admin.publicKey,
+          totalSolTobuy
+        );
+        tx.add(...wrappedSolIx);
 
-    if (addressLookupTableMap.has(basketId.toString())) {
-      addressLookupTable = addressLookupTableMap.get(basketId.toString());
-      const lut = (await connection.getAddressLookupTable(addressLookupTable))
-        .value;
-      addressLookupTablesAccount.push(lut);
-    }
+        for (let i = 0; i < basketConfigData.components.length; i++) {
+          const buyComponentTx = await pieProgram.buyComponent({
+            userSourceOwner: admin.publicKey,
+            basketId,
+            maxAmountIn: 1 * LAMPORTS_PER_SOL,
+            amountOut: amountToBuy,
+            ammId: tokensAmm[i].ammId!,
+            unwrapSol: false,
+          });
+          tx.add(buyComponentTx);
+        }
+        console.log("tx.instruciton: ", tx.instructions);
+        if (addressLookupTableMap.has(basketId.toString())) {
+          addressLookupTable = addressLookupTableMap.get(basketId.toString());
+          if (addressLookupTable) {
+            const lut = (
+              await connection.getAddressLookupTable(addressLookupTable)
+            ).value;
+            if (lut) {
+              addressLookupTablesAccount.push(lut);
+            }
+          }
+        }
 
-    tx.add(unwrapSolIx(nativeMintAta, admin.publicKey, admin.publicKey));
-    console.log("addressLookupTablesAccount; ", addressLookupTablesAccount);
-    await finalizeTransaction(
-      connection,
-      admin,
-      tx,
-      addressLookupTablesAccount
-    );
+        tx.add(unwrapSolIx(nativeMintAta, admin.publicKey, admin.publicKey));
+        console.log("addressLookupTablesAccount; ", addressLookupTablesAccount);
+        await finalizeTransaction(
+          connection,
+          admin,
+          tx,
+          addressLookupTablesAccount
+        );
 
-    const userFund = await pieProgram.getUserFund({
-      user: admin.publicKey,
-      basketId,
-    });
+        const userFund = await pieProgram.getUserFund({
+          user: admin.publicKey,
+          basketId,
+        });
 
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "amount", alignment: "right", color: "green" },
-      ],
-    });
+        const table = new Table({
+          columns: [
+            { name: "mint", alignment: "left", color: "cyan" },
+            { name: "amount", alignment: "right", color: "green" },
+          ],
+        });
 
-    for (let i = 0; i < userFund.components.length; i++) {
-      let component = userFund.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        amount: component.amount.toString(),
-      });
-    }
-    table.printTable();
-  });
-
-  it("Mint Basket", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-
-    const mintBasketTokenTx = await pieProgram.mintBasketToken({
-      user: admin.publicKey,
-      basketId,
-      amount: 4,
-    });
-
-    const mintBasketTokenTxResult = await sendAndConfirmTransaction(
-      connection,
-      mintBasketTokenTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
+        if (userFund) {
+          for (let i = 0; i < userFund.components.length; i++) {
+            let component = userFund.components[i];
+            table.addRow({
+              mint: component.mint.toBase58(),
+              amount: component.amount.toString(),
+            });
+          }
+          table.printTable();
+        }
       }
-    );
-
-    console.log(
-      `Mint basket token at tx: https://explorer.solana.com/tx/${mintBasketTokenTxResult}?cluster=devnet`
-    );
-
-    console.log("User fund after mint basket: ");
-    const userFundTable = await showUserFundTable(
-      pieProgram,
-      admin.publicKey,
-      basketId
-    );
-    userFundTable.printTable();
+    }
   });
 
-  it("Redeem Basket Token", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const redeemBasketTokenTx = await pieProgram.redeemBasketToken({
-      user: admin.publicKey,
-      basketId,
-      amount: 2,
-    });
+  // it("Mint Basket", async () => {
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
 
-    const redeemBasketTokenTxResult = await sendAndConfirmTransaction(
-      connection,
-      redeemBasketTokenTx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
+  //   const mintBasketTokenTx = await pieProgram.mintBasketToken({
+  //     user: admin.publicKey,
+  //     basketId,
+  //     amount: 4,
+  //   });
 
-    console.log(
-      `Redeem basket token at tx: https://explorer.solana.com/tx/${redeemBasketTokenTxResult}?cluster=devnet`
-    );
-    console.log("User fund after redeem basket: ");
-    const userFundTable = await showUserFundTable(
-      pieProgram,
-      admin.publicKey,
-      basketId
-    );
-    userFundTable.printTable();
-  });
+  //   const mintBasketTokenTxResult = await sendAndConfirmTransaction(
+  //     connection,
+  //     mintBasketTokenTx,
+  //     [admin],
+  //     {
+  //       skipPreflight: true,
+  //       commitment: "confirmed",
+  //     }
+  //   );
+
+  //   console.log(
+  //     `Mint basket token at tx: https://explorer.solana.com/tx/${mintBasketTokenTxResult}?cluster=devnet`
+  //   );
+
+  //   console.log("User fund after mint basket: ");
+  //   const userFundTable = await showUserFundTable(
+  //     pieProgram,
+  //     admin.publicKey,
+  //     basketId
+  //   );
+  //   userFundTable.printTable();
+  // });
+
+  // it("Redeem Basket Token", async () => {
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
+  //   const redeemBasketTokenTx = await pieProgram.redeemBasketToken({
+  //     user: admin.publicKey,
+  //     basketId,
+  //     amount: 2,
+  //   });
+
+  //   const redeemBasketTokenTxResult = await sendAndConfirmTransaction(
+  //     connection,
+  //     redeemBasketTokenTx,
+  //     [admin],
+  //     {
+  //       skipPreflight: true,
+  //       commitment: "confirmed",
+  //     }
+  //   );
+
+  //   console.log(
+  //     `Redeem basket token at tx: https://explorer.solana.com/tx/${redeemBasketTokenTxResult}?cluster=devnet`
+  //   );
+  //   console.log("User fund after redeem basket: ");
+  //   const userFundTable = await showUserFundTable(
+  //     pieProgram,
+  //     admin.publicKey,
+  //     basketId
+  //   );
+  //   userFundTable.printTable();
+  // });
 
   // it("Sell Component", async () => {
   //   const programState = await pieProgram.getProgramState();

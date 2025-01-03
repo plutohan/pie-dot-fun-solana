@@ -16,6 +16,7 @@
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "build:sdk": "rm -rf dist && tsc -p tsconfig.build.json",
     "test-devnet": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_devnet.ts",
+    "test-amm-devnet": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_devnet_amm.ts",
     "test-cpmm-devnet": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_devnet_cpmm.ts",
     "test-clmm-devnet": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_devnet_clmm.ts",
     "test-mainnet": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_mainnet.ts",

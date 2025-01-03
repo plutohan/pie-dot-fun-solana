@@ -217,13 +217,6 @@ export async function getOrCreateTokenAccountIx(
   return { tokenAccount: tokenAccount, ixs: instructions };
 }
 
-export async function getTokenAccount(
-  mint: PublicKey,
-  owner: PublicKey
-): Promise<PublicKey> {
-  return await getAssociatedTokenAddress(mint, owner, true);
-}
-
 export async function buildClmmRemainingAccounts(
   tickArray: PublicKey[],
   exTickArrayBitmap?: PublicKey
@@ -243,7 +236,7 @@ export async function wrappedSOLInstruction(
   amount: number
 ): Promise<TransactionInstruction[]> {
   let ixs: TransactionInstruction[] = [];
-  const ata = await getTokenAccount(NATIVE_MINT, recipient);
+  const ata = getAssociatedTokenAddressSync(NATIVE_MINT, recipient);
   ixs.push(
     SystemProgram.transfer({
       fromPubkey: recipient,
@@ -347,22 +340,21 @@ export async function getOrCreateTokenAccountTx(
   mint: PublicKey,
   payer: PublicKey,
   owner: PublicKey
-): Promise<{ tokenAccount: PublicKey; tx: Transaction }> {
-  const programId = (await isToken2022Mint(connection, mint))
+): Promise<{ tokenAccount: PublicKey; tx: Transaction | null}> {
+  const programId = await isToken2022Mint(connection, mint)
     ? TOKEN_2022_PROGRAM_ID
     : TOKEN_PROGRAM_ID;
-
   const tokenAccount = await getAssociatedTokenAddress(
     mint,
     owner,
     true,
     programId
   );
-
-  let transaction = new Transaction();
   try {
     await getAccount(connection, tokenAccount, "confirmed", programId);
+    return { tokenAccount: tokenAccount, tx: null };
   } catch (error) {
+    let transaction = new Transaction();
     transaction.add(
       createAssociatedTokenAccountInstruction(
         payer,
@@ -373,8 +365,14 @@ export async function getOrCreateTokenAccountTx(
         ASSOCIATED_TOKEN_PROGRAM_ID
       )
     );
+    return { tokenAccount: tokenAccount, tx: transaction };
   }
-  return { tokenAccount: tokenAccount, tx: transaction };
+}
+
+export async function getTokenAccount(connection: Connection, mint: PublicKey, owner: PublicKey) {
+  const programId = await isToken2022Mint(connection, mint) ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+  const tokenAccount = getAssociatedTokenAddressSync(mint , owner, true, programId);
+  return tokenAccount
 }
 
 export async function isToken2022Mint(
@@ -440,7 +438,6 @@ export interface SwapCompute {
     }[];
   };
 }
-
 export async function getSwapData({
   isSwapBaseOut,
   inputMint,
