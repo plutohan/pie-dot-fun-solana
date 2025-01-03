@@ -697,7 +697,6 @@ export class PieProgram {
   async buyComponentClmm({
     user,
     basketId,
-    maxAmountIn,
     amountOut,
     outputMint,
     poolId,
@@ -705,7 +704,6 @@ export class PieProgram {
   }: {
     user: PublicKey;
     basketId: BN;
-    maxAmountIn: BN;
     amountOut: BN;
     outputMint: PublicKey;
     poolId: string;
@@ -754,6 +752,12 @@ export class PieProgram {
       false
     );
 
+    const wrappedSolIx = await wrappedSOLInstruction(
+      user,
+      res.maxAmountIn.amount.toNumber()
+    );
+    tx.add(...wrappedSolIx);
+
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
       await getOrCreateTokenAccountTx(
         this.connection,
@@ -765,7 +769,11 @@ export class PieProgram {
     tx.add(outputTx);
 
     const buyComponentTx = await this.program.methods
-      .buyComponentClmm(res.maxAmountIn.amount, new BN(amountOut), sqrtPriceLimitX64)
+      .buyComponentClmm(
+        res.maxAmountIn.amount,
+        new BN(amountOut),
+        sqrtPriceLimitX64
+      )
       .accountsPartial({
         user: user,
         userFund: this.userFundPDA({ user, basketId }),
@@ -948,7 +956,6 @@ export class PieProgram {
         user,
         user
       );
-
     tx.add(outputTx);
     const wrappedSolIx = await wrappedSOLInstruction(user, amountIn);
     tx.add(...wrappedSolIx);
