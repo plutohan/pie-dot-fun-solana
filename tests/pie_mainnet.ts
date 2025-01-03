@@ -49,6 +49,10 @@ describe("pie", () => {
   const swapsPerBundle = 3;
   const slippage = 100;
 
+  beforeEach(async () => {
+    await pieProgram.init();
+  });
+
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
 
@@ -168,24 +172,41 @@ describe("pie", () => {
     console.log("creating lookup tables for each component...");
 
     // @TODO uncomment this when needed
-    // const lookupTables = [];
-    // for (let i = 0; i < createBasketArgs.components.length; i++) {
-    //   console.log(
-    //     `creating lookup table for ${i + 1} of ${
-    //       createBasketArgs.components.length
-    //     }`
-    //   );
-    //   const lut = await pieProgram.addRaydiumAmmToAddressLookupTable(
-    //     raydium,
-    //     connection,
-    //     admin,
-    //     tokens[i].ammId,
-    //     basketId
-    //   );
-    //   lookupTables.push(lut.toBase58());
-    // }
+    const lookupTables = [];
+    for (let i = 0; i < createBasketArgs.components.length; i++) {
+      console.log(
+        `creating lookup table for ${i + 1} of ${
+          createBasketArgs.components.length
+        }`
+      );
+      let lut;
+      switch (tokens[i].type) {
+        case "amm":
+          lut = await pieProgram.addRaydiumAmmToAddressLookupTable({
+            connection,
+            signer: admin,
+            ammId: tokens[i].ammId,
+          });
+          break;
+        case "clmm":
+          lut = await pieProgram.addRaydiumClmmToAddressLookupTable({
+            connection,
+            signer: admin,
+            poolId: tokens[i].ammId,
+          });
+          break;
+        case "cpmm":
+          lut = await pieProgram.addRaydiumCpmmToAddressLookupTable({
+            connection,
+            signer: admin,
+            poolId: tokens[i].ammId,
+          });
+          break;
+      }
+      lookupTables.push(lut.toBase58());
+    }
 
-    // console.log("lookup tables created:", lookupTables);
+    console.log("lookup tables created:", lookupTables);
 
     const { tx } = await pieProgram.createBasketVaultAccounts({
       creator: admin.publicKey,

@@ -30,7 +30,10 @@ import {
   unwrapSolIx,
   wrappedSOLInstruction,
 } from "../sdk/utils/helper";
-import { addAddressesToTable, finalizeTransaction } from "../sdk/utils/lookupTable";
+import {
+  addAddressesToTable,
+  finalizeTransaction,
+} from "../sdk/utils/lookupTable";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -39,6 +42,10 @@ describe("pie", () => {
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
   const pieProgram = new PieProgram(connection, "devnet");
+
+  beforeEach(async () => {
+    await pieProgram.init();
+  });
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
@@ -153,7 +160,6 @@ describe("pie", () => {
         connection,
         signer: admin,
         poolId: tokensCpmm[i].poolId,
-        basketId,
         lookupTable: newLookupTable,
       });
     }
@@ -233,7 +239,24 @@ describe("pie", () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig({ basketId });
-    const amountWantToBuy = 2000000;
+    const amountWantToBuy = 200000;
+    const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
+
+    const { tokenAccount: nativeMintAta, tx } = await getOrCreateNativeMintATA(
+      connection,
+      admin.publicKey,
+      admin.publicKey
+    );
+    const wrappedSolIx = await wrappedSOLInstruction(
+      admin.publicKey,
+      totalSolTobuy
+    );
+    tx.add(...wrappedSolIx);
+
+    await sendAndConfirmTransaction(connection, tx, [admin], {
+      skipPreflight: true,
+      commitment: "confirmed",
+    });
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
       const buyComponentTx = await pieProgram.buyComponentCpmm({
@@ -498,7 +521,6 @@ describe("pie", () => {
         connection,
         signer: admin,
         poolId: newBasketBuy.ammId,
-        basketId,
         lookupTable,
       });
     }

@@ -30,7 +30,10 @@ import {
   unwrapSolIx,
   wrappedSOLInstruction,
 } from "../sdk/utils/helper";
-import { addAddressesToTable, finalizeTransaction } from "../sdk/utils/lookupTable";
+import {
+  addAddressesToTable,
+  finalizeTransaction,
+} from "../sdk/utils/lookupTable";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(devnetAdmin));
@@ -39,6 +42,10 @@ describe("pie", () => {
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
   const pieProgram = new PieProgram(connection, "devnet");
+
+  beforeEach(async () => {
+    await pieProgram.init();
+  });
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
@@ -188,7 +195,6 @@ describe("pie", () => {
         connection,
         signer: admin,
         ammId: tokens[i].ammId,
-        basketId,
         lookupTable: newLookupTable,
       });
     }
@@ -262,7 +268,6 @@ describe("pie", () => {
         connection,
         signer: admin,
         ammId: tokens[i].ammId,
-        basketId,
         lookupTable: newLookupTable,
       });
     }

@@ -12,14 +12,6 @@ use constant::*;
 use instructions::*;
 use states::*;
 
-pub mod raydium_amm_address {
-    use anchor_lang::prelude::declare_id;
-    #[cfg(feature = "devnet")]
-    declare_id!("HWy1jotHpo6UqeQxx49dpYYdQB8wj9Qk9MdxwjLvDHB8");
-    #[cfg(not(feature = "devnet"))]
-    declare_id!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
-}
-
 pub mod initial_admin {
     use anchor_lang::prelude::declare_id;
     #[cfg(feature = "devnet")]

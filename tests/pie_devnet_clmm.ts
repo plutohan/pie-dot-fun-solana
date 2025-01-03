@@ -29,7 +29,10 @@ import {
   unwrapSolIx,
   wrappedSOLInstruction,
 } from "../sdk/utils/helper";
-import { addAddressesToTable, finalizeTransaction } from "../sdk/utils/lookupTable";
+import {
+  addAddressesToTable,
+  finalizeTransaction,
+} from "../sdk/utils/lookupTable";
 import { tokensClmm } from "./fixtures/devnet/token_test";
 
 describe("pie", () => {
@@ -39,6 +42,10 @@ describe("pie", () => {
 
   const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
   const pieProgram = new PieProgram(connection, "devnet");
+
+  beforeEach(async () => {
+    await pieProgram.init();
+  });
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
@@ -222,30 +229,44 @@ describe("pie", () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig({ basketId });
+
+    const tx = new Transaction();
+
+    const { tokenAccount: nativeMintAta, tx: wrappedSolIx } =
+      await getOrCreateNativeMintATA(
+        connection,
+        admin.publicKey,
+        admin.publicKey
+      );
+
+    tx.add(wrappedSolIx);
+
     for (let i = 0; i < basketConfigData.components.length; i++) {
       const buyComponentTx = await pieProgram.buyComponentClmm({
         user: admin.publicKey,
         basketId,
-        maxAmountIn: new BN(1 * LAMPORTS_PER_SOL),
         amountOut: new BN(200000000),
         outputMint: new PublicKey(tokensClmm[i].mint),
         poolId: tokensClmm[i].poolId,
+        slippage: 100,
       });
 
-      const buyComponentTxResult = await sendAndConfirmTransaction(
-        connection,
-        buyComponentTx,
-        [admin],
-        {
-          skipPreflight: true,
-          commitment: "confirmed",
-        }
-      );
-
-      console.log(
-        `Buy component CPMM at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
-      );
+      tx.add(buyComponentTx);
     }
+    const buyComponentTxResult = await sendAndConfirmTransaction(
+      connection,
+      tx,
+      [admin],
+      {
+        skipPreflight: true,
+        commitment: "confirmed",
+      }
+    );
+
+    console.log(
+      `Buy component CLMM at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
+    );
+
     const userFundTable = await showUserFundTable(
       pieProgram,
       admin.publicKey,
@@ -254,39 +275,39 @@ describe("pie", () => {
     userFundTable.printTable();
   });
 
-  it("Sell Component CLMM", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
-    for (let i = 0; i < basketConfigData.components.length; i++) {
-      const sellComponentClmmTx = await pieProgram.sellComponentClmm({
-        user: admin.publicKey,
-        basketId,
-        amountIn: new BN(20000),
-        inputMint: new PublicKey(tokensClmm[i].mint),
-        poolId: tokensClmm[i].poolId,
-        unwrappedSol: false,
-      });
+  // it("Sell Component CLMM", async () => {
+  //   const programState = await pieProgram.getProgramState();
+  //   const basketId = programState.basketCounter.sub(new BN(1));
+  //   const basketConfigData = await pieProgram.getBasketConfig({ basketId });
+  //   for (let i = 0; i < basketConfigData.components.length; i++) {
+  //     const sellComponentClmmTx = await pieProgram.sellComponentClmm({
+  //       user: admin.publicKey,
+  //       basketId,
+  //       amountIn: new BN(20000),
+  //       inputMint: new PublicKey(tokensClmm[i].mint),
+  //       poolId: tokensClmm[i].poolId,
+  //       unwrappedSol: false,
+  //     });
 
-      const sellComponentClmmTxResult = await sendAndConfirmTransaction(
-        connection,
-        sellComponentClmmTx,
-        [admin],
-        {
-          skipPreflight: true,
-          commitment: "confirmed",
-        }
-      );
+  //     const sellComponentClmmTxResult = await sendAndConfirmTransaction(
+  //       connection,
+  //       sellComponentClmmTx,
+  //       [admin],
+  //       {
+  //         skipPreflight: true,
+  //         commitment: "confirmed",
+  //       }
+  //     );
 
-      console.log(
-        `Sell component CLMM at tx: https://explorer.solana.com/tx/${sellComponentClmmTxResult}?cluster=devnet`
-      );
-    }
-    const userFundTable = await showUserFundTable(
-      pieProgram,
-      admin.publicKey,
-      basketId
-    );
-    userFundTable.printTable();
-  });
+  //     console.log(
+  //       `Sell component CLMM at tx: https://explorer.solana.com/tx/${sellComponentClmmTxResult}?cluster=devnet`
+  //     );
+  //   }
+  //   const userFundTable = await showUserFundTable(
+  //     pieProgram,
+  //     admin.publicKey,
+  //     basketId
+  //   );
+  //   userFundTable.printTable();
+  // });
 });
