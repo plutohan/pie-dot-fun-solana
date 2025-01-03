@@ -72,4 +72,5 @@ export declare function getSwapData({ isSwapBaseOut, inputMint, outputMint, amou
 export declare function checkSwapDataError(swapData: SwapCompute[]): void;
 export declare function isValidTransaction(tx: Transaction): boolean;
 export declare function startPollingJitoBundle(bundleId: string): Promise<void>;
+export declare function caculateTotalAmountWithFee(amount: number, feePercentageInBasisPoints: number): number;
 //# sourceMappingURL=helper.d.ts.map

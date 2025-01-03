@@ -48,16 +48,17 @@ const BASKET_CONFIG = "basket_config";
 const BASKET_MINT = "basket_mint";
 const MPL_TOKEN_METADATA_PROGRAM_ID = new web3_js_1.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 class PieProgram {
-    constructor(connection, cluster, programId = PieIDL.address) {
+    constructor(connection, cluster, programId = PieIDL.address, sharedLookupTable = "7RQsMxGtKjshYzcpsaG4d4dydiru67wPy8wzDS2cVY3f") {
         this.connection = connection;
+        this.cluster = cluster;
+        this.sharedLookupTable = sharedLookupTable;
         this.idl = Object.assign({}, PieIDL);
         this.idl.address = programId;
-        this.loadRaydium(connection, cluster);
     }
-    async loadRaydium(connection, cluster) {
+    async init() {
         this.raydium = await raydium_sdk_v2_1.Raydium.load({
-            connection: connection,
-            cluster: cluster,
+            connection: this.connection,
+            cluster: this.cluster,
             disableFeatureCheck: true,
             blockhashCommitment: "finalized",
         });
@@ -182,6 +183,14 @@ class PieProgram {
             .accounts({ admin })
             .transaction();
         return tx;
+    }
+    async addBaksetToSharedLookupTable({ basketId, admin, }) {
+        const basketConfigPDA = this.basketConfigPDA({ basketId });
+        const basketMintPDA = this.basketMintPDA({ basketId });
+        const creatorFeeTokenAccount = await this.getCreatorFeeTokenAccount({
+            basketId,
+        });
+        await (0, lookupTable_1.addAddressesToTable)(this.connection, admin, new web3_js_1.PublicKey(this.sharedLookupTable), [basketConfigPDA, basketMintPDA, creatorFeeTokenAccount]);
     }
     /**
      * Transfers the admin role to a new account.
@@ -381,9 +390,6 @@ class PieProgram {
             outputMint: mintOut,
             outputAmount: new anchor_1.BN(amountOut),
         });
-        //Need to handle this due to slippage
-        const wrappedSolIx = await (0, helper_1.wrappedSOLInstruction)(user, Math.floor(Math.abs(swapResult.amountIn.toNumber() * 1.1)));
-        tx.add(...wrappedSolIx);
         const buyComponentCpmmTx = await this.program.methods
             .buyComponentCpmm(swapResult.amountIn, new anchor_1.BN(amountOut))
             .accountsPartial({
@@ -413,14 +419,14 @@ class PieProgram {
     }
     /**
      * Buys a component using CLMM from Raydium.
-     * @param userSourceOwner - The user source owner account.
+     * @param user - The user source owner account.
      * @param basketId - The basket ID.
      * @param maxAmountIn - The maximum amount in.
      * @param amountOut - The amount out.
      * @param poolId - The CLMM pool ID.
      * @returns A promise that resolves to a transaction.
      */
-    async buyComponentClmm({ user, basketId, maxAmountIn, amountOut, outputMint, poolId, }) {
+    async buyComponentClmm({ user, basketId, amountOut, outputMint, poolId, slippage, }) {
         const tx = new web3_js_1.Transaction();
         const basketConfig = this.basketConfigPDA({ basketId });
         const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
@@ -433,7 +439,7 @@ class PieProgram {
             tickArrayCache: tickCache[poolId],
             amountOut,
             baseMint: outputMint,
-            slippage: 0.01,
+            slippage,
             epochInfo: await this.raydium.fetchEpochInfo(),
         });
         let sqrtPriceLimitX64;
@@ -457,10 +463,8 @@ class PieProgram {
         const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, false);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(baseIn ? mintB : mintA), user, basketConfig);
         tx.add(outputTx);
-        const wrappedSolIx = await (0, helper_1.wrappedSOLInstruction)(user, maxAmountIn.toNumber());
-        tx.add(...wrappedSolIx);
         const buyComponentTx = await this.program.methods
-            .buyComponent(new anchor_1.BN(maxAmountIn), new anchor_1.BN(amountOut))
+            .buyComponentClmm(new anchor_1.BN(amountOut), res.maxAmountIn.amount, sqrtPriceLimitX64)
             .accountsPartial({
             user: user,
             userFund: this.userFundPDA({ user, basketId }),
@@ -900,17 +904,13 @@ class PieProgram {
         tx.add(executeRebalancingTx);
         return tx;
     }
-    async addRaydiumAmmToAddressLookupTable({ connection, signer, ammId, basketId, lookupTable, }) {
+    async addRaydiumAmmToAddressLookupTable({ connection, signer, ammId, lookupTable, }) {
         const data = await this.raydium.liquidity.getPoolInfoFromRpc({
             poolId: ammId,
         });
         const MAX_LOOKUP_TABLE_ADDRESS = 256;
-        const basketMint = this.basketMintPDA({ basketId });
-        const basketConfig = this.basketConfigPDA({ basketId });
         const poolKeys = data.poolKeys;
         const addressesKey = [
-            basketMint,
-            basketConfig,
             new web3_js_1.PublicKey(poolKeys.mintA.address),
             new web3_js_1.PublicKey(poolKeys.mintB.address),
             new web3_js_1.PublicKey(ammId),
@@ -945,16 +945,12 @@ class PieProgram {
         }
         return lookupTable;
     }
-    async addRaydiumCpmmToAddressLookupTable({ connection, signer, poolId, basketId, lookupTable, }) {
+    async addRaydiumCpmmToAddressLookupTable({ connection, signer, poolId, lookupTable, }) {
         const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
         const MAX_LOOKUP_TABLE_ADDRESS = 256;
-        const basketMint = this.basketMintPDA({ basketId });
-        const basketConfig = this.basketConfigPDA({ basketId });
         const poolKeys = data.poolKeys;
         const poolInfo = data.poolInfo;
         const addressesKey = [
-            basketMint,
-            basketConfig,
             new web3_js_1.PublicKey(poolKeys.mintA.address),
             new web3_js_1.PublicKey(poolKeys.mintB.address),
             new web3_js_1.PublicKey(poolId),
@@ -984,17 +980,55 @@ class PieProgram {
         }
         return lookupTable;
     }
+    async addRaydiumClmmToAddressLookupTable({ connection, signer, poolId, lookupTable, }) {
+        const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
+        const MAX_LOOKUP_TABLE_ADDRESS = 256;
+        const poolKeys = data.poolKeys;
+        const poolInfo = data.poolInfo;
+        const addressesKey = [
+            new web3_js_1.PublicKey(poolKeys.mintA.address),
+            new web3_js_1.PublicKey(poolKeys.mintB.address),
+            new web3_js_1.PublicKey(poolId),
+            new web3_js_1.PublicKey(poolKeys.vault.A),
+            new web3_js_1.PublicKey(poolKeys.vault.B),
+            new web3_js_1.PublicKey(poolKeys.config.id),
+            spl_token_1.TOKEN_PROGRAM_ID,
+            spl_token_1.TOKEN_2022_PROGRAM_ID,
+            new web3_js_1.PublicKey(poolKeys.programId),
+            (0, raydium_sdk_v2_1.getPdaObservationId)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey,
+            new web3_js_1.PublicKey(poolKeys.exBitmapAccount),
+        ];
+        if (lookupTable) {
+            const addressesStored = await (0, lookupTable_1.findAddressesInTable)(connection, lookupTable);
+            const addressToAdd = addressesKey.filter((address) => !addressesStored.some((stored) => stored.equals(address)));
+            if (addressToAdd.length + addressesStored.length >=
+                MAX_LOOKUP_TABLE_ADDRESS) {
+                throw Error("Exceeds 256 addresses of lookup table");
+            }
+            await (0, lookupTable_1.addAddressesToTable)(connection, signer, lookupTable, addressToAdd);
+        }
+        else {
+            const newLookupTable = await (0, lookupTable_1.createLookupTable)(connection, signer);
+            await (0, lookupTable_1.addAddressesToTable)(connection, signer, newLookupTable, addressesKey);
+            return newLookupTable;
+        }
+        return lookupTable;
+    }
+    async generateLookupTableAccount() {
+        const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(this.sharedLookupTable))).value;
+        return [lut];
+    }
     /**
      * Creates a bundle of transactions for buying components and minting basket tokens
      * @param params Bundle creation parameters
      * @returns Array of serialized transactions
      */
-    async createBuyAndMintBundle({ user, basketId, slippage, mintAmount, swapsPerBundle, tokenInfo, }) {
+    async createBuyAndMintBundle({ user, basketId, slippage, mintAmount, swapsPerBundle, tokenInfo, feePercentageInBasisPoints, }) {
         const tipAccounts = await (0, jito_1.getTipAccounts)();
         const tipInformation = await (0, jito_1.getTipInformation)();
         const serializedTxs = [];
         let tx = new web3_js_1.Transaction();
-        let addressLookupTablesAccount = [];
+        let addressLookupTablesAccount = await this.generateLookupTableAccount();
         const recentBlockhash = await this.connection.getLatestBlockhash("finalized");
         const basketConfigData = await this.getBasketConfig({ basketId });
         const swapData = [];
@@ -1021,12 +1055,16 @@ class PieProgram {
         }
         // Calculate total amount needed
         const totalAmountIn = swapDataResult.reduce((acc, curr) => acc + Number(curr.data.otherAmountThreshold), 0);
+        // debug
+        tx.add(web3_js_1.ComputeBudgetProgram.setComputeUnitPrice({
+            microLamports: 200000,
+        }));
         // Create WSOL account and wrap SOL
         const { tokenAccount: wsolAccount, tx: createWsolAtaTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, user);
         if (createWsolAtaTx.instructions.length > 0) {
             tx.add(createWsolAtaTx);
         }
-        const wrappedSolIx = await (0, helper_1.wrappedSOLInstruction)(user, totalAmountIn);
+        const wrappedSolIx = await (0, helper_1.wrappedSOLInstruction)(user, (0, helper_1.caculateTotalAmountWithFee)(totalAmountIn, feePercentageInBasisPoints));
         tx.add(...wrappedSolIx);
         // Process each component
         for (let i = 0; i < swapDataResult.length; i++) {
@@ -1039,16 +1077,39 @@ class PieProgram {
                 });
                 serializedTxs.push(serializedTx);
                 tx = new web3_js_1.Transaction();
-                addressLookupTablesAccount = [];
+                addressLookupTablesAccount = await this.generateLookupTableAccount();
             }
-            const buyComponentTx = await this.buyComponent({
-                userSourceOwner: user,
-                basketId,
-                maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
-                amountOut: Number(swapDataResult[i].data.outputAmount),
-                ammId: tokenInfo[i].ammId,
-                unwrapSol: false,
-            });
+            let buyComponentTx;
+            switch (tokenInfo[i].type) {
+                case "amm":
+                    buyComponentTx = await this.buyComponent({
+                        userSourceOwner: user,
+                        basketId,
+                        maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
+                        amountOut: Number(swapDataResult[i].data.outputAmount),
+                        ammId: tokenInfo[i].ammId,
+                        unwrapSol: false,
+                    });
+                    break;
+                case "clmm":
+                    buyComponentTx = await this.buyComponentClmm({
+                        user,
+                        basketId,
+                        amountOut: new anchor_1.BN(swapDataResult[i].data.outputAmount),
+                        outputMint: new web3_js_1.PublicKey(tokenInfo[i].mint),
+                        poolId: tokenInfo[i].ammId,
+                        slippage,
+                    });
+                    break;
+                case "cpmm":
+                    buyComponentTx = await this.buyComponentCpmm({
+                        user,
+                        basketId,
+                        amountOut: Number(swapDataResult[i].data.outputAmount),
+                        poolId: tokenInfo[i].ammId,
+                    });
+                    break;
+            }
             tx.add(buyComponentTx);
             const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(tokenInfo[i].lut))).value;
             addressLookupTablesAccount.push(lut);
@@ -1084,7 +1145,7 @@ class PieProgram {
         const tipInformation = await (0, jito_1.getTipInformation)();
         const serializedTxs = [];
         let tx = new web3_js_1.Transaction();
-        let addressLookupTablesAccount = [];
+        let addressLookupTablesAccount = await this.generateLookupTableAccount();
         const recentBlockhash = await this.connection.getLatestBlockhash("finalized");
         const swapData = [];
         const basketConfigData = await this.getBasketConfig({ basketId });
@@ -1128,7 +1189,7 @@ class PieProgram {
                 });
                 serializedTxs.push(serializedTx);
                 tx = new web3_js_1.Transaction();
-                addressLookupTablesAccount = [];
+                addressLookupTablesAccount = await this.generateLookupTableAccount();
             }
             const sellComponentTx = await this.sellComponent({
                 user,
@@ -1161,7 +1222,7 @@ class PieProgram {
         const tipInformation = await (0, jito_1.getTipInformation)();
         const serializedTxs = [];
         let tx = new web3_js_1.Transaction();
-        let addressLookupTablesAccount = [];
+        let addressLookupTablesAccount = await this.generateLookupTableAccount();
         const swapData = [];
         rebalanceInfo.forEach((rebalance) => {
             swapData.push((0, helper_1.getSwapData)({
@@ -1177,7 +1238,6 @@ class PieProgram {
             }));
         });
         const swapDataResult = await Promise.all(swapData);
-        console.log(JSON.stringify(swapDataResult));
         (0, helper_1.checkSwapDataError)(swapDataResult);
         //@TODO remove this when other pools are available
         for (let i = 0; i < swapDataResult.length; i++) {
@@ -1189,9 +1249,6 @@ class PieProgram {
         const blockhash = await this.connection.getLatestBlockhash();
         for (let i = 0; i < rebalanceInfo.length; i++) {
             if (i === 0) {
-                tx.add(web3_js_1.ComputeBudgetProgram.setComputeUnitPrice({
-                    microLamports: 200000,
-                }));
                 if (withStartRebalance) {
                     const startRebalanceTx = await this.startRebalancing({
                         rebalancer,
@@ -1215,7 +1272,7 @@ class PieProgram {
                 });
                 serializedTxs.push(serializedTx);
                 tx = new web3_js_1.Transaction();
-                addressLookupTablesAccount = [];
+                addressLookupTablesAccount = await this.generateLookupTableAccount();
             }
             const rebalanceTx = await this.executeRebalancing({
                 rebalancer,

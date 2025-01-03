@@ -1,5 +1,5 @@
 import { BN, Idl, IdlAccounts, IdlEvents, IdlTypes, Program } from "@coral-xyz/anchor";
-import { Cluster, Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
+import { AddressLookupTableAccount, Cluster, Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { RebalanceInfo, TokenInfo } from "./types";
@@ -21,10 +21,12 @@ export type MintBasketTokenEvent = IdlEvents<Pie>["mintBasketTokenEvent"];
 export type RedeemBasketTokenEvent = IdlEvents<Pie>["redeemBasketTokenEvent"];
 export declare class PieProgram {
     readonly connection: Connection;
+    readonly cluster: Cluster;
+    sharedLookupTable: string;
     private idl;
     raydium: Raydium;
-    constructor(connection: Connection, cluster: Cluster, programId?: string);
-    loadRaydium(connection: Connection, cluster: Cluster): Promise<void>;
+    constructor(connection: Connection, cluster: Cluster, programId?: string, sharedLookupTable?: string);
+    init(): Promise<void>;
     get program(): Program<Idl>;
     get accounts(): any;
     get programStatePDA(): PublicKey;
@@ -84,6 +86,10 @@ export declare class PieProgram {
     initialize({ admin }: {
         admin: PublicKey;
     }): Promise<Transaction>;
+    addBaksetToSharedLookupTable({ basketId, admin, }: {
+        basketId: BN;
+        admin: Keypair;
+    }): Promise<void>;
     /**
      * Transfers the admin role to a new account.
      * @param admin - The current admin account.
@@ -199,20 +205,20 @@ export declare class PieProgram {
     }): Promise<Transaction>;
     /**
      * Buys a component using CLMM from Raydium.
-     * @param userSourceOwner - The user source owner account.
+     * @param user - The user source owner account.
      * @param basketId - The basket ID.
      * @param maxAmountIn - The maximum amount in.
      * @param amountOut - The amount out.
      * @param poolId - The CLMM pool ID.
      * @returns A promise that resolves to a transaction.
      */
-    buyComponentClmm({ user, basketId, maxAmountIn, amountOut, outputMint, poolId, }: {
+    buyComponentClmm({ user, basketId, amountOut, outputMint, poolId, slippage, }: {
         user: PublicKey;
         basketId: BN;
-        maxAmountIn: BN;
         amountOut: BN;
         outputMint: PublicKey;
         poolId: string;
+        slippage: number;
     }): Promise<Transaction>;
     /**
      * Sells a component.
@@ -345,32 +351,38 @@ export declare class PieProgram {
         basketId: BN;
         tokenMint: PublicKey;
     }): Promise<Transaction | null>;
-    addRaydiumAmmToAddressLookupTable({ connection, signer, ammId, basketId, lookupTable, }: {
+    addRaydiumAmmToAddressLookupTable({ connection, signer, ammId, lookupTable, }: {
         connection: Connection;
         signer: Keypair;
         ammId: string;
-        basketId: BN;
         lookupTable?: PublicKey;
     }): Promise<PublicKey>;
-    addRaydiumCpmmToAddressLookupTable({ connection, signer, poolId, basketId, lookupTable, }: {
+    addRaydiumCpmmToAddressLookupTable({ connection, signer, poolId, lookupTable, }: {
         connection: Connection;
         signer: Keypair;
         poolId: string;
-        basketId: BN;
         lookupTable?: PublicKey;
     }): Promise<PublicKey>;
+    addRaydiumClmmToAddressLookupTable({ connection, signer, poolId, lookupTable, }: {
+        connection: Connection;
+        signer: Keypair;
+        poolId: string;
+        lookupTable?: PublicKey;
+    }): Promise<PublicKey>;
+    generateLookupTableAccount(): Promise<AddressLookupTableAccount[]>;
     /**
      * Creates a bundle of transactions for buying components and minting basket tokens
      * @param params Bundle creation parameters
      * @returns Array of serialized transactions
      */
-    createBuyAndMintBundle({ user, basketId, slippage, mintAmount, swapsPerBundle, tokenInfo, }: {
+    createBuyAndMintBundle({ user, basketId, slippage, mintAmount, swapsPerBundle, tokenInfo, feePercentageInBasisPoints, }: {
         user: PublicKey;
         basketId: BN;
         slippage: number;
         mintAmount: number;
         swapsPerBundle: number;
         tokenInfo: TokenInfo[];
+        feePercentageInBasisPoints: number;
     }): Promise<string[]>;
     /**
      * Creates a bundle of transactions for redeeming basket tokens and selling components
