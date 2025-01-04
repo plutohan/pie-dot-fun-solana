@@ -118,6 +118,7 @@ pub fn sell_component(
     minimum_amount_out: u64,
 ) -> Result<()> {
     require!(amount_in > 0, PieError::InvalidAmount);
+    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
 
     let user_fund = &mut ctx.accounts.user_fund;
     let component = user_fund
