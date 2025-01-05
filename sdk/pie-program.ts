@@ -978,7 +978,10 @@ export class PieProgram {
         user,
         user
       );
-    tx.add(outputTx);
+
+    if (isValidTransaction(outputTx)) {
+      tx.add(outputTx);
+    }
     const wrappedSolIx = await wrappedSOLInstruction(user, amountIn);
     tx.add(...wrappedSolIx);
     const sellComponentTx = await this.program.methods
@@ -1098,7 +1101,9 @@ export class PieProgram {
         user
       );
 
-    tx.add(outputTx);
+    if (isValidTransaction(outputTx)) {
+      tx.add(outputTx);
+    }
 
     const sellComponentTx = await this.program.methods
       .sellComponentClmm(amountIn, minAmountOut.amount.raw, sqrtPriceLimitX64)
@@ -1339,7 +1344,7 @@ export class PieProgram {
         basketConfig
       );
 
-    if (createTokenAccount) {
+    if (createTokenAccount && isValidTransaction(outputTx)) {
       tx.add(outputTx);
     }
 
