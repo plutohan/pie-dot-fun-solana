@@ -568,7 +568,8 @@ export class PieProgram {
         userSourceOwner,
         basketConfig
       );
-    if (outputTx) {
+
+    if (isValidTransaction(outputTx)) {
       tx.add(outputTx);
     }
 
@@ -662,7 +663,9 @@ export class PieProgram {
         basketConfig
       );
 
-    tx.add(outputTx);
+    if (isValidTransaction(outputTx)) {
+      tx.add(outputTx);
+    }
 
     const swapResult = CurveCalculator.swapBaseOut({
       poolMintA: poolInfo.mintA,
@@ -785,7 +788,9 @@ export class PieProgram {
         basketConfig
       );
 
-    tx.add(outputTx);
+    if (isValidTransaction(outputTx)) {
+      tx.add(outputTx);
+    }
 
     const buyComponentTx = await this.program.methods
       .buyComponentClmm(
