@@ -117,6 +117,7 @@ pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
     sqrt_price_limit_x64: u128,
 ) -> Result<()> {
     require!(amount > 0, PieError::InvalidAmount);
+    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
 
     let user_fund = &mut ctx.accounts.user_fund;
     let component = user_fund

@@ -120,6 +120,7 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
     sqrt_price_limit_x64: u128,
 ) -> Result<()> {
     require!(amount > 0, PieError::InvalidAmount);
+    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
 
     let balance_in_before = ctx.accounts.user_token_source.amount;
     let balance_out_before = ctx.accounts.vault_token_destination.amount;
