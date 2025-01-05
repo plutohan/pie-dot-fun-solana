@@ -558,7 +558,7 @@ export class PieProgram {
     const inputTokenAccount = await getTokenAccount(
       this.connection,
       new PublicKey(mintIn),
-      userSourceOwner,
+      userSourceOwner
     );
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
@@ -568,7 +568,7 @@ export class PieProgram {
         userSourceOwner,
         basketConfig
       );
-    if(outputTx) {
+    if (outputTx) {
       tx.add(outputTx);
     }
 
@@ -1283,13 +1283,14 @@ export class PieProgram {
   /**
    * Executes rebalancing.
    * @param rebalancer - The rebalancer account.
-   * @param isSwapBaseOut - Whether to buy or sell.
+   * @param isSwapBaseOut - Whether to swap base out.
    * @param amountIn - The amount in.
    * @param amountOut - The amount out.
    * @param ammId - The AMM ID.
    * @param basketId - The basket ID.
-   * @param tokenMint - The token mint.
-   * @param raydium - The Raydium instance.
+   * @param inputMint - The input mint.
+   * @param outputMint - The output mint.
+   * @param createTokenAccount - Whether to create the output token account.
    * @returns A promise that resolves to a transaction or null.
    */
   async executeRebalancing({
@@ -1299,7 +1300,8 @@ export class PieProgram {
     amountOut,
     ammId,
     basketId,
-    tokenMint,
+    inputMint,
+    outputMint,
     createTokenAccount = true,
   }: {
     rebalancer: PublicKey;
@@ -1308,7 +1310,8 @@ export class PieProgram {
     amountOut: string;
     ammId: string;
     basketId: BN;
-    tokenMint: PublicKey;
+    inputMint: PublicKey;
+    outputMint: PublicKey;
     createTokenAccount?: boolean;
   }): Promise<Transaction | null> {
     const tx = new Transaction();
@@ -1320,47 +1323,22 @@ export class PieProgram {
     const basketConfig = this.basketConfigPDA({ basketId });
     const poolKeys = data.poolKeys;
 
-    const inputMint = isSwapBaseOut ? NATIVE_MINT : tokenMint;
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
+      new PublicKey(inputMint),
+      basketConfig
+    );
 
-    const baseIn = inputMint.toString() === poolKeys.mintA.address;
-
-    const [mintIn, mintOut] = baseIn
-      ? [poolKeys.mintA.address, poolKeys.mintB.address]
-      : [poolKeys.mintB.address, poolKeys.mintA.address];
-
-    let inputTokenAccount: PublicKey;
-    let outputTokenAccount: PublicKey;
-    if (isSwapBaseOut) {
-      inputTokenAccount = getAssociatedTokenAddressSync(
-        new PublicKey(mintIn),
-        basketConfig,
-        true
-      );
-
-      const { tokenAccount, tx: outputTx } = await getOrCreateTokenAccountTx(
+    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+      await getOrCreateTokenAccountTx(
         this.connection,
-        new PublicKey(mintOut),
-        rebalancer,
-        basketConfig
-      );
-      outputTokenAccount = tokenAccount;
-      if (createTokenAccount) tx.add(outputTx);
-    } else {
-      inputTokenAccount = getAssociatedTokenAddressSync(
-        new PublicKey(mintIn),
-        basketConfig,
-        true
-      );
-
-      const { tokenAccount, tx: outputTx } = await getOrCreateTokenAccountTx(
-        this.connection,
-        new PublicKey(mintOut),
+        new PublicKey(outputMint),
         rebalancer,
         basketConfig
       );
 
-      outputTokenAccount = tokenAccount;
-      if (createTokenAccount) tx.add(outputTx);
+    if (createTokenAccount) {
+      tx.add(outputTx);
     }
 
     const executeRebalancingTx = await this.program.methods
@@ -1368,7 +1346,6 @@ export class PieProgram {
       .accountsPartial({
         rebalancer,
         basketConfig: this.basketConfigPDA({ basketId }),
-        tokenMint,
         basketMint,
         vaultWrappedSol: NATIVE_MINT,
         amm: new PublicKey(ammId),
@@ -1385,7 +1362,6 @@ export class PieProgram {
         marketPcVault: new PublicKey(poolKeys.marketQuoteVault),
         marketVaultSigner: new PublicKey(poolKeys.marketAuthority),
         ammProgram: new PublicKey(poolKeys.programId),
-
         vaultTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
       })
