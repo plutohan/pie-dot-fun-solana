@@ -1382,7 +1382,9 @@ export class PieProgram {
     amountOut,
     poolId,
     basketId,
-    tokenMint,
+    inputMint,
+    outputMint,
+    createTokenAccount = true,
   }: {
     rebalancer: PublicKey;
     isSwapBaseOut: boolean;
@@ -1390,7 +1392,9 @@ export class PieProgram {
     amountOut: string;
     poolId: string;
     basketId: BN;
-    tokenMint: PublicKey;
+    inputMint: PublicKey;
+    outputMint: PublicKey;
+    createTokenAccount?: boolean;
   }): Promise<Transaction | null> {
     const tx = new Transaction();
     const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
@@ -1399,52 +1403,48 @@ export class PieProgram {
 
     const poolKeys = data.poolKeys;
     const poolInfo = data.poolInfo;
-    const inputMint = isSwapBaseOut ? NATIVE_MINT : tokenMint;
 
-    const [mintA, mintB] = [
-      new PublicKey(poolInfo.mintA.address),
-      new PublicKey(poolInfo.mintB.address),
-    ];
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
+      new PublicKey(inputMint),
+      basketConfig
+    );
 
-    const baseIn = inputMint.toString() === poolKeys.mintA.address;
-
-    const [mintIn, mintOut] = baseIn
-      ? [poolKeys.mintA.address, poolKeys.mintB.address]
-      : [poolKeys.mintB.address, poolKeys.mintA.address];
-
-    let inputTokenAccount: PublicKey;
-    let outputTokenAccount: PublicKey;
-    if (isSwapBaseOut) {
-      inputTokenAccount = getAssociatedTokenAddressSync(
-        new PublicKey(mintIn),
-        basketConfig,
-        true
-      );
-
-      const { tokenAccount, tx: outputTx } = await getOrCreateTokenAccountTx(
+    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+      await getOrCreateTokenAccountTx(
         this.connection,
-        new PublicKey(mintOut),
+        new PublicKey(outputMint),
         rebalancer,
         basketConfig
       );
-      outputTokenAccount = tokenAccount;
+
+    if (createTokenAccount && isValidTransaction(outputTx)) {
       tx.add(outputTx);
+    }
+
+    const isInputMintA = inputMint.toBase58() === poolKeys.mintA.address;
+
+    let inputVault;
+    let outputVault;
+    let inputTokenProgram;
+    let outputTokenProgram;
+    let inputTokenMint;
+    let outputTokenMint;
+
+    if (isInputMintA) {
+      inputVault = new PublicKey(poolKeys.vault.A);
+      outputVault = new PublicKey(poolKeys.vault.B);
+      inputTokenProgram = new PublicKey(poolKeys.mintA.programId);
+      outputTokenProgram = new PublicKey(poolKeys.mintB.programId);
+      inputTokenMint = new PublicKey(poolKeys.mintA.address);
+      outputTokenMint = new PublicKey(poolKeys.mintB.address);
     } else {
-      inputTokenAccount = getAssociatedTokenAddressSync(
-        new PublicKey(mintIn),
-        basketConfig,
-        true
-      );
-
-      const { tokenAccount, tx: outputTx } = await getOrCreateTokenAccountTx(
-        this.connection,
-        new PublicKey(mintOut),
-        rebalancer,
-        basketConfig
-      );
-
-      outputTokenAccount = tokenAccount;
-      tx.add(outputTx);
+      inputVault = new PublicKey(poolKeys.vault.B);
+      outputVault = new PublicKey(poolKeys.vault.A);
+      inputTokenProgram = new PublicKey(poolKeys.mintB.programId);
+      outputTokenProgram = new PublicKey(poolKeys.mintA.programId);
+      inputTokenMint = new PublicKey(poolKeys.mintB.address);
+      outputTokenMint = new PublicKey(poolKeys.mintA.address);
     }
 
     const executeRebalancingTx = await this.program.methods
@@ -1456,28 +1456,21 @@ export class PieProgram {
       .accountsPartial({
         rebalancer,
         basketConfig: this.basketConfigPDA({ basketId }),
-        tokenMint,
         basketMint,
         vaultWrappedSol: NATIVE_MINT,
-
         authority: new PublicKey(poolKeys.authority),
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolInfo.id),
-        inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
-        outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
-        inputTokenProgram: new PublicKey(
-          poolInfo[baseIn ? "mintA" : "mintB"].programId ?? TOKEN_PROGRAM_ID
-        ),
-        outputTokenProgram: new PublicKey(
-          poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
-        ),
-        inputTokenMint: baseIn ? mintA : mintB,
-        outputTokenMint: baseIn ? mintB : mintA,
+        inputVault,
+        outputVault,
+        inputTokenProgram,
+        outputTokenProgram,
+        inputTokenMint,
+        outputTokenMint,
         observationState: getPdaObservationId(
           new PublicKey(poolInfo.programId),
           new PublicKey(poolInfo.id)
         ).publicKey,
-
         vaultTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
       })
@@ -1740,16 +1733,16 @@ export class PieProgram {
     checkSwapDataError(swapDataResult);
 
     //@TODO remove this when other pools are available
-    // for (let i = 0; i < swapDataResult.length; i++) {
-    //   if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
-    //     console.log(
-    //       `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
-    //     );
-    //     swapDataResult[i].data.otherAmountThreshold = String(
-    //       Number(swapDataResult[i].data.otherAmountThreshold) * 10
-    //     );
-    //   }
-    // }
+    for (let i = 0; i < swapDataResult.length; i++) {
+      if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
+        console.log(
+          `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
+        );
+        swapDataResult[i].data.otherAmountThreshold = String(
+          Number(swapDataResult[i].data.otherAmountThreshold) * 10
+        );
+      }
+    }
 
     // Calculate total amount needed
     const totalAmountIn = swapDataResult.reduce(
@@ -2096,7 +2089,8 @@ export class PieProgram {
           : swapDataResult[i].data.otherAmountThreshold,
         ammId: rebalanceInfo[i].ammId,
         basketId,
-        tokenMint: new PublicKey(rebalanceInfo[i].mint),
+        inputMint: new PublicKey(rebalanceInfo[i].mint),
+        outputMint: NATIVE_MINT,
         createTokenAccount: false,
       });
       tx.add(rebalanceTx);

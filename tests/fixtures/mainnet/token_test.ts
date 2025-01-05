@@ -1,13 +1,13 @@
 import { TokenInfo } from "../../../sdk/types";
 
 export const tokens: TokenInfo[] = [
-  // {
-  //   name: "AI16Z",
-  //   mint: "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC",
-  //   ammId: "Cjjn3aeRJZJY87r2Q9MYbuz3XAG8j4tDHC8FmMayKTa5",
-  //   lut: "CsMB14knX2J2ywv7s2n9AawG4LnQyTT5i3qKRkrbEDSV",
-  //   type: "cpmm",
-  // },
+  {
+    name: "AI16Z",
+    mint: "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC",
+    ammId: "Cjjn3aeRJZJY87r2Q9MYbuz3XAG8j4tDHC8FmMayKTa5",
+    lut: "CsMB14knX2J2ywv7s2n9AawG4LnQyTT5i3qKRkrbEDSV",
+    type: "cpmm",
+  },
   {
     name: "PENGU",
     mint: "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
