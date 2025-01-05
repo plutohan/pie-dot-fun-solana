@@ -9,7 +9,7 @@ export const rebalanceInfo: RebalanceInfo[] = [
     lut: "CsMB14knX2J2ywv7s2n9AawG4LnQyTT5i3qKRkrbEDSV",
     type: "cpmm",
     isSwapBaseOut: false,
-    amount: "500000",
+    amount: "100000",
   },
   {
     name: "WIF/SOL",
@@ -22,11 +22,22 @@ export const rebalanceInfo: RebalanceInfo[] = [
     amount: "500000",
   },
   {
-    name: "PENGU/SOL",
+    name: "BONK/SOL",
+    inputMint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    outputMint: "So11111111111111111111111111111111111111112",
+    poolId: "BjZKz1z4UMjJPvPfKwTwjPErVBWnewnJFvcZB6minymy",
+    lut: "6tCCjitZhiaj7et7diHFUED8sZVkx85KZeU1V1kGTAEb",
+    type: "clmm",
+    isSwapBaseOut: false,
+    amount: "1000000",
+  },
+
+  {
+    name: "BONK/SOL",
     inputMint: "So11111111111111111111111111111111111111112",
-    outputMint: "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
-    poolId: "B4Vwozy1FGtp8SELXSXydWSzavPUGnJ77DURV2k4MhUV",
-    lut: "GF4vgE7en4W9sfuv5ne8bXWer6tx3vrJxV3kUUPxZctm",
+    outputMint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    poolId: "BjZKz1z4UMjJPvPfKwTwjPErVBWnewnJFvcZB6minymy",
+    lut: "6tCCjitZhiaj7et7diHFUED8sZVkx85KZeU1V1kGTAEb",
     type: "clmm",
     isSwapBaseOut: true,
     amount: "100000",
@@ -39,6 +50,6 @@ export const rebalanceInfo: RebalanceInfo[] = [
     lut: "dwRAeGZxQnS5ZfCsas3gtcVXLCgFVfk82nbxhPXvofz",
     type: "amm",
     isSwapBaseOut: true,
-    amount: "100000",
+    amount: "50000",
   },
 ];

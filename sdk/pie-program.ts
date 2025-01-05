@@ -95,7 +95,7 @@ export class PieProgram {
     public readonly connection: Connection,
     public readonly cluster: Cluster,
     programId: string = PieIDL.address,
-    public sharedLookupTable: string = ""
+    public sharedLookupTable: string = "7RQsMxGtKjshYzcpsaG4d4dydiru67wPy8wzDS2cVY3f"
   ) {
     this.idl.address = programId;
   }
@@ -1897,7 +1897,7 @@ export class PieProgram {
         user
       );
 
-    if (createWsolAtaTx.instructions.length > 0) {
+    if (isValidTransaction(createWsolAtaTx)) {
       tx.add(createWsolAtaTx);
     }
 
