@@ -1479,6 +1479,142 @@ export class PieProgram {
     return tx;
   }
 
+  /**
+   * Execute rebalancing using Raydium CLMM (Concentrated Liquidity Market Maker) pool
+   * @param rebalancer - The rebalancer's public key who has permission to rebalance
+   * @param isSwapBaseOut - Whether this is a swap where amount specified is the output amount
+   * @param basketId - The ID of the basket being rebalanced
+   * @param amount - The amount to swap (either input or output amount depending on isSwapBaseOut)
+   * @param slippage - Slippage in basis points
+   * @param poolId - The Raydium CLMM pool ID to execute the swap on
+   * @param inputMint - The mint address of the input token
+   * @param outputMint - The mint address of the output token
+   */
+  async executeRebalancingClmm({
+    rebalancer,
+    isSwapBaseOut,
+    basketId,
+    amount,
+    slippage,
+    poolId,
+    inputMint,
+    outputMint,
+  }: {
+    rebalancer: PublicKey;
+    isSwapBaseOut: boolean;
+    basketId: BN;
+    amount: BN;
+    slippage: number;
+    poolId: string;
+    inputMint: PublicKey;
+    outputMint: PublicKey;
+  }): Promise<Transaction> {
+    const tx = new Transaction();
+    const basketConfigPDA = this.basketConfigPDA({ basketId });
+
+    const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
+    const poolInfo = data.poolInfo;
+    const poolKeys = data.poolKeys;
+    const clmmPoolInfo = data.computePoolInfo;
+    const tickCache = data.tickData;
+
+    let remainingAccounts;
+    let otherAmountThreshold;
+    const isInputMintA = inputMint.toBase58() === poolKeys.mintA.address;
+    const sqrtPriceLimitX64 = isInputMintA
+      ? MIN_SQRT_PRICE_X64.add(new BN(1))
+      : MAX_SQRT_PRICE_X64.sub(new BN(1));
+    if (isSwapBaseOut) {
+      const computed = PoolUtils.computeAmountIn({
+        poolInfo: clmmPoolInfo,
+        tickArrayCache: tickCache[poolId],
+        amountOut: amount,
+        baseMint: outputMint,
+        slippage,
+        epochInfo: await this.raydium.fetchEpochInfo(),
+      });
+      remainingAccounts = computed.remainingAccounts;
+      otherAmountThreshold = computed.maxAmountIn.amount;
+    } else {
+      const computed = PoolUtils.computeAmountOut({
+        poolInfo: clmmPoolInfo,
+        tickArrayCache: tickCache[poolId],
+        amountIn: amount,
+        baseMint: inputMint,
+        slippage,
+        epochInfo: await this.raydium.fetchEpochInfo(),
+        catchLiquidityInsufficient: true,
+      });
+
+      remainingAccounts = computed.remainingAccounts;
+      // @TODO should be computed.minAmountOut.amount, but it's not working
+      otherAmountThreshold = new BN(0);
+    }
+
+    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+      await getOrCreateTokenAccountTx(
+        this.connection,
+        outputMint,
+        rebalancer,
+        basketConfigPDA
+      );
+
+    if (isValidTransaction(outputTx)) {
+      tx.add(outputTx);
+    }
+
+    const executeRabalancingClmmTx = await this.program.methods
+      .executeRebalancingClmm(
+        isSwapBaseOut,
+        amount,
+        otherAmountThreshold,
+        sqrtPriceLimitX64
+      )
+      .accountsPartial({
+        rebalancer,
+        basketConfig: this.basketConfigPDA({ basketId }),
+        basketMint: this.basketMintPDA({ basketId }),
+        vaultWrappedSol: NATIVE_MINT,
+        ammConfig: new PublicKey(poolKeys.config.id),
+        poolState: new PublicKey(poolKeys.id),
+        vaultTokenSource: await getTokenAccount(
+          this.connection,
+          inputMint,
+          basketConfigPDA
+        ),
+        vaultTokenDestination: outputTokenAccount,
+        inputVault: isInputMintA
+          ? new PublicKey(poolKeys.vault.A)
+          : new PublicKey(poolKeys.vault.B),
+        outputVault: isInputMintA
+          ? new PublicKey(poolKeys.vault.B)
+          : new PublicKey(poolKeys.vault.A),
+        observationState: new PublicKey(clmmPoolInfo.observationId),
+        inputVaultMint: isInputMintA
+          ? new PublicKey(poolKeys.mintA.address)
+          : new PublicKey(poolKeys.mintB.address),
+        outputVaultMint: isInputMintA
+          ? new PublicKey(poolKeys.mintB.address)
+          : new PublicKey(poolKeys.mintA.address),
+        tokenMint: new PublicKey(poolKeys.mintA.address),
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
+      })
+      .remainingAccounts(
+        await buildClmmRemainingAccounts(
+          remainingAccounts,
+          getPdaExBitmapAccount(
+            new PublicKey(poolInfo.programId),
+            new PublicKey(poolInfo.id)
+          ).publicKey
+        )
+      )
+      .transaction();
+
+    tx.add(executeRabalancingClmmTx);
+    return tx;
+  }
+
   async addRaydiumAmmToAddressLookupTable({
     connection,
     signer,
