@@ -1499,6 +1499,7 @@ export class PieProgram {
     poolId,
     inputMint,
     outputMint,
+    createTokenAccount = true,
   }: {
     rebalancer: PublicKey;
     isSwapBaseOut: boolean;
@@ -1508,6 +1509,7 @@ export class PieProgram {
     poolId: string;
     inputMint: PublicKey;
     outputMint: PublicKey;
+    createTokenAccount?: boolean;
   }): Promise<Transaction> {
     const tx = new Transaction();
     const basketConfigPDA = this.basketConfigPDA({ basketId });
@@ -1559,7 +1561,7 @@ export class PieProgram {
         basketConfigPDA
       );
 
-    if (isValidTransaction(outputTx)) {
+    if (createTokenAccount && isValidTransaction(outputTx)) {
       tx.add(outputTx);
     }
 
@@ -1870,7 +1872,7 @@ export class PieProgram {
 
     //@TODO remove this when other pools are available
     for (let i = 0; i < swapDataResult.length; i++) {
-      if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
+      if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
         console.log(
           `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
         );
@@ -1928,7 +1930,7 @@ export class PieProgram {
             basketId,
             maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
             amountOut: Number(swapDataResult[i].data.outputAmount),
-            ammId: tokenInfo[i].ammId,
+            ammId: tokenInfo[i].poolId,
             unwrapSol: false,
           });
           break;
@@ -1938,7 +1940,7 @@ export class PieProgram {
             basketId,
             amountOut: new BN(swapDataResult[i].data.outputAmount),
             outputMint: new PublicKey(tokenInfo[i].mint),
-            poolId: tokenInfo[i].ammId,
+            poolId: tokenInfo[i].poolId,
             slippage,
           });
           break;
@@ -1947,7 +1949,7 @@ export class PieProgram {
             user,
             basketId,
             amountOut: Number(swapDataResult[i].data.outputAmount),
-            poolId: tokenInfo[i].ammId,
+            poolId: tokenInfo[i].poolId,
           });
           break;
       }
@@ -2041,7 +2043,7 @@ export class PieProgram {
 
     //@TODO remove this when other pools are available
     for (let i = 0; i < swapDataResult.length; i++) {
-      if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
+      if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
         console.log(
           `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
         );
@@ -2081,7 +2083,7 @@ export class PieProgram {
         basketId,
         amountIn: Number(swapDataResult[i].data.inputAmount),
         minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-        ammId: tokenInfo[i].ammId,
+        ammId: tokenInfo[i].poolId,
       });
       tx.add(sellComponentTx);
 
@@ -2142,12 +2144,8 @@ export class PieProgram {
       swapData.push(
         getSwapData({
           isSwapBaseOut: rebalance.isSwapBaseOut,
-          inputMint: rebalance.isSwapBaseOut
-            ? NATIVE_MINT.toBase58()
-            : rebalance.mint,
-          outputMint: rebalance.isSwapBaseOut
-            ? rebalance.mint
-            : NATIVE_MINT.toBase58(),
+          inputMint: rebalance.inputMint,
+          outputMint: rebalance.outputMint,
           amount: Number(rebalance.amount),
           slippage,
         })
@@ -2161,7 +2159,7 @@ export class PieProgram {
     //@TODO remove this when other pools are available
     for (let i = 0; i < swapDataResult.length; i++) {
       if (
-        swapDataResult[i].data.routePlan[0].poolId !== rebalanceInfo[i].ammId
+        swapDataResult[i].data.routePlan[0].poolId !== rebalanceInfo[i].poolId
       ) {
         console.log(
           `${rebalanceInfo[i].name}'s AMM has little liquidity, increase slippage`
@@ -2176,12 +2174,6 @@ export class PieProgram {
 
     for (let i = 0; i < rebalanceInfo.length; i++) {
       if (i === 0) {
-        tx.add(
-          ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: 200000,
-          })
-        );
-
         if (withStartRebalance) {
           const startRebalanceTx = await this.startRebalancing({
             rebalancer,
@@ -2214,22 +2206,59 @@ export class PieProgram {
         addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
-      const rebalanceTx = await this.executeRebalancing({
-        rebalancer,
-        isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-        amountIn: rebalanceInfo[i].isSwapBaseOut
-          ? swapDataResult[i].data.otherAmountThreshold
-          : swapDataResult[i].data.inputAmount,
-        amountOut: rebalanceInfo[i].isSwapBaseOut
-          ? swapDataResult[i].data.outputAmount
-          : swapDataResult[i].data.otherAmountThreshold,
-        ammId: rebalanceInfo[i].ammId,
-        basketId,
-        inputMint: new PublicKey(rebalanceInfo[i].mint),
-        outputMint: NATIVE_MINT,
-        createTokenAccount: false,
-      });
-      tx.add(rebalanceTx);
+      let rebalanceTx;
+      switch (rebalanceInfo[i].type) {
+        case "amm":
+          rebalanceTx = await this.executeRebalancing({
+            rebalancer,
+            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+            amountIn: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.otherAmountThreshold
+              : swapDataResult[i].data.inputAmount,
+            amountOut: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.outputAmount
+              : swapDataResult[i].data.otherAmountThreshold,
+            ammId: rebalanceInfo[i].poolId,
+            basketId,
+            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
+            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
+            createTokenAccount: false,
+          });
+          tx.add(rebalanceTx);
+          break;
+        case "clmm":
+          rebalanceTx = await this.executeRebalancingClmm({
+            rebalancer,
+            basketId,
+            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
+            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
+            amount: new BN(rebalanceInfo[i].amount),
+            poolId: rebalanceInfo[i].poolId,
+            slippage,
+          });
+          tx.add(rebalanceTx);
+          break;
+        case "cpmm":
+          rebalanceTx = await this.executeRebalancingCpmm({
+            rebalancer,
+            basketId,
+            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+            amountIn: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.otherAmountThreshold
+              : swapDataResult[i].data.inputAmount,
+            amountOut: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.outputAmount
+              : swapDataResult[i].data.otherAmountThreshold,
+            poolId: rebalanceInfo[i].poolId,
+            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
+            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
+            createTokenAccount: false,
+          });
+          tx.add(rebalanceTx);
+          break;
+      }
+
       const lut = (
         await this.connection.getAddressLookupTable(
           new PublicKey(rebalanceInfo[i].lut)
