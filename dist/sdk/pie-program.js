@@ -379,7 +379,7 @@ class PieProgram {
         const [mintIn, mintOut] = baseIn
             ? [poolKeys.mintA.address, poolKeys.mintB.address]
             : [poolKeys.mintB.address, poolKeys.mintA.address];
-        const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), user, false);
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(mintIn), user);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), user, basketConfig);
         if ((0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
@@ -462,7 +462,7 @@ class PieProgram {
             new web3_js_1.PublicKey(poolInfo.mintB.address),
         ];
         const baseIn = spl_token_1.NATIVE_MINT.toString() === poolKeys.mintA.address;
-        const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, false);
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(baseIn ? mintB : mintA), user, basketConfig);
         if ((0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
@@ -514,8 +514,11 @@ class PieProgram {
             ? [poolKeys.mintA.address, poolKeys.mintB.address]
             : [poolKeys.mintB.address, poolKeys.mintA.address];
         const basketConfig = this.basketConfigPDA({ basketId });
-        const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), basketConfig, true);
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(mintIn), basketConfig);
         const { tokenAccount: outputTokenAccount, tx: createNativeMintATATx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), user, user);
+        if (createNativeMintATA && (0, helper_1.isValidTransaction)(createNativeMintATATx)) {
+            tx.add(createNativeMintATATx);
+        }
         const sellComponentTx = await this.program.methods
             .sellComponent(new anchor_1.BN(amountIn), new anchor_1.BN(minimumAmountOut))
             .accountsPartial({
@@ -546,8 +549,8 @@ class PieProgram {
         })
             .transaction();
         tx.add(sellComponentTx);
-        if (createNativeMintATA) {
-            tx.add(createNativeMintATATx);
+        if (unwrapSol) {
+            tx.add((0, spl_token_1.createCloseAccountInstruction)(outputTokenAccount, user, user));
         }
         return tx;
     }
@@ -560,7 +563,7 @@ class PieProgram {
      * @param ammId - The AMM ID.
      * @returns A promise that resolves to a transaction.
      */
-    async sellComponentCpmm({ user, basketId, inputMint, amountIn, minimumAmountOut, poolId, unwrappedSol, }) {
+    async sellComponentCpmm({ user, basketId, inputMint, amountIn, minimumAmountOut, poolId, createNativeMintATA, unwrapSol, }) {
         const tx = new web3_js_1.Transaction();
         const basketConfig = this.basketConfigPDA({ basketId });
         const basketMint = this.basketMintPDA({ basketId });
@@ -575,13 +578,11 @@ class PieProgram {
         const [mintIn, mintOut] = baseIn
             ? [poolKeys.mintA.address, poolKeys.mintB.address]
             : [poolKeys.mintB.address, poolKeys.mintA.address];
-        const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), basketConfig, true);
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(mintIn), basketConfig);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), user, user);
-        if ((0, helper_1.isValidTransaction)(outputTx)) {
+        if (createNativeMintATA && (0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
         }
-        const wrappedSolIx = await (0, helper_1.wrappedSOLInstruction)(user, amountIn);
-        tx.add(...wrappedSolIx);
         const sellComponentTx = await this.program.methods
             .sellComponentCpmm(new anchor_1.BN(amountIn), new anchor_1.BN(minimumAmountOut))
             .accountsPartial({
@@ -607,7 +608,7 @@ class PieProgram {
         })
             .transaction();
         tx.add(sellComponentTx);
-        if (unwrappedSol) {
+        if (unwrapSol) {
             tx.add((0, spl_token_1.createCloseAccountInstruction)(outputTokenAccount, user, user));
         }
         return tx;
@@ -621,7 +622,7 @@ class PieProgram {
      * @param ammId - The AMM ID.
      * @returns A promise that resolves to a transaction.
      */
-    async sellComponentClmm({ user, basketId, amountIn, inputMint, poolId, unwrappedSol, }) {
+    async sellComponentClmm({ user, basketId, amountIn, inputMint, poolId, slippage, createNativeMintATA, unwrapSol, }) {
         const tx = new web3_js_1.Transaction();
         const basketConfig = this.basketConfigPDA({ basketId });
         const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
@@ -635,7 +636,7 @@ class PieProgram {
             tickArrayCache: tickCache[poolId],
             amountIn,
             tokenOut: poolInfo[baseIn ? "mintB" : "mintA"],
-            slippage: 0.01,
+            slippage,
             epochInfo: await this.raydium.fetchEpochInfo(),
         });
         let sqrtPriceLimitX64;
@@ -646,21 +647,23 @@ class PieProgram {
             new web3_js_1.PublicKey(poolInfo.programId),
             new web3_js_1.PublicKey(poolInfo.id),
         ];
-        const [mintAVault, mintBVault] = [
-            new web3_js_1.PublicKey(poolKeys.vault.A),
-            new web3_js_1.PublicKey(poolKeys.vault.B),
-        ];
+        // const [mintAVault, mintBVault] = [
+        //   new PublicKey(poolKeys.vault.A),
+        //   new PublicKey(poolKeys.vault.B),
+        // ];
         const [mintA, mintB] = [
             new web3_js_1.PublicKey(poolInfo.mintA.address),
             new web3_js_1.PublicKey(poolInfo.mintB.address),
         ];
-        const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(inputMint), basketConfig, true, spl_token_1.TOKEN_2022_PROGRAM_ID);
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(inputMint), basketConfig);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, user);
-        if ((0, helper_1.isValidTransaction)(outputTx)) {
+        if (createNativeMintATA && (0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
         }
+        // @TODO should be minAmountOut.amount.raw but I get negative value
+        const otherAmountThreshold = new anchor_1.BN(0);
         const sellComponentTx = await this.program.methods
-            .sellComponentClmm(amountIn, minAmountOut.amount.raw, sqrtPriceLimitX64)
+            .sellComponentClmm(amountIn, otherAmountThreshold, sqrtPriceLimitX64)
             .accountsPartial({
             user: user,
             programState: this.programStatePDA,
@@ -679,12 +682,12 @@ class PieProgram {
             outputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintB" : "mintA"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
             inputVaultMint: baseIn ? mintA : mintB,
             outputVaultMint: baseIn ? mintB : mintA,
-            observationState: (0, raydium_sdk_v2_1.getPdaObservationId)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey,
+            observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
         })
             .remainingAccounts(await (0, helper_1.buildClmmRemainingAccounts)(remainingAccounts, (0, raydium_sdk_v2_1.getPdaExBitmapAccount)(programId, id).publicKey))
             .transaction();
         tx.add(sellComponentTx);
-        if (unwrappedSol) {
+        if (unwrapSol) {
             tx.add((0, spl_token_1.createCloseAccountInstruction)(outputTokenAccount, user, user));
         }
         return tx;
@@ -1250,11 +1253,11 @@ class PieProgram {
         }
         // Create native mint ATA
         const { tokenAccount: nativeMintAta, tx: createNativeMintATATx } = await (0, helper_1.getOrCreateNativeMintATA)(this.connection, user, user);
+        if ((0, helper_1.isValidTransaction)(createNativeMintATATx)) {
+            tx.add(createNativeMintATATx);
+        }
         for (let i = 0; i < swapDataResult.length; i++) {
             if (i === 0) {
-                if (createNativeMintATATx.instructions.length > 0) {
-                    tx.add(createNativeMintATATx);
-                }
                 tx.add(await this.redeemBasketToken({ user, basketId, amount: redeemAmount }));
             }
             else if (i % swapsPerBundle === 0) {
@@ -1268,14 +1271,39 @@ class PieProgram {
                 tx = new web3_js_1.Transaction();
                 addressLookupTablesAccount = await this.generateLookupTableAccount();
             }
-            const sellComponentTx = await this.sellComponent({
-                user,
-                inputMint: new web3_js_1.PublicKey(swapDataResult[i].data.inputMint),
-                basketId,
-                amountIn: Number(swapDataResult[i].data.inputAmount),
-                minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-                ammId: tokenInfo[i].poolId,
-            });
+            let sellComponentTx;
+            switch (tokenInfo[i].type) {
+                case "amm":
+                    sellComponentTx = await this.sellComponent({
+                        user,
+                        inputMint: new web3_js_1.PublicKey(swapDataResult[i].data.inputMint),
+                        basketId,
+                        amountIn: Number(swapDataResult[i].data.inputAmount),
+                        minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
+                        ammId: tokenInfo[i].poolId,
+                    });
+                    break;
+                case "clmm":
+                    sellComponentTx = await this.sellComponentClmm({
+                        user,
+                        basketId,
+                        amountIn: new anchor_1.BN(swapDataResult[i].data.inputAmount),
+                        inputMint: new web3_js_1.PublicKey(swapDataResult[i].data.inputMint),
+                        poolId: tokenInfo[i].poolId,
+                        slippage,
+                    });
+                    break;
+                case "cpmm":
+                    sellComponentTx = await this.sellComponentCpmm({
+                        user,
+                        basketId,
+                        inputMint: new web3_js_1.PublicKey(swapDataResult[i].data.inputMint),
+                        amountIn: Number(swapDataResult[i].data.inputAmount),
+                        minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
+                        poolId: tokenInfo[i].poolId,
+                    });
+                    break;
+            }
             tx.add(sellComponentTx);
             const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(tokenInfo[i].lut))).value;
             addressLookupTablesAccount.push(lut);

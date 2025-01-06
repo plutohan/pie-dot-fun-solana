@@ -250,14 +250,15 @@ export declare class PieProgram {
      * @param ammId - The AMM ID.
      * @returns A promise that resolves to a transaction.
      */
-    sellComponentCpmm({ user, basketId, inputMint, amountIn, minimumAmountOut, poolId, unwrappedSol, }: {
+    sellComponentCpmm({ user, basketId, inputMint, amountIn, minimumAmountOut, poolId, createNativeMintATA, unwrapSol, }: {
         user: PublicKey;
         basketId: BN;
         inputMint: PublicKey;
         amountIn: number;
         minimumAmountOut: number;
         poolId: string;
-        unwrappedSol: boolean;
+        createNativeMintATA?: boolean;
+        unwrapSol?: boolean;
     }): Promise<Transaction>;
     /**
      * Sell a component CLMM.
@@ -268,13 +269,15 @@ export declare class PieProgram {
      * @param ammId - The AMM ID.
      * @returns A promise that resolves to a transaction.
      */
-    sellComponentClmm({ user, basketId, amountIn, inputMint, poolId, unwrappedSol, }: {
+    sellComponentClmm({ user, basketId, amountIn, inputMint, poolId, slippage, createNativeMintATA, unwrapSol, }: {
         user: PublicKey;
         basketId: BN;
         amountIn: BN;
         inputMint: PublicKey;
         poolId: string;
-        unwrappedSol: boolean;
+        slippage: number;
+        createNativeMintATA?: boolean;
+        unwrapSol?: boolean;
     }): Promise<Transaction>;
     /**
      * Mints a basket token.

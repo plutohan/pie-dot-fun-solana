@@ -420,6 +420,72 @@ describe("pie", () => {
     basketMintTable.printTable();
   });
 
+  it("Redeem basket token and sell components using Jito bundle", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
+    const serializedSignedTxs: string[] = [];
+
+    const userSolBalanceBefore = await connection.getBalance(admin.publicKey);
+    const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance({
+      mint: basketConfigData.mint,
+      owner: admin.publicKey,
+    });
+
+    console.log({ userSolBalanceBefore, userBaksetTokenBalanceBefore });
+
+    const redeemAmount = userBaksetTokenBalanceBefore / 2;
+
+    console.log("creating bundle...");
+    const serializedTxs = await pieProgram.createRedeemAndSellBundle({
+      user: admin.publicKey,
+      basketId,
+      slippage,
+      redeemAmount,
+      swapsPerBundle,
+      tokenInfo: tokens,
+    });
+
+    console.log("signing bundle...");
+    for (const serializedTx of serializedTxs) {
+      const tx = await signSerializedTransaction(serializedTx, admin);
+      serializedSignedTxs.push(tx);
+    }
+
+    console.log("start simulating bundle...");
+    const bundleSimluationResult = await simulateBundle({
+      encodedTransactions: serializedSignedTxs,
+    });
+    console.log(
+      `bundle simulation result: ${JSON.stringify(
+        bundleSimluationResult.value
+      )}`
+    );
+
+    console.log("start sending bundles..!!");
+    const bundleId = await sendBundle(serializedSignedTxs);
+
+    if (bundleSimluationResult.value.summary !== "succeeded") {
+      throw new Error("bundle simulation failed");
+    }
+
+    await startPollingJitoBundle(bundleId);
+
+    console.log(`basket ${basketId.toString()} data:`);
+    const basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
+      basketId
+    );
+    basketMintTable.printTable();
+
+    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance({
+      mint: basketConfigData.mint,
+      owner: admin.publicKey,
+    });
+    console.log({ userBaksetTokenBalanceAfter });
+  });
+
   it.skip("Start rebalancing basket without Jito bundle", async () => {
     const basketId = new BN(26);
 
@@ -677,71 +743,5 @@ describe("pie", () => {
     console.log(
       `Stop rebalance at tx: https://solscan.io/tx/${stopRebalanceTxResult}`
     );
-  });
-
-  it.skip("Redeem basket token and sell components using Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
-    const serializedSignedTxs: string[] = [];
-
-    const userSolBalanceBefore = await connection.getBalance(admin.publicKey);
-    const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance({
-      mint: basketConfigData.mint,
-      owner: admin.publicKey,
-    });
-
-    console.log({ userSolBalanceBefore, userBaksetTokenBalanceBefore });
-
-    const redeemAmount = userBaksetTokenBalanceBefore / 2;
-
-    console.log("creating bundle...");
-    const serializedTxs = await pieProgram.createRedeemAndSellBundle({
-      user: admin.publicKey,
-      basketId,
-      slippage,
-      redeemAmount,
-      swapsPerBundle,
-      tokenInfo: tokens,
-    });
-
-    console.log("signing bundle...");
-    for (const serializedTx of serializedTxs) {
-      const tx = await signSerializedTransaction(serializedTx, admin);
-      serializedSignedTxs.push(tx);
-    }
-
-    console.log("start simulating bundle...");
-    const bundleSimluationResult = await simulateBundle({
-      encodedTransactions: serializedSignedTxs,
-    });
-    console.log(
-      `bundle simulation result: ${JSON.stringify(
-        bundleSimluationResult.value
-      )}`
-    );
-
-    console.log("start sending bundles..!!");
-    const bundleId = await sendBundle(serializedSignedTxs);
-
-    if (bundleSimluationResult.value.summary !== "succeeded") {
-      throw new Error("bundle simulation failed");
-    }
-
-    await startPollingJitoBundle(bundleId);
-
-    console.log(`basket ${basketId.toString()} data:`);
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
-
-    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance({
-      mint: basketConfigData.mint,
-      owner: admin.publicKey,
-    });
-    console.log({ userBaksetTokenBalanceAfter });
   });
 });
