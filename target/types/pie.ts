@@ -994,14 +994,6 @@ export type Pie = {
           "writable": true
         },
         {
-          "name": "platformFeeTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "creatorTokenAccount",
-          "writable": true
-        },
-        {
           "name": "clmmProgram",
           "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
         },
@@ -3086,6 +3078,14 @@ export type Pie = {
           },
           {
             "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "inputMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "outputMint",
             "type": "pubkey"
           },
           {

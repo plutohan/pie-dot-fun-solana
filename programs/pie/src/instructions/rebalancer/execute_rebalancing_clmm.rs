@@ -7,7 +7,7 @@ use raydium_clmm_cpi::{cpi, program::RaydiumClmm};
 
 use crate::utils::Rebalance;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
-use crate::{ExecuteRebalancingEvent, ProgramState, NATIVE_MINT, PROGRAM_STATE};
+use crate::{ExecuteRebalancingEvent, ProgramState, PROGRAM_STATE};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancingClmm<'info> {
@@ -32,19 +32,6 @@ pub struct ExecuteRebalancingClmm<'info> {
 
     #[account(mut)]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
-    #[account(
-        mut,
-        token::authority = program_state.platform_fee_wallet,
-        token::mint = NATIVE_MINT,
-    )]
-    pub platform_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    #[account(
-        mut,
-        token::authority = basket_config.creator,
-        token::mint = NATIVE_MINT,
-    )]
-    pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub clmm_program: Program<'info, RaydiumClmm>,
 
