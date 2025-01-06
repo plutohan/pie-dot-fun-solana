@@ -11,13 +11,13 @@ exports.sleep = sleep;
 exports.createBasketComponents = createBasketComponents;
 exports.getRaydiumPoolAccounts = getRaydiumPoolAccounts;
 exports.getOrCreateTokenAccountIx = getOrCreateTokenAccountIx;
-exports.getTokenAccount = getTokenAccount;
 exports.buildClmmRemainingAccounts = buildClmmRemainingAccounts;
 exports.wrappedSOLInstruction = wrappedSOLInstruction;
 exports.showBasketConfigTable = showBasketConfigTable;
 exports.showUserFundTable = showUserFundTable;
 exports.showBasketVaultsTable = showBasketVaultsTable;
 exports.getOrCreateTokenAccountTx = getOrCreateTokenAccountTx;
+exports.getTokenAccount = getTokenAccount;
 exports.isToken2022Mint = isToken2022Mint;
 exports.unwrapSolIx = unwrapSolIx;
 exports.getOrCreateNativeMintATA = getOrCreateNativeMintATA;
@@ -50,16 +50,22 @@ async function createNewMint(connection, creator, decimals) {
     return tokenMint;
 }
 async function mintTokenTo(connection, tokenMint, mintAuthority, payer, to, amount) {
-    const userTokenAccount = await (0, spl_token_1.getOrCreateAssociatedTokenAccount)(connection, payer, tokenMint, to, true);
-    const mintInfo = await (0, spl_token_1.getMint)(connection, tokenMint);
+    const programId = (await isToken2022Mint(connection, tokenMint))
+        ? spl_token_1.TOKEN_2022_PROGRAM_ID
+        : spl_token_1.TOKEN_PROGRAM_ID;
+    const userTokenAccount = await (0, spl_token_1.getOrCreateAssociatedTokenAccount)(connection, payer, tokenMint, to, true, undefined, undefined, programId);
+    const mintInfo = await (0, spl_token_1.getMint)(connection, tokenMint, undefined, programId);
     //mint for dever 3_000_000 tokens
     await (0, spl_token_1.mintTo)(connection, payer, tokenMint, userTokenAccount.address, mintAuthority, amount * 10 ** mintInfo.decimals);
     return userTokenAccount.address;
 }
 async function sendTokenTo(connection, tokenMint, owner, from, to, amount) {
-    const sourceTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(tokenMint, from, true);
-    const destinationTokenAccount = await (0, spl_token_1.getOrCreateAssociatedTokenAccount)(connection, owner, tokenMint, to, true);
-    const mintInfo = await (0, spl_token_1.getMint)(connection, tokenMint);
+    const programId = (await isToken2022Mint(connection, tokenMint))
+        ? spl_token_1.TOKEN_2022_PROGRAM_ID
+        : spl_token_1.TOKEN_PROGRAM_ID;
+    const sourceTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(tokenMint, from, true, programId);
+    const destinationTokenAccount = await (0, spl_token_1.getOrCreateAssociatedTokenAccount)(connection, owner, tokenMint, to, true, undefined, undefined, programId);
+    const mintInfo = await (0, spl_token_1.getMint)(connection, tokenMint, undefined, programId);
     const tx = await (0, spl_token_1.transfer)(connection, owner, sourceTokenAccount, destinationTokenAccount.address, owner, amount * 10 ** mintInfo.decimals);
     return tx;
 }
@@ -108,9 +114,6 @@ async function getOrCreateTokenAccountIx(connection, mint, payer, owner) {
     }
     return { tokenAccount: tokenAccount, ixs: instructions };
 }
-async function getTokenAccount(mint, owner) {
-    return await (0, spl_token_1.getAssociatedTokenAddress)(mint, owner, true);
-}
 async function buildClmmRemainingAccounts(tickArray, exTickArrayBitmap) {
     const remainingAccounts = [
         ...(exTickArrayBitmap
@@ -122,7 +125,7 @@ async function buildClmmRemainingAccounts(tickArray, exTickArrayBitmap) {
 }
 async function wrappedSOLInstruction(recipient, amount) {
     let ixs = [];
-    const ata = await getTokenAccount(spl_token_1.NATIVE_MINT, recipient);
+    const ata = (0, spl_token_1.getAssociatedTokenAddressSync)(spl_token_1.NATIVE_MINT, recipient);
     ixs.push(web3_js_1.SystemProgram.transfer({
         fromPubkey: recipient,
         toPubkey: ata,
@@ -143,7 +146,10 @@ async function showBasketConfigTable(connection, pieProgram, basketId) {
         ],
     });
     for (let i = 0; i < basketConfig.components.length; i++) {
-        const vaultTokenPDA = (0, spl_token_1.getAssociatedTokenAddressSync)(basketConfig.components[i].mint, pieProgram.basketConfigPDA({ basketId }), true);
+        const programId = (await isToken2022Mint(connection, basketConfig.components[i].mint))
+            ? spl_token_1.TOKEN_2022_PROGRAM_ID
+            : spl_token_1.TOKEN_PROGRAM_ID;
+        const vaultTokenPDA = (0, spl_token_1.getAssociatedTokenAddressSync)(basketConfig.components[i].mint, pieProgram.basketConfigPDA({ basketId }), true, programId);
         const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
         let component = basketConfig.components[i];
         table.addRow({
@@ -194,14 +200,22 @@ async function getOrCreateTokenAccountTx(connection, mint, payer, owner) {
         ? spl_token_1.TOKEN_2022_PROGRAM_ID
         : spl_token_1.TOKEN_PROGRAM_ID;
     const tokenAccount = await (0, spl_token_1.getAssociatedTokenAddress)(mint, owner, true, programId);
-    let transaction = new web3_js_1.Transaction();
     try {
         await (0, spl_token_1.getAccount)(connection, tokenAccount, "confirmed", programId);
+        return { tokenAccount: tokenAccount, tx: null };
     }
     catch (error) {
+        let transaction = new web3_js_1.Transaction();
         transaction.add((0, spl_token_1.createAssociatedTokenAccountInstruction)(payer, tokenAccount, owner, mint, programId, spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID));
+        return { tokenAccount: tokenAccount, tx: transaction };
     }
-    return { tokenAccount: tokenAccount, tx: transaction };
+}
+async function getTokenAccount(connection, mint, owner) {
+    const programId = (await isToken2022Mint(connection, mint))
+        ? spl_token_1.TOKEN_2022_PROGRAM_ID
+        : spl_token_1.TOKEN_PROGRAM_ID;
+    const tokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(mint, owner, true, programId);
+    return tokenAccount;
 }
 async function isToken2022Mint(connection, mint) {
     const accountInfo = await connection.getAccountInfo(mint);

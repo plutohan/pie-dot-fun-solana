@@ -120,10 +120,6 @@ export type Pie = {
                     };
                 },
                 {
-                    "name": "mintOut";
-                    "writable": true;
-                },
-                {
                     "name": "amm";
                     "writable": true;
                 },
@@ -995,14 +991,6 @@ export type Pie = {
                 },
                 {
                     "name": "basketMint";
-                    "writable": true;
-                },
-                {
-                    "name": "platformFeeTokenAccount";
-                    "writable": true;
-                },
-                {
-                    "name": "creatorTokenAccount";
                     "writable": true;
                 },
                 {
@@ -3090,6 +3078,14 @@ export type Pie = {
                     },
                     {
                         "name": "basketMint";
+                        "type": "pubkey";
+                    },
+                    {
+                        "name": "inputMint";
+                        "type": "pubkey";
+                    },
+                    {
+                        "name": "outputMint";
                         "type": "pubkey";
                     },
                     {

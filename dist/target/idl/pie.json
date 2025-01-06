@@ -114,10 +114,6 @@
                     }
                 },
                 {
-                    "name": "mint_out",
-                    "writable": true
-                },
-                {
                     "name": "amm",
                     "writable": true
                 },
@@ -989,14 +985,6 @@
                 },
                 {
                     "name": "basket_mint",
-                    "writable": true
-                },
-                {
-                    "name": "platform_fee_token_account",
-                    "writable": true
-                },
-                {
-                    "name": "creator_token_account",
                     "writable": true
                 },
                 {
@@ -3084,6 +3072,14 @@
                     },
                     {
                         "name": "basket_mint",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "input_mint",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "output_mint",
                         "type": "pubkey"
                     },
                     {
