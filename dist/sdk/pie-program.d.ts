@@ -323,34 +323,60 @@ export declare class PieProgram {
     /**
      * Executes rebalancing.
      * @param rebalancer - The rebalancer account.
-     * @param isSwapBaseOut - Whether to buy or sell.
+     * @param isSwapBaseOut - Whether to swap base out.
      * @param amountIn - The amount in.
      * @param amountOut - The amount out.
      * @param ammId - The AMM ID.
      * @param basketId - The basket ID.
-     * @param tokenMint - The token mint.
-     * @param raydium - The Raydium instance.
+     * @param inputMint - The input mint.
+     * @param outputMint - The output mint.
+     * @param createTokenAccount - Whether to create the output token account.
      * @returns A promise that resolves to a transaction or null.
      */
-    executeRebalancing({ rebalancer, isSwapBaseOut, amountIn, amountOut, ammId, basketId, tokenMint, createTokenAccount, }: {
+    executeRebalancing({ rebalancer, isSwapBaseOut, amountIn, amountOut, ammId, basketId, inputMint, outputMint, createTokenAccount, }: {
         rebalancer: PublicKey;
         isSwapBaseOut: boolean;
         amountIn: string;
         amountOut: string;
         ammId: string;
         basketId: BN;
-        tokenMint: PublicKey;
+        inputMint: PublicKey;
+        outputMint: PublicKey;
         createTokenAccount?: boolean;
     }): Promise<Transaction | null>;
-    executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amountIn, amountOut, poolId, basketId, tokenMint, }: {
+    executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amountIn, amountOut, poolId, basketId, inputMint, outputMint, createTokenAccount, }: {
         rebalancer: PublicKey;
         isSwapBaseOut: boolean;
         amountIn: string;
         amountOut: string;
         poolId: string;
         basketId: BN;
-        tokenMint: PublicKey;
+        inputMint: PublicKey;
+        outputMint: PublicKey;
+        createTokenAccount?: boolean;
     }): Promise<Transaction | null>;
+    /**
+     * Execute rebalancing using Raydium CLMM (Concentrated Liquidity Market Maker) pool
+     * @param rebalancer - The rebalancer's public key who has permission to rebalance
+     * @param isSwapBaseOut - Whether this is a swap where amount specified is the output amount
+     * @param basketId - The ID of the basket being rebalanced
+     * @param amount - The amount to swap (either input or output amount depending on isSwapBaseOut)
+     * @param slippage - Slippage in basis points
+     * @param poolId - The Raydium CLMM pool ID to execute the swap on
+     * @param inputMint - The mint address of the input token
+     * @param outputMint - The mint address of the output token
+     */
+    executeRebalancingClmm({ rebalancer, isSwapBaseOut, basketId, amount, slippage, poolId, inputMint, outputMint, createTokenAccount, }: {
+        rebalancer: PublicKey;
+        isSwapBaseOut: boolean;
+        basketId: BN;
+        amount: BN;
+        slippage: number;
+        poolId: string;
+        inputMint: PublicKey;
+        outputMint: PublicKey;
+        createTokenAccount?: boolean;
+    }): Promise<Transaction>;
     addRaydiumAmmToAddressLookupTable({ connection, signer, ammId, lookupTable, }: {
         connection: Connection;
         signer: Keypair;

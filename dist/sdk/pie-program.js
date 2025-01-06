@@ -317,16 +317,17 @@ class PieProgram {
         const [mintIn, mintOut] = baseIn
             ? [poolKeys.mintA.address, poolKeys.mintB.address]
             : [poolKeys.mintB.address, poolKeys.mintA.address];
-        const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), userSourceOwner, false);
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(mintIn), userSourceOwner);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), userSourceOwner, basketConfig);
-        tx.add(outputTx);
+        if ((0, helper_1.isValidTransaction)(outputTx)) {
+            tx.add(outputTx);
+        }
         const buyComponentTx = await this.program.methods
             .buyComponent(new anchor_1.BN(maxAmountIn), new anchor_1.BN(amountOut))
             .accountsPartial({
             userSourceOwner: userSourceOwner,
             programState: this.programStatePDA,
             basketConfig: basketConfig,
-            mintOut: mintOut,
             amm: new web3_js_1.PublicKey(ammId),
             userFund: this.userFundPDA({ user: userSourceOwner, basketId }),
             ammAuthority: new web3_js_1.PublicKey(poolKeys.authority),
@@ -380,7 +381,9 @@ class PieProgram {
             : [poolKeys.mintB.address, poolKeys.mintA.address];
         const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), user, false);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), user, basketConfig);
-        tx.add(outputTx);
+        if ((0, helper_1.isValidTransaction)(outputTx)) {
+            tx.add(outputTx);
+        }
         const swapResult = raydium_sdk_v2_1.CurveCalculator.swapBaseOut({
             poolMintA: poolInfo.mintA,
             poolMintB: poolInfo.mintB,
@@ -397,7 +400,6 @@ class PieProgram {
             programState: this.programStatePDA,
             basketConfig: basketConfig,
             userFund: this.userFundPDA({ user, basketId }),
-            mintOut: mintOut,
             ammConfig: new web3_js_1.PublicKey(poolKeys.config.id),
             poolState: new web3_js_1.PublicKey(poolInfo.id),
             authority: new web3_js_1.PublicKey(poolKeys.authority),
@@ -462,7 +464,9 @@ class PieProgram {
         const baseIn = spl_token_1.NATIVE_MINT.toString() === poolKeys.mintA.address;
         const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, false);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(baseIn ? mintB : mintA), user, basketConfig);
-        tx.add(outputTx);
+        if ((0, helper_1.isValidTransaction)(outputTx)) {
+            tx.add(outputTx);
+        }
         const buyComponentTx = await this.program.methods
             .buyComponentClmm(new anchor_1.BN(amountOut), res.maxAmountIn.amount, sqrtPriceLimitX64)
             .accountsPartial({
@@ -573,7 +577,9 @@ class PieProgram {
             : [poolKeys.mintB.address, poolKeys.mintA.address];
         const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), basketConfig, true);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), user, user);
-        tx.add(outputTx);
+        if ((0, helper_1.isValidTransaction)(outputTx)) {
+            tx.add(outputTx);
+        }
         const wrappedSolIx = await (0, helper_1.wrappedSOLInstruction)(user, amountIn);
         tx.add(...wrappedSolIx);
         const sellComponentTx = await this.program.methods
@@ -583,7 +589,6 @@ class PieProgram {
             programState: this.programStatePDA,
             basketConfig: basketConfig,
             userFund: this.userFundPDA({ user, basketId }),
-            mintOut: mintOut,
             basketMint: basketMint,
             platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
             creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
@@ -651,7 +656,9 @@ class PieProgram {
         ];
         const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(inputMint), basketConfig, true, spl_token_1.TOKEN_2022_PROGRAM_ID);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, user);
-        tx.add(outputTx);
+        if ((0, helper_1.isValidTransaction)(outputTx)) {
+            tx.add(outputTx);
+        }
         const sellComponentTx = await this.program.methods
             .sellComponentClmm(amountIn, minAmountOut.amount.raw, sqrtPriceLimitX64)
             .accountsPartial({
@@ -782,16 +789,17 @@ class PieProgram {
     /**
      * Executes rebalancing.
      * @param rebalancer - The rebalancer account.
-     * @param isSwapBaseOut - Whether to buy or sell.
+     * @param isSwapBaseOut - Whether to swap base out.
      * @param amountIn - The amount in.
      * @param amountOut - The amount out.
      * @param ammId - The AMM ID.
      * @param basketId - The basket ID.
-     * @param tokenMint - The token mint.
-     * @param raydium - The Raydium instance.
+     * @param inputMint - The input mint.
+     * @param outputMint - The output mint.
+     * @param createTokenAccount - Whether to create the output token account.
      * @returns A promise that resolves to a transaction or null.
      */
-    async executeRebalancing({ rebalancer, isSwapBaseOut, amountIn, amountOut, ammId, basketId, tokenMint, createTokenAccount = true, }) {
+    async executeRebalancing({ rebalancer, isSwapBaseOut, amountIn, amountOut, ammId, basketId, inputMint, outputMint, createTokenAccount = true, }) {
         const tx = new web3_js_1.Transaction();
         const data = await this.raydium.liquidity.getPoolInfoFromRpc({
             poolId: ammId,
@@ -799,33 +807,16 @@ class PieProgram {
         const basketMint = this.basketMintPDA({ basketId });
         const basketConfig = this.basketConfigPDA({ basketId });
         const poolKeys = data.poolKeys;
-        const inputMint = isSwapBaseOut ? spl_token_1.NATIVE_MINT : tokenMint;
-        const baseIn = inputMint.toString() === poolKeys.mintA.address;
-        const [mintIn, mintOut] = baseIn
-            ? [poolKeys.mintA.address, poolKeys.mintB.address]
-            : [poolKeys.mintB.address, poolKeys.mintA.address];
-        let inputTokenAccount;
-        let outputTokenAccount;
-        if (isSwapBaseOut) {
-            inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), basketConfig, true);
-            const { tokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), rebalancer, basketConfig);
-            outputTokenAccount = tokenAccount;
-            if (createTokenAccount)
-                tx.add(outputTx);
-        }
-        else {
-            inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), basketConfig, true);
-            const { tokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), rebalancer, basketConfig);
-            outputTokenAccount = tokenAccount;
-            if (createTokenAccount)
-                tx.add(outputTx);
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(inputMint), basketConfig);
+        const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(outputMint), rebalancer, basketConfig);
+        if (createTokenAccount && (0, helper_1.isValidTransaction)(outputTx)) {
+            tx.add(outputTx);
         }
         const executeRebalancingTx = await this.program.methods
             .executeRebalancing(isSwapBaseOut, new anchor_1.BN(amountIn), new anchor_1.BN(amountOut))
             .accountsPartial({
             rebalancer,
             basketConfig: this.basketConfigPDA({ basketId }),
-            tokenMint,
             basketMint,
             vaultWrappedSol: spl_token_1.NATIVE_MINT,
             amm: new web3_js_1.PublicKey(ammId),
@@ -849,59 +840,149 @@ class PieProgram {
         tx.add(executeRebalancingTx);
         return tx;
     }
-    async executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amountIn, amountOut, poolId, basketId, tokenMint, }) {
+    async executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amountIn, amountOut, poolId, basketId, inputMint, outputMint, createTokenAccount = true, }) {
         const tx = new web3_js_1.Transaction();
         const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
         const basketMint = this.basketMintPDA({ basketId });
         const basketConfig = this.basketConfigPDA({ basketId });
         const poolKeys = data.poolKeys;
         const poolInfo = data.poolInfo;
-        const inputMint = isSwapBaseOut ? spl_token_1.NATIVE_MINT : tokenMint;
-        const [mintA, mintB] = [
-            new web3_js_1.PublicKey(poolInfo.mintA.address),
-            new web3_js_1.PublicKey(poolInfo.mintB.address),
-        ];
-        const baseIn = inputMint.toString() === poolKeys.mintA.address;
-        const [mintIn, mintOut] = baseIn
-            ? [poolKeys.mintA.address, poolKeys.mintB.address]
-            : [poolKeys.mintB.address, poolKeys.mintA.address];
-        let inputTokenAccount;
-        let outputTokenAccount;
-        if (isSwapBaseOut) {
-            inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), basketConfig, true);
-            const { tokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), rebalancer, basketConfig);
-            outputTokenAccount = tokenAccount;
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(inputMint), basketConfig);
+        const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(outputMint), rebalancer, basketConfig);
+        if (createTokenAccount && (0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
         }
+        const isInputMintA = inputMint.toBase58() === poolKeys.mintA.address;
+        let inputVault;
+        let outputVault;
+        let inputTokenProgram;
+        let outputTokenProgram;
+        let inputTokenMint;
+        let outputTokenMint;
+        if (isInputMintA) {
+            inputVault = new web3_js_1.PublicKey(poolKeys.vault.A);
+            outputVault = new web3_js_1.PublicKey(poolKeys.vault.B);
+            inputTokenProgram = new web3_js_1.PublicKey(poolKeys.mintA.programId);
+            outputTokenProgram = new web3_js_1.PublicKey(poolKeys.mintB.programId);
+            inputTokenMint = new web3_js_1.PublicKey(poolKeys.mintA.address);
+            outputTokenMint = new web3_js_1.PublicKey(poolKeys.mintB.address);
+        }
         else {
-            inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), basketConfig, true);
-            const { tokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(mintOut), rebalancer, basketConfig);
-            outputTokenAccount = tokenAccount;
-            tx.add(outputTx);
+            inputVault = new web3_js_1.PublicKey(poolKeys.vault.B);
+            outputVault = new web3_js_1.PublicKey(poolKeys.vault.A);
+            inputTokenProgram = new web3_js_1.PublicKey(poolKeys.mintB.programId);
+            outputTokenProgram = new web3_js_1.PublicKey(poolKeys.mintA.programId);
+            inputTokenMint = new web3_js_1.PublicKey(poolKeys.mintB.address);
+            outputTokenMint = new web3_js_1.PublicKey(poolKeys.mintA.address);
         }
         const executeRebalancingTx = await this.program.methods
             .executeRebalancingCpmm(isSwapBaseOut, new anchor_1.BN(amountIn), new anchor_1.BN(amountOut))
             .accountsPartial({
             rebalancer,
             basketConfig: this.basketConfigPDA({ basketId }),
-            tokenMint,
             basketMint,
             vaultWrappedSol: spl_token_1.NATIVE_MINT,
             authority: new web3_js_1.PublicKey(poolKeys.authority),
             ammConfig: new web3_js_1.PublicKey(poolKeys.config.id),
             poolState: new web3_js_1.PublicKey(poolInfo.id),
-            inputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
-            outputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
-            inputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintA" : "mintB"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
-            outputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintB" : "mintA"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
-            inputTokenMint: baseIn ? mintA : mintB,
-            outputTokenMint: baseIn ? mintB : mintA,
+            inputVault,
+            outputVault,
+            inputTokenProgram,
+            outputTokenProgram,
+            inputTokenMint,
+            outputTokenMint,
             observationState: (0, raydium_sdk_v2_1.getPdaObservationId)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey,
             vaultTokenSource: inputTokenAccount,
             vaultTokenDestination: outputTokenAccount,
         })
             .transaction();
         tx.add(executeRebalancingTx);
+        return tx;
+    }
+    /**
+     * Execute rebalancing using Raydium CLMM (Concentrated Liquidity Market Maker) pool
+     * @param rebalancer - The rebalancer's public key who has permission to rebalance
+     * @param isSwapBaseOut - Whether this is a swap where amount specified is the output amount
+     * @param basketId - The ID of the basket being rebalanced
+     * @param amount - The amount to swap (either input or output amount depending on isSwapBaseOut)
+     * @param slippage - Slippage in basis points
+     * @param poolId - The Raydium CLMM pool ID to execute the swap on
+     * @param inputMint - The mint address of the input token
+     * @param outputMint - The mint address of the output token
+     */
+    async executeRebalancingClmm({ rebalancer, isSwapBaseOut, basketId, amount, slippage, poolId, inputMint, outputMint, createTokenAccount = true, }) {
+        const tx = new web3_js_1.Transaction();
+        const basketConfigPDA = this.basketConfigPDA({ basketId });
+        const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
+        const poolInfo = data.poolInfo;
+        const poolKeys = data.poolKeys;
+        const clmmPoolInfo = data.computePoolInfo;
+        const tickCache = data.tickData;
+        let remainingAccounts;
+        let otherAmountThreshold;
+        const isInputMintA = inputMint.toBase58() === poolKeys.mintA.address;
+        const sqrtPriceLimitX64 = isInputMintA
+            ? raydium_sdk_v2_1.MIN_SQRT_PRICE_X64.add(new anchor_1.BN(1))
+            : raydium_sdk_v2_1.MAX_SQRT_PRICE_X64.sub(new anchor_1.BN(1));
+        if (isSwapBaseOut) {
+            const computed = raydium_sdk_v2_1.PoolUtils.computeAmountIn({
+                poolInfo: clmmPoolInfo,
+                tickArrayCache: tickCache[poolId],
+                amountOut: amount,
+                baseMint: outputMint,
+                slippage,
+                epochInfo: await this.raydium.fetchEpochInfo(),
+            });
+            remainingAccounts = computed.remainingAccounts;
+            otherAmountThreshold = computed.maxAmountIn.amount;
+        }
+        else {
+            const computed = raydium_sdk_v2_1.PoolUtils.computeAmountOut({
+                poolInfo: clmmPoolInfo,
+                tickArrayCache: tickCache[poolId],
+                amountIn: amount,
+                baseMint: inputMint,
+                slippage,
+                epochInfo: await this.raydium.fetchEpochInfo(),
+                catchLiquidityInsufficient: true,
+            });
+            remainingAccounts = computed.remainingAccounts;
+            // @TODO should be computed.minAmountOut.amount, but it's not working
+            otherAmountThreshold = new anchor_1.BN(0);
+        }
+        const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, outputMint, rebalancer, basketConfigPDA);
+        if (createTokenAccount && (0, helper_1.isValidTransaction)(outputTx)) {
+            tx.add(outputTx);
+        }
+        const executeRabalancingClmmTx = await this.program.methods
+            .executeRebalancingClmm(isSwapBaseOut, amount, otherAmountThreshold, sqrtPriceLimitX64)
+            .accountsPartial({
+            rebalancer,
+            basketConfig: this.basketConfigPDA({ basketId }),
+            basketMint: this.basketMintPDA({ basketId }),
+            vaultWrappedSol: spl_token_1.NATIVE_MINT,
+            ammConfig: new web3_js_1.PublicKey(poolKeys.config.id),
+            poolState: new web3_js_1.PublicKey(poolKeys.id),
+            vaultTokenSource: await (0, helper_1.getTokenAccount)(this.connection, inputMint, basketConfigPDA),
+            vaultTokenDestination: outputTokenAccount,
+            inputVault: isInputMintA
+                ? new web3_js_1.PublicKey(poolKeys.vault.A)
+                : new web3_js_1.PublicKey(poolKeys.vault.B),
+            outputVault: isInputMintA
+                ? new web3_js_1.PublicKey(poolKeys.vault.B)
+                : new web3_js_1.PublicKey(poolKeys.vault.A),
+            observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
+            inputVaultMint: isInputMintA
+                ? new web3_js_1.PublicKey(poolKeys.mintA.address)
+                : new web3_js_1.PublicKey(poolKeys.mintB.address),
+            outputVaultMint: isInputMintA
+                ? new web3_js_1.PublicKey(poolKeys.mintB.address)
+                : new web3_js_1.PublicKey(poolKeys.mintA.address),
+            tokenMint: new web3_js_1.PublicKey(poolKeys.mintA.address),
+        })
+            .remainingAccounts(await (0, helper_1.buildClmmRemainingAccounts)(remainingAccounts, (0, raydium_sdk_v2_1.getPdaExBitmapAccount)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey))
+            .transaction();
+        tx.add(executeRabalancingClmmTx);
         return tx;
     }
     async addRaydiumAmmToAddressLookupTable({ connection, signer, ammId, lookupTable, }) {
@@ -1048,20 +1129,16 @@ class PieProgram {
         (0, helper_1.checkSwapDataError)(swapDataResult);
         //@TODO remove this when other pools are available
         for (let i = 0; i < swapDataResult.length; i++) {
-            if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
+            if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
                 console.log(`${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`);
                 swapDataResult[i].data.otherAmountThreshold = String(Number(swapDataResult[i].data.otherAmountThreshold) * 10);
             }
         }
         // Calculate total amount needed
         const totalAmountIn = swapDataResult.reduce((acc, curr) => acc + Number(curr.data.otherAmountThreshold), 0);
-        // debug
-        tx.add(web3_js_1.ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: 200000,
-        }));
         // Create WSOL account and wrap SOL
         const { tokenAccount: wsolAccount, tx: createWsolAtaTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, user);
-        if (createWsolAtaTx.instructions.length > 0) {
+        if ((0, helper_1.isValidTransaction)(createWsolAtaTx)) {
             tx.add(createWsolAtaTx);
         }
         const wrappedSolIx = await (0, helper_1.wrappedSOLInstruction)(user, (0, helper_1.caculateTotalAmountWithFee)(totalAmountIn, feePercentageInBasisPoints));
@@ -1087,7 +1164,7 @@ class PieProgram {
                         basketId,
                         maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
                         amountOut: Number(swapDataResult[i].data.outputAmount),
-                        ammId: tokenInfo[i].ammId,
+                        ammId: tokenInfo[i].poolId,
                         unwrapSol: false,
                     });
                     break;
@@ -1097,7 +1174,7 @@ class PieProgram {
                         basketId,
                         amountOut: new anchor_1.BN(swapDataResult[i].data.outputAmount),
                         outputMint: new web3_js_1.PublicKey(tokenInfo[i].mint),
-                        poolId: tokenInfo[i].ammId,
+                        poolId: tokenInfo[i].poolId,
                         slippage,
                     });
                     break;
@@ -1106,7 +1183,7 @@ class PieProgram {
                         user,
                         basketId,
                         amountOut: Number(swapDataResult[i].data.outputAmount),
-                        poolId: tokenInfo[i].ammId,
+                        poolId: tokenInfo[i].poolId,
                     });
                     break;
             }
@@ -1165,7 +1242,7 @@ class PieProgram {
         (0, helper_1.checkSwapDataError)(swapDataResult);
         //@TODO remove this when other pools are available
         for (let i = 0; i < swapDataResult.length; i++) {
-            if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].ammId) {
+            if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
                 console.log(`${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`);
                 swapDataResult[i].data.otherAmountThreshold =
                     swapDataResult[i].data.otherAmountThreshold / 10;
@@ -1197,7 +1274,7 @@ class PieProgram {
                 basketId,
                 amountIn: Number(swapDataResult[i].data.inputAmount),
                 minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-                ammId: tokenInfo[i].ammId,
+                ammId: tokenInfo[i].poolId,
             });
             tx.add(sellComponentTx);
             const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(tokenInfo[i].lut))).value;
@@ -1227,25 +1304,14 @@ class PieProgram {
         rebalanceInfo.forEach((rebalance) => {
             swapData.push((0, helper_1.getSwapData)({
                 isSwapBaseOut: rebalance.isSwapBaseOut,
-                inputMint: rebalance.isSwapBaseOut
-                    ? spl_token_1.NATIVE_MINT.toBase58()
-                    : rebalance.mint,
-                outputMint: rebalance.isSwapBaseOut
-                    ? rebalance.mint
-                    : spl_token_1.NATIVE_MINT.toBase58(),
+                inputMint: rebalance.inputMint,
+                outputMint: rebalance.outputMint,
                 amount: Number(rebalance.amount),
                 slippage,
             }));
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkSwapDataError)(swapDataResult);
-        //@TODO remove this when other pools are available
-        for (let i = 0; i < swapDataResult.length; i++) {
-            if (swapDataResult[i].data.routePlan[0].poolId !== rebalanceInfo[i].ammId) {
-                console.log(`${rebalanceInfo[i].name}'s AMM has little liquidity, increase slippage`);
-                swapDataResult[i].data.otherAmountThreshold = String(Number(swapDataResult[i].data.otherAmountThreshold) * 2);
-            }
-        }
         const blockhash = await this.connection.getLatestBlockhash();
         for (let i = 0; i < rebalanceInfo.length; i++) {
             if (i === 0) {
@@ -1274,21 +1340,66 @@ class PieProgram {
                 tx = new web3_js_1.Transaction();
                 addressLookupTablesAccount = await this.generateLookupTableAccount();
             }
-            const rebalanceTx = await this.executeRebalancing({
-                rebalancer,
-                isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-                amountIn: rebalanceInfo[i].isSwapBaseOut
-                    ? swapDataResult[i].data.otherAmountThreshold
-                    : swapDataResult[i].data.inputAmount,
-                amountOut: rebalanceInfo[i].isSwapBaseOut
-                    ? swapDataResult[i].data.outputAmount
-                    : swapDataResult[i].data.otherAmountThreshold,
-                ammId: rebalanceInfo[i].ammId,
-                basketId,
-                tokenMint: new web3_js_1.PublicKey(rebalanceInfo[i].mint),
-                createTokenAccount: false,
-            });
-            tx.add(rebalanceTx);
+            let rebalanceTx;
+            switch (rebalanceInfo[i].type) {
+                case "amm":
+                    rebalanceTx = await this.executeRebalancing({
+                        rebalancer,
+                        isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+                        amountIn: rebalanceInfo[i].isSwapBaseOut
+                            ? swapDataResult[i].data.otherAmountThreshold
+                            : swapDataResult[i].data.inputAmount,
+                        amountOut: rebalanceInfo[i].isSwapBaseOut
+                            ? swapDataResult[i].data.outputAmount
+                            : swapDataResult[i].data.otherAmountThreshold,
+                        ammId: rebalanceInfo[i].poolId,
+                        basketId,
+                        inputMint: new web3_js_1.PublicKey(rebalanceInfo[i].inputMint),
+                        outputMint: new web3_js_1.PublicKey(rebalanceInfo[i].outputMint),
+                        // do not create token account for native mint because it is already created in the startRebalanceTx
+                        createTokenAccount: rebalanceInfo[i].outputMint === spl_token_1.NATIVE_MINT.toBase58()
+                            ? false
+                            : true,
+                    });
+                    tx.add(rebalanceTx);
+                    break;
+                case "clmm":
+                    rebalanceTx = await this.executeRebalancingClmm({
+                        rebalancer,
+                        basketId,
+                        isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+                        inputMint: new web3_js_1.PublicKey(rebalanceInfo[i].inputMint),
+                        outputMint: new web3_js_1.PublicKey(rebalanceInfo[i].outputMint),
+                        amount: new anchor_1.BN(rebalanceInfo[i].amount),
+                        poolId: rebalanceInfo[i].poolId,
+                        slippage,
+                        createTokenAccount: rebalanceInfo[i].outputMint === spl_token_1.NATIVE_MINT.toBase58()
+                            ? false
+                            : true,
+                    });
+                    tx.add(rebalanceTx);
+                    break;
+                case "cpmm":
+                    rebalanceTx = await this.executeRebalancingCpmm({
+                        rebalancer,
+                        basketId,
+                        isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+                        amountIn: rebalanceInfo[i].isSwapBaseOut
+                            ? swapDataResult[i].data.otherAmountThreshold
+                            : swapDataResult[i].data.inputAmount,
+                        amountOut: rebalanceInfo[i].isSwapBaseOut
+                            ? swapDataResult[i].data.outputAmount
+                            : swapDataResult[i].data.otherAmountThreshold,
+                        poolId: rebalanceInfo[i].poolId,
+                        inputMint: new web3_js_1.PublicKey(rebalanceInfo[i].inputMint),
+                        outputMint: new web3_js_1.PublicKey(rebalanceInfo[i].outputMint),
+                        createTokenAccount: rebalanceInfo[i].outputMint === spl_token_1.NATIVE_MINT.toBase58()
+                            ? false
+                            : true,
+                    });
+                    tx.add(rebalanceTx);
+                    break;
+            }
             const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(rebalanceInfo[i].lut))).value;
             addressLookupTablesAccount.push(lut);
             if (i == rebalanceInfo.length - 1) {

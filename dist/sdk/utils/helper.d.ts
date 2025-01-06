@@ -17,7 +17,6 @@ export declare function getOrCreateTokenAccountIx(connection: Connection, mint: 
     tokenAccount: PublicKey;
     ixs: TransactionInstruction[];
 }>;
-export declare function getTokenAccount(mint: PublicKey, owner: PublicKey): Promise<PublicKey>;
 export declare function buildClmmRemainingAccounts(tickArray: PublicKey[], exTickArrayBitmap?: PublicKey): Promise<any>;
 export declare function wrappedSOLInstruction(recipient: PublicKey, amount: number): Promise<TransactionInstruction[]>;
 export declare function showBasketConfigTable(connection: Connection, pieProgram: PieProgram, basketId: BN): Promise<Table>;
@@ -28,8 +27,9 @@ export declare function showBasketVaultsTable(basketVaults: {
 }[]): Promise<Table>;
 export declare function getOrCreateTokenAccountTx(connection: Connection, mint: PublicKey, payer: PublicKey, owner: PublicKey): Promise<{
     tokenAccount: PublicKey;
-    tx: Transaction;
+    tx: Transaction | null;
 }>;
+export declare function getTokenAccount(connection: Connection, mint: PublicKey, owner: PublicKey): Promise<PublicKey>;
 export declare function isToken2022Mint(connection: Connection, mint: PublicKey): Promise<boolean>;
 export declare function unwrapSolIx(acc: PublicKey, destination: PublicKey, authority: PublicKey): TransactionInstruction;
 export declare function getOrCreateNativeMintATA(connection: Connection, payer: PublicKey, owner: PublicKey): Promise<{

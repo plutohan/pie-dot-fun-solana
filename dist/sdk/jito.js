@@ -15,7 +15,6 @@ const web3_js_2 = require("@solana/web3.js");
 const web3_js_3 = require("@solana/web3.js");
 const constants_1 = require("./constants");
 const axios_1 = __importDefault(require("axios"));
-const bytes_1 = require("@coral-xyz/anchor/dist/cjs/utils/bytes");
 async function getTipInformation() {
     try {
         const res = await axios_1.default.get("https://bundles.jito.wtf/api/v1/bundles/tip_floor");
@@ -116,7 +115,6 @@ async function serializeJitoTransaction({ recentBlockhash, signer, transaction, 
 async function signSerializedTransaction(serializedTransaction, signer) {
     const transaction = web3_js_1.VersionedTransaction.deserialize(Buffer.from(serializedTransaction, "base64"));
     transaction.sign([signer]);
-    console.log({ signature: bytes_1.bs58.encode(transaction.signatures[0]) });
     const encoded = transaction.serialize();
     return Buffer.from(encoded).toString("base64");
 }
