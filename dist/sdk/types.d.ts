@@ -1,4 +1,4 @@
-export interface RebalanceInfo {
+export declare interface RebalanceInfo {
     name?: string;
     inputMint: string;
     outputMint: string;
@@ -8,7 +8,7 @@ export interface RebalanceInfo {
     amount: string;
     type: "cpmm" | "clmm" | "amm";
 }
-export interface TokenInfo {
+export declare interface TokenInfo {
     name: string;
     mint: string;
     lut: string;
