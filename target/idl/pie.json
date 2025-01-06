@@ -3083,6 +3083,14 @@
             "type": "pubkey"
           },
           {
+            "name": "input_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "output_mint",
+            "type": "pubkey"
+          },
+          {
             "name": "is_swap_base_out",
             "type": "bool"
           },

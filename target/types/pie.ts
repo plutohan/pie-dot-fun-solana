@@ -3089,6 +3089,14 @@ export type Pie = {
             "type": "pubkey"
           },
           {
+            "name": "inputMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "outputMint",
+            "type": "pubkey"
+          },
+          {
             "name": "isSwapBaseOut",
             "type": "bool"
           },
