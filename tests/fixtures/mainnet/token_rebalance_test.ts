@@ -31,9 +31,18 @@ export const rebalanceInfo: RebalanceInfo[] = [
     isSwapBaseOut: false,
     amount: "1000000",
   },
-
   {
-    name: "BONK/SOL",
+    name: "FART/SOL",
+    inputMint: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+    outputMint: "So11111111111111111111111111111111111111112",
+    poolId: "Bzc9NZfMqkXR6fz1DBph7BDf9BroyEf6pnzESP7v5iiw",
+    lut: "3isXNCebHbXpEL1Y711t8XyUTtR1ArbWeM5ouozP2PRE",
+    type: "amm",
+    isSwapBaseOut: true,
+    amount: "1000000",
+  },
+  {
+    name: "SOL/BONK",
     inputMint: "So11111111111111111111111111111111111111112",
     outputMint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
     poolId: "BjZKz1z4UMjJPvPfKwTwjPErVBWnewnJFvcZB6minymy",
@@ -43,13 +52,13 @@ export const rebalanceInfo: RebalanceInfo[] = [
     amount: "100000",
   },
   {
-    name: "POPCAT/SOL",
+    name: "SOL/POPCAT",
     inputMint: "So11111111111111111111111111111111111111112",
     outputMint: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
     poolId: "FRhB8L7Y9Qq41qZXYLtC2nw8An1RJfLLxRF2x9RwLLMo",
     lut: "dwRAeGZxQnS5ZfCsas3gtcVXLCgFVfk82nbxhPXvofz",
     type: "amm",
     isSwapBaseOut: true,
-    amount: "50000",
+    amount: "100000",
   },
 ];

@@ -1601,8 +1601,6 @@ export class PieProgram {
           ? new PublicKey(poolKeys.mintB.address)
           : new PublicKey(poolKeys.mintA.address),
         tokenMint: new PublicKey(poolKeys.mintA.address),
-        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
       })
       .remainingAccounts(
         await buildClmmRemainingAccounts(
@@ -2139,6 +2137,7 @@ export class PieProgram {
     const tipInformation = await getTipInformation();
     const serializedTxs: string[] = [];
     let tx = new Transaction();
+
     let addressLookupTablesAccount: AddressLookupTableAccount[] =
       await this.generateLookupTableAccount();
     const swapData: Promise<SwapCompute>[] = [];
@@ -2155,22 +2154,7 @@ export class PieProgram {
     });
 
     const swapDataResult = await Promise.all(swapData);
-
     checkSwapDataError(swapDataResult);
-
-    //@TODO remove this when other pools are available
-    for (let i = 0; i < swapDataResult.length; i++) {
-      if (
-        swapDataResult[i].data.routePlan[0].poolId !== rebalanceInfo[i].poolId
-      ) {
-        console.log(
-          `${rebalanceInfo[i].name}'s AMM has little liquidity, increase slippage`
-        );
-        swapDataResult[i].data.otherAmountThreshold = String(
-          Number(swapDataResult[i].data.otherAmountThreshold) * 2
-        );
-      }
-    }
 
     const blockhash = await this.connection.getLatestBlockhash();
 
@@ -2205,6 +2189,7 @@ export class PieProgram {
         serializedTxs.push(serializedTx);
 
         tx = new Transaction();
+
         addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
@@ -2224,7 +2209,11 @@ export class PieProgram {
             basketId,
             inputMint: new PublicKey(rebalanceInfo[i].inputMint),
             outputMint: new PublicKey(rebalanceInfo[i].outputMint),
-            createTokenAccount: false,
+            // do not create token account for native mint because it is already created in the startRebalanceTx
+            createTokenAccount:
+              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
+                ? false
+                : true,
           });
           tx.add(rebalanceTx);
           break;
@@ -2238,8 +2227,13 @@ export class PieProgram {
             amount: new BN(rebalanceInfo[i].amount),
             poolId: rebalanceInfo[i].poolId,
             slippage,
+            createTokenAccount:
+              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
+                ? false
+                : true,
           });
           tx.add(rebalanceTx);
+
           break;
         case "cpmm":
           rebalanceTx = await this.executeRebalancingCpmm({
@@ -2255,7 +2249,10 @@ export class PieProgram {
             poolId: rebalanceInfo[i].poolId,
             inputMint: new PublicKey(rebalanceInfo[i].inputMint),
             outputMint: new PublicKey(rebalanceInfo[i].outputMint),
-            createTokenAccount: false,
+            createTokenAccount:
+              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
+                ? false
+                : true,
           });
           tx.add(rebalanceTx);
           break;
