@@ -1,4 +1,4 @@
-use crate::constant::PROGRAM_STATE;
+use crate::constant::{INITIAL_ADMIN, PROGRAM_STATE};
 use crate::error::PieError;
 use crate::ProgramState;
 use anchor_lang::prelude::*;
@@ -30,7 +30,7 @@ pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
     program_state.bump = ctx.bumps.program_state;
     program_state.is_initialized = true;
 
-    program_state.admin = crate::initial_admin::id();
+    program_state.admin = INITIAL_ADMIN;
 
     program_state.basket_counter = 0;
 

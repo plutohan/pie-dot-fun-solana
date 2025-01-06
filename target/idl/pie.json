@@ -988,14 +988,6 @@
           "writable": true
         },
         {
-          "name": "platform_fee_token_account",
-          "writable": true
-        },
-        {
-          "name": "creator_token_account",
-          "writable": true
-        },
-        {
           "name": "clmm_program",
           "address": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
         },

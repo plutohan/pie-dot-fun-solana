@@ -9,7 +9,7 @@ export const rebalanceInfo: RebalanceInfo[] = [
     lut: "CsMB14knX2J2ywv7s2n9AawG4LnQyTT5i3qKRkrbEDSV",
     type: "cpmm",
     isSwapBaseOut: false,
-    amount: "100000",
+    amount: "500000",
   },
   {
     name: "WIF/SOL",

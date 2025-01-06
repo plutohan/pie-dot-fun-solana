@@ -30,6 +30,7 @@ import {
 import {
   getExplorerUrl,
   getOrCreateTokenAccountTx,
+  isValidTransaction,
   showBasketConfigTable,
   showBasketVaultsTable,
   startPollingJitoBundle,
@@ -55,7 +56,7 @@ describe("pie", () => {
     microLamports: priorityFee,
   });
   const swapsPerBundle = 3;
-  const slippage = 20;
+  const slippage = 50;
 
   beforeEach(async () => {
     await pieProgram.init();
@@ -240,7 +241,7 @@ describe("pie", () => {
       basketId,
     });
 
-    if (tx.instructions.length > 0) {
+    if (isValidTransaction(tx)) {
       console.log("creating vault accounts..");
       tx.add(priorityFeeInstruction);
       const creatingVaultsTxResult = await sendAndConfirmTransaction(
@@ -545,7 +546,7 @@ describe("pie", () => {
       isSwapBaseOut: false,
       amountIn: availableAmount.div(new BN(2)).toString(),
       amountOut: "0",
-      poolId: AI16Z.ammId,
+      poolId: AI16Z.poolId,
       basketId,
       inputMint: new PublicKey(AI16Z.mint),
       outputMint: NATIVE_MINT,
@@ -610,7 +611,7 @@ describe("pie", () => {
       isSwapBaseOut: false,
       amount: availableAmount,
       slippage: 100,
-      poolId: clmmPoolToken.ammId,
+      poolId: clmmPoolToken.poolId,
       basketId,
       inputMint: new PublicKey(clmmPoolToken.mint),
       outputMint: NATIVE_MINT,
