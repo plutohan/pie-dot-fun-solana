@@ -648,10 +648,10 @@ export class PieProgram {
       ? [poolKeys.mintA.address, poolKeys.mintB.address]
       : [poolKeys.mintB.address, poolKeys.mintA.address];
 
-    const inputTokenAccount = getAssociatedTokenAddressSync(
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
       new PublicKey(mintIn),
-      user,
-      false
+      user
     );
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
@@ -772,10 +772,11 @@ export class PieProgram {
       new PublicKey(poolInfo.mintB.address),
     ];
     const baseIn = NATIVE_MINT.toString() === poolKeys.mintA.address;
-    const inputTokenAccount = getAssociatedTokenAddressSync(
+
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
       new PublicKey(NATIVE_MINT),
-      user,
-      false
+      user
     );
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
@@ -869,10 +870,11 @@ export class PieProgram {
       : [poolKeys.mintB.address, poolKeys.mintA.address];
 
     const basketConfig = this.basketConfigPDA({ basketId });
-    const inputTokenAccount = getAssociatedTokenAddressSync(
+
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
       new PublicKey(mintIn),
-      basketConfig,
-      true
+      basketConfig
     );
 
     const { tokenAccount: outputTokenAccount, tx: createNativeMintATATx } =
@@ -882,6 +884,10 @@ export class PieProgram {
         user,
         user
       );
+
+    if (createNativeMintATA && isValidTransaction(createNativeMintATATx)) {
+      tx.add(createNativeMintATATx);
+    }
 
     const sellComponentTx = await this.program.methods
       .sellComponent(new BN(amountIn), new BN(minimumAmountOut))
@@ -914,9 +920,10 @@ export class PieProgram {
       .transaction();
     tx.add(sellComponentTx);
 
-    if (createNativeMintATA) {
-      tx.add(createNativeMintATATx);
+    if (unwrapSol) {
+      tx.add(createCloseAccountInstruction(outputTokenAccount, user, user));
     }
+
     return tx;
   }
 
@@ -936,7 +943,8 @@ export class PieProgram {
     amountIn,
     minimumAmountOut,
     poolId,
-    unwrappedSol,
+    createNativeMintATA,
+    unwrapSol,
   }: {
     user: PublicKey;
     basketId: BN;
@@ -944,7 +952,8 @@ export class PieProgram {
     amountIn: number;
     minimumAmountOut: number;
     poolId: string;
-    unwrappedSol: boolean;
+    createNativeMintATA?: boolean;
+    unwrapSol?: boolean;
   }): Promise<Transaction> {
     const tx = new Transaction();
     const basketConfig = this.basketConfigPDA({ basketId });
@@ -965,10 +974,10 @@ export class PieProgram {
       ? [poolKeys.mintA.address, poolKeys.mintB.address]
       : [poolKeys.mintB.address, poolKeys.mintA.address];
 
-    const inputTokenAccount = getAssociatedTokenAddressSync(
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
       new PublicKey(mintIn),
-      basketConfig,
-      true
+      basketConfig
     );
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
@@ -979,11 +988,10 @@ export class PieProgram {
         user
       );
 
-    if (isValidTransaction(outputTx)) {
+    if (createNativeMintATA && isValidTransaction(outputTx)) {
       tx.add(outputTx);
     }
-    const wrappedSolIx = await wrappedSOLInstruction(user, amountIn);
-    tx.add(...wrappedSolIx);
+
     const sellComponentTx = await this.program.methods
       .sellComponentCpmm(new BN(amountIn), new BN(minimumAmountOut))
       .accountsPartial({
@@ -1018,7 +1026,8 @@ export class PieProgram {
       .transaction();
 
     tx.add(sellComponentTx);
-    if (unwrappedSol) {
+
+    if (unwrapSol) {
       tx.add(createCloseAccountInstruction(outputTokenAccount, user, user));
     }
     return tx;
@@ -1039,14 +1048,18 @@ export class PieProgram {
     amountIn,
     inputMint,
     poolId,
-    unwrappedSol,
+    slippage,
+    createNativeMintATA,
+    unwrapSol,
   }: {
     user: PublicKey;
     basketId: BN;
     amountIn: BN;
     inputMint: PublicKey;
     poolId: string;
-    unwrappedSol: boolean;
+    slippage: number;
+    createNativeMintATA?: boolean;
+    unwrapSol?: boolean;
   }): Promise<Transaction> {
     const tx = new Transaction();
     const basketConfig = this.basketConfigPDA({ basketId });
@@ -1064,7 +1077,7 @@ export class PieProgram {
         tickArrayCache: tickCache[poolId],
         amountIn,
         tokenOut: poolInfo[baseIn ? "mintB" : "mintA"],
-        slippage: 0.01,
+        slippage,
         epochInfo: await this.raydium.fetchEpochInfo(),
       });
 
@@ -1078,19 +1091,19 @@ export class PieProgram {
       new PublicKey(poolInfo.id),
     ];
 
-    const [mintAVault, mintBVault] = [
-      new PublicKey(poolKeys.vault.A),
-      new PublicKey(poolKeys.vault.B),
-    ];
+    // const [mintAVault, mintBVault] = [
+    //   new PublicKey(poolKeys.vault.A),
+    //   new PublicKey(poolKeys.vault.B),
+    // ];
     const [mintA, mintB] = [
       new PublicKey(poolInfo.mintA.address),
       new PublicKey(poolInfo.mintB.address),
     ];
-    const inputTokenAccount = getAssociatedTokenAddressSync(
+
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
       new PublicKey(inputMint),
-      basketConfig,
-      true,
-      TOKEN_2022_PROGRAM_ID
+      basketConfig
     );
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
@@ -1101,12 +1114,15 @@ export class PieProgram {
         user
       );
 
-    if (isValidTransaction(outputTx)) {
+    if (createNativeMintATA && isValidTransaction(outputTx)) {
       tx.add(outputTx);
     }
 
+    // @TODO should be minAmountOut.amount.raw but I get negative value
+    const otherAmountThreshold = new BN(0);
+
     const sellComponentTx = await this.program.methods
-      .sellComponentClmm(amountIn, minAmountOut.amount.raw, sqrtPriceLimitX64)
+      .sellComponentClmm(amountIn, otherAmountThreshold, sqrtPriceLimitX64)
       .accountsPartial({
         user: user,
         programState: this.programStatePDA,
@@ -1130,11 +1146,7 @@ export class PieProgram {
         ),
         inputVaultMint: baseIn ? mintA : mintB,
         outputVaultMint: baseIn ? mintB : mintA,
-
-        observationState: getPdaObservationId(
-          new PublicKey(poolInfo.programId),
-          new PublicKey(poolInfo.id)
-        ).publicKey,
+        observationState: new PublicKey(clmmPoolInfo.observationId),
       })
       .remainingAccounts(
         await buildClmmRemainingAccounts(
@@ -1145,7 +1157,8 @@ export class PieProgram {
       .transaction();
 
     tx.add(sellComponentTx);
-    if (unwrappedSol) {
+
+    if (unwrapSol) {
       tx.add(createCloseAccountInstruction(outputTokenAccount, user, user));
     }
     return tx;
@@ -2056,11 +2069,12 @@ export class PieProgram {
     const { tokenAccount: nativeMintAta, tx: createNativeMintATATx } =
       await getOrCreateNativeMintATA(this.connection, user, user);
 
+    if (isValidTransaction(createNativeMintATATx)) {
+      tx.add(createNativeMintATATx);
+    }
+
     for (let i = 0; i < swapDataResult.length; i++) {
       if (i === 0) {
-        if (createNativeMintATATx.instructions.length > 0) {
-          tx.add(createNativeMintATATx);
-        }
         tx.add(
           await this.redeemBasketToken({ user, basketId, amount: redeemAmount })
         );
@@ -2077,14 +2091,43 @@ export class PieProgram {
         addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
-      const sellComponentTx = await this.sellComponent({
-        user,
-        inputMint: new PublicKey(swapDataResult[i].data.inputMint),
-        basketId,
-        amountIn: Number(swapDataResult[i].data.inputAmount),
-        minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-        ammId: tokenInfo[i].poolId,
-      });
+      let sellComponentTx;
+      switch (tokenInfo[i].type) {
+        case "amm":
+          sellComponentTx = await this.sellComponent({
+            user,
+            inputMint: new PublicKey(swapDataResult[i].data.inputMint),
+            basketId,
+            amountIn: Number(swapDataResult[i].data.inputAmount),
+            minimumAmountOut: Number(
+              swapDataResult[i].data.otherAmountThreshold
+            ),
+            ammId: tokenInfo[i].poolId,
+          });
+          break;
+        case "clmm":
+          sellComponentTx = await this.sellComponentClmm({
+            user,
+            basketId,
+            amountIn: new BN(swapDataResult[i].data.inputAmount),
+            inputMint: new PublicKey(swapDataResult[i].data.inputMint),
+            poolId: tokenInfo[i].poolId,
+            slippage,
+          });
+          break;
+        case "cpmm":
+          sellComponentTx = await this.sellComponentCpmm({
+            user,
+            basketId,
+            inputMint: new PublicKey(swapDataResult[i].data.inputMint),
+            amountIn: Number(swapDataResult[i].data.inputAmount),
+            minimumAmountOut: Number(
+              swapDataResult[i].data.otherAmountThreshold
+            ),
+            poolId: tokenInfo[i].poolId,
+          });
+          break;
+      }
       tx.add(sellComponentTx);
 
       const lut = (
