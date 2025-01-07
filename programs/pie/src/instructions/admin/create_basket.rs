@@ -81,13 +81,10 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     let program_state = &ctx.accounts.program_state;
 
     // Authorization check
-    if !program_state.enable_creator {
-        let current_admin = program_state.admin;
-        if ctx.accounts.creator.key() != current_admin {
-            return Err(PieError::Unauthorized.into());
-        }
+    if !program_state.whitelisted_creators.contains(&ctx.accounts.creator.key()) {
+        return Err(PieError::Unauthorized.into());
     }
-
+    
     // Validate components
     validate_components(&args.components)?;
 
