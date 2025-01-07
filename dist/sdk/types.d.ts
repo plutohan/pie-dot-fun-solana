@@ -15,4 +15,8 @@ export declare interface TokenInfo {
     poolId: string;
     type: "amm" | "clmm" | "cpmm";
 }
+export declare interface DepositOrWithdrawSolInfo {
+    type: "deposit" | "withdraw";
+    amount: number;
+}
 //# sourceMappingURL=types.d.ts.map

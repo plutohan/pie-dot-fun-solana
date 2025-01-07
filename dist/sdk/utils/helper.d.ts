@@ -3,6 +3,7 @@ import { BN } from "@coral-xyz/anchor";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { BasketComponent, PieProgram } from "../pie-program";
 import { Table } from "console-table-printer";
+import { TokenInfo } from "../types";
 export declare function createUserWithLamports(connection: Connection, lamports: number): Promise<Signer>;
 export declare function createNewMint(connection: Connection, creator: Signer, decimals: number): Promise<PublicKey>;
 export declare function mintTokenTo(connection: Connection, tokenMint: PublicKey, mintAuthority: Signer, payer: Signer, to: PublicKey, amount: number): Promise<PublicKey>;
@@ -73,4 +74,5 @@ export declare function checkSwapDataError(swapData: SwapCompute[]): void;
 export declare function isValidTransaction(tx: Transaction): boolean;
 export declare function startPollingJitoBundle(bundleId: string): Promise<void>;
 export declare function caculateTotalAmountWithFee(amount: number, feePercentageInBasisPoints: number): number;
+export declare function getTokenFromTokenInfo(tokenInfo: TokenInfo[], mint: string): TokenInfo;
 //# sourceMappingURL=helper.d.ts.map

@@ -767,6 +767,144 @@
             ]
         },
         {
+            "name": "deposit_wsol",
+            "discriminator": [
+                8,
+                4,
+                29,
+                95,
+                138,
+                193,
+                86,
+                132
+            ],
+            "accounts": [
+                {
+                    "name": "user",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "program_state",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    114,
+                                    111,
+                                    103,
+                                    114,
+                                    97,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    101
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "user_fund",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    117,
+                                    115,
+                                    101,
+                                    114,
+                                    95,
+                                    102,
+                                    117,
+                                    110,
+                                    100
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "user"
+                            },
+                            {
+                                "kind": "account",
+                                "path": "basket_config.id",
+                                "account": "BasketConfig"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "basket_config",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    98,
+                                    97,
+                                    115,
+                                    107,
+                                    101,
+                                    116,
+                                    95,
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "basket_config.id",
+                                "account": "BasketConfig"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "user_wsol_account",
+                    "writable": true
+                },
+                {
+                    "name": "vault_wsol_account",
+                    "writable": true
+                },
+                {
+                    "name": "platform_fee_token_account",
+                    "writable": true
+                },
+                {
+                    "name": "creator_token_account",
+                    "writable": true
+                },
+                {
+                    "name": "token_program",
+                    "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": [
+                {
+                    "name": "amount",
+                    "type": "u64"
+                }
+            ]
+        },
+        {
             "name": "execute_rebalancing",
             "discriminator": [
                 98,
@@ -1247,7 +1385,7 @@
             ],
             "accounts": [
                 {
-                    "name": "admin",
+                    "name": "initializer",
                     "writable": true,
                     "signer": true
                 },
@@ -1282,7 +1420,16 @@
                     "address": "11111111111111111111111111111111"
                 }
             ],
-            "args": []
+            "args": [
+                {
+                    "name": "initial_admin",
+                    "type": "pubkey"
+                },
+                {
+                    "name": "initial_creator",
+                    "type": "pubkey"
+                }
+            ]
         },
         {
             "name": "mint_basket_token",
@@ -2410,6 +2557,202 @@
                     "type": "pubkey"
                 }
             ]
+        },
+        {
+            "name": "update_whitelisted_creators",
+            "discriminator": [
+                81,
+                36,
+                13,
+                65,
+                143,
+                129,
+                14,
+                114
+            ],
+            "accounts": [
+                {
+                    "name": "admin",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "program_state",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    114,
+                                    111,
+                                    103,
+                                    114,
+                                    97,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    101
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": [
+                {
+                    "name": "new_whitelisted_creators",
+                    "type": {
+                        "vec": "pubkey"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "withdraw_wsol",
+            "discriminator": [
+                120,
+                47,
+                248,
+                213,
+                169,
+                214,
+                118,
+                5
+            ],
+            "accounts": [
+                {
+                    "name": "user",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "program_state",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    114,
+                                    111,
+                                    103,
+                                    114,
+                                    97,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    101
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "user_fund",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    117,
+                                    115,
+                                    101,
+                                    114,
+                                    95,
+                                    102,
+                                    117,
+                                    110,
+                                    100
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "user"
+                            },
+                            {
+                                "kind": "account",
+                                "path": "basket_config.id",
+                                "account": "BasketConfig"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "basket_config",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    98,
+                                    97,
+                                    115,
+                                    107,
+                                    101,
+                                    116,
+                                    95,
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "basket_config.id",
+                                "account": "BasketConfig"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "user_wsol_account",
+                    "writable": true
+                },
+                {
+                    "name": "vault_wsol_account",
+                    "writable": true
+                },
+                {
+                    "name": "platform_fee_token_account",
+                    "writable": true
+                },
+                {
+                    "name": "creator_token_account",
+                    "writable": true
+                },
+                {
+                    "name": "token_program",
+                    "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": [
+                {
+                    "name": "amount",
+                    "type": "u64"
+                }
+            ]
         }
     ],
     "accounts": [
@@ -2673,6 +3016,19 @@
                 132,
                 153,
                 70
+            ]
+        },
+        {
+            "name": "UpdateWhitelistedCreatorsEvent",
+            "discriminator": [
+                213,
+                44,
+                255,
+                22,
+                202,
+                153,
+                136,
+                63
             ]
         },
         {
@@ -3413,12 +3769,14 @@
                         "type": "u64"
                     },
                     {
-                        "name": "enable_creator",
+                        "name": "is_initialized",
                         "type": "bool"
                     },
                     {
-                        "name": "is_initialized",
-                        "type": "bool"
+                        "name": "whitelisted_creators",
+                        "type": {
+                            "vec": "pubkey"
+                        }
                     }
                 ]
             }
@@ -3605,6 +3963,26 @@
                     {
                         "name": "new_rebalancer",
                         "type": "pubkey"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "UpdateWhitelistedCreatorsEvent",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "old_whitelisted_creators",
+                        "type": {
+                            "vec": "pubkey"
+                        }
+                    },
+                    {
+                        "name": "new_whitelisted_creators",
+                        "type": {
+                            "vec": "pubkey"
+                        }
                     }
                 ]
             }
