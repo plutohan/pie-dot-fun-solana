@@ -2043,8 +2043,8 @@ export class PieProgram {
           inputMint: component.mint.toBase58(),
           outputMint: NATIVE_MINT.toBase58(),
           amount: component.quantityInSysDecimal
-            .div(new BN(10 ** 6))
             .mul(new BN(redeemAmount))
+            .div(new BN(10 ** 6))
             .toNumber(),
           slippage,
         })
