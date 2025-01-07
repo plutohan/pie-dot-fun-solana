@@ -159,9 +159,15 @@ describe("pie", () => {
       quantityInSysDecimal: new BN(1 * 10 ** 6),
     }));
 
+    // ADD WSOL
+    components.push({
+      mint: NATIVE_MINT,
+      quantityInSysDecimal: new BN(1 * 10 ** 6),
+    });
+
     const createBasketArgs: CreateBasketArgs = {
-      name: "Basket 2",
-      symbol: "B-2",
+      name: "Basket 3",
+      symbol: "B-3",
       uri: "https://pie.xyz/pie",
       components: components,
       rebalancer: admin.publicKey,
@@ -190,10 +196,9 @@ describe("pie", () => {
       `Basket created at tx: ${getExplorerUrl(createBasketTxResult, "mainnet")}`
     );
 
-    console.log("creating lookup tables for each component...");
-
     // @TODO uncomment this when needed
-    const lookupTables = [];
+    // console.log("creating lookup tables for each component...");
+    // const lookupTables = [];
     // for (let i = 0; i < createBasketArgs.components.length; i++) {
     //   console.log(
     //     `creating lookup table for ${i + 1} of ${
@@ -226,8 +231,7 @@ describe("pie", () => {
     //   }
     //   lookupTables.push(lut.toBase58());
     // }
-
-    console.log("lookup tables created:", lookupTables);
+    // console.log("lookup tables created:", lookupTables);
 
     console.log("adding basket to shared lookup table...");
     await pieProgram.addBaksetToSharedLookupTable({
