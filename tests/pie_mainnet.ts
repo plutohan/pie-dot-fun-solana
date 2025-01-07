@@ -68,7 +68,9 @@ describe("pie", () => {
     if (!programState) {
       console.log("initializing program...");
       const initializeTx = await pieProgram.initialize({
+        initializer: admin.publicKey,
         admin: admin.publicKey,
+        creator: admin.publicKey,
       });
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,

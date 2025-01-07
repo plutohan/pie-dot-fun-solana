@@ -17,8 +17,12 @@ pub mod pie {
 
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        instructions::initialize(ctx)?;
+    pub fn initialize(
+        ctx: Context<Initialize>,
+        initial_admin: Pubkey,
+        initial_creator: Pubkey,
+    ) -> Result<()> {
+        instructions::initialize(ctx, initial_admin, initial_creator)?;
         Ok(())
     }
 
@@ -49,6 +53,14 @@ pub mod pie {
         new_platform_fee_percentage: u64,
     ) -> Result<()> {
         instructions::update_fee(ctx, new_creator_fee_percentage, new_platform_fee_percentage)?;
+        Ok(())
+    }
+
+    pub fn update_whitelisted_creators(
+        ctx: Context<UpdateWhitelistedCreatorsContext>,
+        new_whitelisted_creators: Vec<Pubkey>,
+    ) -> Result<()> {
+        instructions::update_whitelisted_creators(ctx, new_whitelisted_creators)?;
         Ok(())
     }
 

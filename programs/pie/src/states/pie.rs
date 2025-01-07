@@ -1,3 +1,4 @@
+use crate::MAX_WHITELISTED_CREATORS;
 use anchor_lang::prelude::*;
 
 #[account]
@@ -8,8 +9,8 @@ pub struct ProgramState {
     pub basket_counter: u64,
     pub creator_fee_percentage: u64,
     pub platform_fee_percentage: u64,
-    pub enable_creator: bool,
     pub is_initialized: bool,
+    pub whitelisted_creators: Vec<Pubkey>,
 }
 
 impl Space for ProgramState {
@@ -20,6 +21,7 @@ impl Space for ProgramState {
         + 8   // basket_counter (u64)
         + 8   // creator_fee_percentage (u64)
         + 8   // platform_fee_percentage (u64)
-        + 1   // enable_creator (bool)
-        + 1; // is_initialized (bool)
+        + 1   // is_initialized (bool)
+        + 4   // vec length
+        + 32 * MAX_WHITELISTED_CREATORS as usize; // vec items
 }

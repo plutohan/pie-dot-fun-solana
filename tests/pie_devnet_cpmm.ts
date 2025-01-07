@@ -52,7 +52,9 @@ describe("pie", () => {
 
     if (!programState) {
       const initializeTx = await pieProgram.initialize({
+        initializer: admin.publicKey,
         admin: admin.publicKey,
+        creator: admin.publicKey,
       });
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,
@@ -370,7 +372,7 @@ describe("pie", () => {
       amountIn: Math.floor(componentToSell.amount.toNumber() / 2),
       minimumAmountOut: 0,
       poolId: tokensCpmm[0].poolId,
-      unwrappedSol: true,
+      unwrapSol: true,
     });
 
     const sellComponentTxResult = await sendAndConfirmTransaction(
@@ -450,7 +452,8 @@ describe("pie", () => {
       amountOut: "0",
       poolId: tokensCpmm[0].poolId,
       basketId,
-      tokenMint: new PublicKey(tokensCpmm[0].mint),
+      inputMint: new PublicKey(tokensCpmm[0].mint),
+      outputMint: NATIVE_MINT,
     });
 
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
@@ -499,7 +502,8 @@ describe("pie", () => {
       amountOut: "20",
       ammId: newBasketBuy.ammId,
       basketId,
-      tokenMint: new PublicKey(newBasketBuy.mint),
+      inputMint: NATIVE_MINT,
+      outputMint: new PublicKey(newBasketBuy.mint),
     });
 
     const executeRebalanceTxResult = await sendAndConfirmTransaction(
