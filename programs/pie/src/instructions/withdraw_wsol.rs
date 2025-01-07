@@ -110,7 +110,7 @@ pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
 
     //transfer fees for creator and platform fee
     transfer_fees(
-        &ctx.accounts.basket_config.to_account_info(),
+        &ctx.accounts.user_wsol_account.to_account_info(),
         &ctx.accounts.platform_fee_token_account.to_account_info(),
         &ctx.accounts.creator_token_account.to_account_info(),
         &ctx.accounts.user.to_account_info(),
