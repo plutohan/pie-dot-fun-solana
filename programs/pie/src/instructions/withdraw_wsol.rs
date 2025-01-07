@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct WithdrawSol<'info> {
+pub struct WithdrawWsol<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
@@ -20,9 +20,11 @@ pub struct WithdrawSol<'info> {
     pub program_state: Box<Account<'info, ProgramState>>,
     
     #[account(
-        mut,
+        init_if_needed,
+        payer = user,
+        space = UserFund::INIT_SPACE,
         seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
-        bump = user_fund.bump
+        bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
 
@@ -72,7 +74,7 @@ pub struct WithdrawWsolEvent {
     pub amount: u64,
 }
 
-pub fn withdraw_wsol(ctx: Context<WithdrawSol>, amount: u64) -> Result<()> {
+pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
 
     let component = user_fund
@@ -108,7 +110,7 @@ pub fn withdraw_wsol(ctx: Context<WithdrawSol>, amount: u64) -> Result<()> {
 
     //transfer fees for creator and platform fee
     transfer_fees(
-        &ctx.accounts.basket_config.to_account_info(),
+        &ctx.accounts.user_wsol_account.to_account_info(),
         &ctx.accounts.platform_fee_token_account.to_account_info(),
         &ctx.accounts.creator_token_account.to_account_info(),
         &ctx.accounts.user.to_account_info(),

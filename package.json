@@ -23,7 +23,7 @@
     "test-mainnet": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_mainnet.ts",
     "test-server": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/pie_server.ts",
     "deploy-devnet": "anchor build -- --features devnet && anchor deploy --program-name pie --provider.cluster https://api.devnet.solana.com",
-    "deploy-mainnet": "anchor build && anchor deploy --program-name pie --provider.cluster mainnet --provider.wallet .local/mainnet/admin.json -- --max-sign-attempts 100 --with-compute-unit-price 1500000",
+    "deploy-mainnet": "anchor build && anchor deploy --program-name pie --provider.cluster mainnet --provider.wallet .local/mainnet/admin.json -- --max-sign-attempts 10 --with-compute-unit-price 2000000",
     "rebuild-devnet": "rm -rf target && mkdir -p target/deploy && cp -f public/pie-keypair.json target/deploy/pie-keypair.json && anchor keys sync && anchor build -- --features devnet",
     "rebuild-mainnet": "rm -rf target && mkdir -p target/deploy && cp -f .local/mainnet/pie-keypair.json target/deploy/pie-keypair.json && anchor keys sync && anchor build"
   },

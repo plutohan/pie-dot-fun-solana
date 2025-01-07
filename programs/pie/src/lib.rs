@@ -112,6 +112,11 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
+        instructions::deposit_wsol(ctx, amount)?;
+        Ok(())
+    }
+
     pub fn sell_component(
         ctx: Context<SellComponentContext>,
         amount_in: u64,
@@ -142,6 +147,11 @@ pub mod pie {
             other_amount_threshold,
             sqrt_price_limit_x64,
         )?;
+        Ok(())
+    }
+
+    pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
+        instructions::withdraw_wsol(ctx, amount)?;
         Ok(())
     }
 
