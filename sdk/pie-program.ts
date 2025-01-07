@@ -283,14 +283,6 @@ export class PieProgram {
     const tokenMints = [];
     const tokenBalances: Promise<number>[] = [];
 
-    tokenMints.push(NATIVE_MINT);
-    tokenBalances.push(
-      this.getTokenBalance({
-        mint: NATIVE_MINT,
-        owner: this.basketConfigPDA({ basketId }),
-      })
-    );
-
     for (const component of basketConfig.components) {
       tokenMints.push(new PublicKey(component.mint));
       tokenBalances.push(
