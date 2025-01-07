@@ -314,10 +314,18 @@ export class PieProgram {
    * @param admin - The admin account.
    * @returns A promise that resolves to a transaction.
    */
-  async initialize({ admin }: { admin: PublicKey }): Promise<Transaction> {
+  async initialize({
+    initializer,
+    admin,
+    creator,
+  }: {
+    initializer: PublicKey;
+    admin: PublicKey;
+    creator: PublicKey;
+  }): Promise<Transaction> {
     const tx = await this.program.methods
-      .initialize()
-      .accounts({ admin })
+      .initialize(admin, creator)
+      .accounts({ initializer })
       .transaction();
     return tx;
   }
@@ -420,6 +428,19 @@ export class PieProgram {
   }): Promise<Transaction> {
     return await this.program.methods
       .updatePlatformFeeWallet(newPlatformFeeWallet)
+      .accounts({ admin, programState: this.programStatePDA })
+      .transaction();
+  }
+
+  async updateWhitelistedCreators({
+    admin,
+    newWhitelistedCreators,
+  }: {
+    admin: PublicKey;
+    newWhitelistedCreators: PublicKey[];
+  }): Promise<Transaction> {
+    return await this.program.methods
+      .updateWhitelistedCreators(newWhitelistedCreators)
       .accounts({ admin, programState: this.programStatePDA })
       .transaction();
   }
