@@ -518,6 +518,61 @@ export class PieProgram {
   }
 
   /**
+   * Deposits WSOL into the basket.
+   * @param user - The user account.
+   * @param basketId - The basket ID.
+   * @param amount - The amount of WSOL to deposit.
+   * @returns A promise that resolves to a transaction.
+   */
+  async depositWsol({
+    user,
+    basketId,
+    amount,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amount: number;
+  }): Promise<Transaction> {
+    const basketConfig = this.basketConfigPDA({ basketId });
+    const tx = new Transaction();
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
+      NATIVE_MINT,
+      user
+    );
+
+    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+      await getOrCreateTokenAccountTx(
+        this.connection,
+        NATIVE_MINT,
+        user,
+        basketConfig
+      );
+
+    if (isValidTransaction(outputTx)) {
+      tx.add(outputTx);
+    }
+
+    const depositWsolTx = await this.program.methods
+      .depositWsol(new BN(amount))
+      .accountsPartial({
+        user,
+        programState: this.programStatePDA,
+        userFund: this.userFundPDA({ user, basketId }),
+        basketConfig: basketConfig,
+        userWsolAccount: inputTokenAccount,
+        vaultWsolAccount: outputTokenAccount,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
+      })
+      .transaction();
+
+    tx.add(depositWsolTx);
+
+    return tx;
+  }
+
+  /**
    * Buys a component.
    * @param userSourceOwner - The user source owner account.
    * @param basketId - The basket ID.
@@ -833,7 +888,6 @@ export class PieProgram {
    * @param basketId - The basket ID.
    * @param amountIn - The amount in.
    * @param minimumAmountOut - The minimum amount out.
-   * @param raydium - The Raydium instance.
    * @param ammId - The AMM ID.
    * @returns A promise that resolves to a transaction.
    */
@@ -1164,6 +1218,60 @@ export class PieProgram {
     return tx;
   }
 
+  /**
+   * Deposits WSOL into the basket.
+   * @param user - The user account.
+   * @param basketId - The basket ID.
+   * @param amount - The amount of WSOL to deposit.
+   * @returns A promise that resolves to a transaction.
+   */
+  async withdrawWsol({
+    user,
+    basketId,
+    amount,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amount: number;
+  }): Promise<Transaction> {
+    const basketConfig = this.basketConfigPDA({ basketId });
+    const tx = new Transaction();
+    const inputTokenAccount = await getTokenAccount(
+      this.connection,
+      NATIVE_MINT,
+      user
+    );
+
+    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+      await getOrCreateTokenAccountTx(
+        this.connection,
+        NATIVE_MINT,
+        user,
+        basketConfig
+      );
+
+    if (isValidTransaction(outputTx)) {
+      tx.add(outputTx);
+    }
+
+    const withdrawWsolTx = await this.program.methods
+      .withdrawWsol(new BN(amount))
+      .accountsPartial({
+        user,
+        programState: this.programStatePDA,
+        userFund: this.userFundPDA({ user, basketId }),
+        basketConfig: basketConfig,
+        userWsolAccount: inputTokenAccount,
+        vaultWsolAccount: outputTokenAccount,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
+      })
+      .transaction();
+
+    tx.add(withdrawWsolTx);
+
+    return tx;
+  }
   /**
    * Mints a basket token.
    * @param user - The user account.

@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct WithdrawSol<'info> {
+pub struct WithdrawWsol<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
@@ -72,7 +72,7 @@ pub struct WithdrawWsolEvent {
     pub amount: u64,
 }
 
-pub fn withdraw_wsol(ctx: Context<WithdrawSol>, amount: u64) -> Result<()> {
+pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
     let user_fund = &mut ctx.accounts.user_fund;
 
     let component = user_fund
