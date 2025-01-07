@@ -83,8 +83,10 @@ export declare class PieProgram {
      * @param admin - The admin account.
      * @returns A promise that resolves to a transaction.
      */
-    initialize({ admin }: {
+    initialize({ initializer, admin, creator, }: {
+        initializer: PublicKey;
         admin: PublicKey;
+        creator: PublicKey;
     }): Promise<Transaction>;
     addBaksetToSharedLookupTable({ basketId, admin, }: {
         basketId: BN;
@@ -132,6 +134,10 @@ export declare class PieProgram {
         admin: PublicKey;
         newPlatformFeeWallet: PublicKey;
     }): Promise<Transaction>;
+    updateWhitelistedCreators({ admin, newWhitelistedCreators, }: {
+        admin: PublicKey;
+        newWhitelistedCreators: PublicKey[];
+    }): Promise<Transaction>;
     /**
      * Creates vaults account for all basket.
      * @param creator - The creator account.
@@ -170,6 +176,18 @@ export declare class PieProgram {
         creator: PublicKey;
         basketId: BN;
         newRebalancer: PublicKey;
+    }): Promise<Transaction>;
+    /**
+     * Deposits WSOL into the basket.
+     * @param user - The user account.
+     * @param basketId - The basket ID.
+     * @param amount - The amount of WSOL to deposit.
+     * @returns A promise that resolves to a transaction.
+     */
+    depositWsol({ user, basketId, amount, }: {
+        user: PublicKey;
+        basketId: BN;
+        amount: number;
     }): Promise<Transaction>;
     /**
      * Buys a component.
@@ -227,7 +245,6 @@ export declare class PieProgram {
      * @param basketId - The basket ID.
      * @param amountIn - The amount in.
      * @param minimumAmountOut - The minimum amount out.
-     * @param raydium - The Raydium instance.
      * @param ammId - The AMM ID.
      * @returns A promise that resolves to a transaction.
      */
@@ -278,6 +295,18 @@ export declare class PieProgram {
         slippage: number;
         createNativeMintATA?: boolean;
         unwrapSol?: boolean;
+    }): Promise<Transaction>;
+    /**
+     * Deposits WSOL into the basket.
+     * @param user - The user account.
+     * @param basketId - The basket ID.
+     * @param amount - The amount of WSOL to deposit.
+     * @returns A promise that resolves to a transaction.
+     */
+    withdrawWsol({ user, basketId, amount, }: {
+        user: PublicKey;
+        basketId: BN;
+        amount: number;
     }): Promise<Transaction>;
     /**
      * Mints a basket token.

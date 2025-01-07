@@ -154,11 +154,6 @@ class PieProgram {
         const basketConfig = await this.getBasketConfig({ basketId });
         const tokenMints = [];
         const tokenBalances = [];
-        tokenMints.push(spl_token_1.NATIVE_MINT);
-        tokenBalances.push(this.getTokenBalance({
-            mint: spl_token_1.NATIVE_MINT,
-            owner: this.basketConfigPDA({ basketId }),
-        }));
         for (const component of basketConfig.components) {
             tokenMints.push(new web3_js_1.PublicKey(component.mint));
             tokenBalances.push(this.getTokenBalance({
@@ -177,10 +172,10 @@ class PieProgram {
      * @param admin - The admin account.
      * @returns A promise that resolves to a transaction.
      */
-    async initialize({ admin }) {
+    async initialize({ initializer, admin, creator, }) {
         const tx = await this.program.methods
-            .initialize()
-            .accounts({ admin })
+            .initialize(admin, creator)
+            .accounts({ initializer })
             .transaction();
         return tx;
     }
@@ -190,7 +185,13 @@ class PieProgram {
         const creatorFeeTokenAccount = await this.getCreatorFeeTokenAccount({
             basketId,
         });
-        await (0, lookupTable_1.addAddressesToTable)(this.connection, admin, new web3_js_1.PublicKey(this.sharedLookupTable), [basketConfigPDA, basketMintPDA, creatorFeeTokenAccount]);
+        const basketWsolAccount = await (0, helper_1.getTokenAccount)(this.connection, spl_token_1.NATIVE_MINT, basketConfigPDA);
+        await (0, lookupTable_1.addAddressesToTable)(this.connection, admin, new web3_js_1.PublicKey(this.sharedLookupTable), [
+            basketConfigPDA,
+            basketMintPDA,
+            creatorFeeTokenAccount,
+            basketWsolAccount,
+        ]);
     }
     /**
      * Transfers the admin role to a new account.
@@ -238,6 +239,12 @@ class PieProgram {
     async updatePlatformFeeWallet({ admin, newPlatformFeeWallet, }) {
         return await this.program.methods
             .updatePlatformFeeWallet(newPlatformFeeWallet)
+            .accounts({ admin, programState: this.programStatePDA })
+            .transaction();
+    }
+    async updateWhitelistedCreators({ admin, newWhitelistedCreators, }) {
+        return await this.program.methods
+            .updateWhitelistedCreators(newWhitelistedCreators)
             .accounts({ admin, programState: this.programStatePDA })
             .transaction();
     }
@@ -295,6 +302,37 @@ class PieProgram {
             basketConfig: this.basketConfigPDA({ basketId }),
         })
             .transaction();
+    }
+    /**
+     * Deposits WSOL into the basket.
+     * @param user - The user account.
+     * @param basketId - The basket ID.
+     * @param amount - The amount of WSOL to deposit.
+     * @returns A promise that resolves to a transaction.
+     */
+    async depositWsol({ user, basketId, amount, }) {
+        const basketConfig = this.basketConfigPDA({ basketId });
+        const tx = new web3_js_1.Transaction();
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, spl_token_1.NATIVE_MINT, user);
+        const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, spl_token_1.NATIVE_MINT, user, basketConfig);
+        if ((0, helper_1.isValidTransaction)(outputTx)) {
+            tx.add(outputTx);
+        }
+        const depositWsolTx = await this.program.methods
+            .depositWsol(new anchor_1.BN(amount))
+            .accountsPartial({
+            user,
+            programState: this.programStatePDA,
+            userFund: this.userFundPDA({ user, basketId }),
+            basketConfig: basketConfig,
+            userWsolAccount: inputTokenAccount,
+            vaultWsolAccount: outputTokenAccount,
+            platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+            creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
+        })
+            .transaction();
+        tx.add(depositWsolTx);
+        return tx;
     }
     /**
      * Buys a component.
@@ -498,7 +536,6 @@ class PieProgram {
      * @param basketId - The basket ID.
      * @param amountIn - The amount in.
      * @param minimumAmountOut - The minimum amount out.
-     * @param raydium - The Raydium instance.
      * @param ammId - The AMM ID.
      * @returns A promise that resolves to a transaction.
      */
@@ -690,6 +727,37 @@ class PieProgram {
         if (unwrapSol) {
             tx.add((0, spl_token_1.createCloseAccountInstruction)(outputTokenAccount, user, user));
         }
+        return tx;
+    }
+    /**
+     * Deposits WSOL into the basket.
+     * @param user - The user account.
+     * @param basketId - The basket ID.
+     * @param amount - The amount of WSOL to deposit.
+     * @returns A promise that resolves to a transaction.
+     */
+    async withdrawWsol({ user, basketId, amount, }) {
+        const basketConfig = this.basketConfigPDA({ basketId });
+        const tx = new web3_js_1.Transaction();
+        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, spl_token_1.NATIVE_MINT, user);
+        const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, spl_token_1.NATIVE_MINT, user, basketConfig);
+        if ((0, helper_1.isValidTransaction)(outputTx)) {
+            tx.add(outputTx);
+        }
+        const withdrawWsolTx = await this.program.methods
+            .withdrawWsol(new anchor_1.BN(amount))
+            .accountsPartial({
+            user,
+            programState: this.programStatePDA,
+            userFund: this.userFundPDA({ user, basketId }),
+            basketConfig: basketConfig,
+            userWsolAccount: inputTokenAccount,
+            vaultWsolAccount: outputTokenAccount,
+            platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+            creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
+        })
+            .transaction();
+        tx.add(withdrawWsolTx);
         return tx;
     }
     /**
@@ -1116,29 +1184,45 @@ class PieProgram {
         const recentBlockhash = await this.connection.getLatestBlockhash("finalized");
         const basketConfigData = await this.getBasketConfig({ basketId });
         const swapData = [];
+        let depositData;
         basketConfigData.components.forEach((component) => {
-            swapData.push((0, helper_1.getSwapData)({
-                isSwapBaseOut: true,
-                inputMint: spl_token_1.NATIVE_MINT.toBase58(),
-                outputMint: component.mint.toBase58(),
-                amount: component.quantityInSysDecimal
-                    .mul(new anchor_1.BN(mintAmount))
-                    .div(new anchor_1.BN(10 ** 6))
-                    .toNumber(),
-                slippage,
-            }));
+            if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
+                depositData = {
+                    type: "deposit",
+                    amount: component.quantityInSysDecimal
+                        .mul(new anchor_1.BN(mintAmount))
+                        .div(new anchor_1.BN(10 ** 6))
+                        .toNumber(),
+                };
+            }
+            else {
+                swapData.push((0, helper_1.getSwapData)({
+                    isSwapBaseOut: true,
+                    inputMint: spl_token_1.NATIVE_MINT.toBase58(),
+                    outputMint: component.mint.toBase58(),
+                    amount: component.quantityInSysDecimal
+                        .mul(new anchor_1.BN(mintAmount))
+                        .div(new anchor_1.BN(10 ** 6))
+                        .toNumber(),
+                    slippage,
+                }));
+            }
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkSwapDataError)(swapDataResult);
         //@TODO remove this when other pools are available
-        for (let i = 0; i < swapDataResult.length; i++) {
-            if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
-                console.log(`${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`);
-                swapDataResult[i].data.otherAmountThreshold = String(Number(swapDataResult[i].data.otherAmountThreshold) * 10);
-            }
-        }
+        // for (let i = 0; i < swapDataResult.length; i++) {
+        //   if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
+        //     console.log(
+        //       `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
+        //     );
+        //     swapDataResult[i].data.otherAmountThreshold = String(
+        //       Number(swapDataResult[i].data.otherAmountThreshold) * 10
+        //     );
+        //   }
+        // }
         // Calculate total amount needed
-        const totalAmountIn = swapDataResult.reduce((acc, curr) => acc + Number(curr.data.otherAmountThreshold), 0);
+        const totalAmountIn = swapDataResult.reduce((acc, curr) => acc + Number(curr.data.otherAmountThreshold), 0) + depositData?.amount;
         // Create WSOL account and wrap SOL
         const { tokenAccount: wsolAccount, tx: createWsolAtaTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, user);
         if ((0, helper_1.isValidTransaction)(createWsolAtaTx)) {
@@ -1146,6 +1230,15 @@ class PieProgram {
         }
         const wrappedSolIx = await (0, helper_1.wrappedSOLInstruction)(user, (0, helper_1.caculateTotalAmountWithFee)(totalAmountIn, feePercentageInBasisPoints));
         tx.add(...wrappedSolIx);
+        if (depositData) {
+            const depositIx = await this.depositWsol({
+                user,
+                basketId,
+                amount: depositData.amount,
+            });
+            tx.add(depositIx);
+            tx.add(web3_js_1.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1500000 }));
+        }
         // Process each component
         for (let i = 0; i < swapDataResult.length; i++) {
             if (i > 0 && i % swapsPerBundle === 0) {
@@ -1159,15 +1252,16 @@ class PieProgram {
                 tx = new web3_js_1.Transaction();
                 addressLookupTablesAccount = await this.generateLookupTableAccount();
             }
+            const token = (0, helper_1.getTokenFromTokenInfo)(tokenInfo, swapDataResult[i].data.outputMint);
             let buyComponentTx;
-            switch (tokenInfo[i].type) {
+            switch (token.type) {
                 case "amm":
                     buyComponentTx = await this.buyComponent({
                         userSourceOwner: user,
                         basketId,
                         maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
                         amountOut: Number(swapDataResult[i].data.outputAmount),
-                        ammId: tokenInfo[i].poolId,
+                        ammId: token.poolId,
                         unwrapSol: false,
                     });
                     break;
@@ -1176,8 +1270,8 @@ class PieProgram {
                         user,
                         basketId,
                         amountOut: new anchor_1.BN(swapDataResult[i].data.outputAmount),
-                        outputMint: new web3_js_1.PublicKey(tokenInfo[i].mint),
-                        poolId: tokenInfo[i].poolId,
+                        outputMint: new web3_js_1.PublicKey(token.mint),
+                        poolId: token.poolId,
                         slippage,
                     });
                     break;
@@ -1186,12 +1280,12 @@ class PieProgram {
                         user,
                         basketId,
                         amountOut: Number(swapDataResult[i].data.outputAmount),
-                        poolId: tokenInfo[i].poolId,
+                        poolId: token.poolId,
                     });
                     break;
             }
             tx.add(buyComponentTx);
-            const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(tokenInfo[i].lut))).value;
+            const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(token.lut))).value;
             addressLookupTablesAccount.push(lut);
             // Handle final transaction in bundle
             if (i === swapData.length - 1) {
@@ -1229,28 +1323,42 @@ class PieProgram {
         const recentBlockhash = await this.connection.getLatestBlockhash("finalized");
         const swapData = [];
         const basketConfigData = await this.getBasketConfig({ basketId });
+        let withdrawData;
         basketConfigData.components.forEach((component) => {
-            swapData.push((0, helper_1.getSwapData)({
-                isSwapBaseOut: false,
-                inputMint: component.mint.toBase58(),
-                outputMint: spl_token_1.NATIVE_MINT.toBase58(),
-                amount: component.quantityInSysDecimal
-                    .div(new anchor_1.BN(10 ** 6))
-                    .mul(new anchor_1.BN(redeemAmount))
-                    .toNumber(),
-                slippage,
-            }));
+            if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
+                withdrawData = {
+                    type: "withdraw",
+                    amount: component.quantityInSysDecimal
+                        .mul(new anchor_1.BN(redeemAmount))
+                        .div(new anchor_1.BN(10 ** 6))
+                        .toNumber(),
+                };
+            }
+            else {
+                swapData.push((0, helper_1.getSwapData)({
+                    isSwapBaseOut: false,
+                    inputMint: component.mint.toBase58(),
+                    outputMint: spl_token_1.NATIVE_MINT.toBase58(),
+                    amount: component.quantityInSysDecimal
+                        .mul(new anchor_1.BN(redeemAmount))
+                        .div(new anchor_1.BN(10 ** 6))
+                        .toNumber(),
+                    slippage,
+                }));
+            }
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkSwapDataError)(swapDataResult);
         //@TODO remove this when other pools are available
-        for (let i = 0; i < swapDataResult.length; i++) {
-            if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
-                console.log(`${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`);
-                swapDataResult[i].data.otherAmountThreshold =
-                    swapDataResult[i].data.otherAmountThreshold / 10;
-            }
-        }
+        // for (let i = 0; i < swapDataResult.length; i++) {
+        //   if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
+        //     console.log(
+        //       `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
+        //     );
+        //     swapDataResult[i].data.otherAmountThreshold =
+        //       swapDataResult[i].data.otherAmountThreshold / 10;
+        //   }
+        // }
         // Create native mint ATA
         const { tokenAccount: nativeMintAta, tx: createNativeMintATATx } = await (0, helper_1.getOrCreateNativeMintATA)(this.connection, user, user);
         if ((0, helper_1.isValidTransaction)(createNativeMintATATx)) {
@@ -1308,6 +1416,13 @@ class PieProgram {
             const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(tokenInfo[i].lut))).value;
             addressLookupTablesAccount.push(lut);
             if (i === swapDataResult.length - 1) {
+                if (withdrawData) {
+                    tx.add(await this.withdrawWsol({
+                        user,
+                        basketId,
+                        amount: withdrawData.amount,
+                    }));
+                }
                 tx.add((0, helper_1.unwrapSolIx)(nativeMintAta, user, user));
                 const serializedTx = await (0, jito_1.serializeJitoTransaction)({
                     recentBlockhash: recentBlockhash.blockhash,

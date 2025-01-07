@@ -27,6 +27,7 @@ exports.checkSwapDataError = checkSwapDataError;
 exports.isValidTransaction = isValidTransaction;
 exports.startPollingJitoBundle = startPollingJitoBundle;
 exports.caculateTotalAmountWithFee = caculateTotalAmountWithFee;
+exports.getTokenFromTokenInfo = getTokenFromTokenInfo;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const anchor_1 = require("@coral-xyz/anchor");
@@ -268,5 +269,8 @@ async function startPollingJitoBundle(bundleId) {
 }
 function caculateTotalAmountWithFee(amount, feePercentageInBasisPoints) {
     return Math.ceil(amount * (1 + feePercentageInBasisPoints / 10000));
+}
+function getTokenFromTokenInfo(tokenInfo, mint) {
+    return tokenInfo.find((token) => token.mint === mint);
 }
 //# sourceMappingURL=helper.js.map
