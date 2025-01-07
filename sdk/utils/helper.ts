@@ -31,6 +31,7 @@ import { BasketComponent, PieProgram } from "../pie-program";
 import { Table } from "console-table-printer";
 import axios from "axios";
 import { getInflightBundleStatuses } from "../jito";
+import { TokenInfo } from "../types";
 
 export async function createUserWithLamports(
   connection: Connection,
@@ -529,4 +530,8 @@ export function caculateTotalAmountWithFee(
   feePercentageInBasisPoints: number
 ) {
   return Math.ceil(amount * (1 + feePercentageInBasisPoints / 10000));
+}
+
+export function getTokenFromTokenInfo(tokenInfo: TokenInfo[], mint: string) {
+  return tokenInfo.find((token) => token.mint === mint);
 }
