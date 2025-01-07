@@ -20,9 +20,11 @@ pub struct WithdrawWsol<'info> {
     pub program_state: Box<Account<'info, ProgramState>>,
     
     #[account(
-        mut,
+        init_if_needed,
+        payer = user,
+        space = UserFund::INIT_SPACE,
         seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
-        bump = user_fund.bump
+        bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
 
