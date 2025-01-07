@@ -1,16 +1,16 @@
-use crate::constant::{INITIAL_ADMIN, PROGRAM_STATE};
+use crate::constant::PROGRAM_STATE;
 use crate::error::PieError;
-use crate::ProgramState;
+use crate::{ProgramState, INITIALIZER};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(mut)]
-    pub admin: Signer<'info>,
+    pub initializer: Signer<'info>,
 
     #[account(
         init_if_needed,
-        payer = admin,
+        payer = initializer,
         space = ProgramState::INIT_SPACE,
         seeds = [PROGRAM_STATE],
         bump
@@ -20,8 +20,17 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+pub fn initialize(
+    ctx: Context<Initialize>,
+    initial_admin: Pubkey,
+    initial_creator: Pubkey,
+) -> Result<()> {
     let program_state = &mut ctx.accounts.program_state;
+
+    require!(
+        ctx.accounts.initializer.key() == INITIALIZER,
+        PieError::Unauthorized
+    );
 
     if program_state.is_initialized {
         return Err(PieError::ProgramInitialized.into());
@@ -30,7 +39,8 @@ pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
     program_state.bump = ctx.bumps.program_state;
     program_state.is_initialized = true;
 
-    program_state.admin = INITIAL_ADMIN;
+    program_state.admin = initial_admin;
+    program_state.whitelisted_creators.push(initial_creator);
 
     program_state.basket_counter = 0;
 
