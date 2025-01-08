@@ -48,7 +48,7 @@ const BASKET_CONFIG = "basket_config";
 const BASKET_MINT = "basket_mint";
 const MPL_TOKEN_METADATA_PROGRAM_ID = new web3_js_1.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 class PieProgram {
-    constructor(connection, cluster, programId = PieIDL.address, sharedLookupTable = "7RQsMxGtKjshYzcpsaG4d4dydiru67wPy8wzDS2cVY3f") {
+    constructor(connection, cluster, programId = PieIDL.address, sharedLookupTable = "2ZWHWfumGv3cC4My3xzgQXMWNEnmYGVGnURhpgW6SL7m") {
         this.connection = connection;
         this.cluster = cluster;
         this.sharedLookupTable = sharedLookupTable;

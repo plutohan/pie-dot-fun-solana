@@ -96,7 +96,7 @@ export class PieProgram {
     public readonly connection: Connection,
     public readonly cluster: Cluster,
     programId: string = PieIDL.address,
-    public sharedLookupTable: string = "7RQsMxGtKjshYzcpsaG4d4dydiru67wPy8wzDS2cVY3f"
+    public sharedLookupTable: string = "2ZWHWfumGv3cC4My3xzgQXMWNEnmYGVGnURhpgW6SL7m"
   ) {
     this.idl.address = programId;
   }

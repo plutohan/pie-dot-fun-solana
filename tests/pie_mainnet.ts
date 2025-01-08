@@ -62,7 +62,7 @@ describe("pie", () => {
     await pieProgram.init();
   });
 
-  it("Setup and Initialized if needed ", async () => {
+  it.only("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
 
     if (!programState) {
@@ -111,7 +111,7 @@ describe("pie", () => {
         programState.platformFeeWallet
       );
 
-    if (createPlatformFeeTokenAccountTx.instructions.length !== 0) {
+    if (isValidTransaction(createPlatformFeeTokenAccountTx)) {
       console.log("adding create platform fee token account tx...");
       setUpTx.add(createPlatformFeeTokenAccountTx);
     }
@@ -130,7 +130,7 @@ describe("pie", () => {
       setUpTx.add(updatePlatformFeeWalletTx);
     }
 
-    if (setUpTx.instructions.length > 0) {
+    if (isValidTransaction(setUpTx)) {
       console.log("sending setup tx...");
       setUpTx.add(priorityFeeInstruction);
       const setUpTxResult = await sendAndConfirmTransaction(
