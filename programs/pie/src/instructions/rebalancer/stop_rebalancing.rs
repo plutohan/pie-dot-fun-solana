@@ -1,9 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{token::TokenAccount, token_interface::Mint};
 
-use crate::{
-    error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG, NATIVE_MINT
-};
+use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
 
 #[event]
 pub struct StopRebalancingEvent {
@@ -17,19 +14,6 @@ pub struct StopRebalancingEvent {
 pub struct StopRebalancing<'info> {
     #[account(mut)]
     pub rebalancer: Signer<'info>,
-
-    #[account(
-        mut,
-        token::mint = wrapped_sol_mint,
-        token::authority = basket_config,
-    )]
-    pub vault_wrapped_sol: Box<Account<'info, TokenAccount>>,
-
-    #[account(
-        mut,
-        address = NATIVE_MINT
-    )]
-    pub wrapped_sol_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,

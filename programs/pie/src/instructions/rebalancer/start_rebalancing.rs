@@ -21,8 +21,6 @@ pub struct StartRebalancing<'info> {
         constraint = basket_config.rebalancer == rebalancer.key() @ PieError::Unauthorized
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
-
-    pub system_program: Program<'info, System>,
 }
 
 pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {

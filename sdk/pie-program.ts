@@ -1418,18 +1418,12 @@ export class PieProgram {
     basketId: BN;
   }): Promise<Transaction> {
     const basketPDA = this.basketConfigPDA({ basketId });
-    const vaultWrappedSol = getAssociatedTokenAddressSync(
-      NATIVE_MINT,
-      basketPDA,
-      true
-    );
+
     return await this.program.methods
       .stopRebalancing()
       .accountsPartial({
         rebalancer,
         basketConfig: basketPDA,
-        vaultWrappedSol: vaultWrappedSol,
-        wrappedSolMint: NATIVE_MINT,
       })
       .transaction();
   }
