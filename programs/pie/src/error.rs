@@ -8,12 +8,6 @@ pub enum PieError {
     #[msg("Program initialized")]
     ProgramInitialized,
 
-    #[msg("Invalid initialized admin address")]
-    InvalidInitializeAdminAddress,
-
-    #[msg("Can't found rebalancer info.")]
-    RebalancerNotFound,
-
     #[msg("Invalid fee")]
     InvalidFee,
 
@@ -38,18 +32,12 @@ pub enum PieError {
     #[msg("Already rebalancing")]
     AlreadyRebalancing,
 
-    #[msg("Invalid margin value")]
-    InvalidMargin,
-
-    #[msg("Margin value for bottom exceeds the allowed limit")]
-    InvalidMarginBottom,
-
     #[msg("Conversion to u64 failed with an overflow or underflow")]
     ConversionFailure,
 
     #[msg("Invalid basket mint")]
     InvalidBasketMint,
-    
+
     #[msg("Duplicate component")]
     DuplicateComponent,
 
@@ -63,5 +51,5 @@ pub enum PieError {
     InvalidQuantity,
 
     #[msg("Rebalancing in process")]
-    RebalancingInProgress
+    RebalancingInProgress,
 }
