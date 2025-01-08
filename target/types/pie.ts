@@ -1027,10 +1027,6 @@ export type Pie = {
         {
           "name": "ammProgram",
           "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -2270,10 +2266,6 @@ export type Pie = {
               }
             ]
           }
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -2295,15 +2287,6 @@ export type Pie = {
           "name": "rebalancer",
           "writable": true,
           "signer": true
-        },
-        {
-          "name": "vaultWrappedSol",
-          "writable": true
-        },
-        {
-          "name": "wrappedSolMint",
-          "writable": true,
-          "address": "So11111111111111111111111111111111111111112"
         },
         {
           "name": "basketConfig",

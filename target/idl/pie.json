@@ -1021,10 +1021,6 @@
         {
           "name": "amm_program",
           "address": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -2264,10 +2260,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -2289,15 +2281,6 @@
           "name": "rebalancer",
           "writable": true,
           "signer": true
-        },
-        {
-          "name": "vault_wrapped_sol",
-          "writable": true
-        },
-        {
-          "name": "wrapped_sol_mint",
-          "writable": true,
-          "address": "So11111111111111111111111111111111111111112"
         },
         {
           "name": "basket_config",

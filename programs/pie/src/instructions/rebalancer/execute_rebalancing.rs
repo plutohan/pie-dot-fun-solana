@@ -72,8 +72,6 @@ pub struct ExecuteRebalancing<'info> {
     pub token_program: Program<'info, Token>,
 
     pub amm_program: Program<'info, RaydiumAmm>,
-
-    pub system_program: Program<'info, System>,
 }
 
 #[event]
