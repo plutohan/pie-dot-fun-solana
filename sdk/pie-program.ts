@@ -96,7 +96,7 @@ export class PieProgram {
     public readonly connection: Connection,
     public readonly cluster: Cluster,
     programId: string = PieIDL.address,
-    public sharedLookupTable: string = "7RQsMxGtKjshYzcpsaG4d4dydiru67wPy8wzDS2cVY3f"
+    public sharedLookupTable: string = "2ZWHWfumGv3cC4My3xzgQXMWNEnmYGVGnURhpgW6SL7m"
   ) {
     this.idl.address = programId;
   }
@@ -1318,7 +1318,9 @@ export class PieProgram {
     const userFund = this.userFundPDA({ user, basketId });
     const { tokenAccount: userBasketTokenAccount, tx: userBasketTokenTx } =
       await getOrCreateTokenAccountTx(this.connection, basketMint, user, user);
-    tx.add(userBasketTokenTx);
+    if (isValidTransaction(userBasketTokenTx)) {
+      tx.add(userBasketTokenTx);
+    }
     const mintBasketTokenTx = await this.program.methods
       .mintBasketToken(new BN(amount))
       .accountsPartial({

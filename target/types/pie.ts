@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/pie.json`.
  */
 export type Pie = {
-  "address": "PiEcLbHKGxikrjL8XUwuKAGvGvVctZ8An4LHrzXcy9D",
+  "address": "Covy4HwZvK8DD9zR1k1m9rAiH746sjXqW1WzQX3QTWS",
   "metadata": {
     "name": "pie",
     "version": "0.1.0",
@@ -3064,96 +3064,76 @@ export type Pie = {
     },
     {
       "code": 6002,
-      "name": "invalidInitializeAdminAddress",
-      "msg": "Invalid initialized admin address"
-    },
-    {
-      "code": 6003,
-      "name": "rebalancerNotFound",
-      "msg": "Can't found rebalancer info."
-    },
-    {
-      "code": 6004,
       "name": "invalidFee",
       "msg": "Invalid fee"
     },
     {
-      "code": 6005,
+      "code": 6003,
       "name": "maxAssetsExceeded",
       "msg": "Max asset exceeded"
     },
     {
-      "code": 6006,
+      "code": 6004,
       "name": "invalidBasket",
       "msg": "Invalid Basket"
     },
     {
-      "code": 6007,
+      "code": 6005,
       "name": "insufficientBalance",
       "msg": "Insufficient Balance"
     },
     {
-      "code": 6008,
+      "code": 6006,
       "name": "invalidAmount",
       "msg": "Invalid Amount"
     },
     {
-      "code": 6009,
+      "code": 6007,
       "name": "componentNotFound",
       "msg": "Component not found"
     },
     {
-      "code": 6010,
+      "code": 6008,
       "name": "notInRebalancing",
       "msg": "Not in rebalancing"
     },
     {
-      "code": 6011,
+      "code": 6009,
       "name": "alreadyRebalancing",
       "msg": "Already rebalancing"
     },
     {
-      "code": 6012,
-      "name": "invalidMargin",
-      "msg": "Invalid margin value"
-    },
-    {
-      "code": 6013,
-      "name": "invalidMarginBottom",
-      "msg": "Margin value for bottom exceeds the allowed limit"
-    },
-    {
-      "code": 6014,
+      "code": 6010,
       "name": "conversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
     },
     {
-      "code": 6015,
+      "code": 6011,
       "name": "invalidBasketMint",
       "msg": "Invalid basket mint"
     },
     {
-      "code": 6016,
+      "code": 6012,
       "name": "duplicateComponent",
       "msg": "Duplicate component"
     },
     {
-      "code": 6017,
+      "code": 6013,
       "name": "invalidMint",
       "msg": "Invalid mint"
     },
     {
-      "code": 6018,
+      "code": 6014,
       "name": "invalidComponentQuantity",
       "msg": "Invalid component quantity"
     },
     {
-      "code": 6019,
+      "code": 6015,
       "name": "invalidQuantity",
       "msg": "Invalid quantity"
     },
     {
-      "code": 6020,
+      "code": 6016,
       "name": "rebalancingInProgress",
       "msg": "Rebalancing in process"
     }
