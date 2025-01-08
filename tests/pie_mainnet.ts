@@ -62,7 +62,7 @@ describe("pie", () => {
     await pieProgram.init();
   });
 
-  it.only("Setup and Initialized if needed ", async () => {
+  it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
 
     if (!programState) {
