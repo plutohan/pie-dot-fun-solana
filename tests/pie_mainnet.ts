@@ -261,7 +261,7 @@ describe("pie", () => {
       );
 
       console.log(
-        `Vaults created at tx: https://solscan.io/tx/${getExplorerUrl(
+        `Vaults created at tx: ${getExplorerUrl(
           creatingVaultsTxResult,
           "mainnet"
         )}`
