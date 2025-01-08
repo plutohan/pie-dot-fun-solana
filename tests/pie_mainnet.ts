@@ -493,7 +493,8 @@ describe("pie", () => {
   });
 
   it.skip("Start rebalancing basket without Jito bundle", async () => {
-    const basketId = new BN(26);
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
 
     const tx = new Transaction();
 
@@ -530,7 +531,8 @@ describe("pie", () => {
   });
 
   it.skip("Rebalance amm pool without Jito bundle", async () => {
-    const basketId = new BN(26);
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
 
     const basketConfig = await pieProgram.getBasketConfig({ basketId });
     assert.equal(basketConfig.isRebalancing, true);
@@ -588,7 +590,8 @@ describe("pie", () => {
   });
 
   it.skip("Rebalance cpmm pool without Jito bundle", async () => {
-    const basketId = new BN(26);
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
 
     const basketConfig = await pieProgram.getBasketConfig({ basketId });
     assert.equal(basketConfig.isRebalancing, true);
@@ -648,7 +651,8 @@ describe("pie", () => {
   });
 
   it.skip("Rebalance clmm pool without Jito bundle", async () => {
-    const basketId = new BN(26);
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
 
     const basketConfig = await pieProgram.getBasketConfig({ basketId });
     assert.equal(basketConfig.isRebalancing, true);
@@ -725,7 +729,8 @@ describe("pie", () => {
   });
 
   it.skip("Stop rebalancing basket without Jito bundle", async () => {
-    const basketId = new BN(26);
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
 
     const tx = new Transaction();
 

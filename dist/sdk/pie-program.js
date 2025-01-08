@@ -773,7 +773,9 @@ class PieProgram {
         const basketConfig = this.basketConfigPDA({ basketId });
         const userFund = this.userFundPDA({ user, basketId });
         const { tokenAccount: userBasketTokenAccount, tx: userBasketTokenTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, basketMint, user, user);
-        tx.add(userBasketTokenTx);
+        if ((0, helper_1.isValidTransaction)(userBasketTokenTx)) {
+            tx.add(userBasketTokenTx);
+        }
         const mintBasketTokenTx = await this.program.methods
             .mintBasketToken(new anchor_1.BN(amount))
             .accountsPartial({
