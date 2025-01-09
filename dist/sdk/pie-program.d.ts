@@ -1,4 +1,4 @@
-import { BN, Idl, IdlAccounts, IdlEvents, IdlTypes, Program } from "@coral-xyz/anchor";
+import { BN, EventParser, Idl, IdlAccounts, IdlEvents, IdlTypes, Program } from "@coral-xyz/anchor";
 import { AddressLookupTableAccount, Cluster, Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
@@ -25,6 +25,7 @@ export declare class PieProgram {
     sharedLookupTable: string;
     private idl;
     raydium: Raydium;
+    eventParser: EventParser;
     constructor(connection: Connection, cluster: Cluster, programId?: string, sharedLookupTable?: string);
     init(): Promise<void>;
     get program(): Program<Idl>;
