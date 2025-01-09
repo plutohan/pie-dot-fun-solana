@@ -848,14 +848,11 @@ class PieProgram {
      */
     async stopRebalancing({ rebalancer, basketId, }) {
         const basketPDA = this.basketConfigPDA({ basketId });
-        const vaultWrappedSol = (0, spl_token_1.getAssociatedTokenAddressSync)(spl_token_1.NATIVE_MINT, basketPDA, true);
         return await this.program.methods
             .stopRebalancing()
             .accountsPartial({
             rebalancer,
             basketConfig: basketPDA,
-            vaultWrappedSol: vaultWrappedSol,
-            wrappedSolMint: spl_token_1.NATIVE_MINT,
         })
             .transaction();
     }
@@ -1224,7 +1221,10 @@ class PieProgram {
         //   }
         // }
         // Calculate total amount needed
-        const totalAmountIn = swapDataResult.reduce((acc, curr) => acc + Number(curr.data.otherAmountThreshold), 0) + depositData?.amount;
+        let totalAmountIn = swapDataResult.reduce((acc, curr) => acc + Number(curr.data.otherAmountThreshold), 0);
+        if (depositData?.amount) {
+            totalAmountIn += depositData.amount;
+        }
         // Create WSOL account and wrap SOL
         const { tokenAccount: wsolAccount, tx: createWsolAtaTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, user);
         if ((0, helper_1.isValidTransaction)(createWsolAtaTx)) {

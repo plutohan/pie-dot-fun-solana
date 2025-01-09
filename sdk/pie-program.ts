@@ -2035,11 +2035,14 @@ export class PieProgram {
     // }
 
     // Calculate total amount needed
-    const totalAmountIn =
-      swapDataResult.reduce(
-        (acc, curr) => acc + Number(curr.data.otherAmountThreshold),
-        0
-      ) + depositData?.amount;
+    let totalAmountIn = swapDataResult.reduce(
+      (acc, curr) => acc + Number(curr.data.otherAmountThreshold),
+      0
+    );
+
+    if (depositData?.amount) {
+      totalAmountIn += depositData.amount;
+    }
 
     // Create WSOL account and wrap SOL
     const { tokenAccount: wsolAccount, tx: createWsolAtaTx } =
