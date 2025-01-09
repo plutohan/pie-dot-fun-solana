@@ -54,6 +54,7 @@ class PieProgram {
         this.sharedLookupTable = sharedLookupTable;
         this.idl = Object.assign({}, PieIDL);
         this.idl.address = programId;
+        this.eventParser = new anchor_1.EventParser(new web3_js_1.PublicKey(programId), new anchor_1.BorshCoder(PieIDL));
     }
     async init() {
         this.raydium = await raydium_sdk_v2_1.Raydium.load({
@@ -1239,8 +1240,9 @@ class PieProgram {
                 amount: depositData.amount,
             });
             tx.add(depositIx);
-            tx.add(web3_js_1.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1500000 }));
         }
+        //@debug
+        tx.add(web3_js_1.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1500000 }));
         // Process each component
         for (let i = 0; i < swapDataResult.length; i++) {
             if (i > 0 && i % swapsPerBundle === 0) {

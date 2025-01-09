@@ -755,4 +755,18 @@ describe("pie", () => {
       `Stop rebalance at tx: https://solscan.io/tx/${stopRebalanceTxResult}`
     );
   });
+
+  it.only("Parses events", async () => {
+    const sampleTx =
+      "3bu4FcPy85Rscgre415eSK8KLT2nGs5cidBds5KVMHUDAfTSFgD6w7tb2faRsdcTGGQrbqiDiQzqLjphf7hX5Wkz";
+    const tx = await connection.getTransaction(sampleTx, {
+      maxSupportedTransactionVersion: 0,
+    });
+
+    const events = pieProgram.eventParser.parseLogs(tx.meta.logMessages);
+
+    for (const event of events) {
+      console.log(event);
+    }
+  });
 });

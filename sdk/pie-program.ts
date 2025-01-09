@@ -1,5 +1,7 @@
 import {
   BN,
+  BorshCoder,
+  EventParser,
   Idl,
   IdlAccounts,
   IdlEvents,
@@ -91,6 +93,7 @@ const MPL_TOKEN_METADATA_PROGRAM_ID = new PublicKey(
 export class PieProgram {
   private idl = Object.assign({}, PieIDL);
   raydium: Raydium;
+  eventParser: EventParser;
 
   constructor(
     public readonly connection: Connection,
@@ -99,6 +102,10 @@ export class PieProgram {
     public sharedLookupTable: string = "2ZWHWfumGv3cC4My3xzgQXMWNEnmYGVGnURhpgW6SL7m"
   ) {
     this.idl.address = programId;
+    this.eventParser = new EventParser(
+      new PublicKey(programId),
+      new BorshCoder(PieIDL as Idl)
+    );
   }
 
   async init() {
