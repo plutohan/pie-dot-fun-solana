@@ -122,7 +122,7 @@ pub fn sell_component(
     let component = user_fund
         .components
         .iter_mut()
-        .find(|a| a.mint == ctx.accounts.vault_token_source.key())
+        .find(|a| a.mint == ctx.accounts.vault_token_source.mint.key())
         .ok_or(PieError::ComponentNotFound)?;
 
     require!(component.amount >= amount_in, PieError::InsufficientBalance);
