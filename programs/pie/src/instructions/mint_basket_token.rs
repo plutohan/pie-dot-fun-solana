@@ -70,6 +70,8 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, basket_token_amou
         {
             let possible_mint_amount = calculate_possible_mint_amount(user_asset.amount, token_config.quantity_in_sys_decimal).unwrap();
             amount_can_mint = amount_can_mint.min(possible_mint_amount.try_into().unwrap());
+        } else {
+            return Err(PieError::ComponentNotFound.into());
         }
     }
 
