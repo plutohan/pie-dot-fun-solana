@@ -982,7 +982,6 @@ export class PieProgram {
         basketConfig: basketConfig,
         basketMint: basketMint,
         amm: new PublicKey(ammId),
-        mintIn: new PublicKey(mintIn),
         userFund: this.userFundPDA({ user, basketId }),
         ammAuthority: new PublicKey(poolKeys.authority),
         ammOpenOrders: new PublicKey(poolKeys.openOrders),
