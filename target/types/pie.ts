@@ -1749,10 +1749,6 @@ export type Pie = {
           "writable": true
         },
         {
-          "name": "mintIn",
-          "writable": true
-        },
-        {
           "name": "amm",
           "writable": true
         },

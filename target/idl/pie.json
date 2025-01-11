@@ -1743,10 +1743,6 @@
           "writable": true
         },
         {
-          "name": "mint_in",
-          "writable": true
-        },
-        {
           "name": "amm",
           "writable": true
         },
