@@ -19,7 +19,7 @@ export declare function getOrCreateTokenAccountIx(connection: Connection, mint: 
     ixs: TransactionInstruction[];
 }>;
 export declare function buildClmmRemainingAccounts(tickArray: PublicKey[], exTickArrayBitmap?: PublicKey): Promise<any>;
-export declare function wrapSOLInstruction(recipient: PublicKey, amount: number): Promise<TransactionInstruction[]>;
+export declare function wrapSOLInstruction(recipient: PublicKey, amount: number): TransactionInstruction[];
 export declare function showBasketConfigTable(connection: Connection, pieProgram: PieProgram, basketId: BN): Promise<Table>;
 export declare function showUserFundTable(pieProgram: PieProgram, userPubkey: PublicKey, basketId: BN): Promise<Table>;
 export declare function showBasketVaultsTable(basketVaults: {
@@ -75,4 +75,5 @@ export declare function isValidTransaction(tx: Transaction): boolean;
 export declare function startPollingJitoBundle(bundleId: string): Promise<void>;
 export declare function caculateTotalAmountWithFee(amount: number, feePercentageInBasisPoints: number): number;
 export declare function getTokenFromTokenInfo(tokenInfo: TokenInfo[], mint: string): TokenInfo;
+export declare function simulateTransaction(connection: Connection, txInBase64: string): Promise<import("@solana/web3.js").RpcResponseAndContext<import("@solana/web3.js").SimulatedTransactionResponse>>;
 //# sourceMappingURL=helper.d.ts.map

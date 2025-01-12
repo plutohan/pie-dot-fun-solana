@@ -84,10 +84,12 @@ export declare class PieProgram {
      * @param admin - The admin account.
      * @returns A promise that resolves to a transaction.
      */
-    initialize({ initializer, admin, creator, }: {
+    initialize({ initializer, admin, creator, platformFeeWallet, platformFeePercentage, }: {
         initializer: PublicKey;
         admin: PublicKey;
         creator: PublicKey;
+        platformFeeWallet: PublicKey;
+        platformFeePercentage: number;
     }): Promise<Transaction>;
     addBaksetToSharedLookupTable({ basketId, admin, }: {
         basketId: BN;
@@ -185,10 +187,11 @@ export declare class PieProgram {
      * @param amount - The amount of WSOL to deposit.
      * @returns A promise that resolves to a transaction.
      */
-    depositWsol({ user, basketId, amount, }: {
+    depositWsol({ user, basketId, amount, userWsolAccount, }: {
         user: PublicKey;
         basketId: BN;
         amount: number;
+        userWsolAccount: PublicKey;
     }): Promise<Transaction>;
     /**
      * Buys a component.
@@ -304,10 +307,11 @@ export declare class PieProgram {
      * @param amount - The amount of WSOL to deposit.
      * @returns A promise that resolves to a transaction.
      */
-    withdrawWsol({ user, basketId, amount, }: {
+    withdrawWsol({ user, basketId, amount, userWsolAccount, }: {
         user: PublicKey;
         basketId: BN;
         amount: number;
+        userWsolAccount: PublicKey;
     }): Promise<Transaction>;
     /**
      * Mints a basket token.

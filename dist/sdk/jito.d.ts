@@ -86,7 +86,7 @@ export declare function serializeJitoTransaction({ recentBlockhash, signer, tran
     lookupTables: any;
     jitoTipAccount?: PublicKey;
     amountInLamports?: number;
-}): Promise<string>;
-export declare function signSerializedTransaction(serializedTransaction: string, signer: Keypair): Promise<string>;
+}): string;
+export declare function signSerializedTransaction(serializedTransaction: string, signer: Keypair): string;
 export {};
 //# sourceMappingURL=jito.d.ts.map

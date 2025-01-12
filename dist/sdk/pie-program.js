@@ -173,11 +173,15 @@ class PieProgram {
      * @param admin - The admin account.
      * @returns A promise that resolves to a transaction.
      */
-    async initialize({ initializer, admin, creator, }) {
+    async initialize({ initializer, admin, creator, platformFeeWallet, platformFeePercentage, }) {
         const tx = await this.program.methods
-            .initialize(admin, creator)
+            .initialize(admin, creator, platformFeeWallet, platformFeePercentage)
             .accounts({ initializer })
             .transaction();
+        const { tx: createPlatformFeeTokenAccountTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), initializer, platformFeeWallet);
+        if ((0, helper_1.isValidTransaction)(createPlatformFeeTokenAccountTx)) {
+            tx.add(createPlatformFeeTokenAccountTx);
+        }
         return tx;
     }
     async addBaksetToSharedLookupTable({ basketId, admin, }) {
@@ -286,6 +290,10 @@ class PieProgram {
             basketMint: basketMint,
         })
             .transaction();
+        const { tx: createPlatformFeeTokenAccountTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), creator, creator);
+        if ((0, helper_1.isValidTransaction)(createPlatformFeeTokenAccountTx)) {
+            createBasketTx.add(createPlatformFeeTokenAccountTx);
+        }
         return createBasketTx;
     }
     /**
@@ -311,10 +319,9 @@ class PieProgram {
      * @param amount - The amount of WSOL to deposit.
      * @returns A promise that resolves to a transaction.
      */
-    async depositWsol({ user, basketId, amount, }) {
+    async depositWsol({ user, basketId, amount, userWsolAccount, }) {
         const basketConfig = this.basketConfigPDA({ basketId });
         const tx = new web3_js_1.Transaction();
-        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, spl_token_1.NATIVE_MINT, user);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, spl_token_1.NATIVE_MINT, user, basketConfig);
         if ((0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
@@ -326,7 +333,7 @@ class PieProgram {
             programState: this.programStatePDA,
             userFund: this.userFundPDA({ user, basketId }),
             basketConfig: basketConfig,
-            userWsolAccount: inputTokenAccount,
+            userWsolAccount,
             vaultWsolAccount: outputTokenAccount,
             platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
             creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
@@ -565,7 +572,6 @@ class PieProgram {
             basketConfig: basketConfig,
             basketMint: basketMint,
             amm: new web3_js_1.PublicKey(ammId),
-            mintIn: new web3_js_1.PublicKey(mintIn),
             userFund: this.userFundPDA({ user, basketId }),
             ammAuthority: new web3_js_1.PublicKey(poolKeys.authority),
             ammOpenOrders: new web3_js_1.PublicKey(poolKeys.openOrders),
@@ -737,10 +743,9 @@ class PieProgram {
      * @param amount - The amount of WSOL to deposit.
      * @returns A promise that resolves to a transaction.
      */
-    async withdrawWsol({ user, basketId, amount, }) {
+    async withdrawWsol({ user, basketId, amount, userWsolAccount, }) {
         const basketConfig = this.basketConfigPDA({ basketId });
         const tx = new web3_js_1.Transaction();
-        const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, spl_token_1.NATIVE_MINT, user);
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, spl_token_1.NATIVE_MINT, user, basketConfig);
         if ((0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
@@ -752,7 +757,7 @@ class PieProgram {
             programState: this.programStatePDA,
             userFund: this.userFundPDA({ user, basketId }),
             basketConfig: basketConfig,
-            userWsolAccount: inputTokenAccount,
+            userWsolAccount,
             vaultWsolAccount: outputTokenAccount,
             platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
             creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
@@ -1176,12 +1181,11 @@ class PieProgram {
      * @returns Array of serialized transactions
      */
     async createBuyAndMintBundle({ user, basketId, slippage, mintAmount, swapsPerBundle, tokenInfo, feePercentageInBasisPoints, }) {
-        const tipAccounts = await (0, jito_1.getTipAccounts)();
-        const tipInformation = await (0, jito_1.getTipInformation)();
-        const serializedTxs = [];
-        let tx = new web3_js_1.Transaction();
-        let addressLookupTablesAccount = await this.generateLookupTableAccount();
-        const recentBlockhash = await this.connection.getLatestBlockhash("finalized");
+        const asyncTasks = [];
+        asyncTasks.push((0, jito_1.getTipAccounts)());
+        asyncTasks.push((0, jito_1.getTipInformation)());
+        asyncTasks.push(this.generateLookupTableAccount());
+        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
         const basketConfigData = await this.getBasketConfig({ basketId });
         const swapData = [];
         let depositData;
@@ -1210,17 +1214,9 @@ class PieProgram {
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkSwapDataError)(swapDataResult);
-        //@TODO remove this when other pools are available
-        // for (let i = 0; i < swapDataResult.length; i++) {
-        //   if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
-        //     console.log(
-        //       `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
-        //     );
-        //     swapDataResult[i].data.otherAmountThreshold = String(
-        //       Number(swapDataResult[i].data.otherAmountThreshold) * 10
-        //     );
-        //   }
-        // }
+        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash,] = await Promise.all(asyncTasks);
+        let tx = new web3_js_1.Transaction();
+        const serializedTxs = [];
         // Calculate total amount needed
         let totalAmountIn = swapDataResult.reduce((acc, curr) => acc + Number(curr.data.otherAmountThreshold), 0);
         if (depositData?.amount) {
@@ -1231,22 +1227,21 @@ class PieProgram {
         if ((0, helper_1.isValidTransaction)(createWsolAtaTx)) {
             tx.add(createWsolAtaTx);
         }
-        const wrappedSolIx = await (0, helper_1.wrapSOLInstruction)(user, (0, helper_1.caculateTotalAmountWithFee)(totalAmountIn, feePercentageInBasisPoints));
+        const wrappedSolIx = (0, helper_1.wrapSOLInstruction)(user, (0, helper_1.caculateTotalAmountWithFee)(totalAmountIn, feePercentageInBasisPoints));
         tx.add(...wrappedSolIx);
         if (depositData) {
             const depositIx = await this.depositWsol({
                 user,
                 basketId,
                 amount: depositData.amount,
+                userWsolAccount: wsolAccount,
             });
             tx.add(depositIx);
         }
-        //@debug
-        tx.add(web3_js_1.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1500000 }));
         // Process each component
         for (let i = 0; i < swapDataResult.length; i++) {
             if (i > 0 && i % swapsPerBundle === 0) {
-                const serializedTx = await (0, jito_1.serializeJitoTransaction)({
+                const serializedTx = (0, jito_1.serializeJitoTransaction)({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
@@ -1300,7 +1295,7 @@ class PieProgram {
                 });
                 tx.add(mintBasketTokenTx);
                 tx.add((0, spl_token_1.createCloseAccountInstruction)(wsolAccount, user, user));
-                const serializedTx = await (0, jito_1.serializeJitoTransaction)({
+                const serializedTx = (0, jito_1.serializeJitoTransaction)({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
@@ -1319,12 +1314,11 @@ class PieProgram {
      * @returns Array of serialized transactions
      */
     async createRedeemAndSellBundle({ user, basketId, slippage, redeemAmount, swapsPerBundle, tokenInfo, }) {
-        const tipAccounts = await (0, jito_1.getTipAccounts)();
-        const tipInformation = await (0, jito_1.getTipInformation)();
-        const serializedTxs = [];
-        let tx = new web3_js_1.Transaction();
-        let addressLookupTablesAccount = await this.generateLookupTableAccount();
-        const recentBlockhash = await this.connection.getLatestBlockhash("finalized");
+        const asyncTasks = [];
+        asyncTasks.push((0, jito_1.getTipAccounts)());
+        asyncTasks.push((0, jito_1.getTipInformation)());
+        asyncTasks.push(this.generateLookupTableAccount());
+        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
         const swapData = [];
         const basketConfigData = await this.getBasketConfig({ basketId });
         let withdrawData;
@@ -1353,27 +1347,20 @@ class PieProgram {
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkSwapDataError)(swapDataResult);
-        //@TODO remove this when other pools are available
-        // for (let i = 0; i < swapDataResult.length; i++) {
-        //   if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
-        //     console.log(
-        //       `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
-        //     );
-        //     swapDataResult[i].data.otherAmountThreshold =
-        //       swapDataResult[i].data.otherAmountThreshold / 10;
-        //   }
-        // }
+        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash,] = await Promise.all(asyncTasks);
+        let tx = new web3_js_1.Transaction();
+        const serializedTxs = [];
         // Create native mint ATA
-        const { tokenAccount: nativeMintAta, tx: createNativeMintATATx } = await (0, helper_1.getOrCreateNativeMintATA)(this.connection, user, user);
-        if ((0, helper_1.isValidTransaction)(createNativeMintATATx)) {
-            tx.add(createNativeMintATATx);
+        const { tokenAccount: userWsolAccount, tx: createUserWsolAccount } = await (0, helper_1.getOrCreateNativeMintATA)(this.connection, user, user);
+        if ((0, helper_1.isValidTransaction)(createUserWsolAccount)) {
+            tx.add(createUserWsolAccount);
         }
         for (let i = 0; i < swapDataResult.length; i++) {
             if (i === 0) {
                 tx.add(await this.redeemBasketToken({ user, basketId, amount: redeemAmount }));
             }
             else if (i % swapsPerBundle === 0) {
-                const serializedTx = await (0, jito_1.serializeJitoTransaction)({
+                const serializedTx = (0, jito_1.serializeJitoTransaction)({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
@@ -1383,8 +1370,9 @@ class PieProgram {
                 tx = new web3_js_1.Transaction();
                 addressLookupTablesAccount = await this.generateLookupTableAccount();
             }
+            const token = (0, helper_1.getTokenFromTokenInfo)(tokenInfo, swapDataResult[i].data.inputMint);
             let sellComponentTx;
-            switch (tokenInfo[i].type) {
+            switch (token.type) {
                 case "amm":
                     sellComponentTx = await this.sellComponent({
                         user,
@@ -1392,7 +1380,7 @@ class PieProgram {
                         basketId,
                         amountIn: Number(swapDataResult[i].data.inputAmount),
                         minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-                        ammId: tokenInfo[i].poolId,
+                        ammId: token.poolId,
                     });
                     break;
                 case "clmm":
@@ -1401,7 +1389,7 @@ class PieProgram {
                         basketId,
                         amountIn: new anchor_1.BN(swapDataResult[i].data.inputAmount),
                         inputMint: new web3_js_1.PublicKey(swapDataResult[i].data.inputMint),
-                        poolId: tokenInfo[i].poolId,
+                        poolId: token.poolId,
                         slippage,
                     });
                     break;
@@ -1412,12 +1400,12 @@ class PieProgram {
                         inputMint: new web3_js_1.PublicKey(swapDataResult[i].data.inputMint),
                         amountIn: Number(swapDataResult[i].data.inputAmount),
                         minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-                        poolId: tokenInfo[i].poolId,
+                        poolId: token.poolId,
                     });
                     break;
             }
             tx.add(sellComponentTx);
-            const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(tokenInfo[i].lut))).value;
+            const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(token.lut))).value;
             addressLookupTablesAccount.push(lut);
             if (i === swapDataResult.length - 1) {
                 if (withdrawData) {
@@ -1425,10 +1413,11 @@ class PieProgram {
                         user,
                         basketId,
                         amount: withdrawData.amount,
+                        userWsolAccount,
                     }));
                 }
-                tx.add((0, helper_1.unwrapSolIx)(nativeMintAta, user, user));
-                const serializedTx = await (0, jito_1.serializeJitoTransaction)({
+                tx.add((0, helper_1.unwrapSolIx)(userWsolAccount, user, user));
+                const serializedTx = (0, jito_1.serializeJitoTransaction)({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
@@ -1477,7 +1466,7 @@ class PieProgram {
                 }
             }
             else if (i % swapsPerBundle === 0) {
-                const serializedTx = await (0, jito_1.serializeJitoTransaction)({
+                const serializedTx = (0, jito_1.serializeJitoTransaction)({
                     recentBlockhash: blockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
@@ -1557,7 +1546,7 @@ class PieProgram {
                     });
                     tx.add(stopRebalanceTx);
                 }
-                const serializedTx = await (0, jito_1.serializeJitoTransaction)({
+                const serializedTx = (0, jito_1.serializeJitoTransaction)({
                     recentBlockhash: blockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,

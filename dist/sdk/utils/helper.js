@@ -28,6 +28,7 @@ exports.isValidTransaction = isValidTransaction;
 exports.startPollingJitoBundle = startPollingJitoBundle;
 exports.caculateTotalAmountWithFee = caculateTotalAmountWithFee;
 exports.getTokenFromTokenInfo = getTokenFromTokenInfo;
+exports.simulateTransaction = simulateTransaction;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const anchor_1 = require("@coral-xyz/anchor");
@@ -124,7 +125,7 @@ async function buildClmmRemainingAccounts(tickArray, exTickArrayBitmap) {
     ];
     return remainingAccounts;
 }
-async function wrapSOLInstruction(recipient, amount) {
+function wrapSOLInstruction(recipient, amount) {
     let ixs = [];
     const ata = (0, spl_token_1.getAssociatedTokenAddressSync)(spl_token_1.NATIVE_MINT, recipient);
     ixs.push(web3_js_1.SystemProgram.transfer({
@@ -272,5 +273,13 @@ function caculateTotalAmountWithFee(amount, feePercentageInBasisPoints) {
 }
 function getTokenFromTokenInfo(tokenInfo, mint) {
     return tokenInfo.find((token) => token.mint === mint);
+}
+async function simulateTransaction(connection, txInBase64) {
+    const tx = web3_js_1.VersionedTransaction.deserialize(Buffer.from(txInBase64, "base64"));
+    const simulateTx = await connection.simulateTransaction(tx, {
+        replaceRecentBlockhash: true,
+    });
+    console.log(JSON.stringify(simulateTx));
+    return simulateTx;
 }
 //# sourceMappingURL=helper.js.map
