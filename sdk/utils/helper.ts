@@ -7,6 +7,7 @@ import {
   SystemProgram,
   Transaction,
   TransactionInstruction,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -534,4 +535,19 @@ export function caculateTotalAmountWithFee(
 
 export function getTokenFromTokenInfo(tokenInfo: TokenInfo[], mint: string) {
   return tokenInfo.find((token) => token.mint === mint);
+}
+
+export async function simulateTransaction(
+  connection: Connection,
+  txInBase64: string
+) {
+  const tx = VersionedTransaction.deserialize(
+    Buffer.from(txInBase64, "base64")
+  );
+  const simulateTx = await connection.simulateTransaction(tx, {
+    replaceRecentBlockhash: true,
+  });
+  console.log(JSON.stringify(simulateTx));
+
+  return simulateTx;
 }
