@@ -588,18 +588,15 @@ export class PieProgram {
     user,
     basketId,
     amount,
+    userWsolAccount,
   }: {
     user: PublicKey;
     basketId: BN;
     amount: number;
+    userWsolAccount: PublicKey;
   }): Promise<Transaction> {
     const basketConfig = this.basketConfigPDA({ basketId });
     const tx = new Transaction();
-    const inputTokenAccount = await getTokenAccount(
-      this.connection,
-      NATIVE_MINT,
-      user
-    );
 
     const { tokenAccount: outputTokenAccount, tx: outputTx } =
       await getOrCreateTokenAccountTx(
@@ -620,7 +617,7 @@ export class PieProgram {
         programState: this.programStatePDA,
         userFund: this.userFundPDA({ user, basketId }),
         basketConfig: basketConfig,
-        userWsolAccount: inputTokenAccount,
+        userWsolAccount,
         vaultWsolAccount: outputTokenAccount,
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
         creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
@@ -2017,15 +2014,12 @@ export class PieProgram {
     tokenInfo: TokenInfo[];
     feePercentageInBasisPoints: number;
   }): Promise<string[]> {
-    const tipAccounts = await getTipAccounts();
-    const tipInformation = await getTipInformation();
-    const serializedTxs: string[] = [];
-    let tx = new Transaction();
-    let addressLookupTablesAccount: AddressLookupTableAccount[] =
-      await this.generateLookupTableAccount();
-    const recentBlockhash = await this.connection.getLatestBlockhash(
-      "finalized"
-    );
+    const asyncTasks = [];
+    asyncTasks.push(getTipAccounts());
+    asyncTasks.push(getTipInformation());
+    asyncTasks.push(this.generateLookupTableAccount());
+    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+
     const basketConfigData = await this.getBasketConfig({ basketId });
     const swapData: Promise<SwapCompute>[] = [];
     let depositData: DepositOrWithdrawSolInfo | undefined;
@@ -2057,17 +2051,15 @@ export class PieProgram {
     const swapDataResult = await Promise.all(swapData);
     checkSwapDataError(swapDataResult);
 
-    //@TODO remove this when other pools are available
-    // for (let i = 0; i < swapDataResult.length; i++) {
-    //   if (swapDataResult[i].data.routePlan[0].poolId !== tokenInfo[i].poolId) {
-    //     console.log(
-    //       `${tokenInfo[i].name}'s AMM has little liquidity, increase slippage`
-    //     );
-    //     swapDataResult[i].data.otherAmountThreshold = String(
-    //       Number(swapDataResult[i].data.otherAmountThreshold) * 10
-    //     );
-    //   }
-    // }
+    let [
+      tipAccounts,
+      tipInformation,
+      addressLookupTablesAccount,
+      recentBlockhash,
+    ] = await Promise.all(asyncTasks);
+
+    let tx = new Transaction();
+    const serializedTxs: string[] = [];
 
     // Calculate total amount needed
     let totalAmountIn = swapDataResult.reduce(
@@ -2103,17 +2095,15 @@ export class PieProgram {
         user,
         basketId,
         amount: depositData.amount,
+        userWsolAccount: wsolAccount,
       });
       tx.add(depositIx);
-      tx.add(
-        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1500000 })
-      );
     }
 
     // Process each component
     for (let i = 0; i < swapDataResult.length; i++) {
       if (i > 0 && i % swapsPerBundle === 0) {
-        const serializedTx = await serializeJitoTransaction({
+        const serializedTx = serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2179,7 +2169,7 @@ export class PieProgram {
 
         tx.add(createCloseAccountInstruction(wsolAccount, user, user));
 
-        const serializedTx = await serializeJitoTransaction({
+        const serializedTx = serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2283,7 +2273,7 @@ export class PieProgram {
           await this.redeemBasketToken({ user, basketId, amount: redeemAmount })
         );
       } else if (i % swapsPerBundle === 0) {
-        const serializedTx = await serializeJitoTransaction({
+        const serializedTx = serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2353,7 +2343,7 @@ export class PieProgram {
         }
         tx.add(unwrapSolIx(nativeMintAta, user, user));
 
-        const serializedTx = await serializeJitoTransaction({
+        const serializedTx = serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2436,7 +2426,7 @@ export class PieProgram {
           tx.add(createNativeMintATATx);
         }
       } else if (i % swapsPerBundle === 0) {
-        const serializedTx = await serializeJitoTransaction({
+        const serializedTx = serializeJitoTransaction({
           recentBlockhash: blockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2530,7 +2520,7 @@ export class PieProgram {
           tx.add(stopRebalanceTx);
         }
 
-        const serializedTx = await serializeJitoTransaction({
+        const serializedTx = serializeJitoTransaction({
           recentBlockhash: blockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,

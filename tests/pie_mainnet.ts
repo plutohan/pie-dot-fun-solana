@@ -271,7 +271,7 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = await signSerializedTransaction(serializedTx, admin);
+      const tx = signSerializedTransaction(serializedTx, admin);
       // @debug
       // await sendAndConfirmRawTransaction(
       //   connection,
@@ -346,7 +346,7 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = await signSerializedTransaction(serializedTx, admin);
+      const tx = signSerializedTransaction(serializedTx, admin);
       serializedSignedTxs.push(tx);
     }
 
@@ -406,7 +406,7 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = await signSerializedTransaction(serializedTx, admin);
+      const tx = signSerializedTransaction(serializedTx, admin);
       serializedSignedTxs.push(tx);
     }
 
