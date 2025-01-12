@@ -48,7 +48,7 @@ import {
   isValidTransaction,
   SwapCompute,
   unwrapSolIx,
-  wrappedSOLInstruction,
+  wrapSOLInstruction,
 } from "./utils/helper";
 import {
   addAddressesToTable,
@@ -2067,7 +2067,7 @@ export class PieProgram {
       tx.add(createWsolAtaTx);
     }
 
-    const wrappedSolIx = await wrappedSOLInstruction(
+    const wrappedSolIx = wrapSOLInstruction(
       user,
       caculateTotalAmountWithFee(totalAmountIn, feePercentageInBasisPoints)
     );

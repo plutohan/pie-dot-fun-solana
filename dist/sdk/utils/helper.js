@@ -12,7 +12,7 @@ exports.createBasketComponents = createBasketComponents;
 exports.getRaydiumPoolAccounts = getRaydiumPoolAccounts;
 exports.getOrCreateTokenAccountIx = getOrCreateTokenAccountIx;
 exports.buildClmmRemainingAccounts = buildClmmRemainingAccounts;
-exports.wrappedSOLInstruction = wrappedSOLInstruction;
+exports.wrapSOLInstruction = wrapSOLInstruction;
 exports.showBasketConfigTable = showBasketConfigTable;
 exports.showUserFundTable = showUserFundTable;
 exports.showBasketVaultsTable = showBasketVaultsTable;
@@ -99,7 +99,7 @@ async function getRaydiumPoolAccounts(connection, raydium, ammId, inputMint, use
     const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), user, false);
     const { tokenAccount: outputTokenAccount, ixs: outputIxs } = await getOrCreateTokenAccountIx(connection, new web3_js_1.PublicKey(mintOut), user, user);
     if (inputMint.equals(spl_token_1.NATIVE_MINT)) {
-        const wrappedSolIx = await wrappedSOLInstruction(user, amountIn);
+        const wrappedSolIx = wrapSOLInstruction(user, amountIn);
         outputIxs.push(...wrappedSolIx);
     }
     return { ixs: outputIxs, tokenAccount: outputTokenAccount };
@@ -124,7 +124,7 @@ async function buildClmmRemainingAccounts(tickArray, exTickArrayBitmap) {
     ];
     return remainingAccounts;
 }
-async function wrappedSOLInstruction(recipient, amount) {
+async function wrapSOLInstruction(recipient, amount) {
     let ixs = [];
     const ata = (0, spl_token_1.getAssociatedTokenAddressSync)(spl_token_1.NATIVE_MINT, recipient);
     ixs.push(web3_js_1.SystemProgram.transfer({

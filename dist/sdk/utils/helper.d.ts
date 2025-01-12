@@ -19,7 +19,7 @@ export declare function getOrCreateTokenAccountIx(connection: Connection, mint: 
     ixs: TransactionInstruction[];
 }>;
 export declare function buildClmmRemainingAccounts(tickArray: PublicKey[], exTickArrayBitmap?: PublicKey): Promise<any>;
-export declare function wrappedSOLInstruction(recipient: PublicKey, amount: number): Promise<TransactionInstruction[]>;
+export declare function wrapSOLInstruction(recipient: PublicKey, amount: number): Promise<TransactionInstruction[]>;
 export declare function showBasketConfigTable(connection: Connection, pieProgram: PieProgram, basketId: BN): Promise<Table>;
 export declare function showUserFundTable(pieProgram: PieProgram, userPubkey: PublicKey, basketId: BN): Promise<Table>;
 export declare function showBasketVaultsTable(basketVaults: {

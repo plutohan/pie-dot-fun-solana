@@ -1231,7 +1231,7 @@ class PieProgram {
         if ((0, helper_1.isValidTransaction)(createWsolAtaTx)) {
             tx.add(createWsolAtaTx);
         }
-        const wrappedSolIx = await (0, helper_1.wrappedSOLInstruction)(user, (0, helper_1.caculateTotalAmountWithFee)(totalAmountIn, feePercentageInBasisPoints));
+        const wrappedSolIx = await (0, helper_1.wrapSOLInstruction)(user, (0, helper_1.caculateTotalAmountWithFee)(totalAmountIn, feePercentageInBasisPoints));
         tx.add(...wrappedSolIx);
         if (depositData) {
             const depositIx = await this.depositWsol({

@@ -203,7 +203,7 @@ export async function getRaydiumPoolAccounts(
       user
     );
   if (inputMint.equals(NATIVE_MINT)) {
-    const wrappedSolIx = await wrappedSOLInstruction(user, amountIn);
+    const wrappedSolIx = wrapSOLInstruction(user, amountIn);
     outputIxs.push(...wrappedSolIx);
   }
 
@@ -248,10 +248,10 @@ export async function buildClmmRemainingAccounts(
   return remainingAccounts;
 }
 
-export async function wrappedSOLInstruction(
+export function wrapSOLInstruction(
   recipient: PublicKey,
   amount: number
-): Promise<TransactionInstruction[]> {
+): TransactionInstruction[] {
   let ixs: TransactionInstruction[] = [];
   const ata = getAssociatedTokenAddressSync(NATIVE_MINT, recipient);
   ixs.push(

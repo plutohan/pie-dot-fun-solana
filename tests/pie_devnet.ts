@@ -25,10 +25,11 @@ import {
   getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
   getTokenAccount,
+  isValidTransaction,
   showBasketConfigTable,
   showUserFundTable,
   unwrapSolIx,
-  wrappedSOLInstruction,
+  wrapSOLInstruction,
 } from "../sdk/utils/helper";
 import {
   addAddressesToTable,
@@ -179,7 +180,7 @@ describe("pie", () => {
       admin.publicKey
     );
 
-    if (outputTx.signatures.length !== 0) {
+    if (isValidTransaction(outputTx)) {
       const createCreatorFeeTokenAccountTxResult =
         await sendAndConfirmTransaction(connection, outputTx, [admin], {
           skipPreflight: true,
@@ -429,6 +430,8 @@ describe("pie", () => {
       admin.publicKey,
       totalSolTobuy
     );
+
+    const wrappedSolIx = wrapSOLInstruction(admin.publicKey, totalSolTobuy);
     tx.add(...wrappedSolIx);
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
