@@ -21,8 +21,16 @@ pub mod pie {
         ctx: Context<Initialize>,
         initial_admin: Pubkey,
         initial_creator: Pubkey,
+        initial_platform_fee_wallet: Pubkey,
+        initial_platform_fee_percentage: u64,
     ) -> Result<()> {
-        instructions::initialize(ctx, initial_admin, initial_creator)?;
+        instructions::initialize(
+            ctx,
+            initial_admin,
+            initial_creator,
+            initial_platform_fee_wallet,
+            initial_platform_fee_percentage,
+        )?;
         Ok(())
     }
 
