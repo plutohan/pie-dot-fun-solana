@@ -195,7 +195,7 @@ export async function simulateBundle({
   }
 }
 
-export async function serializeJitoTransaction({
+export function serializeJitoTransaction({
   recentBlockhash,
   signer,
   transaction,
@@ -232,7 +232,7 @@ export async function serializeJitoTransaction({
   return Buffer.from(encoded).toString("base64");
 }
 
-export async function signSerializedTransaction(
+export function signSerializedTransaction(
   serializedTransaction: string,
   signer: Keypair
 ) {

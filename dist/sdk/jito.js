@@ -94,7 +94,7 @@ async function simulateBundle({ encodedTransactions, simulationBank, skipSigVeri
         console.log({ error });
     }
 }
-async function serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, amountInLamports, }) {
+function serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, amountInLamports, }) {
     if (jitoTipAccount && amountInLamports) {
         const transferInstruction = web3_js_2.SystemProgram.transfer({
             fromPubkey: signer,
@@ -112,7 +112,7 @@ async function serializeJitoTransaction({ recentBlockhash, signer, transaction, 
     const encoded = transactionV0.serialize();
     return Buffer.from(encoded).toString("base64");
 }
-async function signSerializedTransaction(serializedTransaction, signer) {
+function signSerializedTransaction(serializedTransaction, signer) {
     const transaction = web3_js_1.VersionedTransaction.deserialize(Buffer.from(serializedTransaction, "base64"));
     transaction.sign([signer]);
     const encoded = transaction.serialize();

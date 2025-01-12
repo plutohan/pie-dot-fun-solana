@@ -33,6 +33,7 @@ import {
   isValidTransaction,
   showBasketConfigTable,
   showBasketVaultsTable,
+  simulateTransaction,
   startPollingJitoBundle,
 } from "../sdk/utils/helper";
 import {
@@ -64,14 +65,21 @@ describe("pie", () => {
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
+    const platformFeeWallet = new PublicKey(
+      "EzMk46WmhjxkD7fBwRXNigNivG724FLKY1x4Rcmvxr1P"
+    );
 
     if (!programState) {
       console.log("initializing program...");
+      //create platform fee token account if needed
       const initializeTx = await pieProgram.initialize({
         initializer: admin.publicKey,
         admin: admin.publicKey,
         creator: admin.publicKey,
+        platformFeeWallet,
+        platformFeePercentage: 1000,
       });
+
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,
         initializeTx,
@@ -84,62 +92,6 @@ describe("pie", () => {
       console.log(
         `Program initialized at tx: https://solscan.io/tx/${initializeTxResult}`
       );
-    }
-
-    //fetch again
-    programState = await pieProgram.getProgramState();
-
-    const setUpTx = new Transaction();
-
-    if (programState.platformFeePercentage.toNumber() == 0) {
-      console.log("adding updating fee tx...");
-      // mint redeem fee 1% and platform fee 0.5%
-      const updateFeeTx = await pieProgram.updateFee({
-        admin: admin.publicKey,
-        newCreatorFeePercentage: 1000,
-        newPlatformFeePercentage: 500,
-      });
-      setUpTx.add(updateFeeTx);
-    }
-
-    //create platform fee token account if needed
-    const { tx: createPlatformFeeTokenAccountTx } =
-      await getOrCreateTokenAccountTx(
-        connection,
-        new PublicKey(NATIVE_MINT),
-        admin.publicKey,
-        programState.platformFeeWallet
-      );
-
-    if (isValidTransaction(createPlatformFeeTokenAccountTx)) {
-      console.log("adding create platform fee token account tx...");
-      setUpTx.add(createPlatformFeeTokenAccountTx);
-    }
-
-    //update platform fee wallet if needed
-    if (
-      programState.platformFeeWallet.toBase58() ==
-      new PublicKey("11111111111111111111111111111111").toBase58()
-    ) {
-      console.log("adding update platform fee wallet tx...");
-      const updatePlatformFeeWalletTx =
-        await pieProgram.updatePlatformFeeWallet({
-          admin: admin.publicKey,
-          newPlatformFeeWallet: admin.publicKey,
-        });
-      setUpTx.add(updatePlatformFeeWalletTx);
-    }
-
-    if (isValidTransaction(setUpTx)) {
-      console.log("sending setup tx...");
-      setUpTx.add(priorityFeeInstruction);
-      const setUpTxResult = await sendAndConfirmTransaction(
-        connection,
-        setUpTx,
-        [admin],
-        { skipPreflight: true, commitment: "confirmed" }
-      );
-      console.log(`Setup tx: https://solscan.io/tx/${setUpTxResult}`);
     }
 
     if (!pieProgram.sharedLookupTable) {
@@ -170,7 +122,7 @@ describe("pie", () => {
     const createBasketArgs: CreateBasketArgs = {
       name: "Basket 3",
       symbol: "B-3",
-      uri: "https://pie.xyz/pie",
+      uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
       components: components,
       rebalancer: admin.publicKey,
     };
@@ -319,7 +271,7 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = await signSerializedTransaction(serializedTx, admin);
+      const tx = signSerializedTransaction(serializedTx, admin);
       // @debug
       // await sendAndConfirmRawTransaction(
       //   connection,
@@ -344,6 +296,9 @@ describe("pie", () => {
     );
 
     if (bundleSimluationResult.value.summary !== "succeeded") {
+      for (const serializedSignedTx of serializedSignedTxs) {
+        await simulateTransaction(connection, serializedSignedTx);
+      }
       throw new Error("bundle simulation failed");
     }
 
@@ -394,7 +349,7 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = await signSerializedTransaction(serializedTx, admin);
+      const tx = signSerializedTransaction(serializedTx, admin);
       serializedSignedTxs.push(tx);
     }
 
@@ -454,7 +409,7 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = await signSerializedTransaction(serializedTx, admin);
+      const tx = signSerializedTransaction(serializedTx, admin);
       serializedSignedTxs.push(tx);
     }
 
@@ -472,6 +427,9 @@ describe("pie", () => {
     const bundleId = await sendBundle(serializedSignedTxs);
 
     if (bundleSimluationResult.value.summary !== "succeeded") {
+      for (const serializedSignedTx of serializedSignedTxs) {
+        await simulateTransaction(connection, serializedSignedTx);
+      }
       throw new Error("bundle simulation failed");
     }
 
@@ -756,7 +714,7 @@ describe("pie", () => {
     );
   });
 
-  it.only("Parses events", async () => {
+  it("Parses events", async () => {
     const sampleTx =
       "3bu4FcPy85Rscgre415eSK8KLT2nGs5cidBds5KVMHUDAfTSFgD6w7tb2faRsdcTGGQrbqiDiQzqLjphf7hX5Wkz";
     const tx = await connection.getTransaction(sampleTx, {

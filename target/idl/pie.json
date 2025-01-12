@@ -1424,6 +1424,14 @@
         {
           "name": "initial_creator",
           "type": "pubkey"
+        },
+        {
+          "name": "initial_platform_fee_wallet",
+          "type": "pubkey"
+        },
+        {
+          "name": "initial_platform_fee_percentage",
+          "type": "u64"
         }
       ]
     },

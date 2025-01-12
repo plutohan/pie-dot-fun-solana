@@ -25,7 +25,7 @@ import {
   getOrCreateTokenAccountTx,
   showUserFundTable,
   unwrapSolIx,
-  wrappedSOLInstruction,
+  wrapSOLInstruction,
 } from "../sdk/utils/helper";
 import {
   addAddressesToTable,
@@ -246,10 +246,7 @@ describe("pie", () => {
         tx.add(createNativeMintTx);
       }
 
-      const wrappedSolIx = await wrappedSOLInstruction(
-        admin.publicKey,
-        totalSolTobuy
-      );
+      const wrappedSolIx = wrapSOLInstruction(admin.publicKey, totalSolTobuy);
       tx.add(...wrappedSolIx);
       const amountToBuy = 2_000_000;
 
@@ -329,10 +326,7 @@ describe("pie", () => {
         if (createNativeMintTx) {
           tx.add(createNativeMintTx);
         }
-        const wrappedSolIx = await wrappedSOLInstruction(
-          admin.publicKey,
-          totalSolTobuy
-        );
+        const wrappedSolIx = wrapSOLInstruction(admin.publicKey, totalSolTobuy);
         tx.add(...wrappedSolIx);
 
         for (let i = 0; i < basketConfigData.components.length; i++) {

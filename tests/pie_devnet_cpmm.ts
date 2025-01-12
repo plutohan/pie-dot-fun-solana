@@ -28,7 +28,7 @@ import {
   showBasketConfigTable,
   showUserFundTable,
   unwrapSolIx,
-  wrappedSOLInstruction,
+  wrapSOLInstruction,
 } from "../sdk/utils/helper";
 import {
   addAddressesToTable,
@@ -248,10 +248,7 @@ describe("pie", () => {
       admin.publicKey,
       admin.publicKey
     );
-    const wrappedSolIx = await wrappedSOLInstruction(
-      admin.publicKey,
-      totalSolTobuy
-    );
+    const wrappedSolIx = wrapSOLInstruction(admin.publicKey, totalSolTobuy);
     tx.add(...wrappedSolIx);
 
     await sendAndConfirmTransaction(connection, tx, [admin], {

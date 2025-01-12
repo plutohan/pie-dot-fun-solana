@@ -1430,6 +1430,14 @@ export type Pie = {
         {
           "name": "initialCreator",
           "type": "pubkey"
+        },
+        {
+          "name": "initialPlatformFeeWallet",
+          "type": "pubkey"
+        },
+        {
+          "name": "initialPlatformFeePercentage",
+          "type": "u64"
         }
       ]
     },
