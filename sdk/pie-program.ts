@@ -331,6 +331,19 @@ export class PieProgram {
       .initialize(admin, creator, platformFeeWallet, platformFeePercentage)
       .accounts({ initializer })
       .transaction();
+
+    const { tx: createPlatformFeeTokenAccountTx } =
+      await getOrCreateTokenAccountTx(
+        this.connection,
+        new PublicKey(NATIVE_MINT),
+        initializer,
+        platformFeeWallet
+      );
+
+    if (isValidTransaction(createPlatformFeeTokenAccountTx)) {
+      tx.add(createPlatformFeeTokenAccountTx);
+    }
+
     return tx;
   }
 
@@ -523,6 +536,18 @@ export class PieProgram {
         basketMint: basketMint,
       })
       .transaction();
+
+    const { tx: createPlatformFeeTokenAccountTx } =
+      await getOrCreateTokenAccountTx(
+        this.connection,
+        new PublicKey(NATIVE_MINT),
+        creator,
+        creator
+      );
+
+    if (isValidTransaction(createPlatformFeeTokenAccountTx)) {
+      createBasketTx.add(createPlatformFeeTokenAccountTx);
+    }
 
     return createBasketTx;
   }

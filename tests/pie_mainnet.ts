@@ -33,6 +33,7 @@ import {
   isValidTransaction,
   showBasketConfigTable,
   showBasketVaultsTable,
+  simulateTransaction,
   startPollingJitoBundle,
 } from "../sdk/utils/helper";
 import {
@@ -71,14 +72,6 @@ describe("pie", () => {
     if (!programState) {
       console.log("initializing program...");
       //create platform fee token account if needed
-      const { tx: createPlatformFeeTokenAccountTx } =
-        await getOrCreateTokenAccountTx(
-          connection,
-          new PublicKey(NATIVE_MINT),
-          admin.publicKey,
-          programState.platformFeeWallet
-        );
-
       const initializeTx = await pieProgram.initialize({
         initializer: admin.publicKey,
         admin: admin.publicKey,
@@ -86,8 +79,6 @@ describe("pie", () => {
         platformFeeWallet,
         platformFeePercentage: 1000,
       });
-
-      initializeTx.add(createPlatformFeeTokenAccountTx);
 
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,
