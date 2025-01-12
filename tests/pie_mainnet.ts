@@ -131,7 +131,7 @@ describe("pie", () => {
     const createBasketArgs: CreateBasketArgs = {
       name: "Basket 3",
       symbol: "B-3",
-      uri: "https://pie.xyz/pie",
+      uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
       components: components,
       rebalancer: admin.publicKey,
     };
