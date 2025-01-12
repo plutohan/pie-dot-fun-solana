@@ -2278,8 +2278,13 @@ export class PieProgram {
         addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
+      const token = getTokenFromTokenInfo(
+        tokenInfo,
+        swapDataResult[i].data.inputMint
+      );
+
       let sellComponentTx;
-      switch (tokenInfo[i].type) {
+      switch (token.type) {
         case "amm":
           sellComponentTx = await this.sellComponent({
             user,
@@ -2289,7 +2294,7 @@ export class PieProgram {
             minimumAmountOut: Number(
               swapDataResult[i].data.otherAmountThreshold
             ),
-            ammId: tokenInfo[i].poolId,
+            ammId: token.poolId,
           });
           break;
         case "clmm":
@@ -2298,7 +2303,7 @@ export class PieProgram {
             basketId,
             amountIn: new BN(swapDataResult[i].data.inputAmount),
             inputMint: new PublicKey(swapDataResult[i].data.inputMint),
-            poolId: tokenInfo[i].poolId,
+            poolId: token.poolId,
             slippage,
           });
           break;
@@ -2311,16 +2316,14 @@ export class PieProgram {
             minimumAmountOut: Number(
               swapDataResult[i].data.otherAmountThreshold
             ),
-            poolId: tokenInfo[i].poolId,
+            poolId: token.poolId,
           });
           break;
       }
       tx.add(sellComponentTx);
 
       const lut = (
-        await this.connection.getAddressLookupTable(
-          new PublicKey(tokenInfo[i].lut)
-        )
+        await this.connection.getAddressLookupTable(new PublicKey(token.lut))
       ).value;
       addressLookupTablesAccount.push(lut);
 

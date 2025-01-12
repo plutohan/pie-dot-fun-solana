@@ -296,6 +296,9 @@ describe("pie", () => {
     );
 
     if (bundleSimluationResult.value.summary !== "succeeded") {
+      for (const serializedSignedTx of serializedSignedTxs) {
+        await simulateTransaction(connection, serializedSignedTx);
+      }
       throw new Error("bundle simulation failed");
     }
 
@@ -424,6 +427,9 @@ describe("pie", () => {
     const bundleId = await sendBundle(serializedSignedTxs);
 
     if (bundleSimluationResult.value.summary !== "succeeded") {
+      for (const serializedSignedTx of serializedSignedTxs) {
+        await simulateTransaction(connection, serializedSignedTx);
+      }
       throw new Error("bundle simulation failed");
     }
 

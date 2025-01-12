@@ -71,4 +71,11 @@ export const tokens: TokenInfo[] = [
     lut: "9QDhp3DfpxwVXeaMJSG28Wzw3md5TgxvsnKkTdjm5rxt",
     type: "amm",
   },
+  {
+    name: "JUP",
+    mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+    poolId: "EZVkeboWeXygtq8LMyENHyXdF5wpYrtExRNH9UwB1qYw",
+    lut: "JAPzJFDSz7fkq7SxSHjALziKFp3dViTbbyMvScZw1h8G",
+    type: "clmm",
+  },
 ];
