@@ -3061,13 +3061,13 @@ export type Pie = {
     },
     {
       "code": 6004,
-      "name": "invalidBasket",
-      "msg": "Invalid Basket"
+      "name": "insufficientBalance",
+      "msg": "Insufficient Balance"
     },
     {
       "code": 6005,
-      "name": "insufficientBalance",
-      "msg": "Insufficient Balance"
+      "name": "invalidBasket",
+      "msg": "Invalid Basket"
     },
     {
       "code": 6006,
