@@ -96,10 +96,12 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
         amount
     )?;
 
+    user_fund.bump = ctx.bumps.user_fund;
     user_fund.upsert_component(
         NATIVE_MINT,
         amount
     )?;
+
     emit!(DepositWsolEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
