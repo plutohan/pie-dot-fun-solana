@@ -17,6 +17,7 @@ pub mod pie {
 
     use super::*;
 
+    // Admin
     pub fn initialize(
         ctx: Context<Initialize>,
         initial_admin: Pubkey,
@@ -39,11 +40,12 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn update_rebalancer(
-        ctx: Context<UpdateRebalancerContext>,
-        new_rebalancer: Pubkey,
+    pub fn update_fee(
+        ctx: Context<UpdateFeeContext>,
+        new_creator_fee_percentage: u64,
+        new_platform_fee_percentage: u64,
     ) -> Result<()> {
-        instructions::update_rebalancer(ctx, new_rebalancer)?;
+        instructions::update_fee(ctx, new_creator_fee_percentage, new_platform_fee_percentage)?;
         Ok(())
     }
 
@@ -55,15 +57,6 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn update_fee(
-        ctx: Context<UpdateFeeContext>,
-        new_creator_fee_percentage: u64,
-        new_platform_fee_percentage: u64,
-    ) -> Result<()> {
-        instructions::update_fee(ctx, new_creator_fee_percentage, new_platform_fee_percentage)?;
-        Ok(())
-    }
-
     pub fn update_whitelisted_creators(
         ctx: Context<UpdateWhitelistedCreatorsContext>,
         new_whitelisted_creators: Vec<Pubkey>,
@@ -72,11 +65,75 @@ pub mod pie {
         Ok(())
     }
 
+    // Creator
     pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
         instructions::create_basket(ctx, args)?;
         Ok(())
     }
 
+    pub fn transfer_basket(ctx: Context<TransferBasketContext>, new_creator: Pubkey) -> Result<()> {
+        instructions::transfer_basket(ctx, new_creator)?;
+        Ok(())
+    }
+
+    pub fn update_rebalancer(
+        ctx: Context<UpdateRebalancerContext>,
+        new_rebalancer: Pubkey,
+    ) -> Result<()> {
+        instructions::update_rebalancer(ctx, new_rebalancer)?;
+        Ok(())
+    }
+
+    // Rebalancer
+
+    pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
+        instructions::start_rebalancing(ctx)?;
+        Ok(())
+    }
+
+    pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
+        is_swap_base_out: bool,
+        amount_in: u64,
+        amount_out: u64,
+    ) -> Result<()> {
+        instructions::execute_rebalancing(ctx, is_swap_base_out, amount_in, amount_out)?;
+        Ok(())
+    }
+
+    pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<ExecuteRebalancingCpmm>,
+        is_swap_base_out: bool,
+        amount_in: u64,
+        amount_out: u64,
+    ) -> Result<()> {
+        instructions::execute_rebalancing_cpmm(ctx, is_swap_base_out, amount_in, amount_out)?;
+        Ok(())
+    }
+
+    pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingClmm<'info>>,
+        is_swap_base_out: bool,
+        amount: u64,
+        other_amount_threshold: u64,
+        sqrt_price_limit_x64: u128,
+    ) -> Result<()> {
+        instructions::execute_rebalancing_clmm(
+            ctx,
+            is_swap_base_out,
+            amount,
+            other_amount_threshold,
+            sqrt_price_limit_x64,
+        )?;
+        Ok(())
+    }
+
+    pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
+        instructions::stop_rebalancing(ctx)?;
+        Ok(())
+    }
+
+    // User
     pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> Result<()> {
         instructions::mint_basket_token(ctx, amount)?;
         Ok(())
@@ -160,53 +217,6 @@ pub mod pie {
 
     pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
         instructions::withdraw_wsol(ctx, amount)?;
-        Ok(())
-    }
-
-    pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
-        instructions::start_rebalancing(ctx)?;
-        Ok(())
-    }
-
-    pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
-        is_swap_base_out: bool,
-        amount_in: u64,
-        amount_out: u64,
-    ) -> Result<()> {
-        instructions::execute_rebalancing(ctx, is_swap_base_out, amount_in, amount_out)?;
-        Ok(())
-    }
-
-    pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
-        ctx: Context<ExecuteRebalancingCpmm>,
-        is_swap_base_out: bool,
-        amount_in: u64,
-        amount_out: u64,
-    ) -> Result<()> {
-        instructions::execute_rebalancing_cpmm(ctx, is_swap_base_out, amount_in, amount_out)?;
-        Ok(())
-    }
-
-    pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingClmm<'info>>,
-        is_swap_base_out: bool,
-        amount: u64,
-        other_amount_threshold: u64,
-        sqrt_price_limit_x64: u128,
-    ) -> Result<()> {
-        instructions::execute_rebalancing_clmm(
-            ctx,
-            is_swap_base_out,
-            amount,
-            other_amount_threshold,
-            sqrt_price_limit_x64,
-        )?;
-        Ok(())
-    }
-
-    pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
-        instructions::stop_rebalancing(ctx)?;
         Ok(())
     }
 }
