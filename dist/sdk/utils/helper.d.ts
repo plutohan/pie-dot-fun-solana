@@ -76,4 +76,6 @@ export declare function startPollingJitoBundle(bundleId: string): Promise<void>;
 export declare function caculateTotalAmountWithFee(amount: number, feePercentageInBasisPoints: number): number;
 export declare function getTokenFromTokenInfo(tokenInfo: TokenInfo[], mint: string): TokenInfo;
 export declare function simulateTransaction(connection: Connection, txInBase64: string): Promise<import("@solana/web3.js").RpcResponseAndContext<import("@solana/web3.js").SimulatedTransactionResponse>>;
+export declare const restoreRawDecimal: (val: BN) => number;
+export declare const restoreRawDecimalRoundUp: (val: BN) => number;
 //# sourceMappingURL=helper.d.ts.map

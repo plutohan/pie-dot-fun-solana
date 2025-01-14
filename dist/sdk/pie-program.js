@@ -1193,10 +1193,7 @@ class PieProgram {
             if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
                 depositData = {
                     type: "deposit",
-                    amount: component.quantityInSysDecimal
-                        .mul(new anchor_1.BN(mintAmount))
-                        .div(new anchor_1.BN(10 ** 6))
-                        .toNumber(),
+                    amount: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(new anchor_1.BN(mintAmount))),
                 };
             }
             else {
@@ -1204,10 +1201,7 @@ class PieProgram {
                     isSwapBaseOut: true,
                     inputMint: spl_token_1.NATIVE_MINT.toBase58(),
                     outputMint: component.mint.toBase58(),
-                    amount: component.quantityInSysDecimal
-                        .mul(new anchor_1.BN(mintAmount))
-                        .div(new anchor_1.BN(10 ** 6))
-                        .toNumber(),
+                    amount: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(new anchor_1.BN(mintAmount))),
                     slippage,
                 }));
             }
@@ -1326,10 +1320,7 @@ class PieProgram {
             if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
                 withdrawData = {
                     type: "withdraw",
-                    amount: component.quantityInSysDecimal
-                        .mul(new anchor_1.BN(redeemAmount))
-                        .div(new anchor_1.BN(10 ** 6))
-                        .toNumber(),
+                    amount: (0, helper_1.restoreRawDecimal)(component.quantityInSysDecimal.mul(new anchor_1.BN(redeemAmount))),
                 };
             }
             else {
@@ -1337,10 +1328,7 @@ class PieProgram {
                     isSwapBaseOut: false,
                     inputMint: component.mint.toBase58(),
                     outputMint: spl_token_1.NATIVE_MINT.toBase58(),
-                    amount: component.quantityInSysDecimal
-                        .mul(new anchor_1.BN(redeemAmount))
-                        .div(new anchor_1.BN(10 ** 6))
-                        .toNumber(),
+                    amount: (0, helper_1.restoreRawDecimal)(component.quantityInSysDecimal.mul(new anchor_1.BN(redeemAmount))),
                     slippage,
                 }));
             }

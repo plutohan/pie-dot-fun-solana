@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.restoreRawDecimalRoundUp = exports.restoreRawDecimal = void 0;
 exports.createUserWithLamports = createUserWithLamports;
 exports.createNewMint = createNewMint;
 exports.mintTokenTo = mintTokenTo;
@@ -36,6 +37,7 @@ const raydium_sdk_v2_1 = require("@raydium-io/raydium-sdk-v2");
 const console_table_printer_1 = require("console-table-printer");
 const axios_1 = __importDefault(require("axios"));
 const jito_1 = require("../jito");
+const constants_1 = require("../constants");
 async function createUserWithLamports(connection, lamports) {
     const account = web3_js_1.Keypair.generate();
     const signature = await connection.requestAirdrop(account.publicKey, lamports * web3_js_1.LAMPORTS_PER_SOL);
@@ -282,4 +284,15 @@ async function simulateTransaction(connection, txInBase64) {
     console.log(JSON.stringify(simulateTx));
     return simulateTx;
 }
+const restoreRawDecimal = (val) => {
+    return val.div(new anchor_1.BN(constants_1.SYS_DECIMALS)).toNumber();
+};
+exports.restoreRawDecimal = restoreRawDecimal;
+const restoreRawDecimalRoundUp = (val) => {
+    if (val.mod(new anchor_1.BN(constants_1.SYS_DECIMALS)).isZero()) {
+        return (0, exports.restoreRawDecimal)(val);
+    }
+    return (0, exports.restoreRawDecimal)(val) + 1;
+};
+exports.restoreRawDecimalRoundUp = restoreRawDecimalRoundUp;
 //# sourceMappingURL=helper.js.map
