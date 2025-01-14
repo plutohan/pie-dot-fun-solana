@@ -4,7 +4,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER_FUND, utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE 
+    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE 
 };
 
 #[derive(Accounts)]
@@ -74,8 +74,8 @@ pub struct DepositWsolEvent {
 }
 
 pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
+    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
     let user_fund = &mut ctx.accounts.user_fund;
-
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(&ctx.accounts.program_state, amount)?;
 
     transfer_fees(
