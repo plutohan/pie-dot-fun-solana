@@ -42,9 +42,9 @@ pub struct DepositWsol<'info> {
     pub user_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-      mut,
-      token::mint = NATIVE_MINT,
-      token::authority = basket_config
+        mut,
+        associated_token::mint = NATIVE_MINT,
+        associated_token::authority = basket_config
     )]
     pub vault_wsol_account:  Box<InterfaceAccount<'info, TokenAccount>>,
 

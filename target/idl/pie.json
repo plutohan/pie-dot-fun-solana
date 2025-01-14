@@ -167,8 +167,97 @@
           "writable": true
         },
         {
+          "name": "vault_token_destination_mint"
+        },
+        {
           "name": "vault_token_destination",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basket_config"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault_token_destination_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "platform_fee_token_account",
@@ -333,32 +422,104 @@
           "writable": true
         },
         {
+          "name": "user_token_source_mint"
+        },
+        {
           "name": "user_token_source",
-          "docs": [
-            "The user token account for input token"
-          ],
           "writable": true
+        },
+        {
+          "name": "vault_token_destination_mint"
         },
         {
           "name": "vault_token_destination",
-          "docs": [
-            "The vault token account destination for output token"
-          ],
-          "writable": true
-        },
-        {
-          "name": "input_vault",
-          "docs": [
-            "The vault token account for input token"
-          ],
-          "writable": true
-        },
-        {
-          "name": "output_vault",
-          "docs": [
-            "The vault token account for output token"
-          ],
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basket_config"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault_token_destination_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "observation_state",
@@ -384,18 +545,6 @@
             "memo program"
           ],
           "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
-        },
-        {
-          "name": "input_vault_mint",
-          "docs": [
-            "The mint of token vault 0"
-          ]
-        },
-        {
-          "name": "output_vault_mint",
-          "docs": [
-            "The mint of token vault 1"
-          ]
         }
       ],
       "args": [
@@ -545,32 +694,104 @@
           "writable": true
         },
         {
+          "name": "user_token_source_mint"
+        },
+        {
           "name": "user_token_source",
-          "docs": [
-            "The user token account for input token"
-          ],
           "writable": true
+        },
+        {
+          "name": "vault_token_destination_mint"
         },
         {
           "name": "vault_token_destination",
-          "docs": [
-            "The user token account for output token"
-          ],
-          "writable": true
-        },
-        {
-          "name": "input_vault",
-          "docs": [
-            "The vault token account for input token"
-          ],
-          "writable": true
-        },
-        {
-          "name": "output_vault",
-          "docs": [
-            "The vault token account for output token"
-          ],
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basket_config"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault_token_destination_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "input_token_program",
@@ -583,18 +804,6 @@
           "name": "output_token_program",
           "docs": [
             "SPL program for output token transfers: Token or Token 2022 Program"
-          ]
-        },
-        {
-          "name": "input_token_mint",
-          "docs": [
-            "The mint of input token"
-          ]
-        },
-        {
-          "name": "output_token_mint",
-          "docs": [
-            "The mint of output token"
           ]
         },
         {

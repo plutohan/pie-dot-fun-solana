@@ -65,26 +65,32 @@ pub struct BuyComponentCpmm<'info> {
     #[account(mut)]
     pub pool_state: AccountLoader<'info, PoolState>,
 
-    /// The user token account for input token
+    #[account(
+        address = user_token_source.mint
+    )]
+    pub user_token_source_mint: Box<InterfaceAccount<'info, Mint>>,
+
     #[account(mut)]
     pub user_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The user token account for output token
-    #[account(mut)]
+    #[account(
+        address = vault_token_destination.mint
+    )]
+    pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(
+        mut,
+        associated_token::authority = basket_config,
+        associated_token::mint = vault_token_destination_mint,
+    )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The vault token account for input token
-    #[account(
-        mut,
-        constraint = input_vault.key() == pool_state.load()?.token_0_vault || input_vault.key() == pool_state.load()?.token_1_vault
-    )]
+    #[account(mut)]
     pub input_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The vault token account for output token
-    #[account(
-        mut,
-        constraint = output_vault.key() == pool_state.load()?.token_0_vault || output_vault.key() == pool_state.load()?.token_1_vault
-    )]
+    #[account(mut)]
     pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// SPL program for input token transfers: Token Program
@@ -94,13 +100,6 @@ pub struct BuyComponentCpmm<'info> {
     /// SPL program for output token transfers: Token or Token 2022 Program
     pub output_token_program: Interface<'info, TokenInterface>,
 
-    /// The mint of input token
-    #[account(address = input_vault.mint)]
-    pub input_token_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// The mint of output token
-    #[account(address = output_vault.mint)]
-    pub output_token_mint: Box<InterfaceAccount<'info, Mint>>,
     /// The program account for the most recent oracle observation
     #[account(mut, address = pool_state.load()?.observation_key)]
     pub observation_state: AccountLoader<'info, ObservationState>,
@@ -132,8 +131,8 @@ pub fn buy_component_cpmm(
         output_vault: ctx.accounts.output_vault.to_account_info(),
         input_token_program: ctx.accounts.input_token_program.to_account_info(),
         output_token_program: ctx.accounts.output_token_program.to_account_info(),
-        input_token_mint: ctx.accounts.input_token_mint.to_account_info(),
-        output_token_mint: ctx.accounts.output_token_mint.to_account_info(),
+        input_token_mint: ctx.accounts.user_token_source_mint.to_account_info(),
+        output_token_mint: ctx.accounts.vault_token_destination_mint.to_account_info(),
         observation_state: ctx.accounts.observation_state.to_account_info(),
     };
 
@@ -167,12 +166,12 @@ pub fn buy_component_cpmm(
 
     user_fund.bump = ctx.bumps.user_fund;
     user_fund
-        .upsert_component(ctx.accounts.output_token_mint.key(), amount_received)?;
+        .upsert_component(ctx.accounts.vault_token_destination_mint.key(), amount_received)?;
 
     emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        mint: ctx.accounts.output_token_mint.key(),
+        mint: ctx.accounts.vault_token_destination_mint.key(),
         amount: amount_received,
     });
 
