@@ -27,7 +27,10 @@ pub struct ExecuteRebalancingClmm<'info> {
     )]
     pub basket_config: Account<'info, BasketConfig>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        address = basket_config.mint
+    )]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
     pub clmm_program: Program<'info, RaydiumClmm>,
