@@ -2746,7 +2746,6 @@ export type Pie = {
         },
         {
           "name": "basketConfig",
-          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -3183,6 +3182,11 @@ export type Pie = {
       "code": 6016,
       "name": "rebalancingInProgress",
       "msg": "Rebalancing in process"
+    },
+    {
+      "code": 6017,
+      "name": "maxWhitelistedCreatorsExceeded",
+      "msg": "Max whitelisted creators exceeded"
     }
   ],
   "types": [

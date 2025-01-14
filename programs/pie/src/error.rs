@@ -52,4 +52,7 @@ pub enum PieError {
 
     #[msg("Rebalancing in process")]
     RebalancingInProgress,
+
+    #[msg("Max whitelisted creators exceeded")]
+    MaxWhitelistedCreatorsExceeded,
 }

@@ -2740,7 +2740,6 @@
         },
         {
           "name": "basket_config",
-          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -3177,6 +3176,11 @@
       "code": 6016,
       "name": "RebalancingInProgress",
       "msg": "Rebalancing in process"
+    },
+    {
+      "code": 6017,
+      "name": "MaxWhitelistedCreatorsExceeded",
+      "msg": "Max whitelisted creators exceeded"
     }
   ],
   "types": [
