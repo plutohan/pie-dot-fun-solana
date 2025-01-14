@@ -3055,13 +3055,13 @@
     },
     {
       "code": 6004,
-      "name": "InvalidBasket",
-      "msg": "Invalid Basket"
+      "name": "InsufficientBalance",
+      "msg": "Insufficient Balance"
     },
     {
       "code": 6005,
-      "name": "InsufficientBalance",
-      "msg": "Insufficient Balance"
+      "name": "InvalidBasket",
+      "msg": "Invalid Basket"
     },
     {
       "code": 6006,

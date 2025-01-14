@@ -14,11 +14,11 @@ pub enum PieError {
     #[msg("Max asset exceeded")]
     MaxAssetsExceeded,
 
-    #[msg("Invalid Basket")]
-    InvalidBasket,
-
     #[msg("Insufficient Balance")]
     InsufficientBalance,
+
+    #[msg("Invalid Basket")]
+    InvalidBasket,
 
     #[msg("Invalid Amount")]
     InvalidAmount,
