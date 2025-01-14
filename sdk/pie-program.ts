@@ -46,6 +46,8 @@ import {
   getTokenAccount,
   getTokenFromTokenInfo,
   isValidTransaction,
+  restoreRawDecimal,
+  restoreRawDecimalRoundUp,
   SwapCompute,
   unwrapSolIx,
   wrapSOLInstruction,
@@ -2024,10 +2026,9 @@ export class PieProgram {
       if (component.mint.toBase58() === NATIVE_MINT.toBase58()) {
         depositData = {
           type: "deposit",
-          amount: component.quantityInSysDecimal
-            .mul(new BN(mintAmount))
-            .div(new BN(10 ** 6))
-            .toNumber(),
+          amount: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(new BN(mintAmount))
+          ),
         };
       } else {
         swapData.push(
@@ -2035,10 +2036,9 @@ export class PieProgram {
             isSwapBaseOut: true,
             inputMint: NATIVE_MINT.toBase58(),
             outputMint: component.mint.toBase58(),
-            amount: component.quantityInSysDecimal
-              .mul(new BN(mintAmount))
-              .div(new BN(10 ** 6))
-              .toNumber(),
+            amount: restoreRawDecimalRoundUp(
+              component.quantityInSysDecimal.mul(new BN(mintAmount))
+            ),
             slippage,
           })
         );
@@ -2218,10 +2218,9 @@ export class PieProgram {
       if (component.mint.toBase58() === NATIVE_MINT.toBase58()) {
         withdrawData = {
           type: "withdraw",
-          amount: component.quantityInSysDecimal
-            .mul(new BN(redeemAmount))
-            .div(new BN(10 ** 6))
-            .toNumber(),
+          amount: restoreRawDecimal(
+            component.quantityInSysDecimal.mul(new BN(redeemAmount))
+          ),
         };
       } else {
         swapData.push(
@@ -2229,10 +2228,9 @@ export class PieProgram {
             isSwapBaseOut: false,
             inputMint: component.mint.toBase58(),
             outputMint: NATIVE_MINT.toBase58(),
-            amount: component.quantityInSysDecimal
-              .mul(new BN(redeemAmount))
-              .div(new BN(10 ** 6))
-              .toNumber(),
+            amount: restoreRawDecimal(
+              component.quantityInSysDecimal.mul(new BN(redeemAmount))
+            ),
             slippage,
           })
         );

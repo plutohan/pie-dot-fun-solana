@@ -17,4 +17,11 @@ impl Calculator {
     pub fn restore_raw_decimal(val: u128) -> u64 {
         Self::to_u64(val.checked_div(SYS_DECIMALS.into()).unwrap()).unwrap()
     }
+
+    pub fn restore_raw_decimal_round_up(val: u128) -> u64 {
+        if val % SYS_DECIMALS as u128 != 0 {
+            return Self::restore_raw_decimal(val) + 1;
+        }
+        Self::restore_raw_decimal(val)
+    }
 }

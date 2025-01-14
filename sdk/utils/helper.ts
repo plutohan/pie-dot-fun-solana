@@ -33,6 +33,7 @@ import { Table } from "console-table-printer";
 import axios from "axios";
 import { getInflightBundleStatuses } from "../jito";
 import { TokenInfo } from "../types";
+import { SYS_DECIMALS } from "../constants";
 
 export async function createUserWithLamports(
   connection: Connection,
@@ -551,3 +552,14 @@ export async function simulateTransaction(
 
   return simulateTx;
 }
+
+export const restoreRawDecimal = (val: BN): number => {
+  return val.div(new BN(SYS_DECIMALS)).toNumber();
+};
+
+export const restoreRawDecimalRoundUp = (val: BN): number => {
+  if (val.mod(new BN(SYS_DECIMALS)).isZero()) {
+    return restoreRawDecimal(val);
+  }
+  return restoreRawDecimal(val) + 1;
+};
