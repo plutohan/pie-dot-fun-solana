@@ -28,12 +28,12 @@ pub fn update_rebalancer(
     ctx: Context<UpdateRebalancerContext>,
     new_rebalancer: Pubkey,
 ) -> Result<()> {
-
+    let old_rebalancer = ctx.accounts.basket_config.rebalancer;
     ctx.accounts.basket_config.rebalancer = new_rebalancer;
 
     emit!(UpdateRebalancerEvent {
         basket_id: ctx.accounts.basket_config.id,
-        old_rebalancer: ctx.accounts.basket_config.rebalancer.key(),
+        old_rebalancer,
         new_rebalancer,
     });
     Ok(())

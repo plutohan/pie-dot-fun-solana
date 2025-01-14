@@ -213,7 +213,7 @@ pub fn sell_component(
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        mint: ctx.accounts.amm_coin_vault.key(),
+        mint: ctx.accounts.vault_token_source.mint.key(),
         amount: amount_in,
     });
 
