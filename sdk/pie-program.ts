@@ -1527,7 +1527,6 @@ export class PieProgram {
         rebalancer,
         basketConfig: this.basketConfigPDA({ basketId }),
         basketMint,
-        vaultWrappedSol: NATIVE_MINT,
         amm: new PublicKey(ammId),
         ammAuthority: new PublicKey(poolKeys.authority),
         ammOpenOrders: new PublicKey(poolKeys.openOrders),
@@ -1544,6 +1543,8 @@ export class PieProgram {
         ammProgram: new PublicKey(poolKeys.programId),
         vaultTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
+        vaultTokenSourceMint: new PublicKey(inputMint),
+        vaultTokenDestinationMint: new PublicKey(outputMint),
       })
       .transaction();
     tx.add(executeRebalancingTx);
@@ -1632,22 +1633,21 @@ export class PieProgram {
         rebalancer,
         basketConfig: this.basketConfigPDA({ basketId }),
         basketMint,
-        vaultWrappedSol: NATIVE_MINT,
         authority: new PublicKey(poolKeys.authority),
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolInfo.id),
+        vaultTokenSourceMint: new PublicKey(inputMint),
+        vaultTokenDestinationMint: new PublicKey(outputMint),
+        vaultTokenSource: inputTokenAccount,
+        vaultTokenDestination: outputTokenAccount,
         inputVault,
         outputVault,
         inputTokenProgram,
         outputTokenProgram,
-        inputTokenMint,
-        outputTokenMint,
         observationState: getPdaObservationId(
           new PublicKey(poolInfo.programId),
           new PublicKey(poolInfo.id)
         ).publicKey,
-        vaultTokenSource: inputTokenAccount,
-        vaultTokenDestination: outputTokenAccount,
       })
       .transaction();
     tx.add(executeRebalancingTx);
@@ -1767,10 +1767,10 @@ export class PieProgram {
           ? new PublicKey(poolKeys.vault.B)
           : new PublicKey(poolKeys.vault.A),
         observationState: new PublicKey(clmmPoolInfo.observationId),
-        inputVaultMint: isInputMintA
+        vaultTokenSourceMint: isInputMintA
           ? new PublicKey(poolKeys.mintA.address)
           : new PublicKey(poolKeys.mintB.address),
-        outputVaultMint: isInputMintA
+        vaultTokenDestinationMint: isInputMintA
           ? new PublicKey(poolKeys.mintB.address)
           : new PublicKey(poolKeys.mintA.address),
         tokenMint: new PublicKey(poolKeys.mintA.address),

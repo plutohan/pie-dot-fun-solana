@@ -62,11 +62,28 @@ pub struct ExecuteRebalancing<'info> {
     pub market_pc_vault: AccountInfo<'info>,
     /// CHECK: vault_signer Account
     pub market_vault_signer: AccountInfo<'info>,
-    /// CHECK: user source token Account
-    #[account(mut)]
+
+    #[account(
+        address = vault_token_source.mint
+    )]
+    pub vault_token_source_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(mut,
+        associated_token::authority = basket_config,
+        associated_token::mint = vault_token_source_mint,
+    )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(mut)]
+    #[account(
+        address = vault_token_destination.mint
+    )]
+    pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(
+        mut,
+        associated_token::authority = basket_config,
+        associated_token::mint = vault_token_destination_mint,
+    )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
