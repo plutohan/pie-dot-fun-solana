@@ -42,9 +42,9 @@ pub struct DepositWsol<'info> {
     pub user_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-      mut,
-      token::mint = NATIVE_MINT,
-      token::authority = basket_config
+        mut,
+        associated_token::mint = NATIVE_MINT,
+        associated_token::authority = basket_config
     )]
     pub vault_wsol_account:  Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -74,6 +74,12 @@ pub struct DepositWsolEvent {
 }
 
 pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
+    require!(
+        ctx.accounts.basket_config.components
+            .iter()
+            .any(|c| c.mint == NATIVE_MINT),
+        PieError::InvalidComponent
+    );
     require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
     let user_fund = &mut ctx.accounts.user_fund;
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(&ctx.accounts.program_state, amount)?;

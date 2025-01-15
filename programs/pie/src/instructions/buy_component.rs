@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program};
 use anchor_spl::{
     token::Token,
-    token_interface::TokenAccount,
+    token_interface::{Mint, TokenAccount},
 };
 use raydium_amm_cpi::{library::swap_base_out, program::RaydiumAmm, SwapBaseOut};
 
@@ -78,8 +78,14 @@ pub struct BuyComponentContext<'info> {
     pub user_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
+        address = vault_token_destination.mint
+    )]
+    pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(
         mut,
-        token::authority = basket_config
+        associated_token::authority = basket_config,
+        associated_token::mint = vault_token_destination_mint,
     )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -121,6 +127,12 @@ pub fn buy_component(
 ) -> Result<()> {
     require!(max_amount_in > 0, PieError::InvalidAmount);
     require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    require!(
+        ctx.accounts.basket_config.components
+            .iter()
+            .any(|c| c.mint == ctx.accounts.vault_token_destination_mint.key()),
+        PieError::InvalidComponent
+    );
 
     let user_fund = &mut ctx.accounts.user_fund;
 

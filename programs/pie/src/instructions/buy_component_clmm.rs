@@ -62,15 +62,23 @@ pub struct BuyComponentClmm<'info> {
     #[account(mut)]
     pub pool_state: AccountInfo<'info>,
 
-    /// The user token account for input token
+    #[account(
+        address = user_token_source.mint
+    )]
+    pub user_token_source_mint: Box<InterfaceAccount<'info, Mint>>,
+
     #[account(mut)]
     pub user_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The vault token account destination for output token
+    #[account(
+        address = vault_token_destination.mint
+    )]
+    pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
+
     #[account(
         mut,
-        token::mint = output_vault_mint,
-        token::authority = basket_config
+        associated_token::authority = basket_config,
+        associated_token::mint = vault_token_destination_mint,
     )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -95,17 +103,6 @@ pub struct BuyComponentClmm<'info> {
     /// memo program
     pub memo_program: Program<'info, Memo>,
 
-    /// The mint of token vault 0
-    #[account(
-        address = input_vault.mint
-    )]
-    pub input_vault_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// The mint of token vault 1
-    #[account(
-        address = output_vault.mint
-    )]
-    pub output_vault_mint: Box<InterfaceAccount<'info, Mint>>,
     // remaining accounts
     // tickarray_bitmap_extension: must add account if need regardless the sequence
     // tick_array_account_1
@@ -121,6 +118,12 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
 ) -> Result<()> {
     require!(amount > 0, PieError::InvalidAmount);
     require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    require!(
+        ctx.accounts.basket_config.components
+            .iter()
+            .any(|c| c.mint == ctx.accounts.vault_token_destination_mint.key()),
+        PieError::InvalidComponent
+    );
 
     let balance_in_before = ctx.accounts.user_token_source.amount;
     let balance_out_before = ctx.accounts.vault_token_destination.amount;
@@ -139,8 +142,8 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
         token_program: ctx.accounts.token_program.to_account_info(),
         token_program_2022: ctx.accounts.token_program_2022.to_account_info(),
         memo_program: ctx.accounts.memo_program.to_account_info(),
-        input_vault_mint: ctx.accounts.input_vault_mint.to_account_info(),
-        output_vault_mint: ctx.accounts.output_vault_mint.to_account_info(),
+        input_vault_mint: ctx.accounts.user_token_source_mint.to_account_info(),
+        output_vault_mint: ctx.accounts.vault_token_destination_mint.to_account_info(),
     };
     let cpi_context = CpiContext::new(ctx.accounts.clmm_program.to_account_info(), cpi_accounts)
         .with_remaining_accounts(ctx.remaining_accounts.to_vec());
@@ -179,12 +182,12 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
     
     user_fund.bump = ctx.bumps.user_fund;
     user_fund
-        .upsert_component(ctx.accounts.output_vault_mint.key(), amount_received)?;
+        .upsert_component(ctx.accounts.vault_token_destination_mint.key(), amount_received)?;
 
     emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        mint: ctx.accounts.output_vault.key(),
+        mint: ctx.accounts.vault_token_destination_mint.key(),
         amount: amount_received,
     });
 

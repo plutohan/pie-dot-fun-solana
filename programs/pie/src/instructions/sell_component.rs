@@ -1,15 +1,16 @@
-use anchor_lang::{prelude::*, solana_program};
-use anchor_spl::{
-    token::{Token, TokenAccount},
-    token_interface::Mint,
-};
-use raydium_amm_cpi::{library::swap_base_in, program::RaydiumAmm, SwapBaseIn};
-
 use crate::{
     constant::USER_FUND,
-    error::PieError,
     utils::{calculate_fee_amount, transfer_fees},
-    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
+    ProgramState, UserFund, NATIVE_MINT, PROGRAM_STATE,
+    error::PieError, BasketConfig, BASKET_CONFIG
+};
+use anchor_lang::{prelude::*, solana_program};
+use anchor_spl::token_interface::TokenAccount;
+use anchor_spl::{token::Token, token_interface::Mint};
+use raydium_amm_cpi::program::RaydiumAmm;
+use raydium_amm_cpi::{
+    library::{swap_base_in, swap_base_out},
+    SwapBaseIn, SwapBaseOut,
 };
 
 #[derive(Accounts)]
@@ -24,7 +25,7 @@ pub struct SellComponentContext<'info> {
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(
         mut,
-         seeds = [PROGRAM_STATE], 
+        seeds = [PROGRAM_STATE], 
         bump = program_state.bump
     )]
     pub program_state: Box<Account<'info, ProgramState>>,
@@ -73,11 +74,20 @@ pub struct SellComponentContext<'info> {
     pub market_pc_vault: AccountInfo<'info>,
     /// CHECK: Safe. vault_signer Account
     pub market_vault_signer: AccountInfo<'info>,
-    #[account(mut)]
-    pub vault_token_source: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        address = vault_token_source.mint
+    )]
+    pub vault_token_source_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(mut,
+        associated_token::authority = basket_config,
+        associated_token::mint = vault_token_source_mint,
+    )]
+    pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub user_token_destination: Box<Account<'info, TokenAccount>>,
+    pub user_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: Safe. user source token Account
     #[account(
@@ -85,7 +95,7 @@ pub struct SellComponentContext<'info> {
         token::authority = program_state.platform_fee_wallet,
         token::mint = NATIVE_MINT,
     )]
-    pub platform_fee_token_account: Box<Account<'info, TokenAccount>>,
+    pub platform_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: Safe. user source token Account
     #[account(
@@ -93,7 +103,7 @@ pub struct SellComponentContext<'info> {
         token::authority = basket_config.creator,
         token::mint = NATIVE_MINT,
     )]
-    pub creator_token_account: Box<Account<'info, TokenAccount>>,
+    pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     
@@ -215,7 +225,7 @@ pub fn sell_component(
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        mint: ctx.accounts.amm_coin_vault.key(),
+        mint: ctx.accounts.vault_token_source.mint.key(),
         amount: amount_in,
     });
 
