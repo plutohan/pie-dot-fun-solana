@@ -30,7 +30,7 @@ pub fn update_whitelisted_creators(
     ctx.accounts.program_state.whitelisted_creators = new_whitelisted_creators;
 
     require!(
-        ctx.accounts.program_state.whitelisted_creators.len() < MAX_WHITELISTED_CREATORS as usize,
+        ctx.accounts.program_state.whitelisted_creators.len() <= MAX_WHITELISTED_CREATORS as usize,
         PieError::MaxWhitelistedCreatorsExceeded
     );
 
