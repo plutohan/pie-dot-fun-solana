@@ -67,11 +67,23 @@ pub struct SellComponentCpmm<'info> {
     #[account(mut)]
     pub pool_state: AccountLoader<'info, PoolState>,
 
-    /// The user token account for input token
-    #[account(mut)]
+    #[account(
+        address = vault_token_source.mint
+    )]
+    pub vault_token_source_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(mut,
+        associated_token::authority = basket_config,
+        associated_token::mint = vault_token_source_mint,
+    )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The user token account for output token
+    #[account(
+        address = user_token_destination.mint
+    )]
+    pub user_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    /// The user token account for input token
     #[account(mut)]
     pub user_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -96,13 +108,6 @@ pub struct SellComponentCpmm<'info> {
     #[account(address = token::ID)]
     pub output_token_program: Interface<'info, TokenInterface>,
 
-    /// The mint of input token
-    #[account(address = input_vault.mint)]
-    pub input_token_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// The mint of output token
-    #[account(address = output_vault.mint)]
-    pub output_token_mint: Box<InterfaceAccount<'info, Mint>>,
     /// The program account for the most recent oracle observation
     #[account(mut, address = pool_state.load()?.observation_key)]
     pub observation_state: AccountLoader<'info, ObservationState>,
@@ -127,7 +132,7 @@ pub fn sell_component_cpmm(
     let component = user_fund
         .components
         .iter_mut()
-        .find(|a| a.mint == ctx.accounts.input_token_mint.key())
+        .find(|a| a.mint == ctx.accounts.vault_token_source_mint.key())
         .ok_or(PieError::ComponentNotFound)?;
 
     require!(component.amount >= amount_in, PieError::InsufficientBalance);
@@ -150,8 +155,8 @@ pub fn sell_component_cpmm(
         output_vault: ctx.accounts.output_vault.to_account_info(),
         input_token_program: ctx.accounts.input_token_program.to_account_info(),
         output_token_program: ctx.accounts.output_token_program.to_account_info(),
-        input_token_mint: ctx.accounts.input_token_mint.to_account_info(),
-        output_token_mint: ctx.accounts.output_token_mint.to_account_info(),
+        input_token_mint: ctx.accounts.vault_token_source_mint.to_account_info(),
+        output_token_mint: ctx.accounts.user_token_destination_mint.to_account_info(),
         observation_state: ctx.accounts.observation_state.to_account_info(),
     };
 
@@ -197,7 +202,7 @@ pub fn sell_component_cpmm(
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        mint: ctx.accounts.input_token_mint.key(),
+        mint: ctx.accounts.vault_token_source_mint.key(),
         amount: amount_in,
     });
 

@@ -26,11 +26,11 @@ pub struct ExecuteRebalancingClmm<'info> {
         constraint = basket_config.rebalancer == rebalancer.key() @ PieError::Unauthorized
     )]
     pub basket_config: Account<'info, BasketConfig>,
-    // Required token accounts
-    #[account(mut)]
-    pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        address = basket_config.mint
+    )]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
     pub clmm_program: Program<'info, RaydiumClmm>,
@@ -43,12 +43,27 @@ pub struct ExecuteRebalancingClmm<'info> {
     #[account(mut)]
     pub pool_state: AccountInfo<'info>,
 
-    /// The user token account for input token
-    #[account(mut)]
+    #[account(
+        address = vault_token_source.mint
+    )]
+    pub vault_token_source_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(mut,
+        associated_token::authority = basket_config,
+        associated_token::mint = vault_token_source_mint,
+    )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The user token account for output token
-    #[account(mut)]
+    #[account(
+        address = vault_token_destination.mint
+    )]
+    pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(
+        mut,
+        associated_token::authority = basket_config,
+        associated_token::mint = vault_token_destination_mint,
+    )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The vault token account for input token
@@ -71,18 +86,6 @@ pub struct ExecuteRebalancingClmm<'info> {
 
     /// memo program
     pub memo_program: Program<'info, Memo>,
-
-    /// The mint of token vault 0
-    #[account(
-        address = input_vault.mint
-    )]
-    pub input_vault_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// The mint of token vault 1
-    #[account(
-        address = output_vault.mint
-    )]
-    pub output_vault_mint: Box<InterfaceAccount<'info, Mint>>,
     // remaining accounts
     // tickarray_bitmap_extension: must add account if need regardless the sequence
     // tick_array_account_1
@@ -139,8 +142,8 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         token_program: ctx.accounts.token_program.to_account_info(),
         token_program_2022: ctx.accounts.token_program_2022.to_account_info(),
         memo_program: ctx.accounts.memo_program.to_account_info(),
-        input_vault_mint: ctx.accounts.input_vault_mint.to_account_info(),
-        output_vault_mint: ctx.accounts.output_vault_mint.to_account_info(),
+        input_vault_mint: ctx.accounts.vault_token_source_mint.to_account_info(),
+        output_vault_mint: ctx.accounts.vault_token_destination_mint.to_account_info(),
     };
     let cpi_context = CpiContext::new_with_signer(
         ctx.accounts.clmm_program.to_account_info(),

@@ -710,6 +710,7 @@ export class PieProgram {
         ammProgram: new PublicKey(poolKeys.programId),
         userTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
+        vaultTokenDestinationMint: new PublicKey(mintOut),
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
         creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
       })
@@ -802,6 +803,8 @@ export class PieProgram {
         authority: new PublicKey(poolKeys.authority),
         userTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
+        userTokenSourceMint: baseIn ? mintA : mintB,
+        vaultTokenDestinationMint: baseIn ? mintB : mintA,
         inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
         outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
         inputTokenProgram: new PublicKey(
@@ -810,8 +813,6 @@ export class PieProgram {
         outputTokenProgram: new PublicKey(
           poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
         ),
-        inputTokenMint: baseIn ? mintA : mintB,
-        outputTokenMint: baseIn ? mintB : mintA,
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
         creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
         observationState: getPdaObservationId(
@@ -921,12 +922,12 @@ export class PieProgram {
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolKeys.id),
         userTokenSource: inputTokenAccount,
+        userTokenSourceMint: NATIVE_MINT,
         vaultTokenDestination: outputTokenAccount,
+        vaultTokenDestinationMint: baseIn ? mintB : mintA,
         inputVault: baseIn ? mintAVault : mintBVault,
         outputVault: baseIn ? mintBVault : mintAVault,
         observationState: new PublicKey(clmmPoolInfo.observationId),
-        inputVaultMint: baseIn ? mintA : mintB,
-        outputVaultMint: baseIn ? mintB : mintA,
       })
       .remainingAccounts(
         await buildClmmRemainingAccounts(
@@ -1026,6 +1027,7 @@ export class PieProgram {
         ammProgram: new PublicKey(poolKeys.programId),
         userTokenDestination: outputTokenAccount,
         vaultTokenSource: inputTokenAccount,
+        vaultTokenSourceMint: new PublicKey(mintIn),
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
         creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
       })
@@ -1114,12 +1116,13 @@ export class PieProgram {
         basketMint: basketMint,
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
         creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
-
         authority: new PublicKey(poolKeys.authority),
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolInfo.id),
         vaultTokenSource: inputTokenAccount,
         userTokenDestination: outputTokenAccount,
+        vaultTokenSourceMint: baseIn ? mintA : mintB,
+        userTokenDestinationMint: baseIn ? mintB : mintA,
         inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
         outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
         inputTokenProgram: new PublicKey(
@@ -1128,8 +1131,6 @@ export class PieProgram {
         outputTokenProgram: new PublicKey(
           poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
         ),
-        inputTokenMint: baseIn ? mintA : mintB,
-        outputTokenMint: baseIn ? mintB : mintA,
         observationState: getPdaObservationId(
           new PublicKey(poolInfo.programId),
           new PublicKey(poolInfo.id)
@@ -1248,6 +1249,8 @@ export class PieProgram {
         poolState: new PublicKey(poolInfo.id),
         vaultTokenSource: inputTokenAccount,
         userTokenDestination: outputTokenAccount,
+        vaultTokenSourceMint: baseIn ? mintA : mintB,
+        userTokenDestinationMint: baseIn ? mintB : mintA,
         inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
         outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
         inputTokenProgram: new PublicKey(
@@ -1256,8 +1259,6 @@ export class PieProgram {
         outputTokenProgram: new PublicKey(
           poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
         ),
-        inputVaultMint: baseIn ? mintA : mintB,
-        outputVaultMint: baseIn ? mintB : mintA,
         observationState: new PublicKey(clmmPoolInfo.observationId),
       })
       .remainingAccounts(
@@ -1526,7 +1527,6 @@ export class PieProgram {
         rebalancer,
         basketConfig: this.basketConfigPDA({ basketId }),
         basketMint,
-        vaultWrappedSol: NATIVE_MINT,
         amm: new PublicKey(ammId),
         ammAuthority: new PublicKey(poolKeys.authority),
         ammOpenOrders: new PublicKey(poolKeys.openOrders),
@@ -1543,6 +1543,8 @@ export class PieProgram {
         ammProgram: new PublicKey(poolKeys.programId),
         vaultTokenSource: inputTokenAccount,
         vaultTokenDestination: outputTokenAccount,
+        vaultTokenSourceMint: new PublicKey(inputMint),
+        vaultTokenDestinationMint: new PublicKey(outputMint),
       })
       .transaction();
     tx.add(executeRebalancingTx);
@@ -1631,22 +1633,21 @@ export class PieProgram {
         rebalancer,
         basketConfig: this.basketConfigPDA({ basketId }),
         basketMint,
-        vaultWrappedSol: NATIVE_MINT,
         authority: new PublicKey(poolKeys.authority),
         ammConfig: new PublicKey(poolKeys.config.id),
         poolState: new PublicKey(poolInfo.id),
+        vaultTokenSourceMint: new PublicKey(inputMint),
+        vaultTokenDestinationMint: new PublicKey(outputMint),
+        vaultTokenSource: inputTokenAccount,
+        vaultTokenDestination: outputTokenAccount,
         inputVault,
         outputVault,
         inputTokenProgram,
         outputTokenProgram,
-        inputTokenMint,
-        outputTokenMint,
         observationState: getPdaObservationId(
           new PublicKey(poolInfo.programId),
           new PublicKey(poolInfo.id)
         ).publicKey,
-        vaultTokenSource: inputTokenAccount,
-        vaultTokenDestination: outputTokenAccount,
       })
       .transaction();
     tx.add(executeRebalancingTx);
@@ -1766,13 +1767,12 @@ export class PieProgram {
           ? new PublicKey(poolKeys.vault.B)
           : new PublicKey(poolKeys.vault.A),
         observationState: new PublicKey(clmmPoolInfo.observationId),
-        inputVaultMint: isInputMintA
+        vaultTokenSourceMint: isInputMintA
           ? new PublicKey(poolKeys.mintA.address)
           : new PublicKey(poolKeys.mintB.address),
-        outputVaultMint: isInputMintA
+        vaultTokenDestinationMint: isInputMintA
           ? new PublicKey(poolKeys.mintB.address)
           : new PublicKey(poolKeys.mintA.address),
-        tokenMint: new PublicKey(poolKeys.mintA.address),
       })
       .remainingAccounts(
         await buildClmmRemainingAccounts(

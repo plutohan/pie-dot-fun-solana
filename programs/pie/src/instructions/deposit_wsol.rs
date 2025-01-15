@@ -4,7 +4,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER_FUND, utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE 
+    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE 
 };
 
 #[derive(Accounts)]
@@ -42,9 +42,9 @@ pub struct DepositWsol<'info> {
     pub user_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-      mut,
-      token::mint = NATIVE_MINT,
-      token::authority = basket_config
+        mut,
+        associated_token::mint = NATIVE_MINT,
+        associated_token::authority = basket_config
     )]
     pub vault_wsol_account:  Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -74,8 +74,14 @@ pub struct DepositWsolEvent {
 }
 
 pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
+    require!(
+        ctx.accounts.basket_config.components
+            .iter()
+            .any(|c| c.mint == NATIVE_MINT),
+        PieError::InvalidComponent
+    );
+    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
     let user_fund = &mut ctx.accounts.user_fund;
-
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(&ctx.accounts.program_state, amount)?;
 
     transfer_fees(
@@ -96,10 +102,12 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
         amount
     )?;
 
+    user_fund.bump = ctx.bumps.user_fund;
     user_fund.upsert_component(
         NATIVE_MINT,
         amount
     )?;
+
     emit!(DepositWsolEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
