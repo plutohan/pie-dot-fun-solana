@@ -104,6 +104,8 @@ pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
     component.amount = component.amount.checked_sub(amount).unwrap();
     // Remove components with zero amount
     user_fund.components.retain(|component| component.amount > 0);
+    // Close user fund if it is empty
+    user_fund.close_if_empty(user_fund.to_account_info(), ctx.accounts.user.to_account_info())?;
 
     ctx.accounts.user_wsol_account.reload()?;
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(&ctx.accounts.program_state, amount)?;

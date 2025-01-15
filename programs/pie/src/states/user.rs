@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::account_info::AccountInfo;
+use anchor_lang::solana_program::system_program;
 
 use crate::{constant::MAX_COMPONENTS, error::PieError};
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -18,7 +20,11 @@ impl UserFund {
     /// - If `mint` already exists in `components`, it increments the existing amount.
     /// - Otherwise, it creates a new `UserComponent`, provided we haven’t hit `MAX_COMPONENTS`.
     pub fn upsert_component(&mut self, mint: Pubkey, amount: u64) -> Result<()> {
-        if let Some(asset) = self.components.iter_mut().find(|component| component.mint == mint) {
+        if let Some(asset) = self
+            .components
+            .iter_mut()
+            .find(|component| component.mint == mint)
+        {
             asset.amount = asset
                 .amount
                 .checked_add(amount)
@@ -31,6 +37,25 @@ impl UserFund {
             self.components.push(UserComponent { mint, amount });
         }
         Ok(())
+    }
+    pub fn close_if_empty(&self, info: AccountInfo, sol_destination: AccountInfo) -> Result<bool> {
+        if self
+            .components
+            .iter()
+            .all(|component| component.amount == 0)
+        {
+            // Transfer tokens from the account to the sol_destination.
+            let dest_starting_lamports: u64 = sol_destination.lamports();
+            **sol_destination.lamports.borrow_mut() =
+                dest_starting_lamports.checked_add(info.lamports()).unwrap();
+            **info.lamports.borrow_mut() = 0;
+
+            info.assign(&system_program::ID);
+            info.realloc(0, false)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }
 

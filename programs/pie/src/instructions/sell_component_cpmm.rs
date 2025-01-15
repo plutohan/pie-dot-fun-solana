@@ -11,7 +11,10 @@ use raydium_cpmm_cpi::{
 };
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees}, BasketConfig, ProgramState, SellComponentEvent, UserFund, BASKET_CONFIG, NATIVE_MINT
+    constant::USER_FUND,
+    error::PieError,
+    utils::{calculate_fee_amount, transfer_fees},
+    BasketConfig, ProgramState, SellComponentEvent, UserFund, BASKET_CONFIG, NATIVE_MINT,
 };
 
 #[derive(Accounts)]
@@ -182,7 +185,14 @@ pub fn sell_component_cpmm(
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount_in).unwrap();
     // Remove components with zero amount
-    user_fund.components.retain(|component| component.amount > 0);
+    user_fund
+        .components
+        .retain(|component| component.amount > 0);
+    // Close user fund if it is empty
+    user_fund.close_if_empty(
+        user_fund.to_account_info(),
+        ctx.accounts.user.to_account_info(),
+    )?;
 
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

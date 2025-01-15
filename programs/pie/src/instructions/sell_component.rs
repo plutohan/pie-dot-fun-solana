@@ -24,7 +24,7 @@ pub struct SellComponentContext<'info> {
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(
         mut,
-         seeds = [PROGRAM_STATE], 
+        seeds = [PROGRAM_STATE], 
         bump = program_state.bump
     )]
     pub program_state: Box<Account<'info, ProgramState>>,
@@ -211,6 +211,8 @@ pub fn sell_component(
     component.amount = component.amount.checked_sub(amount_in).unwrap();
     // Remove components with zero amount
     user_fund.components.retain(|component| component.amount > 0);
+    // Close user fund if it is empty
+    user_fund.close_if_empty(user_fund.to_account_info(), ctx.accounts.user.to_account_info())?;
 
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
