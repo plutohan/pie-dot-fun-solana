@@ -536,7 +536,7 @@ describe("pie", () => {
       admin.publicKey,
       basketId
     );
-    userFundTable.printTable();
+    userFundTable?.printTable();
   });
 
   it("Redeem Basket Token", async () => {
@@ -622,7 +622,7 @@ describe("pie", () => {
         admin.publicKey,
         basketId
       );
-      userFundTable.printTable();
+      userFundTable?.printTable();
     }
   });
 
