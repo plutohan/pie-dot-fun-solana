@@ -118,6 +118,12 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
 ) -> Result<()> {
     require!(amount > 0, PieError::InvalidAmount);
     require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    require!(
+        ctx.accounts.basket_config.components
+            .iter()
+            .any(|c| c.mint == ctx.accounts.vault_token_destination_mint.key()),
+        PieError::InvalidComponent
+    );
 
     let balance_in_before = ctx.accounts.user_token_source.amount;
     let balance_out_before = ctx.accounts.vault_token_destination.amount;
