@@ -28,7 +28,9 @@ pub struct RedeemBasketTokenContext<'info> {
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
-        mut,
+        init_if_needed,
+        payer = user,
+        space = UserFund::INIT_SPACE,
         seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
         bump
     )]
@@ -63,6 +65,7 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
     // Validate amount
     require!(amount > 0, PieError::InvalidAmount);
     let user_fund = &mut ctx.accounts.user_fund;
+    user_fund.bump = ctx.bumps.user_fund;
     let basket_config = &mut ctx.accounts.basket_config;
     require!(
         !basket_config.is_rebalancing,

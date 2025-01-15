@@ -322,6 +322,11 @@ export async function showUserFundTable(
 ) {
   const userFund = await pieProgram.getUserFund({ user: userPubkey, basketId });
 
+  if (!userFund) {
+    console.log("User fund not found");
+    return;
+  }
+
   const table = new Table({
     columns: [
       { name: "mint", alignment: "left", color: "cyan" },

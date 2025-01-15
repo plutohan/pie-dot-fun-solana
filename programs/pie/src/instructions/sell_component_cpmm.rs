@@ -193,6 +193,11 @@ pub fn sell_component_cpmm(
     user_fund
         .components
         .retain(|component| component.amount > 0);
+    // Close user fund if it is empty
+    user_fund.close_if_empty(
+        user_fund.to_account_info(),
+        ctx.accounts.user.to_account_info(),
+    )?;
 
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

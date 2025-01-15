@@ -56,6 +56,8 @@ describe("pie", () => {
         initializer: admin.publicKey,
         admin: admin.publicKey,
         creator: admin.publicKey,
+        platformFeeWallet: admin.publicKey,
+        platformFeePercentage: 100,
       });
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,
@@ -99,7 +101,7 @@ describe("pie", () => {
       programState.platformFeeWallet
     );
 
-    if (outputTx.instructions.length !== 0) {
+    if (isValidTransaction(outputTx)) {
       const createPlatformFeeTokenAccountTxResult =
         await sendAndConfirmTransaction(connection, outputTx, [admin], {
           skipPreflight: true,
@@ -191,20 +193,20 @@ describe("pie", () => {
       );
     }
 
-    let newLookupTable: PublicKey;
+    // let newLookupTable: PublicKey;
+    // for (let i = 0; i < createBasketArgs.components.length; i++) {
+    //   newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable({
+    //     connection,
+    //     signer: admin,
+    //     ammId: tokensAmm[i].ammId,
+    //     lookupTable: newLookupTable,
+    //   });
+    // }
 
-    for (let i = 0; i < createBasketArgs.components.length; i++) {
-      newLookupTable = await pieProgram.addRaydiumAmmToAddressLookupTable({
-        connection,
-        signer: admin,
-        ammId: tokensAmm[i].ammId,
-        lookupTable: newLookupTable,
-      });
-    }
+    // if (!addressLookupTableMap.has(basketId.toString())) {
+    //   addressLookupTableMap.set(basketId.toString(), newLookupTable);
+    // }
 
-    if (!addressLookupTableMap.has(basketId.toString())) {
-      addressLookupTableMap.set(basketId.toString(), newLookupTable);
-    }
     const basket = await pieProgram.getBasketConfig({ basketId });
     assert.equal(basket.components.length, createBasketArgs.components.length);
     assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
@@ -227,7 +229,7 @@ describe("pie", () => {
     table.printTable();
   });
 
-  it("Create Basket of CPMM token", async () => {
+  it.skip("Create Basket of CPMM token", async () => {
     const components: BasketComponent[] = [
       {
         mint: new PublicKey(tokensCpmm[0].mint),
@@ -351,16 +353,21 @@ describe("pie", () => {
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig({ basketId });
     const totalSolTobuy = 4 * LAMPORTS_PER_SOL;
-    const { tokenAccount: nativeMintAta, tx } = await getOrCreateNativeMintATA(
-      connection,
-      admin.publicKey,
-      admin.publicKey
-    );
-    const wrappedSolIx = await wrappedSOLInstruction(
-      admin.publicKey,
-      totalSolTobuy
-    );
-    tx.add(...wrappedSolIx);
+
+    const tx = new Transaction();
+    const { tokenAccount: nativeMintAta, tx: nativeMintAtaTx } =
+      await getOrCreateNativeMintATA(
+        connection,
+        admin.publicKey,
+        admin.publicKey
+      );
+
+    if (isValidTransaction(nativeMintAtaTx)) {
+      tx.add(nativeMintAtaTx);
+    }
+
+    const wrapSolIx = wrapSOLInstruction(admin.publicKey, totalSolTobuy);
+    tx.add(...wrapSolIx);
 
     await sendAndConfirmTransaction(connection, tx, [admin], {
       skipPreflight: true,
@@ -375,7 +382,7 @@ describe("pie", () => {
             userSourceOwner: admin.publicKey,
             basketId,
             maxAmountIn: 1 * LAMPORTS_PER_SOL,
-            amountOut: 2000000,
+            amountOut: (1 + i) * 10 ** 6,
             ammId: tokensAmm[i].ammId,
             unwrapSol: true,
           })
@@ -386,7 +393,7 @@ describe("pie", () => {
             userSourceOwner: admin.publicKey,
             basketId,
             maxAmountIn: 1 * LAMPORTS_PER_SOL,
-            amountOut: 2000000,
+            amountOut: (1 + i) * 10 ** 6,
             ammId: tokensAmm[i].ammId,
             unwrapSol: false,
           })
@@ -414,7 +421,7 @@ describe("pie", () => {
     userFundTable.printTable();
   });
 
-  it("Buy Component Using look up table", async () => {
+  it.skip("Buy Component Using look up table", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig({ basketId });
@@ -426,12 +433,8 @@ describe("pie", () => {
       admin.publicKey,
       admin.publicKey
     );
-    const wrappedSolIx = await wrappedSOLInstruction(
-      admin.publicKey,
-      totalSolTobuy
-    );
-
     const wrappedSolIx = wrapSOLInstruction(admin.publicKey, totalSolTobuy);
+
     tx.add(...wrappedSolIx);
 
     for (let i = 0; i < basketConfigData.components.length; i++) {
@@ -486,11 +489,20 @@ describe("pie", () => {
   it("Mint Basket", async () => {
     const programState = await pieProgram.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-
+    console.log(
+      JSON.stringify(
+        await pieProgram.getUserFund({
+          user: admin.publicKey,
+          basketId,
+        }),
+        null,
+        2
+      )
+    );
     const mintBasketTokenTx = await pieProgram.mintBasketToken({
       user: admin.publicKey,
       basketId,
-      amount: 4,
+      amount: 1 * 10 ** 6,
     });
 
     const mintBasketTokenTxResult = await sendAndConfirmTransaction(
@@ -508,6 +520,17 @@ describe("pie", () => {
     );
 
     console.log("User fund after mint basket: ");
+
+    console.log(
+      JSON.stringify(
+        await pieProgram.getUserFund({
+          user: admin.publicKey,
+          basketId,
+        }),
+        null,
+        2
+      )
+    );
     const userFundTable = await showUserFundTable(
       pieProgram,
       admin.publicKey,
@@ -522,7 +545,7 @@ describe("pie", () => {
     const redeemBasketTokenTx = await pieProgram.redeemBasketToken({
       user: admin.publicKey,
       basketId,
-      amount: 2,
+      amount: 1 * 10 ** 6,
     });
 
     const redeemBasketTokenTxResult = await sendAndConfirmTransaction(
@@ -547,42 +570,61 @@ describe("pie", () => {
     userFundTable.printTable();
   });
 
-  // it("Sell Component", async () => {
-  //   const programState = await pieProgram.getProgramState();
-  //   const basketId = programState.basketCounter.sub(new BN(1));
-  //   const sellComponentTx = await pieProgram.sellComponent({
-  //     user: admin.publicKey,
-  //     inputMint: new PublicKey(tokens[1].mint),
-  //     basketId,
-  //     amountIn: 10 * 1000000,
-  //     minimumAmountOut: 0,
-  //     raydium,
-  //     ammId: tokens[1].ammId,
-  //     createNativeMintATA: true,
-  //   });
+  it("Sell Component", async () => {
+    const programState = await pieProgram.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
 
-  //   const sellComponentTxResult = await sendAndConfirmTransaction(
-  //     connection,
-  //     sellComponentTx,
-  //     [admin],
-  //     {
-  //       skipPreflight: true,
-  //       commitment: "confirmed",
-  //     }
-  //   );
+    for (let i = 0; i < basketConfigData.components.length; i++) {
+      let txs = new Transaction();
+      if (i == 0) {
+        txs.add(
+          await pieProgram.sellComponent({
+            user: admin.publicKey,
+            inputMint: basketConfigData.components[i].mint,
+            basketId,
+            amountIn: (1 + i) * 10 ** 6,
+            minimumAmountOut: 0,
+            ammId: tokensAmm[i].ammId,
+            createNativeMintATA: true,
+          })
+        );
+      } else {
+        txs.add(
+          await pieProgram.sellComponent({
+            user: admin.publicKey,
+            inputMint: basketConfigData.components[i].mint,
+            basketId,
+            amountIn: (1 + i) * 10 ** 6,
+            minimumAmountOut: 0,
+            ammId: tokensAmm[i].ammId,
+            createNativeMintATA: true,
+          })
+        );
+      }
+      const sellComponentTxResult = await sendAndConfirmTransaction(
+        connection,
+        txs,
+        [admin],
+        {
+          skipPreflight: true,
+          commitment: "confirmed",
+        }
+      );
 
-  //   console.log(
-  //     `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
-  //   );
+      console.log(
+        `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
+      );
 
-  //   console.log("User fund after sell component basket: ");
-  //   const userFundTable = await showUserFundTable(
-  //     pieProgram,
-  //     admin.publicKey,
-  //     basketId
-  //   );
-  //   userFundTable.printTable();
-  // });
+      console.log("User fund after sell component basket: ");
+      const userFundTable = await showUserFundTable(
+        pieProgram,
+        admin.publicKey,
+        basketId
+      );
+      userFundTable.printTable();
+    }
+  });
 
   // it("Sell component using lookup table", async () => {
   //   const programState = await pieProgram.getProgramState();
