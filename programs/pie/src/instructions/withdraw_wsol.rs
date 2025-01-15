@@ -44,8 +44,8 @@ pub struct WithdrawWsol<'info> {
 
     #[account(
         mut,
-        token::mint = NATIVE_MINT,
-        token::authority = basket_config
+        associated_token::mint = NATIVE_MINT,
+        associated_token::authority = basket_config
     )]
     pub vault_wsol_account:  Box<InterfaceAccount<'info, TokenAccount>>,
 
