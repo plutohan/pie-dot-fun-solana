@@ -80,9 +80,8 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
             .any(|c| c.mint == NATIVE_MINT),
         PieError::InvalidComponent
     );
-
+    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
     let user_fund = &mut ctx.accounts.user_fund;
-
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(&ctx.accounts.program_state, amount)?;
 
     transfer_fees(
@@ -103,10 +102,12 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
         amount
     )?;
 
+    user_fund.bump = ctx.bumps.user_fund;
     user_fund.upsert_component(
         NATIVE_MINT,
         amount
     )?;
+
     emit!(DepositWsolEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),

@@ -20,9 +20,7 @@ pub struct WithdrawWsol<'info> {
     pub program_state: Box<Account<'info, ProgramState>>,
     
     #[account(
-        init_if_needed,
-        payer = user,
-        space = UserFund::INIT_SPACE,
+        mut,
         seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
         bump
     )]
@@ -75,6 +73,7 @@ pub struct WithdrawWsolEvent {
 }
 
 pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
+    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
     let user_fund = &mut ctx.accounts.user_fund;
 
     let component = user_fund

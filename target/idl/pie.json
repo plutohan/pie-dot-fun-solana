@@ -3231,6 +3231,66 @@
       ]
     },
     {
+      "name": "transfer_basket",
+      "discriminator": [
+        85,
+        37,
+        106,
+        145,
+        10,
+        216,
+        154,
+        222
+      ],
+      "accounts": [
+        {
+          "name": "current_creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basket_config",
+          "writable": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_creator",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "update_fee",
       "discriminator": [
         232,
@@ -3534,7 +3594,6 @@
         },
         {
           "name": "basket_config",
-          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -3971,6 +4030,11 @@
       "code": 6016,
       "name": "RebalancingInProgress",
       "msg": "Rebalancing in process"
+    },
+    {
+      "code": 6017,
+      "name": "MaxWhitelistedCreatorsExceeded",
+      "msg": "Max whitelisted creators exceeded"
     }
   ],
   "types": [

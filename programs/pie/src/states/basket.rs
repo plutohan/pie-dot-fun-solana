@@ -48,6 +48,10 @@ impl BasketConfig {
         if let Some(component) = self.find_component_mut(mint) {
             component.quantity_in_sys_decimal = quantity_in_sys_decimal;
         } else {
+            require!(
+                self.components.len() < MAX_COMPONENTS as usize,
+                PieError::MaxAssetsExceeded
+            );
             self.components.push(BasketComponent {
                 mint,
                 quantity_in_sys_decimal,

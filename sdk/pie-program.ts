@@ -1773,7 +1773,6 @@ export class PieProgram {
         vaultTokenDestinationMint: isInputMintA
           ? new PublicKey(poolKeys.mintB.address)
           : new PublicKey(poolKeys.mintA.address),
-        tokenMint: new PublicKey(poolKeys.mintA.address),
       })
       .remainingAccounts(
         await buildClmmRemainingAccounts(
