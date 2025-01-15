@@ -5,8 +5,8 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, ProgramState,
-    UserComponent, UserFund, PROGRAM_STATE,
+    constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, ProgramState, UserFund,
+    PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
