@@ -391,6 +391,7 @@ class PieProgram {
             ammProgram: new web3_js_1.PublicKey(poolKeys.programId),
             userTokenSource: inputTokenAccount,
             vaultTokenDestination: outputTokenAccount,
+            vaultTokenDestinationMint: new web3_js_1.PublicKey(mintOut),
             platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
             creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
         })
@@ -451,12 +452,12 @@ class PieProgram {
             authority: new web3_js_1.PublicKey(poolKeys.authority),
             userTokenSource: inputTokenAccount,
             vaultTokenDestination: outputTokenAccount,
+            userTokenSourceMint: baseIn ? mintA : mintB,
+            vaultTokenDestinationMint: baseIn ? mintB : mintA,
             inputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
             outputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
             inputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintA" : "mintB"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
             outputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintB" : "mintA"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
-            inputTokenMint: baseIn ? mintA : mintB,
-            outputTokenMint: baseIn ? mintB : mintA,
             platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
             creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
             observationState: (0, raydium_sdk_v2_1.getPdaObservationId)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey,
@@ -525,12 +526,12 @@ class PieProgram {
             ammConfig: new web3_js_1.PublicKey(poolKeys.config.id),
             poolState: new web3_js_1.PublicKey(poolKeys.id),
             userTokenSource: inputTokenAccount,
+            userTokenSourceMint: spl_token_1.NATIVE_MINT,
             vaultTokenDestination: outputTokenAccount,
+            vaultTokenDestinationMint: baseIn ? mintB : mintA,
             inputVault: baseIn ? mintAVault : mintBVault,
             outputVault: baseIn ? mintBVault : mintAVault,
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
-            inputVaultMint: baseIn ? mintA : mintB,
-            outputVaultMint: baseIn ? mintB : mintA,
         })
             .remainingAccounts(await (0, helper_1.buildClmmRemainingAccounts)(remainingAccounts, (0, raydium_sdk_v2_1.getPdaExBitmapAccount)(programId, id).publicKey))
             .transaction();
@@ -588,6 +589,7 @@ class PieProgram {
             ammProgram: new web3_js_1.PublicKey(poolKeys.programId),
             userTokenDestination: outputTokenAccount,
             vaultTokenSource: inputTokenAccount,
+            vaultTokenSourceMint: new web3_js_1.PublicKey(mintIn),
             platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
             creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
         })
@@ -642,12 +644,12 @@ class PieProgram {
             poolState: new web3_js_1.PublicKey(poolInfo.id),
             vaultTokenSource: inputTokenAccount,
             userTokenDestination: outputTokenAccount,
+            vaultTokenSourceMint: baseIn ? mintA : mintB,
+            userTokenDestinationMint: baseIn ? mintB : mintA,
             inputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
             outputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
             inputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintA" : "mintB"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
             outputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintB" : "mintA"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
-            inputTokenMint: baseIn ? mintA : mintB,
-            outputTokenMint: baseIn ? mintB : mintA,
             observationState: (0, raydium_sdk_v2_1.getPdaObservationId)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey,
         })
             .transaction();
@@ -720,12 +722,12 @@ class PieProgram {
             poolState: new web3_js_1.PublicKey(poolInfo.id),
             vaultTokenSource: inputTokenAccount,
             userTokenDestination: outputTokenAccount,
+            vaultTokenSourceMint: baseIn ? mintA : mintB,
+            userTokenDestinationMint: baseIn ? mintB : mintA,
             inputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
             outputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
             inputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintA" : "mintB"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
             outputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintB" : "mintA"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
-            inputVaultMint: baseIn ? mintA : mintB,
-            outputVaultMint: baseIn ? mintB : mintA,
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
         })
             .remainingAccounts(await (0, helper_1.buildClmmRemainingAccounts)(remainingAccounts, (0, raydium_sdk_v2_1.getPdaExBitmapAccount)(programId, id).publicKey))
@@ -894,7 +896,6 @@ class PieProgram {
             rebalancer,
             basketConfig: this.basketConfigPDA({ basketId }),
             basketMint,
-            vaultWrappedSol: spl_token_1.NATIVE_MINT,
             amm: new web3_js_1.PublicKey(ammId),
             ammAuthority: new web3_js_1.PublicKey(poolKeys.authority),
             ammOpenOrders: new web3_js_1.PublicKey(poolKeys.openOrders),
@@ -911,6 +912,8 @@ class PieProgram {
             ammProgram: new web3_js_1.PublicKey(poolKeys.programId),
             vaultTokenSource: inputTokenAccount,
             vaultTokenDestination: outputTokenAccount,
+            vaultTokenSourceMint: new web3_js_1.PublicKey(inputMint),
+            vaultTokenDestinationMint: new web3_js_1.PublicKey(outputMint),
         })
             .transaction();
         tx.add(executeRebalancingTx);
@@ -957,19 +960,18 @@ class PieProgram {
             rebalancer,
             basketConfig: this.basketConfigPDA({ basketId }),
             basketMint,
-            vaultWrappedSol: spl_token_1.NATIVE_MINT,
             authority: new web3_js_1.PublicKey(poolKeys.authority),
             ammConfig: new web3_js_1.PublicKey(poolKeys.config.id),
             poolState: new web3_js_1.PublicKey(poolInfo.id),
+            vaultTokenSourceMint: new web3_js_1.PublicKey(inputMint),
+            vaultTokenDestinationMint: new web3_js_1.PublicKey(outputMint),
+            vaultTokenSource: inputTokenAccount,
+            vaultTokenDestination: outputTokenAccount,
             inputVault,
             outputVault,
             inputTokenProgram,
             outputTokenProgram,
-            inputTokenMint,
-            outputTokenMint,
             observationState: (0, raydium_sdk_v2_1.getPdaObservationId)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey,
-            vaultTokenSource: inputTokenAccount,
-            vaultTokenDestination: outputTokenAccount,
         })
             .transaction();
         tx.add(executeRebalancingTx);
@@ -1048,13 +1050,12 @@ class PieProgram {
                 ? new web3_js_1.PublicKey(poolKeys.vault.B)
                 : new web3_js_1.PublicKey(poolKeys.vault.A),
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
-            inputVaultMint: isInputMintA
+            vaultTokenSourceMint: isInputMintA
                 ? new web3_js_1.PublicKey(poolKeys.mintA.address)
                 : new web3_js_1.PublicKey(poolKeys.mintB.address),
-            outputVaultMint: isInputMintA
+            vaultTokenDestinationMint: isInputMintA
                 ? new web3_js_1.PublicKey(poolKeys.mintB.address)
                 : new web3_js_1.PublicKey(poolKeys.mintA.address),
-            tokenMint: new web3_js_1.PublicKey(poolKeys.mintA.address),
         })
             .remainingAccounts(await (0, helper_1.buildClmmRemainingAccounts)(remainingAccounts, (0, raydium_sdk_v2_1.getPdaExBitmapAccount)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey))
             .transaction();

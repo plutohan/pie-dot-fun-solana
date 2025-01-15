@@ -168,6 +168,10 @@ async function showBasketConfigTable(connection, pieProgram, basketId) {
 }
 async function showUserFundTable(pieProgram, userPubkey, basketId) {
     const userFund = await pieProgram.getUserFund({ user: userPubkey, basketId });
+    if (!userFund) {
+        console.log("User fund not found");
+        return;
+    }
     const table = new console_table_printer_1.Table({
         columns: [
             { name: "mint", alignment: "left", color: "cyan" },
