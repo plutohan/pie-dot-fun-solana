@@ -2383,6 +2383,66 @@ export type Pie = {
       ]
     },
     {
+      "name": "transferBasket",
+      "discriminator": [
+        85,
+        37,
+        106,
+        145,
+        10,
+        216,
+        154,
+        222
+      ],
+      "accounts": [
+        {
+          "name": "currentCreator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "newCreator",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "updateFee",
       "discriminator": [
         232,
@@ -2686,7 +2746,6 @@ export type Pie = {
         },
         {
           "name": "basketConfig",
-          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -3123,6 +3182,11 @@ export type Pie = {
       "code": 6016,
       "name": "rebalancingInProgress",
       "msg": "Rebalancing in process"
+    },
+    {
+      "code": 6017,
+      "name": "maxWhitelistedCreatorsExceeded",
+      "msg": "Max whitelisted creators exceeded"
     }
   ],
   "types": [
