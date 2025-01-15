@@ -24,8 +24,12 @@ pub struct ExecuteRebalancingCpmm<'info> {
     )]
     pub basket_config: Account<'info, BasketConfig>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        address = basket_config.mint
+    )]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
+
     /// CHECK: pool vault and lp mint authority
     #[account(mut)]
     pub authority: UncheckedAccount<'info>,

@@ -26,11 +26,11 @@ pub struct ExecuteRebalancingClmm<'info> {
         constraint = basket_config.rebalancer == rebalancer.key() @ PieError::Unauthorized
     )]
     pub basket_config: Account<'info, BasketConfig>,
-    // Required token accounts
-    #[account(mut)]
-    pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        address = basket_config.mint
+    )]
     pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
 
     pub clmm_program: Program<'info, RaydiumClmm>,
