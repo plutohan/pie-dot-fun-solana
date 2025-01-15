@@ -9,8 +9,8 @@ use anchor_spl::token_interface::TokenAccount;
 use anchor_spl::{token::Token, token_interface::Mint};
 use raydium_amm_cpi::program::RaydiumAmm;
 use raydium_amm_cpi::{
-    library::{swap_base_in, swap_base_out},
-    SwapBaseIn, SwapBaseOut,
+    library::swap_base_in,
+    SwapBaseIn,
 };
 
 #[derive(Accounts)]

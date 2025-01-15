@@ -196,7 +196,7 @@ pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
     emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        mint: ctx.accounts.input_vault_mint.key(),
+        mint: ctx.accounts.vault_token_source_mint.key(),
         amount: amount,
     });
 

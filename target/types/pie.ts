@@ -1654,10 +1654,6 @@ export type Pie = {
           }
         },
         {
-          "name": "tokenMint",
-          "writable": true
-        },
-        {
           "name": "basketMint",
           "writable": true
         },
@@ -2660,8 +2656,97 @@ export type Pie = {
           "name": "marketVaultSigner"
         },
         {
+          "name": "vaultTokenSourceMint"
+        },
+        {
           "name": "vaultTokenSource",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vaultTokenSourceMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "userTokenDestination",
@@ -2830,16 +2915,105 @@ export type Pie = {
           "writable": true
         },
         {
-          "name": "userTokenDestination",
-          "docs": [
-            "The user token account for input token"
-          ],
-          "writable": true
+          "name": "vaultTokenSourceMint"
         },
         {
           "name": "vaultTokenSource",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vaultTokenSourceMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "userTokenDestinationMint"
+        },
+        {
+          "name": "userTokenDestination",
           "docs": [
-            "The user token account for output token"
+            "The user token account for input token"
           ],
           "writable": true
         },
@@ -2881,18 +3055,6 @@ export type Pie = {
             "memo program"
           ],
           "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
-        },
-        {
-          "name": "inputVaultMint",
-          "docs": [
-            "The mint of token vault 0"
-          ]
-        },
-        {
-          "name": "outputVaultMint",
-          "docs": [
-            "The mint of token vault 1"
-          ]
         }
       ],
       "args": [
@@ -2997,16 +3159,105 @@ export type Pie = {
           "writable": true
         },
         {
+          "name": "vaultTokenSourceMint"
+        },
+        {
           "name": "vaultTokenSource",
-          "docs": [
-            "The user token account for input token"
-          ],
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vaultTokenSourceMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "userTokenDestinationMint"
         },
         {
           "name": "userTokenDestination",
           "docs": [
-            "The user token account for output token"
+            "The user token account for input token"
           ],
           "writable": true
         },
@@ -3036,18 +3287,6 @@ export type Pie = {
             "SPL program for output token transfers: Token"
           ],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "inputTokenMint",
-          "docs": [
-            "The mint of input token"
-          ]
-        },
-        {
-          "name": "outputTokenMint",
-          "docs": [
-            "The mint of output token"
-          ]
         },
         {
           "name": "observationState",
@@ -3600,6 +3839,7 @@ export type Pie = {
         },
         {
           "name": "basketConfig",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -3634,7 +3874,126 @@ export type Pie = {
         },
         {
           "name": "vaultWsolAccount",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  155,
+                  136,
+                  87,
+                  254,
+                  171,
+                  129,
+                  132,
+                  251,
+                  104,
+                  127,
+                  99,
+                  70,
+                  24,
+                  192,
+                  53,
+                  218,
+                  196,
+                  57,
+                  220,
+                  26,
+                  235,
+                  59,
+                  85,
+                  152,
+                  160,
+                  240,
+                  0,
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "platformFeeTokenAccount",
@@ -4039,6 +4398,11 @@ export type Pie = {
     },
     {
       "code": 6017,
+      "name": "invalidComponent",
+      "msg": "Invalid component"
+    },
+    {
+      "code": 6018,
       "name": "maxWhitelistedCreatorsExceeded",
       "msg": "Max whitelisted creators exceeded"
     }
