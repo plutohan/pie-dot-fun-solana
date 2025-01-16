@@ -188,7 +188,8 @@ export class PieProgram {
     const programState = await this.getProgramState();
     const platformFeeTokenAccount = getAssociatedTokenAddressSync(
       NATIVE_MINT,
-      programState.platformFeeWallet
+      programState.platformFeeWallet,
+      true
     );
     return platformFeeTokenAccount;
   }
@@ -201,7 +202,8 @@ export class PieProgram {
     const basketConfig = await this.getBasketConfig({ basketId });
     const creatorFeeTokenAccount = getAssociatedTokenAddressSync(
       NATIVE_MINT,
-      basketConfig.creator
+      basketConfig.creator,
+      true
     );
     return creatorFeeTokenAccount;
   }
