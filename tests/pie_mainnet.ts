@@ -65,8 +65,15 @@ describe("pie", () => {
 
   it("Setup and Initialized if needed ", async () => {
     let programState = await pieProgram.getProgramState();
+
     const platformFeeWallet = new PublicKey(
-      "EzMk46WmhjxkD7fBwRXNigNivG724FLKY1x4Rcmvxr1P"
+      "DU2tpPP3yHY811yLrDATdyCjMu51bp3jz1fpEbpf5Crq"
+    );
+    const newAdmin = new PublicKey(
+      "6tfUrp38Q5jRysrgLhNadxmrmXVKt7Rz5dC593x1wu1Q"
+    );
+    const newCreator = new PublicKey(
+      "Gh7DKrjeUcU4Nq2doKcLZKSkiPEKgF4gx3PivqF6ufNH"
     );
 
     if (!programState) {
@@ -74,11 +81,13 @@ describe("pie", () => {
       //create platform fee token account if needed
       const initializeTx = await pieProgram.initialize({
         initializer: admin.publicKey,
-        admin: admin.publicKey,
-        creator: admin.publicKey,
+        admin: newAdmin,
+        creator: newCreator,
         platformFeeWallet,
-        platformFeePercentage: 1000,
+        platformFeePercentage: new BN(100),
       });
+
+      initializeTx.add(priorityFeeInstruction);
 
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,

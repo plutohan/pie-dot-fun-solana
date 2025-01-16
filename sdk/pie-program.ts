@@ -327,7 +327,7 @@ export class PieProgram {
     admin: PublicKey;
     creator: PublicKey;
     platformFeeWallet: PublicKey;
-    platformFeePercentage: number;
+    platformFeePercentage: BN;
   }): Promise<Transaction> {
     const tx = await this.program.methods
       .initialize(admin, creator, platformFeeWallet, platformFeePercentage)
