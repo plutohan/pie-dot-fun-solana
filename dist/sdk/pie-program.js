@@ -103,12 +103,12 @@ class PieProgram {
     }
     async getPlatformFeeTokenAccount() {
         const programState = await this.getProgramState();
-        const platformFeeTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(spl_token_1.NATIVE_MINT, programState.platformFeeWallet);
+        const platformFeeTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(spl_token_1.NATIVE_MINT, programState.platformFeeWallet, true);
         return platformFeeTokenAccount;
     }
     async getCreatorFeeTokenAccount({ basketId, }) {
         const basketConfig = await this.getBasketConfig({ basketId });
-        const creatorFeeTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(spl_token_1.NATIVE_MINT, basketConfig.creator);
+        const creatorFeeTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(spl_token_1.NATIVE_MINT, basketConfig.creator, true);
         return creatorFeeTokenAccount;
     }
     async getBasketConfig({ basketId, }) {
