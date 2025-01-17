@@ -37,6 +37,7 @@ import {
   MIN_SQRT_PRICE_X64,
   PoolUtils,
   Raydium,
+  SYSTEM_PROGRAM_ID,
 } from "@raydium-io/raydium-sdk-v2";
 import {
   buildClmmRemainingAccounts,
@@ -367,6 +368,7 @@ export class PieProgram {
       this.program.programId,
       this.programStatePDA,
       await this.getPlatformFeeTokenAccount(),
+      SYSTEM_PROGRAM_ID,
       NATIVE_MINT,
       TOKEN_PROGRAM_ID,
       TOKEN_2022_PROGRAM_ID,
