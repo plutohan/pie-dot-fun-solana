@@ -75,6 +75,7 @@ pub struct SellComponentCpmm<'info> {
     #[account(mut,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_source_mint,
+        associated_token::token_program = input_token_program
     )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 

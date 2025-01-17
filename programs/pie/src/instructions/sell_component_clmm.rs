@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::memo::Memo;
 use anchor_spl::token::Token;
-use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
+use anchor_spl::token_interface::{Mint, Token2022, TokenAccount, TokenInterface};
 
 use raydium_clmm_cpi::{cpi, program::RaydiumClmm};
 
@@ -70,8 +70,11 @@ pub struct SellComponentClmm<'info> {
     #[account(mut,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_source_mint,
+        associated_token::token_program = output_token_program
     )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    pub output_token_program: Interface<'info, TokenInterface>,
 
     #[account(
         address = user_token_destination.mint

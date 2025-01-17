@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::memo::Memo;
 use anchor_spl::token::Token;
-use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
+use anchor_spl::token_interface::{Mint, Token2022, TokenAccount, TokenInterface};
 
 use raydium_clmm_cpi::{cpi, program::RaydiumClmm};
 
@@ -51,6 +51,7 @@ pub struct ExecuteRebalancingClmm<'info> {
     #[account(mut,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_source_mint,
+        associated_token::token_program = input_token_program
     )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -63,8 +64,15 @@ pub struct ExecuteRebalancingClmm<'info> {
         mut,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_destination_mint,
+        associated_token::token_program = output_token_program
     )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    /// SPL program for input token transfers: Token or Token 2022 Program
+    pub input_token_program: Interface<'info, TokenInterface>,
+
+    /// SPL program for output token transfers: Token or Token 2022 Program
+    pub output_token_program: Interface<'info, TokenInterface>,
 
     /// The vault token account for input token
     #[account(mut)]

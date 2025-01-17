@@ -82,6 +82,7 @@ pub struct BuyComponentCpmm<'info> {
         mut,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_destination_mint,
+        associated_token::token_program = output_token_program
     )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 

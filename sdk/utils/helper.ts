@@ -371,7 +371,11 @@ export async function getOrCreateTokenAccountTx(
   mint: PublicKey,
   payer: PublicKey,
   owner: PublicKey
-): Promise<{ tokenAccount: PublicKey; tx: Transaction | null }> {
+): Promise<{
+  tokenAccount: PublicKey;
+  tx: Transaction | null;
+  tokenProgram: PublicKey;
+}> {
   const programId = (await isToken2022Mint(connection, mint))
     ? TOKEN_2022_PROGRAM_ID
     : TOKEN_PROGRAM_ID;
@@ -383,7 +387,7 @@ export async function getOrCreateTokenAccountTx(
   );
   try {
     await getAccount(connection, tokenAccount, "confirmed", programId);
-    return { tokenAccount: tokenAccount, tx: null };
+    return { tokenAccount: tokenAccount, tx: null, tokenProgram: programId };
   } catch (error) {
     let transaction = new Transaction();
     transaction.add(
@@ -396,7 +400,11 @@ export async function getOrCreateTokenAccountTx(
         ASSOCIATED_TOKEN_PROGRAM_ID
       )
     );
-    return { tokenAccount: tokenAccount, tx: transaction };
+    return {
+      tokenAccount: tokenAccount,
+      tx: transaction,
+      tokenProgram: programId,
+    };
   }
 }
 

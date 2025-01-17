@@ -896,13 +896,16 @@ export class PieProgram {
       user
     );
 
-    const { tokenAccount: outputTokenAccount, tx: outputTx } =
-      await getOrCreateTokenAccountTx(
-        this.connection,
-        new PublicKey(baseIn ? mintB : mintA),
-        user,
-        basketConfig
-      );
+    const {
+      tokenAccount: outputTokenAccount,
+      tx: outputTx,
+      tokenProgram: outputTokenProgram,
+    } = await getOrCreateTokenAccountTx(
+      this.connection,
+      new PublicKey(baseIn ? mintB : mintA),
+      user,
+      basketConfig
+    );
 
     if (isValidTransaction(outputTx)) {
       tx.add(outputTx);
@@ -927,6 +930,7 @@ export class PieProgram {
         userTokenSourceMint: NATIVE_MINT,
         vaultTokenDestination: outputTokenAccount,
         vaultTokenDestinationMint: baseIn ? mintB : mintA,
+        outputTokenProgram,
         inputVault: baseIn ? mintAVault : mintBVault,
         outputVault: baseIn ? mintBVault : mintAVault,
         observationState: new PublicKey(clmmPoolInfo.observationId),
@@ -1255,9 +1259,6 @@ export class PieProgram {
         userTokenDestinationMint: baseIn ? mintB : mintA,
         inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
         outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
-        inputTokenProgram: new PublicKey(
-          poolInfo[baseIn ? "mintA" : "mintB"].programId ?? TOKEN_PROGRAM_ID
-        ),
         outputTokenProgram: new PublicKey(
           poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
         ),
@@ -1768,6 +1769,12 @@ export class PieProgram {
         outputVault: isInputMintA
           ? new PublicKey(poolKeys.vault.B)
           : new PublicKey(poolKeys.vault.A),
+        inputTokenProgram: isInputMintA
+          ? new PublicKey(poolKeys.mintA.programId)
+          : new PublicKey(poolKeys.mintB.programId),
+        outputTokenProgram: isInputMintA
+          ? new PublicKey(poolKeys.mintB.programId)
+          : new PublicKey(poolKeys.mintA.programId),
         observationState: new PublicKey(clmmPoolInfo.observationId),
         vaultTokenSourceMint: isInputMintA
           ? new PublicKey(poolKeys.mintA.address)

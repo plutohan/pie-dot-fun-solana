@@ -5,7 +5,7 @@ use crate::{
 };
 use anchor_spl::memo::Memo;
 use anchor_spl::token::Token;
-use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
+use anchor_spl::token_interface::{Mint, Token2022, TokenAccount, TokenInterface};
 
 use raydium_clmm_cpi::{
     cpi,
@@ -79,8 +79,12 @@ pub struct BuyComponentClmm<'info> {
         mut,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_destination_mint,
+        associated_token::token_program = output_token_program
     )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    /// SPL program for output token transfers: Token or Token 2022 Program
+    pub output_token_program: Interface<'info, TokenInterface>,
 
     /// The vault token account for input token
     #[account(mut)]
