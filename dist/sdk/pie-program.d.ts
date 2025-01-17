@@ -89,7 +89,7 @@ export declare class PieProgram {
         admin: PublicKey;
         creator: PublicKey;
         platformFeeWallet: PublicKey;
-        platformFeePercentage: number;
+        platformFeePercentage: BN;
     }): Promise<Transaction>;
     addBaksetToSharedLookupTable({ basketId, admin, }: {
         basketId: BN;
