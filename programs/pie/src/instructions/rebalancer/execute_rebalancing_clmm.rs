@@ -110,6 +110,21 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
 ) -> Result<()> {
     let basket_config = &mut ctx.accounts.basket_config;
 
+    // check if token programs are valid
+    require!(
+        *ctx.accounts.vault_token_source_mint.to_account_info().owner
+            == ctx.accounts.input_token_program.key(),
+        PieError::InvalidTokenProgram
+    );
+    require!(
+        *ctx.accounts
+            .vault_token_destination_mint
+            .to_account_info()
+            .owner
+            == ctx.accounts.output_token_program.key(),
+        PieError::InvalidTokenProgram
+    );
+
     require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
     let basket_total_supply = ctx.accounts.basket_mint.supply;
 

@@ -70,11 +70,11 @@ pub struct SellComponentClmm<'info> {
     #[account(mut,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_source_mint,
-        associated_token::token_program = output_token_program
+        associated_token::token_program = input_token_program
     )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    pub output_token_program: Interface<'info, TokenInterface>,
+    pub input_token_program: Interface<'info, TokenInterface>,
 
     #[account(
         address = user_token_destination.mint
@@ -121,6 +121,8 @@ pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
 ) -> Result<()> {
     require!(amount > 0, PieError::InvalidAmount);
     require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    // check if the input token program is valid
+    require!(*ctx.accounts.vault_token_source_mint.to_account_info().owner == ctx.accounts.input_token_program.key(), PieError::InvalidTokenProgram);
 
     let user_fund = &mut ctx.accounts.user_fund;
     let component = user_fund

@@ -1288,8 +1288,8 @@ export class PieProgram {
         userTokenDestinationMint: baseIn ? mintB : mintA,
         inputVault: new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
         outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
-        outputTokenProgram: new PublicKey(
-          poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
+        inputTokenProgram: new PublicKey(
+          poolInfo[baseIn ? "mintA" : "mintB"].programId ?? TOKEN_PROGRAM_ID
         ),
         observationState: new PublicKey(clmmPoolInfo.observationId),
       })

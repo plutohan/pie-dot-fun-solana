@@ -129,6 +129,9 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
         PieError::InvalidComponent
     );
 
+    // check if the output token program is valid
+    require!(*ctx.accounts.vault_token_destination_mint.to_account_info().owner == ctx.accounts.output_token_program.key(), PieError::InvalidTokenProgram);
+
     let balance_in_before = ctx.accounts.user_token_source.amount;
     let balance_out_before = ctx.accounts.vault_token_destination.amount;
     

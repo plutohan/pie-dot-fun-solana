@@ -55,7 +55,10 @@ pub enum PieError {
 
     #[msg("Invalid component")]
     InvalidComponent,
-  
+
     #[msg("Max whitelisted creators exceeded")]
     MaxWhitelistedCreatorsExceeded,
+
+    #[msg("Invalid token program")]
+    InvalidTokenProgram,
 }
