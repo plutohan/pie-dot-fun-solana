@@ -510,7 +510,7 @@ class PieProgram {
         ];
         const baseIn = spl_token_1.NATIVE_MINT.toString() === poolKeys.mintA.address;
         const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user);
-        const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(baseIn ? mintB : mintA), user, basketConfig);
+        const { tokenAccount: outputTokenAccount, tx: outputTx, tokenProgram: outputTokenProgram, } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(baseIn ? mintB : mintA), user, basketConfig);
         if ((0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
         }
@@ -529,6 +529,7 @@ class PieProgram {
             userTokenSourceMint: spl_token_1.NATIVE_MINT,
             vaultTokenDestination: outputTokenAccount,
             vaultTokenDestinationMint: baseIn ? mintB : mintA,
+            outputTokenProgram,
             inputVault: baseIn ? mintAVault : mintBVault,
             outputVault: baseIn ? mintBVault : mintAVault,
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
@@ -726,7 +727,6 @@ class PieProgram {
             userTokenDestinationMint: baseIn ? mintB : mintA,
             inputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
             outputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
-            inputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintA" : "mintB"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
             outputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintB" : "mintA"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
         })
@@ -1049,6 +1049,12 @@ class PieProgram {
             outputVault: isInputMintA
                 ? new web3_js_1.PublicKey(poolKeys.vault.B)
                 : new web3_js_1.PublicKey(poolKeys.vault.A),
+            inputTokenProgram: isInputMintA
+                ? new web3_js_1.PublicKey(poolKeys.mintA.programId)
+                : new web3_js_1.PublicKey(poolKeys.mintB.programId),
+            outputTokenProgram: isInputMintA
+                ? new web3_js_1.PublicKey(poolKeys.mintB.programId)
+                : new web3_js_1.PublicKey(poolKeys.mintA.programId),
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
             vaultTokenSourceMint: isInputMintA
                 ? new web3_js_1.PublicKey(poolKeys.mintA.address)

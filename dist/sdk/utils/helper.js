@@ -210,12 +210,16 @@ async function getOrCreateTokenAccountTx(connection, mint, payer, owner) {
     const tokenAccount = await (0, spl_token_1.getAssociatedTokenAddress)(mint, owner, true, programId);
     try {
         await (0, spl_token_1.getAccount)(connection, tokenAccount, "confirmed", programId);
-        return { tokenAccount: tokenAccount, tx: null };
+        return { tokenAccount: tokenAccount, tx: null, tokenProgram: programId };
     }
     catch (error) {
         let transaction = new web3_js_1.Transaction();
         transaction.add((0, spl_token_1.createAssociatedTokenAccountInstruction)(payer, tokenAccount, owner, mint, programId, spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID));
-        return { tokenAccount: tokenAccount, tx: transaction };
+        return {
+            tokenAccount: tokenAccount,
+            tx: transaction,
+            tokenProgram: programId,
+        };
     }
 }
 async function getTokenAccount(connection, mint, owner) {
