@@ -104,15 +104,7 @@ describe("pie", () => {
     }
 
     if (!pieProgram.sharedLookupTable) {
-      const newLookupTable = await createLookupTable(connection, admin);
-      await addAddressesToTable(connection, admin, newLookupTable, [
-        pieProgram.program.programId,
-        pieProgram.programStatePDA,
-        programState.platformFeeWallet,
-      ]);
-
-      console.log("shared lookup table created:", newLookupTable.toBase58());
-      pieProgram.sharedLookupTable = newLookupTable.toBase58();
+      await pieProgram.initializeSharedLookupTable({ admin });
     }
   });
 

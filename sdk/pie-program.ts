@@ -16,11 +16,13 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  sendAndConfirmTransaction,
   Transaction,
 } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import * as PieIDL from "../target/idl/pie.json";
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   createCloseAccountInstruction,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
@@ -349,6 +351,55 @@ export class PieProgram {
     }
 
     return tx;
+  }
+
+  async initializeSharedLookupTable({
+    admin,
+  }: {
+    admin: Keypair;
+  }): Promise<PublicKey> {
+    const programState = await this.getProgramState();
+
+    const {
+      tokenAccount: platformFeeTokenAccount,
+      tx: platformFeeTokenAccountTx,
+    } = await getOrCreateNativeMintATA(
+      this.connection,
+      admin.publicKey,
+      programState.platformFeeWallet
+    );
+
+    if (isValidTransaction(platformFeeTokenAccountTx)) {
+      console.log("creating platform fee token account");
+      await sendAndConfirmTransaction(
+        this.connection,
+        platformFeeTokenAccountTx,
+        [admin],
+        {
+          skipPreflight: false,
+          commitment: "confirmed",
+        }
+      );
+    }
+
+    console.log("creating new shared lookup table");
+    const newLookupTable = await createLookupTable(this.connection, admin);
+
+    const tipAccounts = await getTipAccounts();
+
+    await addAddressesToTable(this.connection, admin, newLookupTable, [
+      this.program.programId,
+      this.programStatePDA,
+      platformFeeTokenAccount,
+      NATIVE_MINT,
+      TOKEN_PROGRAM_ID,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      ...tipAccounts.map((tipAccount) => new PublicKey(tipAccount)),
+    ]);
+
+    this.sharedLookupTable = newLookupTable.toBase58();
+    return newLookupTable;
   }
 
   async addBaksetToSharedLookupTable({

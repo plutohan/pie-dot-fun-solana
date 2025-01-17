@@ -184,6 +184,32 @@ class PieProgram {
         }
         return tx;
     }
+    async initializeSharedLookupTable({ admin, }) {
+        const programState = await this.getProgramState();
+        const { tokenAccount: platformFeeTokenAccount, tx: platformFeeTokenAccountTx, } = await (0, helper_1.getOrCreateNativeMintATA)(this.connection, admin.publicKey, programState.platformFeeWallet);
+        if ((0, helper_1.isValidTransaction)(platformFeeTokenAccountTx)) {
+            console.log("creating platform fee token account");
+            await (0, web3_js_1.sendAndConfirmTransaction)(this.connection, platformFeeTokenAccountTx, [admin], {
+                skipPreflight: false,
+                commitment: "confirmed",
+            });
+        }
+        console.log("creating new shared lookup table");
+        const newLookupTable = await (0, lookupTable_1.createLookupTable)(this.connection, admin);
+        const tipAccounts = await (0, jito_1.getTipAccounts)();
+        await (0, lookupTable_1.addAddressesToTable)(this.connection, admin, newLookupTable, [
+            this.program.programId,
+            this.programStatePDA,
+            platformFeeTokenAccount,
+            spl_token_1.NATIVE_MINT,
+            spl_token_1.TOKEN_PROGRAM_ID,
+            spl_token_1.TOKEN_2022_PROGRAM_ID,
+            spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID,
+            ...tipAccounts.map((tipAccount) => new web3_js_1.PublicKey(tipAccount)),
+        ]);
+        this.sharedLookupTable = newLookupTable.toBase58();
+        return newLookupTable;
+    }
     async addBaksetToSharedLookupTable({ basketId, admin, }) {
         const basketConfigPDA = this.basketConfigPDA({ basketId });
         const basketMintPDA = this.basketMintPDA({ basketId });
