@@ -358,30 +358,6 @@ export class PieProgram {
   }: {
     admin: Keypair;
   }): Promise<PublicKey> {
-    const programState = await this.getProgramState();
-
-    const {
-      tokenAccount: platformFeeTokenAccount,
-      tx: platformFeeTokenAccountTx,
-    } = await getOrCreateNativeMintATA(
-      this.connection,
-      admin.publicKey,
-      programState.platformFeeWallet
-    );
-
-    if (isValidTransaction(platformFeeTokenAccountTx)) {
-      console.log("creating platform fee token account");
-      await sendAndConfirmTransaction(
-        this.connection,
-        platformFeeTokenAccountTx,
-        [admin],
-        {
-          skipPreflight: false,
-          commitment: "confirmed",
-        }
-      );
-    }
-
     console.log("creating new shared lookup table");
     const newLookupTable = await createLookupTable(this.connection, admin);
 
@@ -390,7 +366,7 @@ export class PieProgram {
     await addAddressesToTable(this.connection, admin, newLookupTable, [
       this.program.programId,
       this.programStatePDA,
-      platformFeeTokenAccount,
+      await this.getPlatformFeeTokenAccount(),
       NATIVE_MINT,
       TOKEN_PROGRAM_ID,
       TOKEN_2022_PROGRAM_ID,

@@ -29,6 +29,7 @@ import {
 } from "@solana/spl-token";
 import {
   getExplorerUrl,
+  getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
   isValidTransaction,
   showBasketConfigTable,
@@ -88,6 +89,26 @@ describe("pie", () => {
       });
 
       initializeTx.add(priorityFeeInstruction);
+
+      const { tx: platformFeeTokenAccountTx } = await getOrCreateNativeMintATA(
+        connection,
+        admin.publicKey,
+        programState.platformFeeWallet
+      );
+
+      const { tx: creatorFeeTokenAccountTx } = await getOrCreateNativeMintATA(
+        connection,
+        admin.publicKey,
+        newCreator
+      );
+
+      if (isValidTransaction(platformFeeTokenAccountTx)) {
+        initializeTx.add(platformFeeTokenAccountTx);
+      }
+
+      if (isValidTransaction(creatorFeeTokenAccountTx)) {
+        initializeTx.add(creatorFeeTokenAccountTx);
+      }
 
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,
