@@ -185,22 +185,14 @@ class PieProgram {
         return tx;
     }
     async initializeSharedLookupTable({ admin, }) {
-        const programState = await this.getProgramState();
-        const { tokenAccount: platformFeeTokenAccount, tx: platformFeeTokenAccountTx, } = await (0, helper_1.getOrCreateNativeMintATA)(this.connection, admin.publicKey, programState.platformFeeWallet);
-        if ((0, helper_1.isValidTransaction)(platformFeeTokenAccountTx)) {
-            console.log("creating platform fee token account");
-            await (0, web3_js_1.sendAndConfirmTransaction)(this.connection, platformFeeTokenAccountTx, [admin], {
-                skipPreflight: false,
-                commitment: "confirmed",
-            });
-        }
         console.log("creating new shared lookup table");
         const newLookupTable = await (0, lookupTable_1.createLookupTable)(this.connection, admin);
         const tipAccounts = await (0, jito_1.getTipAccounts)();
         await (0, lookupTable_1.addAddressesToTable)(this.connection, admin, newLookupTable, [
             this.program.programId,
             this.programStatePDA,
-            platformFeeTokenAccount,
+            await this.getPlatformFeeTokenAccount(),
+            raydium_sdk_v2_1.SYSTEM_PROGRAM_ID,
             spl_token_1.NATIVE_MINT,
             spl_token_1.TOKEN_PROGRAM_ID,
             spl_token_1.TOKEN_2022_PROGRAM_ID,
