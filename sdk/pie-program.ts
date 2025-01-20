@@ -16,11 +16,13 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  sendAndConfirmTransaction,
   Transaction,
 } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import * as PieIDL from "../target/idl/pie.json";
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   createCloseAccountInstruction,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
@@ -35,6 +37,7 @@ import {
   MIN_SQRT_PRICE_X64,
   PoolUtils,
   Raydium,
+  SYSTEM_PROGRAM_ID,
 } from "@raydium-io/raydium-sdk-v2";
 import {
   buildClmmRemainingAccounts,
@@ -349,6 +352,32 @@ export class PieProgram {
     }
 
     return tx;
+  }
+
+  async initializeSharedLookupTable({
+    admin,
+  }: {
+    admin: Keypair;
+  }): Promise<PublicKey> {
+    console.log("creating new shared lookup table");
+    const newLookupTable = await createLookupTable(this.connection, admin);
+
+    const tipAccounts = await getTipAccounts();
+
+    await addAddressesToTable(this.connection, admin, newLookupTable, [
+      this.program.programId,
+      this.programStatePDA,
+      await this.getPlatformFeeTokenAccount(),
+      SYSTEM_PROGRAM_ID,
+      NATIVE_MINT,
+      TOKEN_PROGRAM_ID,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      ...tipAccounts.map((tipAccount) => new PublicKey(tipAccount)),
+    ]);
+
+    this.sharedLookupTable = newLookupTable.toBase58();
+    return newLookupTable;
   }
 
   async addBaksetToSharedLookupTable({
@@ -896,13 +925,16 @@ export class PieProgram {
       user
     );
 
-    const { tokenAccount: outputTokenAccount, tx: outputTx } =
-      await getOrCreateTokenAccountTx(
-        this.connection,
-        new PublicKey(baseIn ? mintB : mintA),
-        user,
-        basketConfig
-      );
+    const {
+      tokenAccount: outputTokenAccount,
+      tx: outputTx,
+      tokenProgram: outputTokenProgram,
+    } = await getOrCreateTokenAccountTx(
+      this.connection,
+      new PublicKey(baseIn ? mintB : mintA),
+      user,
+      basketConfig
+    );
 
     if (isValidTransaction(outputTx)) {
       tx.add(outputTx);
@@ -927,6 +959,7 @@ export class PieProgram {
         userTokenSourceMint: NATIVE_MINT,
         vaultTokenDestination: outputTokenAccount,
         vaultTokenDestinationMint: baseIn ? mintB : mintA,
+        outputTokenProgram,
         inputVault: baseIn ? mintAVault : mintBVault,
         outputVault: baseIn ? mintBVault : mintAVault,
         observationState: new PublicKey(clmmPoolInfo.observationId),
@@ -1257,9 +1290,6 @@ export class PieProgram {
         outputVault: new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
         inputTokenProgram: new PublicKey(
           poolInfo[baseIn ? "mintA" : "mintB"].programId ?? TOKEN_PROGRAM_ID
-        ),
-        outputTokenProgram: new PublicKey(
-          poolInfo[baseIn ? "mintB" : "mintA"].programId ?? TOKEN_PROGRAM_ID
         ),
         observationState: new PublicKey(clmmPoolInfo.observationId),
       })
@@ -1768,6 +1798,12 @@ export class PieProgram {
         outputVault: isInputMintA
           ? new PublicKey(poolKeys.vault.B)
           : new PublicKey(poolKeys.vault.A),
+        inputTokenProgram: isInputMintA
+          ? new PublicKey(poolKeys.mintA.programId)
+          : new PublicKey(poolKeys.mintB.programId),
+        outputTokenProgram: isInputMintA
+          ? new PublicKey(poolKeys.mintB.programId)
+          : new PublicKey(poolKeys.mintA.programId),
         observationState: new PublicKey(clmmPoolInfo.observationId),
         vaultTokenSourceMint: isInputMintA
           ? new PublicKey(poolKeys.mintA.address)
@@ -2207,14 +2243,20 @@ export class PieProgram {
     swapsPerBundle: number;
     tokenInfo: TokenInfo[];
   }): Promise<string[]> {
+    const swapData = [];
+    const basketConfigData = await this.getBasketConfig({ basketId });
     const asyncTasks = [];
     asyncTasks.push(getTipAccounts());
     asyncTasks.push(getTipInformation());
     asyncTasks.push(this.generateLookupTableAccount());
     asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+    asyncTasks.push(
+      this.getTokenBalance({
+        mint: basketConfigData.mint,
+        owner: user,
+      })
+    );
 
-    const swapData = [];
-    const basketConfigData = await this.getBasketConfig({ basketId });
     let withdrawData: DepositOrWithdrawSolInfo | undefined;
     basketConfigData.components.forEach((component) => {
       if (component.mint.toBase58() === NATIVE_MINT.toBase58()) {
@@ -2247,6 +2289,7 @@ export class PieProgram {
       tipInformation,
       addressLookupTablesAccount,
       recentBlockhash,
+      userBasketTokenBalance,
     ] = await Promise.all(asyncTasks);
 
     let tx = new Transaction();
@@ -2339,6 +2382,17 @@ export class PieProgram {
           );
         }
         tx.add(unwrapSolIx(userWsolAccount, user, user));
+
+        // close basket token account if all basket tokens are redeemed
+        if (userBasketTokenBalance == redeemAmount) {
+          tx.add(
+            createCloseAccountInstruction(
+              getAssociatedTokenAddressSync(basketConfigData.mint, user, false),
+              user,
+              user
+            )
+          );
+        }
 
         const serializedTx = serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,

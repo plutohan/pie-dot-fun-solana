@@ -184,6 +184,24 @@ class PieProgram {
         }
         return tx;
     }
+    async initializeSharedLookupTable({ admin, }) {
+        console.log("creating new shared lookup table");
+        const newLookupTable = await (0, lookupTable_1.createLookupTable)(this.connection, admin);
+        const tipAccounts = await (0, jito_1.getTipAccounts)();
+        await (0, lookupTable_1.addAddressesToTable)(this.connection, admin, newLookupTable, [
+            this.program.programId,
+            this.programStatePDA,
+            await this.getPlatformFeeTokenAccount(),
+            raydium_sdk_v2_1.SYSTEM_PROGRAM_ID,
+            spl_token_1.NATIVE_MINT,
+            spl_token_1.TOKEN_PROGRAM_ID,
+            spl_token_1.TOKEN_2022_PROGRAM_ID,
+            spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID,
+            ...tipAccounts.map((tipAccount) => new web3_js_1.PublicKey(tipAccount)),
+        ]);
+        this.sharedLookupTable = newLookupTable.toBase58();
+        return newLookupTable;
+    }
     async addBaksetToSharedLookupTable({ basketId, admin, }) {
         const basketConfigPDA = this.basketConfigPDA({ basketId });
         const basketMintPDA = this.basketMintPDA({ basketId });
@@ -510,7 +528,7 @@ class PieProgram {
         ];
         const baseIn = spl_token_1.NATIVE_MINT.toString() === poolKeys.mintA.address;
         const inputTokenAccount = await (0, helper_1.getTokenAccount)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user);
-        const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(baseIn ? mintB : mintA), user, basketConfig);
+        const { tokenAccount: outputTokenAccount, tx: outputTx, tokenProgram: outputTokenProgram, } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(baseIn ? mintB : mintA), user, basketConfig);
         if ((0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
         }
@@ -529,6 +547,7 @@ class PieProgram {
             userTokenSourceMint: spl_token_1.NATIVE_MINT,
             vaultTokenDestination: outputTokenAccount,
             vaultTokenDestinationMint: baseIn ? mintB : mintA,
+            outputTokenProgram,
             inputVault: baseIn ? mintAVault : mintBVault,
             outputVault: baseIn ? mintBVault : mintAVault,
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
@@ -727,7 +746,6 @@ class PieProgram {
             inputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
             outputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
             inputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintA" : "mintB"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
-            outputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintB" : "mintA"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
         })
             .remainingAccounts(await (0, helper_1.buildClmmRemainingAccounts)(remainingAccounts, (0, raydium_sdk_v2_1.getPdaExBitmapAccount)(programId, id).publicKey))
@@ -1049,6 +1067,12 @@ class PieProgram {
             outputVault: isInputMintA
                 ? new web3_js_1.PublicKey(poolKeys.vault.B)
                 : new web3_js_1.PublicKey(poolKeys.vault.A),
+            inputTokenProgram: isInputMintA
+                ? new web3_js_1.PublicKey(poolKeys.mintA.programId)
+                : new web3_js_1.PublicKey(poolKeys.mintB.programId),
+            outputTokenProgram: isInputMintA
+                ? new web3_js_1.PublicKey(poolKeys.mintB.programId)
+                : new web3_js_1.PublicKey(poolKeys.mintA.programId),
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
             vaultTokenSourceMint: isInputMintA
                 ? new web3_js_1.PublicKey(poolKeys.mintA.address)
@@ -1309,13 +1333,17 @@ class PieProgram {
      * @returns Array of serialized transactions
      */
     async createRedeemAndSellBundle({ user, basketId, slippage, redeemAmount, swapsPerBundle, tokenInfo, }) {
+        const swapData = [];
+        const basketConfigData = await this.getBasketConfig({ basketId });
         const asyncTasks = [];
         asyncTasks.push((0, jito_1.getTipAccounts)());
         asyncTasks.push((0, jito_1.getTipInformation)());
         asyncTasks.push(this.generateLookupTableAccount());
         asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
-        const swapData = [];
-        const basketConfigData = await this.getBasketConfig({ basketId });
+        asyncTasks.push(this.getTokenBalance({
+            mint: basketConfigData.mint,
+            owner: user,
+        }));
         let withdrawData;
         basketConfigData.components.forEach((component) => {
             if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
@@ -1336,7 +1364,7 @@ class PieProgram {
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkSwapDataError)(swapDataResult);
-        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash,] = await Promise.all(asyncTasks);
+        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash, userBasketTokenBalance,] = await Promise.all(asyncTasks);
         let tx = new web3_js_1.Transaction();
         const serializedTxs = [];
         // Create native mint ATA
@@ -1406,6 +1434,10 @@ class PieProgram {
                     }));
                 }
                 tx.add((0, helper_1.unwrapSolIx)(userWsolAccount, user, user));
+                // close basket token account if all basket tokens are redeemed
+                if (userBasketTokenBalance == redeemAmount) {
+                    tx.add((0, spl_token_1.createCloseAccountInstruction)((0, spl_token_1.getAssociatedTokenAddressSync)(basketConfigData.mint, user, false), user, user));
+                }
                 const serializedTx = (0, jito_1.serializeJitoTransaction)({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,

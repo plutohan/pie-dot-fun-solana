@@ -441,41 +441,8 @@
                                 "path": "basket_config"
                             },
                             {
-                                "kind": "const",
-                                "value": [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169
-                                ]
+                                "kind": "account",
+                                "path": "output_token_program"
                             },
                             {
                                 "kind": "account",
@@ -520,6 +487,12 @@
                             ]
                         }
                     }
+                },
+                {
+                    "name": "output_token_program",
+                    "docs": [
+                        "SPL program for output token transfers: Token or Token 2022 Program"
+                    ]
                 },
                 {
                     "name": "input_vault",
@@ -727,41 +700,8 @@
                                 "path": "basket_config"
                             },
                             {
-                                "kind": "const",
-                                "value": [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169
-                                ]
+                                "kind": "account",
+                                "path": "output_token_program"
                             },
                             {
                                 "kind": "account",
@@ -1676,41 +1616,8 @@
                                 "path": "basket_config"
                             },
                             {
-                                "kind": "const",
-                                "value": [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169
-                                ]
+                                "kind": "account",
+                                "path": "input_token_program"
                             },
                             {
                                 "kind": "account",
@@ -1769,41 +1676,8 @@
                                 "path": "basket_config"
                             },
                             {
-                                "kind": "const",
-                                "value": [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169
-                                ]
+                                "kind": "account",
+                                "path": "output_token_program"
                             },
                             {
                                 "kind": "account",
@@ -1848,6 +1722,18 @@
                             ]
                         }
                     }
+                },
+                {
+                    "name": "input_token_program",
+                    "docs": [
+                        "SPL program for input token transfers: Token or Token 2022 Program"
+                    ]
+                },
+                {
+                    "name": "output_token_program",
+                    "docs": [
+                        "SPL program for output token transfers: Token or Token 2022 Program"
+                    ]
                 },
                 {
                     "name": "input_vault",
@@ -1991,41 +1877,8 @@
                                 "path": "basket_config"
                             },
                             {
-                                "kind": "const",
-                                "value": [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169
-                                ]
+                                "kind": "account",
+                                "path": "input_token_program"
                             },
                             {
                                 "kind": "account",
@@ -2084,41 +1937,8 @@
                                 "path": "basket_config"
                             },
                             {
-                                "kind": "const",
-                                "value": [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169
-                                ]
+                                "kind": "account",
+                                "path": "output_token_program"
                             },
                             {
                                 "kind": "account",
@@ -2921,41 +2741,8 @@
                                 "path": "basket_config"
                             },
                             {
-                                "kind": "const",
-                                "value": [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169
-                                ]
+                                "kind": "account",
+                                "path": "input_token_program"
                             },
                             {
                                 "kind": "account",
@@ -3000,6 +2787,9 @@
                             ]
                         }
                     }
+                },
+                {
+                    "name": "input_token_program"
                 },
                 {
                     "name": "user_token_destination_mint"
@@ -3165,41 +2955,8 @@
                                 "path": "basket_config"
                             },
                             {
-                                "kind": "const",
-                                "value": [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169
-                                ]
+                                "kind": "account",
+                                "path": "input_token_program"
                             },
                             {
                                 "kind": "account",
@@ -4399,6 +4156,11 @@
             "code": 6018,
             "name": "MaxWhitelistedCreatorsExceeded",
             "msg": "Max whitelisted creators exceeded"
+        },
+        {
+            "code": 6019,
+            "name": "InvalidTokenProgram",
+            "msg": "Invalid token program"
         }
     ],
     "types": [

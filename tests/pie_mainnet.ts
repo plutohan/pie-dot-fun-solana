@@ -29,6 +29,7 @@ import {
 } from "@solana/spl-token";
 import {
   getExplorerUrl,
+  getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
   isValidTransaction,
   showBasketConfigTable,
@@ -89,6 +90,26 @@ describe("pie", () => {
 
       initializeTx.add(priorityFeeInstruction);
 
+      const { tx: platformFeeTokenAccountTx } = await getOrCreateNativeMintATA(
+        connection,
+        admin.publicKey,
+        programState.platformFeeWallet
+      );
+
+      const { tx: creatorFeeTokenAccountTx } = await getOrCreateNativeMintATA(
+        connection,
+        admin.publicKey,
+        newCreator
+      );
+
+      if (isValidTransaction(platformFeeTokenAccountTx)) {
+        initializeTx.add(platformFeeTokenAccountTx);
+      }
+
+      if (isValidTransaction(creatorFeeTokenAccountTx)) {
+        initializeTx.add(creatorFeeTokenAccountTx);
+      }
+
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,
         initializeTx,
@@ -104,15 +125,7 @@ describe("pie", () => {
     }
 
     if (!pieProgram.sharedLookupTable) {
-      const newLookupTable = await createLookupTable(connection, admin);
-      await addAddressesToTable(connection, admin, newLookupTable, [
-        pieProgram.program.programId,
-        pieProgram.programStatePDA,
-        programState.platformFeeWallet,
-      ]);
-
-      console.log("shared lookup table created:", newLookupTable.toBase58());
-      pieProgram.sharedLookupTable = newLookupTable.toBase58();
+      await pieProgram.initializeSharedLookupTable({ admin });
     }
   });
 

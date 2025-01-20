@@ -29,6 +29,7 @@ export declare function showBasketVaultsTable(basketVaults: {
 export declare function getOrCreateTokenAccountTx(connection: Connection, mint: PublicKey, payer: PublicKey, owner: PublicKey): Promise<{
     tokenAccount: PublicKey;
     tx: Transaction | null;
+    tokenProgram: PublicKey;
 }>;
 export declare function getTokenAccount(connection: Connection, mint: PublicKey, owner: PublicKey): Promise<PublicKey>;
 export declare function isToken2022Mint(connection: Connection, mint: PublicKey): Promise<boolean>;
