@@ -2243,14 +2243,20 @@ export class PieProgram {
     swapsPerBundle: number;
     tokenInfo: TokenInfo[];
   }): Promise<string[]> {
+    const swapData = [];
+    const basketConfigData = await this.getBasketConfig({ basketId });
     const asyncTasks = [];
     asyncTasks.push(getTipAccounts());
     asyncTasks.push(getTipInformation());
     asyncTasks.push(this.generateLookupTableAccount());
     asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+    asyncTasks.push(
+      this.getTokenBalance({
+        mint: basketConfigData.mint,
+        owner: user,
+      })
+    );
 
-    const swapData = [];
-    const basketConfigData = await this.getBasketConfig({ basketId });
     let withdrawData: DepositOrWithdrawSolInfo | undefined;
     basketConfigData.components.forEach((component) => {
       if (component.mint.toBase58() === NATIVE_MINT.toBase58()) {
@@ -2283,6 +2289,7 @@ export class PieProgram {
       tipInformation,
       addressLookupTablesAccount,
       recentBlockhash,
+      userBasketTokenBalance,
     ] = await Promise.all(asyncTasks);
 
     let tx = new Transaction();
@@ -2375,6 +2382,17 @@ export class PieProgram {
           );
         }
         tx.add(unwrapSolIx(userWsolAccount, user, user));
+
+        // close basket token account if all basket tokens are redeemed
+        if (userBasketTokenBalance == redeemAmount) {
+          tx.add(
+            createCloseAccountInstruction(
+              getAssociatedTokenAddressSync(basketConfigData.mint, user, false),
+              user,
+              user
+            )
+          );
+        }
 
         const serializedTx = serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
