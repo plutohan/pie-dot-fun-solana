@@ -2742,7 +2742,7 @@
                             },
                             {
                                 "kind": "account",
-                                "path": "output_token_program"
+                                "path": "input_token_program"
                             },
                             {
                                 "kind": "account",
@@ -2789,7 +2789,7 @@
                     }
                 },
                 {
-                    "name": "output_token_program"
+                    "name": "input_token_program"
                 },
                 {
                     "name": "user_token_destination_mint"
@@ -4156,6 +4156,11 @@
             "code": 6018,
             "name": "MaxWhitelistedCreatorsExceeded",
             "msg": "Max whitelisted creators exceeded"
+        },
+        {
+            "code": 6019,
+            "name": "InvalidTokenProgram",
+            "msg": "Invalid token program"
         }
     ],
     "types": [

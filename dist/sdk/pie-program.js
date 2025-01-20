@@ -745,7 +745,7 @@ class PieProgram {
             userTokenDestinationMint: baseIn ? mintB : mintA,
             inputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "A" : "B"]),
             outputVault: new web3_js_1.PublicKey(poolKeys.vault[baseIn ? "B" : "A"]),
-            outputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintB" : "mintA"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
+            inputTokenProgram: new web3_js_1.PublicKey(poolInfo[baseIn ? "mintA" : "mintB"].programId ?? spl_token_1.TOKEN_PROGRAM_ID),
             observationState: new web3_js_1.PublicKey(clmmPoolInfo.observationId),
         })
             .remainingAccounts(await (0, helper_1.buildClmmRemainingAccounts)(remainingAccounts, (0, raydium_sdk_v2_1.getPdaExBitmapAccount)(programId, id).publicKey))
@@ -1333,13 +1333,17 @@ class PieProgram {
      * @returns Array of serialized transactions
      */
     async createRedeemAndSellBundle({ user, basketId, slippage, redeemAmount, swapsPerBundle, tokenInfo, }) {
+        const swapData = [];
+        const basketConfigData = await this.getBasketConfig({ basketId });
         const asyncTasks = [];
         asyncTasks.push((0, jito_1.getTipAccounts)());
         asyncTasks.push((0, jito_1.getTipInformation)());
         asyncTasks.push(this.generateLookupTableAccount());
         asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
-        const swapData = [];
-        const basketConfigData = await this.getBasketConfig({ basketId });
+        asyncTasks.push(this.getTokenBalance({
+            mint: basketConfigData.mint,
+            owner: user,
+        }));
         let withdrawData;
         basketConfigData.components.forEach((component) => {
             if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
@@ -1360,7 +1364,7 @@ class PieProgram {
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkSwapDataError)(swapDataResult);
-        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash,] = await Promise.all(asyncTasks);
+        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash, userBasketTokenBalance,] = await Promise.all(asyncTasks);
         let tx = new web3_js_1.Transaction();
         const serializedTxs = [];
         // Create native mint ATA
@@ -1430,6 +1434,10 @@ class PieProgram {
                     }));
                 }
                 tx.add((0, helper_1.unwrapSolIx)(userWsolAccount, user, user));
+                // close basket token account if all basket tokens are redeemed
+                if (userBasketTokenBalance == redeemAmount) {
+                    tx.add((0, spl_token_1.createCloseAccountInstruction)((0, spl_token_1.getAssociatedTokenAddressSync)(basketConfigData.mint, user, false), user, user));
+                }
                 const serializedTx = (0, jito_1.serializeJitoTransaction)({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,

@@ -2748,7 +2748,7 @@ export type Pie = {
                             },
                             {
                                 "kind": "account";
-                                "path": "outputTokenProgram";
+                                "path": "inputTokenProgram";
                             },
                             {
                                 "kind": "account";
@@ -2795,7 +2795,7 @@ export type Pie = {
                     };
                 },
                 {
-                    "name": "outputTokenProgram";
+                    "name": "inputTokenProgram";
                 },
                 {
                     "name": "userTokenDestinationMint";
@@ -4162,6 +4162,11 @@ export type Pie = {
             "code": 6018;
             "name": "maxWhitelistedCreatorsExceeded";
             "msg": "Max whitelisted creators exceeded";
+        },
+        {
+            "code": 6019;
+            "name": "invalidTokenProgram";
+            "msg": "Invalid token program";
         }
     ];
     "types": [
