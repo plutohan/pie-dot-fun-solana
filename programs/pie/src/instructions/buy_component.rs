@@ -86,6 +86,7 @@ pub struct BuyComponentContext<'info> {
         mut,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_destination_mint,
+        associated_token::token_program = token_program
     )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
