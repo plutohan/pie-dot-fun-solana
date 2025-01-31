@@ -38,20 +38,40 @@ impl UserFund {
         }
         Ok(())
     }
-    pub fn close_if_empty(&self, info: AccountInfo, sol_destination: AccountInfo) -> Result<bool> {
+    pub fn close_if_empty(
+        &self,
+        user_fund: AccountInfo,
+        sol_destination: AccountInfo,
+    ) -> Result<bool> {
         if self
             .components
             .iter()
             .all(|component| component.amount == 0)
         {
+            msg!(
+                "Closing user fund account at {} with lamports: {}",
+                user_fund.key(),
+                user_fund.lamports()
+            );
+
             // Transfer tokens from the account to the sol_destination.
             let dest_starting_lamports: u64 = sol_destination.lamports();
-            **sol_destination.lamports.borrow_mut() =
-                dest_starting_lamports.checked_add(info.lamports()).unwrap();
-            **info.lamports.borrow_mut() = 0;
+            **sol_destination.lamports.borrow_mut() = dest_starting_lamports
+                .checked_add(user_fund.lamports())
+                .unwrap();
+            **user_fund.lamports.borrow_mut() = 0;
 
-            info.assign(&system_program::ID);
-            info.realloc(0, false)?;
+            user_fund.assign(&system_program::ID);
+            user_fund.realloc(0, false)?;
+
+            msg!(
+                "Transferred lamports to {}. 
+                Balance before: {}, after: {}",
+                sol_destination.key(),
+                dest_starting_lamports,
+                sol_destination.lamports()
+            );
+
             Ok(true)
         } else {
             Ok(false)
