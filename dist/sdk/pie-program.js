@@ -1334,6 +1334,7 @@ class PieProgram {
      */
     async createRedeemAndSellBundle({ user, basketId, slippage, redeemAmount, swapsPerBundle, tokenInfo, }) {
         const swapData = [];
+        const swapBackupData = [];
         const basketConfigData = await this.getBasketConfig({ basketId });
         const asyncTasks = [];
         asyncTasks.push((0, jito_1.getTipAccounts)());
@@ -1353,17 +1354,20 @@ class PieProgram {
                 };
             }
             else {
-                swapData.push((0, helper_1.getSwapData)({
+                const getSwapDataInput = {
                     isSwapBaseOut: false,
                     inputMint: component.mint.toBase58(),
                     outputMint: spl_token_1.NATIVE_MINT.toBase58(),
                     amount: (0, helper_1.restoreRawDecimal)(component.quantityInSysDecimal.mul(new anchor_1.BN(redeemAmount))),
                     slippage,
-                }));
+                };
+                console.log({ getSwapDataInput });
+                swapData.push((0, helper_1.getSwapData)(getSwapDataInput));
+                swapBackupData.push(getSwapDataInput);
             }
         });
         const swapDataResult = await Promise.all(swapData);
-        (0, helper_1.checkSwapDataError)(swapDataResult);
+        (0, helper_1.checkAndReplaceSwapDataError)(swapDataResult, swapBackupData);
         let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash, userBasketTokenBalance,] = await Promise.all(asyncTasks);
         let tx = new web3_js_1.Transaction();
         const serializedTxs = [];
