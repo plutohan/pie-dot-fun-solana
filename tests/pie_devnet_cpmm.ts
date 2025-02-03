@@ -55,6 +55,8 @@ describe("pie", () => {
         initializer: admin.publicKey,
         admin: admin.publicKey,
         creator: admin.publicKey,
+        platformFeeWallet: admin.publicKey,
+        platformFeePercentage: new BN(500),
       });
       const initializeTxResult = await sendAndConfirmTransaction(
         connection,

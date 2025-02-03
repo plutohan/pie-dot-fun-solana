@@ -11,6 +11,7 @@ import { createBasketComponents } from "../sdk/utils/helper";
 import { CreateBasketArgs, PieProgram } from "../sdk/pie-program";
 import { getMint } from "@solana/spl-token";
 import { METADATA_PROGRAM_ID } from "@raydium-io/raydium-sdk-v2";
+import { BN } from "@coral-xyz/anchor";
 
 function sleep(s: number) {
   return new Promise((resolve) => setTimeout(resolve, s * 1000));
@@ -47,6 +48,8 @@ describe("pie", () => {
       initializer: admin.publicKey,
       admin: admin.publicKey,
       creator: creator.publicKey,
+      platformFeeWallet: admin.publicKey,
+      platformFeePercentage: new BN(100),
     });
 
     await sendAndConfirmTransaction(connection, initTx, [admin]);
