@@ -3,7 +3,7 @@ import { SystemProgram } from "@solana/web3.js";
 import { Transaction } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
-import { QUICKNODE_RPC_URL } from "./constants";
+import { JITO_RPC_URL, QUICKNODE_RPC_URL } from "./constants";
 import axios from "axios";
 
 type TipAccountsResponse = string[];
@@ -113,12 +113,19 @@ export async function getTipAccounts(): Promise<TipAccountsResponse | null> {
     method: "getTipAccounts",
     params: [],
   });
-
   try {
     const res = await axios.post(QUICKNODE_RPC_URL, body);
     return res.data.result;
   } catch (error) {
     console.log({ error });
+    console.log(JITO_RPC_URL + "/bundles");
+    const res = await axios.post(JITO_RPC_URL + "/bundles", body, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    console.log({ res });
+    return res.data.result;
   }
 }
 
@@ -137,6 +144,12 @@ export async function sendBundle(
     return res.data.result;
   } catch (error) {
     console.log({ error });
+    const res = await axios.post(JITO_RPC_URL + "/bundles", body, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return res.data.result;
   }
 }
 
@@ -155,6 +168,16 @@ export async function getInflightBundleStatuses(
     return res.data.result;
   } catch (error) {
     console.log({ error });
+    const res = await axios.post(
+      JITO_RPC_URL + "/getInflightBundleStatuses",
+      body,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return res.data.result;
   }
 }
 
@@ -188,10 +211,15 @@ export async function simulateBundle({
     if (res.data.error) {
       throw new Error(res.data.error.message);
     }
-
     return res.data.result;
   } catch (error) {
     console.log({ error });
+    const res = await axios.post(JITO_RPC_URL + "/bundles", body, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return res.data.result;
   }
 }
 
