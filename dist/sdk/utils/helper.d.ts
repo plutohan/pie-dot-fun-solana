@@ -39,6 +39,13 @@ export declare function getOrCreateNativeMintATA(connection: Connection, payer: 
     tx: Transaction;
 }>;
 export declare function getExplorerUrl(txid: string, endpoint: string): string;
+export interface GetSwapDataInput {
+    isSwapBaseOut: boolean;
+    inputMint: string;
+    outputMint: string;
+    amount: number;
+    slippage: number;
+}
 export interface SwapCompute {
     id: string;
     success: boolean;
@@ -64,14 +71,9 @@ export interface SwapCompute {
         }[];
     };
 }
-export declare function getSwapData({ isSwapBaseOut, inputMint, outputMint, amount, slippage, }: {
-    isSwapBaseOut: boolean;
-    inputMint: string;
-    outputMint: string;
-    amount: number;
-    slippage: number;
-}): Promise<SwapCompute>;
+export declare function getSwapData({ isSwapBaseOut, inputMint, outputMint, amount, slippage, }: GetSwapDataInput): Promise<SwapCompute>;
 export declare function checkSwapDataError(swapData: SwapCompute[]): void;
+export declare function checkAndReplaceSwapDataError(swapData: SwapCompute[], swapBackupData: GetSwapDataInput[]): void;
 export declare function isValidTransaction(tx: Transaction): boolean;
 export declare function startPollingJitoBundle(bundleId: string): Promise<void>;
 export declare function caculateTotalAmountWithFee(amount: number, feePercentageInBasisPoints: number): number;
@@ -79,4 +81,5 @@ export declare function getTokenFromTokenInfo(tokenInfo: TokenInfo[], mint: stri
 export declare function simulateTransaction(connection: Connection, txInBase64: string): Promise<import("@solana/web3.js").RpcResponseAndContext<import("@solana/web3.js").SimulatedTransactionResponse>>;
 export declare const restoreRawDecimal: (val: BN) => number;
 export declare const restoreRawDecimalRoundUp: (val: BN) => number;
+export declare const getTokenListFromSolanaClient: () => Promise<TokenInfo[]>;
 //# sourceMappingURL=helper.d.ts.map

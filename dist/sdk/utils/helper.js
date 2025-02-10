@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.restoreRawDecimalRoundUp = exports.restoreRawDecimal = void 0;
+exports.getTokenListFromSolanaClient = exports.restoreRawDecimalRoundUp = exports.restoreRawDecimal = void 0;
 exports.createUserWithLamports = createUserWithLamports;
 exports.createNewMint = createNewMint;
 exports.mintTokenTo = mintTokenTo;
@@ -25,6 +25,7 @@ exports.getOrCreateNativeMintATA = getOrCreateNativeMintATA;
 exports.getExplorerUrl = getExplorerUrl;
 exports.getSwapData = getSwapData;
 exports.checkSwapDataError = checkSwapDataError;
+exports.checkAndReplaceSwapDataError = checkAndReplaceSwapDataError;
 exports.isValidTransaction = isValidTransaction;
 exports.startPollingJitoBundle = startPollingJitoBundle;
 exports.caculateTotalAmountWithFee = caculateTotalAmountWithFee;
@@ -258,6 +259,27 @@ function checkSwapDataError(swapData) {
         }
     }
 }
+function checkAndReplaceSwapDataError(swapData, swapBackupData) {
+    for (let i = 0; i < swapData.length; i++) {
+        if (!swapData[i].success) {
+            if (!swapBackupData[i].isSwapBaseOut) {
+                swapData[i].data = {
+                    ...swapBackupData[i],
+                    otherAmountThreshold: "0",
+                    outputAmount: "0",
+                    swapType: "BaseIn",
+                    inputAmount: swapBackupData[i].amount.toString(),
+                    slippageBps: swapBackupData[i].slippage * 100,
+                    priceImpactPct: 0,
+                    routePlan: [],
+                };
+            }
+            else {
+                throw new Error(swapData[i].msg);
+            }
+        }
+    }
+}
 function isValidTransaction(tx) {
     if (!tx)
         return false;
@@ -282,7 +304,11 @@ function caculateTotalAmountWithFee(amount, feePercentageInBasisPoints) {
     return Math.ceil(amount * (1 + feePercentageInBasisPoints / 10000));
 }
 function getTokenFromTokenInfo(tokenInfo, mint) {
-    return tokenInfo.find((token) => token.mint === mint);
+    const token = tokenInfo.find((token) => token.mint === mint);
+    if (!token) {
+        throw new Error(`Token not found: ${mint}`);
+    }
+    return token;
 }
 async function simulateTransaction(connection, txInBase64) {
     const tx = web3_js_1.VersionedTransaction.deserialize(Buffer.from(txInBase64, "base64"));
@@ -303,4 +329,19 @@ const restoreRawDecimalRoundUp = (val) => {
     return (0, exports.restoreRawDecimal)(val) + 1;
 };
 exports.restoreRawDecimalRoundUp = restoreRawDecimalRoundUp;
+const getTokenListFromSolanaClient = async () => {
+    const { data } = await axios_1.default.get("https://pie-program-client-1032702417000.asia-east1.run.app/v1/pie-program/token-pools");
+    return data.map((token) => ({
+        name: token.name,
+        mint: token.mint.toString(),
+        poolId: token.poolId.toString(),
+        lut: token.lookupTable.toString(),
+        type: token.poolType === "POOL_TYPE_AMM"
+            ? "amm"
+            : token.poolType === "POOL_TYPE_CLMM"
+                ? "clmm"
+                : "cpmm",
+    }));
+};
+exports.getTokenListFromSolanaClient = getTokenListFromSolanaClient;
 //# sourceMappingURL=helper.js.map

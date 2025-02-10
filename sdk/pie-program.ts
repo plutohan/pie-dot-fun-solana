@@ -42,6 +42,7 @@ import {
 import {
   buildClmmRemainingAccounts,
   caculateTotalAmountWithFee,
+  checkAndReplaceSwapDataError,
   checkSwapDataError,
   getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
@@ -2244,6 +2245,7 @@ export class PieProgram {
     tokenInfo: TokenInfo[];
   }): Promise<string[]> {
     const swapData = [];
+    const swapBackupData = [];
     const basketConfigData = await this.getBasketConfig({ basketId });
     const asyncTasks = [];
     asyncTasks.push(getTipAccounts());
@@ -2267,22 +2269,24 @@ export class PieProgram {
           ),
         };
       } else {
-        swapData.push(
-          getSwapData({
-            isSwapBaseOut: false,
-            inputMint: component.mint.toBase58(),
-            outputMint: NATIVE_MINT.toBase58(),
-            amount: restoreRawDecimal(
-              component.quantityInSysDecimal.mul(new BN(redeemAmount))
-            ),
-            slippage,
-          })
-        );
+        const getSwapDataInput = {
+          isSwapBaseOut: false,
+          inputMint: component.mint.toBase58(),
+          outputMint: NATIVE_MINT.toBase58(),
+          amount: restoreRawDecimal(
+            component.quantityInSysDecimal.mul(new BN(redeemAmount))
+          ),
+          slippage,
+        };
+        console.log({ getSwapDataInput });
+        swapData.push(getSwapData(getSwapDataInput));
+
+        swapBackupData.push(getSwapDataInput);
       }
     });
 
     const swapDataResult = await Promise.all(swapData);
-    checkSwapDataError(swapDataResult);
+    checkAndReplaceSwapDataError(swapDataResult, swapBackupData);
 
     let [
       tipAccounts,

@@ -463,6 +463,14 @@ export function getExplorerUrl(txid: string, endpoint: string) {
   return `https://solscan.io/tx/${txid}${clusterParam}`;
 }
 
+export interface GetSwapDataInput {
+  isSwapBaseOut: boolean;
+  inputMint: string;
+  outputMint: string;
+  amount: number;
+  slippage: number;
+}
+
 export interface SwapCompute {
   id: string;
   success: boolean;
@@ -494,13 +502,7 @@ export async function getSwapData({
   outputMint,
   amount,
   slippage,
-}: {
-  isSwapBaseOut: boolean;
-  inputMint: string;
-  outputMint: string;
-  amount: number;
-  slippage: number;
-}): Promise<SwapCompute> {
+}: GetSwapDataInput): Promise<SwapCompute> {
   const { data: swapResponse } = await axios.get<SwapCompute>(
     `${API_URLS.SWAP_HOST}/compute/${
       isSwapBaseOut ? "swap-base-out" : "swap-base-in"
@@ -516,6 +518,30 @@ export function checkSwapDataError(swapData: SwapCompute[]) {
   for (let i = 0; i < swapData.length; i++) {
     if (!swapData[i].success) {
       throw new Error(swapData[i].msg);
+    }
+  }
+}
+
+export function checkAndReplaceSwapDataError(
+  swapData: SwapCompute[],
+  swapBackupData: GetSwapDataInput[]
+) {
+  for (let i = 0; i < swapData.length; i++) {
+    if (!swapData[i].success) {
+      if (!swapBackupData[i].isSwapBaseOut) {
+        swapData[i].data = {
+          ...swapBackupData[i],
+          otherAmountThreshold: "0",
+          outputAmount: "0",
+          swapType: "BaseIn",
+          inputAmount: swapBackupData[i].amount.toString(),
+          slippageBps: swapBackupData[i].slippage * 100,
+          priceImpactPct: 0,
+          routePlan: [],
+        };
+      } else {
+        throw new Error(swapData[i].msg);
+      }
     }
   }
 }
@@ -548,7 +574,11 @@ export function caculateTotalAmountWithFee(
 }
 
 export function getTokenFromTokenInfo(tokenInfo: TokenInfo[], mint: string) {
-  return tokenInfo.find((token) => token.mint === mint);
+  const token = tokenInfo.find((token) => token.mint === mint);
+  if (!token) {
+    throw new Error(`Token not found: ${mint}`);
+  }
+  return token;
 }
 
 export async function simulateTransaction(
@@ -575,4 +605,23 @@ export const restoreRawDecimalRoundUp = (val: BN): number => {
     return restoreRawDecimal(val);
   }
   return restoreRawDecimal(val) + 1;
+};
+
+export const getTokenListFromSolanaClient = async (): Promise<TokenInfo[]> => {
+  const { data } = await axios.get(
+    "https://pie-program-client-1032702417000.asia-east1.run.app/v1/pie-program/token-pools"
+  );
+
+  return data.map((token) => ({
+    name: token.name,
+    mint: token.mint.toString(),
+    poolId: token.poolId.toString(),
+    lut: token.lookupTable.toString(),
+    type:
+      token.poolType === "POOL_TYPE_AMM"
+        ? "amm"
+        : token.poolType === "POOL_TYPE_CLMM"
+        ? "clmm"
+        : "cpmm",
+  }));
 };

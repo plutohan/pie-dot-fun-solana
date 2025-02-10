@@ -37,6 +37,14 @@ async function getTipAccounts() {
     }
     catch (error) {
         console.log({ error });
+        console.log(constants_1.JITO_RPC_URL + "/bundles");
+        const res = await axios_1.default.post(constants_1.JITO_RPC_URL + "/bundles", body, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        console.log({ res });
+        return res.data.result;
     }
 }
 async function sendBundle(transactions) {
@@ -52,6 +60,12 @@ async function sendBundle(transactions) {
     }
     catch (error) {
         console.log({ error });
+        const res = await axios_1.default.post(constants_1.JITO_RPC_URL + "/bundles", body, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        return res.data.result;
     }
 }
 async function getInflightBundleStatuses(bundleId) {
@@ -67,6 +81,12 @@ async function getInflightBundleStatuses(bundleId) {
     }
     catch (error) {
         console.log({ error });
+        const res = await axios_1.default.post(constants_1.JITO_RPC_URL + "/getInflightBundleStatuses", body, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        return res.data.result;
     }
 }
 async function simulateBundle({ encodedTransactions, simulationBank, skipSigVerify, replaceRecentBlockhash, }) {
@@ -92,6 +112,12 @@ async function simulateBundle({ encodedTransactions, simulationBank, skipSigVeri
     }
     catch (error) {
         console.log({ error });
+        const res = await axios_1.default.post(constants_1.JITO_RPC_URL + "/bundles", body, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        return res.data.result;
     }
 }
 function serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, amountInLamports, }) {
