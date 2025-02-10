@@ -61,11 +61,7 @@ import {
   createLookupTable,
   findAddressesInTable,
 } from "./utils/lookupTable";
-import {
-  getTipAccounts,
-  serializeJitoTransaction,
-  getTipInformation,
-} from "../sdk/jito";
+import { Jito } from "../sdk/jito";
 import { DepositOrWithdrawSolInfo, RebalanceInfo, TokenInfo } from "./types";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
@@ -100,14 +96,17 @@ export class PieProgram {
   private idl = Object.assign({}, PieIDL);
   raydium: Raydium;
   eventParser: EventParser;
+  jito: Jito;
 
   constructor(
     public readonly connection: Connection,
     public readonly cluster: Cluster,
+    public readonly jitoRpcUrl: string,
     programId: string = PieIDL.address,
     public sharedLookupTable: string = "2ZWHWfumGv3cC4My3xzgQXMWNEnmYGVGnURhpgW6SL7m"
   ) {
     this.idl.address = programId;
+    this.jito = new Jito(jitoRpcUrl);
     this.eventParser = new EventParser(
       new PublicKey(programId),
       new BorshCoder(PieIDL as Idl)
@@ -363,7 +362,7 @@ export class PieProgram {
     console.log("creating new shared lookup table");
     const newLookupTable = await createLookupTable(this.connection, admin);
 
-    const tipAccounts = await getTipAccounts();
+    const tipAccounts = await this.jito.getTipAccounts();
 
     await addAddressesToTable(this.connection, admin, newLookupTable, [
       this.program.programId,
@@ -2053,8 +2052,8 @@ export class PieProgram {
     feePercentageInBasisPoints: number;
   }): Promise<string[]> {
     const asyncTasks = [];
-    asyncTasks.push(getTipAccounts());
-    asyncTasks.push(getTipInformation());
+    asyncTasks.push(this.jito.getTipAccounts());
+    asyncTasks.push(this.jito.getTipInformation());
     asyncTasks.push(this.generateLookupTableAccount());
     asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
 
@@ -2139,7 +2138,7 @@ export class PieProgram {
     // Process each component
     for (let i = 0; i < swapDataResult.length; i++) {
       if (i > 0 && i % swapsPerBundle === 0) {
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2205,7 +2204,7 @@ export class PieProgram {
 
         tx.add(createCloseAccountInstruction(wsolAccount, user, user));
 
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2248,8 +2247,8 @@ export class PieProgram {
     const swapBackupData = [];
     const basketConfigData = await this.getBasketConfig({ basketId });
     const asyncTasks = [];
-    asyncTasks.push(getTipAccounts());
-    asyncTasks.push(getTipInformation());
+    asyncTasks.push(this.jito.getTipAccounts());
+    asyncTasks.push(this.jito.getTipInformation());
     asyncTasks.push(this.generateLookupTableAccount());
     asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
     asyncTasks.push(
@@ -2313,7 +2312,7 @@ export class PieProgram {
           await this.redeemBasketToken({ user, basketId, amount: redeemAmount })
         );
       } else if (i % swapsPerBundle === 0) {
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2398,7 +2397,7 @@ export class PieProgram {
           );
         }
 
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2434,8 +2433,8 @@ export class PieProgram {
     withStartRebalance?: boolean;
     withStopRebalance?: boolean;
   }): Promise<string[]> {
-    const tipAccounts = await getTipAccounts();
-    const tipInformation = await getTipInformation();
+    const tipAccounts = await this.jito.getTipAccounts();
+    const tipInformation = await this.jito.getTipInformation();
     const serializedTxs: string[] = [];
     let tx = new Transaction();
 
@@ -2481,7 +2480,7 @@ export class PieProgram {
           tx.add(createNativeMintATATx);
         }
       } else if (i % swapsPerBundle === 0) {
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: blockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2575,7 +2574,7 @@ export class PieProgram {
           tx.add(stopRebalanceTx);
         }
 
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: blockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,

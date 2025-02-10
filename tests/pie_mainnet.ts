@@ -31,7 +31,11 @@ import { QUICKNODE_RPC_URL } from "./constants";
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(mainnetAdmin));
   const connection = new Connection(QUICKNODE_RPC_URL, "confirmed");
-  const pieProgram = new PieProgram(connection, "mainnet-beta");
+  const pieProgram = new PieProgram(
+    connection,
+    "mainnet-beta",
+    QUICKNODE_RPC_URL
+  );
   const priorityFee = 100000;
   const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: priorityFee,
