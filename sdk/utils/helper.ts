@@ -31,7 +31,6 @@ import { Raydium, API_URLS } from "@raydium-io/raydium-sdk-v2";
 import { BasketComponent, PieProgram } from "../pie-program";
 import { Table } from "console-table-printer";
 import axios from "axios";
-import { getInflightBundleStatuses } from "../jito";
 import { TokenInfo } from "../types";
 import { SYS_DECIMALS } from "../constants";
 
@@ -550,20 +549,6 @@ export function isValidTransaction(tx: Transaction) {
   if (!tx) return false;
   if (!tx.instructions) return false;
   return tx.instructions.length > 0;
-}
-
-export async function startPollingJitoBundle(bundleId: string) {
-  await new Promise<void>((resolve) => {
-    let interval = setInterval(async () => {
-      const statuses = await getInflightBundleStatuses([bundleId]);
-      console.log(JSON.stringify({ statuses }));
-      if (statuses?.value[0]?.status === "Landed") {
-        console.log("bundle confirmed");
-        clearInterval(interval);
-        resolve();
-      }
-    }, 1000);
-  });
 }
 
 export function caculateTotalAmountWithFee(

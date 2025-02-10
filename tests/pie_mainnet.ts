@@ -3,12 +3,9 @@ import {
   ComputeBudgetProgram,
   Connection,
   Keypair,
-  LAMPORTS_PER_SOL,
   PublicKey,
-  sendAndConfirmRawTransaction,
   sendAndConfirmTransaction,
   Transaction,
-  VersionedMessage,
 } from "@solana/web3.js";
 import mainnetAdmin from "../.config/solana/id.json";
 import { assert } from "chai";
@@ -17,37 +14,19 @@ import {
   CreateBasketArgs,
   PieProgram,
 } from "../sdk/pie-program";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens } from "./fixtures/mainnet/token_test";
 import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
 import { Table } from "console-table-printer";
-import { initSdk } from "../sdk/utils/config";
-import {
-  getAssociatedTokenAddress,
-  getMint,
-  NATIVE_MINT,
-} from "@solana/spl-token";
+import { getMint, NATIVE_MINT } from "@solana/spl-token";
 import {
   getExplorerUrl,
   getOrCreateNativeMintATA,
-  getOrCreateTokenAccountTx,
   isValidTransaction,
   showBasketConfigTable,
-  showBasketVaultsTable,
   simulateTransaction,
-  startPollingJitoBundle,
 } from "../sdk/utils/helper";
-import {
-  getInflightBundleStatuses,
-  sendBundle,
-  simulateBundle,
-  signSerializedTransaction,
-} from "../sdk/jito";
-import { QUICKNODE_RPC_URL } from "../sdk/constants";
-import {
-  addAddressesToTable,
-  createLookupTable,
-} from "../sdk/utils/lookupTable";
+import { Jito } from "../sdk/jito";
+import { QUICKNODE_RPC_URL } from "./constants";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(mainnetAdmin));
@@ -59,6 +38,21 @@ describe("pie", () => {
   });
   const swapsPerBundle = 3;
   const slippage = 50;
+  const jito = new Jito(QUICKNODE_RPC_URL);
+
+  const startPollingJitoBundle = async (bundleId: string) => {
+    await new Promise<void>((resolve) => {
+      let interval = setInterval(async () => {
+        const statuses = await jito.getInflightBundleStatuses([bundleId]);
+        console.log(JSON.stringify({ statuses }));
+        if (statuses?.value[0]?.status === "Landed") {
+          console.log("bundle confirmed");
+          clearInterval(interval);
+          resolve();
+        }
+      }, 1000);
+    });
+  };
 
   beforeEach(async () => {
     await pieProgram.init();
@@ -293,7 +287,7 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = signSerializedTransaction(serializedTx, admin);
+      const tx = jito.signSerializedTransaction(serializedTx, admin);
       // @debug
       // await sendAndConfirmRawTransaction(
       //   connection,
@@ -307,7 +301,7 @@ describe("pie", () => {
     }
 
     console.log("start simulating bundle...");
-    const bundleSimluationResult = await simulateBundle({
+    const bundleSimluationResult = await jito.simulateBundle({
       encodedTransactions: serializedSignedTxs,
     });
 
@@ -325,7 +319,7 @@ describe("pie", () => {
     }
 
     console.log("start sending bundles..!!");
-    const bundleId = await sendBundle(serializedSignedTxs);
+    const bundleId = await jito.sendBundle(serializedSignedTxs);
     await startPollingJitoBundle(bundleId);
     console.log(`basket ${basketId.toString()} data:`);
     const basketMintTable = await showBasketConfigTable(
@@ -371,12 +365,12 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = signSerializedTransaction(serializedTx, admin);
+      const tx = jito.signSerializedTransaction(serializedTx, admin);
       serializedSignedTxs.push(tx);
     }
 
     console.log("start simulating bundle...");
-    const bundleSimluationResult = await simulateBundle({
+    const bundleSimluationResult = await jito.simulateBundle({
       encodedTransactions: serializedSignedTxs,
     });
 
@@ -391,7 +385,7 @@ describe("pie", () => {
     }
 
     console.log("start sending bundles..!!");
-    const bundleId = await sendBundle(serializedSignedTxs);
+    const bundleId = await jito.sendBundle(serializedSignedTxs);
     await startPollingJitoBundle(bundleId);
 
     console.log(`basket ${basketId.toString()} data after:`);
@@ -431,12 +425,12 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = signSerializedTransaction(serializedTx, admin);
+      const tx = jito.signSerializedTransaction(serializedTx, admin);
       serializedSignedTxs.push(tx);
     }
 
     console.log("start simulating bundle...");
-    const bundleSimluationResult = await simulateBundle({
+    const bundleSimluationResult = await jito.simulateBundle({
       encodedTransactions: serializedSignedTxs,
     });
     console.log(
@@ -446,7 +440,7 @@ describe("pie", () => {
     );
 
     console.log("start sending bundles..!!");
-    const bundleId = await sendBundle(serializedSignedTxs);
+    const bundleId = await jito.sendBundle(serializedSignedTxs);
 
     if (bundleSimluationResult.value.summary !== "succeeded") {
       for (const serializedSignedTx of serializedSignedTxs) {
