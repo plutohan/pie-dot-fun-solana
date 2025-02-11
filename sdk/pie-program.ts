@@ -50,6 +50,7 @@ import {
   getTokenAccount,
   getTokenFromTokenInfo,
   isValidTransaction,
+  processBuySwapData,
   restoreRawDecimal,
   restoreRawDecimalRoundUp,
   SwapCompute,
@@ -62,7 +63,13 @@ import {
   findAddressesInTable,
 } from "./utils/lookupTable";
 import { Jito } from "../sdk/jito";
-import { DepositOrWithdrawSolInfo, RebalanceInfo, TokenInfo } from "./types";
+import {
+  BuySwapData,
+  DepositOrWithdrawSolInfo,
+  RebalanceInfo,
+  TokenInfo,
+} from "./types";
+import { SYS_DECIMALS } from "./constants";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -625,7 +632,7 @@ export class PieProgram {
   }: {
     user: PublicKey;
     basketId: BN;
-    amount: number;
+    amount: string;
     userWsolAccount: PublicKey;
   }): Promise<Transaction> {
     const basketConfig = this.basketConfigPDA({ basketId });
@@ -1324,7 +1331,7 @@ export class PieProgram {
   }: {
     user: PublicKey;
     basketId: BN;
-    amount: number;
+    amount: string;
     userWsolAccount: PublicKey;
   }): Promise<Transaction> {
     const basketConfig = this.basketConfigPDA({ basketId });
@@ -2066,7 +2073,7 @@ export class PieProgram {
           type: "deposit",
           amount: restoreRawDecimalRoundUp(
             component.quantityInSysDecimal.mul(new BN(mintAmount))
-          ),
+          ).toString(),
         };
       } else {
         swapData.push(
@@ -2076,8 +2083,8 @@ export class PieProgram {
             outputMint: component.mint.toBase58(),
             amount: restoreRawDecimalRoundUp(
               component.quantityInSysDecimal.mul(new BN(mintAmount))
-            ),
-            slippage,
+            ).toString(),
+            slippagePct: slippage,
           })
         );
       }
@@ -2098,12 +2105,12 @@ export class PieProgram {
 
     // Calculate total amount needed
     let totalAmountIn = swapDataResult.reduce(
-      (acc, curr) => acc + Number(curr.data.otherAmountThreshold),
-      0
+      (acc, curr) => acc.add(new BN(curr.data.otherAmountThreshold)),
+      new BN(0)
     );
 
     if (depositData?.amount) {
-      totalAmountIn += depositData.amount;
+      totalAmountIn = totalAmountIn.add(new BN(depositData.amount));
     }
 
     // Create WSOL account and wrap SOL
@@ -2121,7 +2128,10 @@ export class PieProgram {
 
     const wrappedSolIx = wrapSOLInstruction(
       user,
-      caculateTotalAmountWithFee(totalAmountIn, feePercentageInBasisPoints)
+      caculateTotalAmountWithFee(
+        totalAmountIn.toNumber(),
+        feePercentageInBasisPoints
+      )
     );
     tx.add(...wrappedSolIx);
 
@@ -2265,7 +2275,7 @@ export class PieProgram {
           type: "withdraw",
           amount: restoreRawDecimal(
             component.quantityInSysDecimal.mul(new BN(redeemAmount))
-          ),
+          ).toString(),
         };
       } else {
         const getSwapDataInput = {
@@ -2274,8 +2284,8 @@ export class PieProgram {
           outputMint: NATIVE_MINT.toBase58(),
           amount: restoreRawDecimal(
             component.quantityInSysDecimal.mul(new BN(redeemAmount))
-          ),
-          slippage,
+          ).toString(),
+          slippagePct: slippage,
         };
         console.log({ getSwapDataInput });
         swapData.push(getSwapData(getSwapDataInput));
@@ -2447,8 +2457,8 @@ export class PieProgram {
           isSwapBaseOut: rebalance.isSwapBaseOut,
           inputMint: rebalance.inputMint,
           outputMint: rebalance.outputMint,
-          amount: Number(rebalance.amount),
-          slippage,
+          amount: rebalance.amount,
+          slippagePct: slippage,
         })
       );
     });

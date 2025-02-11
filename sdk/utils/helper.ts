@@ -31,7 +31,7 @@ import { Raydium, API_URLS } from "@raydium-io/raydium-sdk-v2";
 import { BasketComponent, PieProgram } from "../pie-program";
 import { Table } from "console-table-printer";
 import axios from "axios";
-import { TokenInfo } from "../types";
+import { BuySwapData, TokenInfo } from "../types";
 import { SYS_DECIMALS } from "../constants";
 
 export async function createUserWithLamports(
@@ -466,8 +466,8 @@ export interface GetSwapDataInput {
   isSwapBaseOut: boolean;
   inputMint: string;
   outputMint: string;
-  amount: number;
-  slippage: number;
+  amount: string;
+  slippagePct: number;
 }
 
 export interface SwapCompute {
@@ -500,13 +500,13 @@ export async function getSwapData({
   inputMint,
   outputMint,
   amount,
-  slippage,
+  slippagePct,
 }: GetSwapDataInput): Promise<SwapCompute> {
   const { data: swapResponse } = await axios.get<SwapCompute>(
     `${API_URLS.SWAP_HOST}/compute/${
       isSwapBaseOut ? "swap-base-out" : "swap-base-in"
     }?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${
-      slippage * 100
+      slippagePct * 100
     }&txVersion=V0`
   );
 
@@ -534,7 +534,7 @@ export function checkAndReplaceSwapDataError(
           outputAmount: "0",
           swapType: "BaseIn",
           inputAmount: swapBackupData[i].amount.toString(),
-          slippageBps: swapBackupData[i].slippage * 100,
+          slippageBps: swapBackupData[i].slippagePct * 100,
           priceImpactPct: 0,
           routePlan: [],
         };
@@ -581,15 +581,15 @@ export async function simulateTransaction(
   return simulateTx;
 }
 
-export const restoreRawDecimal = (val: BN): number => {
-  return val.div(new BN(SYS_DECIMALS)).toNumber();
+export const restoreRawDecimal = (val: BN): BN => {
+  return val.div(new BN(SYS_DECIMALS));
 };
 
-export const restoreRawDecimalRoundUp = (val: BN): number => {
+export const restoreRawDecimalRoundUp = (val: BN): BN => {
   if (val.mod(new BN(SYS_DECIMALS)).isZero()) {
     return restoreRawDecimal(val);
   }
-  return restoreRawDecimal(val) + 1;
+  return restoreRawDecimal(val).add(new BN(1));
 };
 
 export const getTokenListFromSolanaClient = async (): Promise<TokenInfo[]> => {
