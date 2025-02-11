@@ -2602,6 +2602,159 @@ export class PieProgram {
 
     return serializedTxs;
   }
+
+  async calculateOptimalInputAmounts({
+    basketId,
+    userInputInLamports,
+    basketPriceInLamports,
+    slippagePct,
+    feePct,
+    bufferPct,
+    extraFeeInLamports,
+  }: {
+    basketId: BN;
+    userInputInLamports: BN;
+    basketPriceInLamports: BN;
+    slippagePct: number;
+    feePct: number;
+    bufferPct: number;
+    extraFeeInLamports?: number;
+  }) {
+    const idealBasketAmountInRawDecimal = new BN(userInputInLamports)
+      .mul(new BN(SYS_DECIMALS))
+      .div(basketPriceInLamports);
+
+    const basketConfigData = await this.getBasketConfig({ basketId });
+    const swapData: Promise<SwapCompute>[] = [];
+    let depositData: DepositOrWithdrawSolInfo | undefined;
+    basketConfigData.components.forEach((component) => {
+      if (component.mint.toBase58() === NATIVE_MINT.toBase58()) {
+        depositData = {
+          type: "deposit",
+          amount: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(idealBasketAmountInRawDecimal)
+          ).toString(),
+        };
+      } else {
+        swapData.push(
+          getSwapData({
+            isSwapBaseOut: true,
+            inputMint: NATIVE_MINT.toBase58(),
+            outputMint: component.mint.toBase58(),
+            amount: restoreRawDecimalRoundUp(
+              component.quantityInSysDecimal.mul(idealBasketAmountInRawDecimal)
+            ).toString(),
+            slippagePct,
+          })
+        );
+      }
+    });
+    const swapDataResult = await Promise.all(swapData);
+    checkSwapDataError(swapDataResult);
+
+    let initialTotalAmountIn = swapDataResult.reduce(
+      (acc, curr) => acc.add(new BN(curr.data.inputAmount)),
+      new BN(0)
+    );
+
+    if (depositData?.amount) {
+      initialTotalAmountIn = initialTotalAmountIn.add(
+        new BN(depositData.amount)
+      );
+    }
+
+    const highestPriceImpactPct = swapDataResult.reduce(
+      (acc, curr) => Math.max(acc, curr.data.priceImpactPct),
+      0
+    );
+
+    // this should be equal to or less than 1 ex. 0.95
+    let multiplier =
+      1 -
+      (new BN(initialTotalAmountIn).sub(userInputInLamports).toNumber() /
+        userInputInLamports.toNumber() +
+        feePct / 100 +
+        bufferPct / 100);
+
+    if (multiplier > 1) {
+      multiplier = 1;
+    }
+
+    const finalBasketAmountInRawDecimal = new BN(
+      idealBasketAmountInRawDecimal.toNumber() * multiplier
+    );
+
+    // revised swap data based on the multiplier
+    const revisedSwapData: BuySwapData[] = [];
+
+    basketConfigData.components.forEach((component) => {
+      if (component.mint.toBase58() === NATIVE_MINT.toBase58()) {
+        revisedSwapData.push({
+          mint: component.mint.toBase58(),
+          amountIn: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+          ).toString(),
+          maxAmountIn: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+          ).toString(),
+          amountOut: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+          ).toString(),
+        });
+      } else {
+        const prevAmountIn = swapDataResult.find(
+          (swap) => swap.data.outputMint === component.mint.toBase58()
+        )?.data.inputAmount;
+
+        const prevMaxAmountIn = swapDataResult.find(
+          (swap) => swap.data.outputMint === component.mint.toBase58()
+        )?.data.otherAmountThreshold;
+
+        revisedSwapData.push({
+          mint: component.mint.toBase58(),
+          amountIn: prevAmountIn
+            ? Math.floor(Number(prevAmountIn) * multiplier).toString()
+            : "0",
+          maxAmountIn: prevMaxAmountIn
+            ? Math.floor(Number(prevMaxAmountIn) * multiplier).toString()
+            : "0",
+          amountOut: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+          ).toString(),
+        });
+      }
+    });
+
+    // calculate requred amount based on the revised swap data
+    let i = 0;
+    let preVaultBalance = 0;
+    let requiredAmount = 0;
+    while (i < revisedSwapData.length) {
+      const result = processBuySwapData(
+        preVaultBalance,
+        revisedSwapData[i],
+        feePct
+      );
+      if (result.isEnough) {
+        preVaultBalance = result.postVaultBalance;
+        i++;
+      } else {
+        preVaultBalance += result.insufficientAmount;
+        requiredAmount += result.insufficientAmount;
+      }
+    }
+
+    const finalInputSolRequiredInLamports = Math.floor(
+      requiredAmount * (1 + bufferPct / 100) + extraFeeInLamports
+    );
+
+    return {
+      finalInputSolRequiredInLamports,
+      revisedSwapData,
+      highestPriceImpactPct,
+      finalBasketAmountInRawDecimal: finalBasketAmountInRawDecimal.toString(),
+    };
+  }
   /**
    * Adds an event listener for the 'CreateBasket' event.
    * @param handler - The function to handle the event.

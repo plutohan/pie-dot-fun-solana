@@ -610,3 +610,27 @@ export const getTokenListFromSolanaClient = async (): Promise<TokenInfo[]> => {
         : "cpmm",
   }));
 };
+
+export const processBuySwapData = (
+  preVaultBalance: number,
+  swapData: BuySwapData,
+  feePct: number
+): {
+  isEnough: boolean;
+  postVaultBalance?: number;
+  insufficientAmount?: number;
+} => {
+  if (preVaultBalance >= Number(swapData.maxAmountIn) * (1 + feePct / 100)) {
+    return {
+      isEnough: true,
+      postVaultBalance:
+        preVaultBalance - Number(swapData.amountIn) * (1 + feePct / 100),
+    };
+  } else {
+    return {
+      isEnough: false,
+      insufficientAmount:
+        Number(swapData.maxAmountIn) * (1 + feePct / 100) - preVaultBalance,
+    };
+  }
+};
