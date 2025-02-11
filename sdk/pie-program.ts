@@ -2612,19 +2612,26 @@ export class PieProgram {
     bufferPct,
     extraFeeInLamports,
   }: {
-    basketId: BN;
-    userInputInLamports: BN;
-    basketPriceInLamports: BN;
+    basketId: string;
+    userInputInLamports: string;
+    basketPriceInLamports: string;
     slippagePct: number;
     feePct: number;
     bufferPct: number;
-    extraFeeInLamports?: number;
-  }) {
+    extraFeeInLamports?: string;
+  }): Promise<{
+    finalInputSolRequiredInLamports: string;
+    revisedSwapData: BuySwapData[];
+    highestPriceImpactPct: number;
+    finalBasketAmountInRawDecimal: string;
+  }> {
     const idealBasketAmountInRawDecimal = new BN(userInputInLamports)
       .mul(new BN(SYS_DECIMALS))
-      .div(basketPriceInLamports);
+      .div(new BN(basketPriceInLamports));
 
-    const basketConfigData = await this.getBasketConfig({ basketId });
+    const basketConfigData = await this.getBasketConfig({
+      basketId: new BN(basketId),
+    });
     const swapData: Promise<SwapCompute>[] = [];
     let depositData: DepositOrWithdrawSolInfo | undefined;
     basketConfigData.components.forEach((component) => {
@@ -2671,8 +2678,10 @@ export class PieProgram {
     // this should be equal to or less than 1 ex. 0.95
     let multiplier =
       1 -
-      (new BN(initialTotalAmountIn).sub(userInputInLamports).toNumber() /
-        userInputInLamports.toNumber() +
+      (new BN(initialTotalAmountIn)
+        .sub(new BN(userInputInLamports))
+        .toNumber() /
+        Number(userInputInLamports) +
         feePct / 100 +
         bufferPct / 100);
 
@@ -2745,11 +2754,14 @@ export class PieProgram {
     }
 
     const finalInputSolRequiredInLamports = Math.floor(
-      requiredAmount * (1 + bufferPct / 100) + extraFeeInLamports
+      Number(requiredAmount) * (1 + bufferPct / 100) +
+        Number(extraFeeInLamports)
     );
 
+
     return {
-      finalInputSolRequiredInLamports,
+      finalInputSolRequiredInLamports:
+        finalInputSolRequiredInLamports.toString(),
       revisedSwapData,
       highestPriceImpactPct,
       finalBasketAmountInRawDecimal: finalBasketAmountInRawDecimal.toString(),
