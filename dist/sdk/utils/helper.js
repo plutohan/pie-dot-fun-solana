@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTokenListFromSolanaClient = exports.restoreRawDecimalRoundUp = exports.restoreRawDecimal = void 0;
+exports.processBuySwapData = exports.getTokenListFromSolanaClient = exports.restoreRawDecimalRoundUp = exports.restoreRawDecimal = void 0;
 exports.createUserWithLamports = createUserWithLamports;
 exports.createNewMint = createNewMint;
 exports.mintTokenTo = mintTokenTo;
@@ -27,17 +27,16 @@ exports.getSwapData = getSwapData;
 exports.checkSwapDataError = checkSwapDataError;
 exports.checkAndReplaceSwapDataError = checkAndReplaceSwapDataError;
 exports.isValidTransaction = isValidTransaction;
-exports.startPollingJitoBundle = startPollingJitoBundle;
 exports.caculateTotalAmountWithFee = caculateTotalAmountWithFee;
 exports.getTokenFromTokenInfo = getTokenFromTokenInfo;
 exports.simulateTransaction = simulateTransaction;
+exports.findDepositAndRemoveInPlace = findDepositAndRemoveInPlace;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const anchor_1 = require("@coral-xyz/anchor");
 const raydium_sdk_v2_1 = require("@raydium-io/raydium-sdk-v2");
 const console_table_printer_1 = require("console-table-printer");
 const axios_1 = __importDefault(require("axios"));
-const jito_1 = require("../jito");
 const constants_1 = require("../constants");
 async function createUserWithLamports(connection, lamports) {
     const account = web3_js_1.Keypair.generate();
@@ -248,8 +247,8 @@ function getExplorerUrl(txid, endpoint) {
     const clusterParam = endpoint.includes("devnet") ? "?cluster=devnet" : "";
     return `https://solscan.io/tx/${txid}${clusterParam}`;
 }
-async function getSwapData({ isSwapBaseOut, inputMint, outputMint, amount, slippage, }) {
-    const { data: swapResponse } = await axios_1.default.get(`${raydium_sdk_v2_1.API_URLS.SWAP_HOST}/compute/${isSwapBaseOut ? "swap-base-out" : "swap-base-in"}?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippage * 100}&txVersion=V0`);
+async function getSwapData({ isSwapBaseOut, inputMint, outputMint, amount, slippagePct, }) {
+    const { data: swapResponse } = await axios_1.default.get(`${raydium_sdk_v2_1.API_URLS.SWAP_HOST}/compute/${isSwapBaseOut ? "swap-base-out" : "swap-base-in"}?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippagePct * 100}&txVersion=V0`);
     return swapResponse;
 }
 function checkSwapDataError(swapData) {
@@ -269,7 +268,7 @@ function checkAndReplaceSwapDataError(swapData, swapBackupData) {
                     outputAmount: "0",
                     swapType: "BaseIn",
                     inputAmount: swapBackupData[i].amount.toString(),
-                    slippageBps: swapBackupData[i].slippage * 100,
+                    slippageBps: swapBackupData[i].slippagePct * 100,
                     priceImpactPct: 0,
                     routePlan: [],
                 };
@@ -286,19 +285,6 @@ function isValidTransaction(tx) {
     if (!tx.instructions)
         return false;
     return tx.instructions.length > 0;
-}
-async function startPollingJitoBundle(bundleId) {
-    await new Promise((resolve) => {
-        let interval = setInterval(async () => {
-            const statuses = await (0, jito_1.getInflightBundleStatuses)([bundleId]);
-            console.log(JSON.stringify({ statuses }));
-            if (statuses?.value[0]?.status === "Landed") {
-                console.log("bundle confirmed");
-                clearInterval(interval);
-                resolve();
-            }
-        }, 1000);
-    });
 }
 function caculateTotalAmountWithFee(amount, feePercentageInBasisPoints) {
     return Math.ceil(amount * (1 + feePercentageInBasisPoints / 10000));
@@ -319,14 +305,14 @@ async function simulateTransaction(connection, txInBase64) {
     return simulateTx;
 }
 const restoreRawDecimal = (val) => {
-    return val.div(new anchor_1.BN(constants_1.SYS_DECIMALS)).toNumber();
+    return val.div(new anchor_1.BN(constants_1.SYS_DECIMALS));
 };
 exports.restoreRawDecimal = restoreRawDecimal;
 const restoreRawDecimalRoundUp = (val) => {
     if (val.mod(new anchor_1.BN(constants_1.SYS_DECIMALS)).isZero()) {
         return (0, exports.restoreRawDecimal)(val);
     }
-    return (0, exports.restoreRawDecimal)(val) + 1;
+    return (0, exports.restoreRawDecimal)(val).add(new anchor_1.BN(1));
 };
 exports.restoreRawDecimalRoundUp = restoreRawDecimalRoundUp;
 const getTokenListFromSolanaClient = async () => {
@@ -344,4 +330,26 @@ const getTokenListFromSolanaClient = async () => {
     }));
 };
 exports.getTokenListFromSolanaClient = getTokenListFromSolanaClient;
+const processBuySwapData = (preVaultBalance, swapData, feePct) => {
+    if (preVaultBalance >= Number(swapData.maxAmountIn) * (1 + feePct / 100)) {
+        return {
+            isEnough: true,
+            postVaultBalance: preVaultBalance - Number(swapData.amountIn) * (1 + feePct / 100),
+        };
+    }
+    else {
+        return {
+            isEnough: false,
+            insufficientAmount: Number(swapData.maxAmountIn) * (1 + feePct / 100) - preVaultBalance,
+        };
+    }
+};
+exports.processBuySwapData = processBuySwapData;
+function findDepositAndRemoveInPlace(arr) {
+    const index = arr.findIndex((item) => item.mint === spl_token_1.NATIVE_MINT.toBase58());
+    if (index !== -1) {
+        return arr.splice(index, 1)[0];
+    }
+    return null;
+}
 //# sourceMappingURL=helper.js.map
