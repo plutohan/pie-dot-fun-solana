@@ -37,13 +37,13 @@ describe("pie", () => {
     "mainnet-beta",
     QUICKNODE_RPC_URL
   );
+  const jito = pieProgram.jito;
   const priorityFee = 100000;
   const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: priorityFee,
   });
   const swapsPerBundle = 2;
   const slippage = 50;
-  const jito = new Jito(QUICKNODE_RPC_URL);
 
   const startPollingJitoBundle = async (bundleId: string) => {
     await new Promise<void>((resolve) => {
