@@ -3,7 +3,7 @@ import { SystemProgram } from "@solana/web3.js";
 import { Transaction } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
-import { JITO_RPC_URL, QUICKNODE_RPC_URL } from "./constants";
+import { JITO_RPC_URL, JITO_TIP_FLOOR_URL } from "./constants";
 import axios from "axios";
 
 type TipAccountsResponse = string[];
@@ -95,180 +95,177 @@ type FailedSimulationValue = {
   transactionResults: TransactionResult[];
 };
 
-export async function getTipInformation(): Promise<TipInformationResponse | null> {
-  try {
-    const res = await axios.get(
-      "https://bundles.jito.wtf/api/v1/bundles/tip_floor"
-    );
-    return res.data[0];
-  } catch (error) {
-    console.log({ error });
-  }
-}
+export class Jito {
+  constructor(private readonly rpcUrl: string) {}
 
-export async function getTipAccounts(): Promise<TipAccountsResponse | null> {
-  const body = JSON.stringify({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getTipAccounts",
-    params: [],
-  });
-  try {
-    const res = await axios.post(QUICKNODE_RPC_URL, body);
-    return res.data.result;
-  } catch (error) {
-    console.log({ error });
-    console.log(JITO_RPC_URL + "/bundles");
-    const res = await axios.post(JITO_RPC_URL + "/bundles", body, {
-      headers: {
-        "Content-Type": "application/json",
-      },
+  async getTipInformation(): Promise<TipInformationResponse | null> {
+    try {
+      const res = await axios.get(JITO_TIP_FLOOR_URL);
+      return res.data[0];
+    } catch (error) {
+      console.log({ error });
+    }
+  }
+
+  async getTipAccounts(): Promise<TipAccountsResponse | null> {
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getTipAccounts",
+      params: [],
     });
-    console.log({ res });
-    return res.data.result;
-  }
-}
-
-export async function sendBundle(
-  transactions: string[]
-): Promise<SendBundleResponse | null> {
-  const body = JSON.stringify({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "sendBundle",
-    params: [transactions, { encoding: "base64" }],
-  });
-
-  try {
-    const res = await axios.post(QUICKNODE_RPC_URL, body);
-    return res.data.result;
-  } catch (error) {
-    console.log({ error });
-    const res = await axios.post(JITO_RPC_URL + "/bundles", body, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    return res.data.result;
-  }
-}
-
-export async function getInflightBundleStatuses(
-  bundleId: string[]
-): Promise<InflightBundleStatusesResponse | null> {
-  const body = JSON.stringify({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getInflightBundleStatuses",
-    params: [bundleId],
-  });
-
-  try {
-    const res = await axios.post(QUICKNODE_RPC_URL, body);
-    return res.data.result;
-  } catch (error) {
-    console.log({ error });
-    const res = await axios.post(
-      JITO_RPC_URL + "/getInflightBundleStatuses",
-      body,
-      {
+    try {
+      const res = await axios.post(this.rpcUrl, body);
+      return res.data.result;
+    } catch (error) {
+      console.log({ error });
+      console.log(JITO_RPC_URL + "/bundles");
+      const res = await axios.post(JITO_RPC_URL + "/bundles", body, {
         headers: {
           "Content-Type": "application/json",
         },
-      }
-    );
-    return res.data.result;
-  }
-}
-
-export async function simulateBundle({
-  encodedTransactions,
-  simulationBank,
-  skipSigVerify,
-  replaceRecentBlockhash,
-}: {
-  encodedTransactions: string[];
-  simulationBank?: string;
-  skipSigVerify?: boolean;
-  replaceRecentBlockhash?: boolean;
-}): Promise<SimulateBundleResponse | null> {
-  const body = JSON.stringify({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "simulateBundle",
-    params: [
-      {
-        encodedTransactions: encodedTransactions,
-        simulationBank,
-        skipSigVerify,
-        replaceRecentBlockhash,
-      },
-    ],
-  });
-
-  try {
-    const res = await axios.post(QUICKNODE_RPC_URL, body);
-    if (res.data.error) {
-      throw new Error(res.data.error.message);
+      });
+      console.log({ res });
+      return res.data.result;
     }
-    return res.data.result;
-  } catch (error) {
-    console.log({ error });
-    const res = await axios.post(JITO_RPC_URL + "/bundles", body, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    return res.data.result;
-  }
-}
-
-export function serializeJitoTransaction({
-  recentBlockhash,
-  signer,
-  transaction,
-  lookupTables,
-  jitoTipAccount,
-  amountInLamports,
-}: {
-  recentBlockhash: string;
-  signer: PublicKey;
-  transaction: Transaction;
-  lookupTables: any;
-  jitoTipAccount?: PublicKey;
-  amountInLamports?: number;
-}) {
-  if (jitoTipAccount && amountInLamports) {
-    const transferInstruction = SystemProgram.transfer({
-      fromPubkey: signer,
-      toPubkey: new PublicKey(jitoTipAccount),
-      lamports: amountInLamports,
-    });
-    transaction.add(transferInstruction);
   }
 
-  const messageV0 = new TransactionMessage({
-    payerKey: signer,
+  async sendBundle(transactions: string[]): Promise<SendBundleResponse | null> {
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "sendBundle",
+      params: [transactions, { encoding: "base64" }],
+    });
+
+    try {
+      const res = await axios.post(this.rpcUrl, body);
+      return res.data.result;
+    } catch (error) {
+      console.log({ error });
+      const res = await axios.post(JITO_RPC_URL + "/bundles", body, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      return res.data.result;
+    }
+  }
+
+  async getInflightBundleStatuses(
+    bundleId: string[]
+  ): Promise<InflightBundleStatusesResponse | null> {
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getInflightBundleStatuses",
+      params: [bundleId],
+    });
+
+    try {
+      const res = await axios.post(this.rpcUrl, body);
+      return res.data.result;
+    } catch (error) {
+      console.log({ error });
+      const res = await axios.post(
+        JITO_RPC_URL + "/getInflightBundleStatuses",
+        body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return res.data.result;
+    }
+  }
+
+  async simulateBundle({
+    encodedTransactions,
+    simulationBank,
+    skipSigVerify,
+    replaceRecentBlockhash,
+  }: {
+    encodedTransactions: string[];
+    simulationBank?: string;
+    skipSigVerify?: boolean;
+    replaceRecentBlockhash?: boolean;
+  }): Promise<SimulateBundleResponse | null> {
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "simulateBundle",
+      params: [
+        {
+          encodedTransactions: encodedTransactions,
+          simulationBank,
+          skipSigVerify,
+          replaceRecentBlockhash,
+        },
+      ],
+    });
+
+    try {
+      const res = await axios.post(this.rpcUrl, body);
+      if (res.data.error) {
+        throw new Error(res.data.error.message);
+      }
+      return res.data.result;
+    } catch (error) {
+      console.log({ error });
+      const res = await axios.post(JITO_RPC_URL + "/bundles", body, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      return res.data.result;
+    }
+  }
+
+  serializeJitoTransaction({
     recentBlockhash,
-    instructions: transaction.instructions,
-  }).compileToV0Message(lookupTables);
+    signer,
+    transaction,
+    lookupTables,
+    jitoTipAccount,
+    amountInLamports,
+  }: {
+    recentBlockhash: string;
+    signer: PublicKey;
+    transaction: Transaction;
+    lookupTables: any;
+    jitoTipAccount?: PublicKey;
+    amountInLamports?: number;
+  }) {
+    if (jitoTipAccount && amountInLamports) {
+      const transferInstruction = SystemProgram.transfer({
+        fromPubkey: signer,
+        toPubkey: new PublicKey(jitoTipAccount),
+        lamports: amountInLamports,
+      });
+      transaction.add(transferInstruction);
+    }
 
-  const transactionV0 = new VersionedTransaction(messageV0);
+    const messageV0 = new TransactionMessage({
+      payerKey: signer,
+      recentBlockhash,
+      instructions: transaction.instructions,
+    }).compileToV0Message(lookupTables);
 
-  const encoded = transactionV0.serialize();
+    const transactionV0 = new VersionedTransaction(messageV0);
 
-  return Buffer.from(encoded).toString("base64");
-}
+    const encoded = transactionV0.serialize();
 
-export function signSerializedTransaction(
-  serializedTransaction: string,
-  signer: Keypair
-) {
-  const transaction = VersionedTransaction.deserialize(
-    Buffer.from(serializedTransaction, "base64")
-  );
-  transaction.sign([signer]);
-  const encoded = transaction.serialize();
+    return Buffer.from(encoded).toString("base64");
+  }
 
-  return Buffer.from(encoded).toString("base64");
+  signSerializedTransaction(serializedTransaction: string, signer: Keypair) {
+    const transaction = VersionedTransaction.deserialize(
+      Buffer.from(serializedTransaction, "base64")
+    );
+    transaction.sign([signer]);
+    const encoded = transaction.serialize();
+
+    return Buffer.from(encoded).toString("base64");
+  }
 }

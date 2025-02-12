@@ -3,12 +3,9 @@ import {
   ComputeBudgetProgram,
   Connection,
   Keypair,
-  LAMPORTS_PER_SOL,
   PublicKey,
-  sendAndConfirmRawTransaction,
   sendAndConfirmTransaction,
   Transaction,
-  VersionedMessage,
 } from "@solana/web3.js";
 import mainnetAdmin from "../.config/solana/id.json";
 import { assert } from "chai";
@@ -17,48 +14,50 @@ import {
   CreateBasketArgs,
   PieProgram,
 } from "../sdk/pie-program";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokens } from "./fixtures/mainnet/token_test";
 import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
 import { Table } from "console-table-printer";
-import { initSdk } from "../sdk/utils/config";
-import {
-  getAssociatedTokenAddress,
-  getMint,
-  NATIVE_MINT,
-} from "@solana/spl-token";
+import { getMint, NATIVE_MINT } from "@solana/spl-token";
 import {
   getExplorerUrl,
   getOrCreateNativeMintATA,
-  getOrCreateTokenAccountTx,
+  getTokenListFromSolanaClient,
   isValidTransaction,
   showBasketConfigTable,
-  showBasketVaultsTable,
   simulateTransaction,
-  startPollingJitoBundle,
 } from "../sdk/utils/helper";
-import {
-  getInflightBundleStatuses,
-  sendBundle,
-  simulateBundle,
-  signSerializedTransaction,
-} from "../sdk/jito";
-import { QUICKNODE_RPC_URL } from "../sdk/constants";
-import {
-  addAddressesToTable,
-  createLookupTable,
-} from "../sdk/utils/lookupTable";
+import { Jito } from "../sdk/jito";
+import { QUICKNODE_RPC_URL } from "./constants";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(mainnetAdmin));
   const connection = new Connection(QUICKNODE_RPC_URL, "confirmed");
-  const pieProgram = new PieProgram(connection, "mainnet-beta");
+  const pieProgram = new PieProgram(
+    connection,
+    "mainnet-beta",
+    QUICKNODE_RPC_URL
+  );
+  const jito = pieProgram.jito;
   const priorityFee = 100000;
   const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: priorityFee,
   });
-  const swapsPerBundle = 3;
+  const swapsPerBundle = 2;
   const slippage = 50;
+
+  const startPollingJitoBundle = async (bundleId: string) => {
+    await new Promise<void>((resolve) => {
+      let interval = setInterval(async () => {
+        const statuses = await jito.getInflightBundleStatuses([bundleId]);
+        console.log(JSON.stringify({ statuses }));
+        if (statuses?.value[0]?.status === "Landed") {
+          console.log("bundle confirmed");
+          clearInterval(interval);
+          resolve();
+        }
+      }, 1000);
+    });
+  };
 
   beforeEach(async () => {
     await pieProgram.init();
@@ -265,8 +264,9 @@ describe("pie", () => {
   });
 
   it("Buy components and mint basket token using Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
+    // const programState = await pieProgram.getProgramState();
+    // const basketId = programState.basketCounter.sub(new BN(1));
+    const basketId = new BN(3);
     const basketConfigData = await pieProgram.getBasketConfig({ basketId });
 
     const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance({
@@ -276,24 +276,43 @@ describe("pie", () => {
     console.log({ userBaksetTokenBalanceBefore });
 
     const serializedSignedTxs: string[] = [];
-    const mintAmount = 1000000;
+
+    const {
+      finalInputSolRequiredInLamports,
+      revisedSwapData,
+      highestPriceImpactPct,
+      finalBasketAmountInRawDecimal,
+    } = await pieProgram.calculateOptimalInputAmounts({
+      basketId: basketId.toString(),
+      userInputInLamports: "100000000",
+      basketPriceInLamports: "569408",
+      slippagePct: slippage,
+      feePct: 1,
+      bufferPct: 2,
+      extraFeeInLamports: "17500000",
+    });
+
+    if (highestPriceImpactPct > slippage) {
+      console.log(
+        `warning: highest price impact (${highestPriceImpactPct}) is greater than slippage (${slippage})`
+      );
+    }
 
     console.log("creating bundle...");
     const serializedTxs = await pieProgram.createBuyAndMintBundle({
       user: admin.publicKey,
       basketId,
       slippage,
-      mintAmount,
+      mintAmount: finalBasketAmountInRawDecimal,
+      buySwapData: revisedSwapData,
       swapsPerBundle,
-      tokenInfo: tokens,
-      feePercentageInBasisPoints:
-        programState.platformFeePercentage.toNumber() +
-        programState.creatorFeePercentage.toNumber(),
+      tokenInfo: await getTokenListFromSolanaClient(),
+      inputAmount: finalInputSolRequiredInLamports,
     });
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = signSerializedTransaction(serializedTx, admin);
+      const tx = jito.signSerializedTransaction(serializedTx, admin);
       // @debug
       // await sendAndConfirmRawTransaction(
       //   connection,
@@ -307,7 +326,7 @@ describe("pie", () => {
     }
 
     console.log("start simulating bundle...");
-    const bundleSimluationResult = await simulateBundle({
+    const bundleSimluationResult = await jito.simulateBundle({
       encodedTransactions: serializedSignedTxs,
     });
 
@@ -325,7 +344,7 @@ describe("pie", () => {
     }
 
     console.log("start sending bundles..!!");
-    const bundleId = await sendBundle(serializedSignedTxs);
+    const bundleId = await jito.sendBundle(serializedSignedTxs);
     await startPollingJitoBundle(bundleId);
     console.log(`basket ${basketId.toString()} data:`);
     const basketMintTable = await showBasketConfigTable(
@@ -371,12 +390,12 @@ describe("pie", () => {
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = signSerializedTransaction(serializedTx, admin);
+      const tx = jito.signSerializedTransaction(serializedTx, admin);
       serializedSignedTxs.push(tx);
     }
 
     console.log("start simulating bundle...");
-    const bundleSimluationResult = await simulateBundle({
+    const bundleSimluationResult = await jito.simulateBundle({
       encodedTransactions: serializedSignedTxs,
     });
 
@@ -391,7 +410,7 @@ describe("pie", () => {
     }
 
     console.log("start sending bundles..!!");
-    const bundleId = await sendBundle(serializedSignedTxs);
+    const bundleId = await jito.sendBundle(serializedSignedTxs);
     await startPollingJitoBundle(bundleId);
 
     console.log(`basket ${basketId.toString()} data after:`);
@@ -404,8 +423,8 @@ describe("pie", () => {
   });
 
   it("Redeem basket token and sell components using Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
+    // const programState = await pieProgram.getProgramState();
+    const basketId = new BN(3); // programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig({ basketId });
     const serializedSignedTxs: string[] = [];
 
@@ -426,17 +445,17 @@ describe("pie", () => {
       slippage,
       redeemAmount,
       swapsPerBundle,
-      tokenInfo: tokens,
+      tokenInfo: await getTokenListFromSolanaClient(),
     });
 
     console.log("signing bundle...");
     for (const serializedTx of serializedTxs) {
-      const tx = signSerializedTransaction(serializedTx, admin);
+      const tx = jito.signSerializedTransaction(serializedTx, admin);
       serializedSignedTxs.push(tx);
     }
 
     console.log("start simulating bundle...");
-    const bundleSimluationResult = await simulateBundle({
+    const bundleSimluationResult = await jito.simulateBundle({
       encodedTransactions: serializedSignedTxs,
     });
     console.log(
@@ -446,7 +465,7 @@ describe("pie", () => {
     );
 
     console.log("start sending bundles..!!");
-    const bundleId = await sendBundle(serializedSignedTxs);
+    const bundleId = await jito.sendBundle(serializedSignedTxs);
 
     if (bundleSimluationResult.value.summary !== "succeeded") {
       for (const serializedSignedTx of serializedSignedTxs) {

@@ -1,4 +1,4 @@
-export declare const QUICKNODE_RPC_URL = "https://newest-solemn-feather.solana-mainnet.quiknode.pro/ed2fb25954d13154ec81f79728b1d6635f521568";
+export declare const JITO_TIP_FLOOR_URL = "https://bundles.jito.wtf/api/v1/bundles/tip_floor";
 export declare const JITO_RPC_URL = "https://mainnet.block-engine.jito.wtf/api/v1";
 export declare const SYS_DECIMALS: number;
 //# sourceMappingURL=constants.d.ts.map

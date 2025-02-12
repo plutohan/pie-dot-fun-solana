@@ -16,6 +16,7 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  RpcResponseAndContext,
   sendAndConfirmTransaction,
   Transaction,
 } from "@solana/web3.js";
@@ -44,12 +45,14 @@ import {
   caculateTotalAmountWithFee,
   checkAndReplaceSwapDataError,
   checkSwapDataError,
+  findDepositAndRemoveInPlace,
   getOrCreateNativeMintATA,
   getOrCreateTokenAccountTx,
   getSwapData,
   getTokenAccount,
   getTokenFromTokenInfo,
   isValidTransaction,
+  processBuySwapData,
   restoreRawDecimal,
   restoreRawDecimalRoundUp,
   SwapCompute,
@@ -61,12 +64,14 @@ import {
   createLookupTable,
   findAddressesInTable,
 } from "./utils/lookupTable";
+import { Jito } from "../sdk/jito";
 import {
-  getTipAccounts,
-  serializeJitoTransaction,
-  getTipInformation,
-} from "../sdk/jito";
-import { DepositOrWithdrawSolInfo, RebalanceInfo, TokenInfo } from "./types";
+  BuySwapData,
+  DepositOrWithdrawSolInfo,
+  RebalanceInfo,
+  TokenInfo,
+} from "./types";
+import { SYS_DECIMALS } from "./constants";
 
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
@@ -100,14 +105,17 @@ export class PieProgram {
   private idl = Object.assign({}, PieIDL);
   raydium: Raydium;
   eventParser: EventParser;
+  jito: Jito;
 
   constructor(
     public readonly connection: Connection,
     public readonly cluster: Cluster,
+    public readonly jitoRpcUrl: string,
     programId: string = PieIDL.address,
     public sharedLookupTable: string = "2ZWHWfumGv3cC4My3xzgQXMWNEnmYGVGnURhpgW6SL7m"
   ) {
     this.idl.address = programId;
+    this.jito = new Jito(jitoRpcUrl);
     this.eventParser = new EventParser(
       new PublicKey(programId),
       new BorshCoder(PieIDL as Idl)
@@ -363,7 +371,7 @@ export class PieProgram {
     console.log("creating new shared lookup table");
     const newLookupTable = await createLookupTable(this.connection, admin);
 
-    const tipAccounts = await getTipAccounts();
+    const tipAccounts = await this.jito.getTipAccounts();
 
     await addAddressesToTable(this.connection, admin, newLookupTable, [
       this.program.programId,
@@ -626,7 +634,7 @@ export class PieProgram {
   }: {
     user: PublicKey;
     basketId: BN;
-    amount: number;
+    amount: string;
     userWsolAccount: PublicKey;
   }): Promise<Transaction> {
     const basketConfig = this.basketConfigPDA({ basketId });
@@ -1325,7 +1333,7 @@ export class PieProgram {
   }: {
     user: PublicKey;
     basketId: BN;
-    amount: number;
+    amount: string;
     userWsolAccount: PublicKey;
   }): Promise<Transaction> {
     const basketConfig = this.basketConfigPDA({ basketId });
@@ -1375,7 +1383,7 @@ export class PieProgram {
   }: {
     user: PublicKey;
     basketId: BN;
-    amount: number;
+    amount: string;
   }): Promise<Transaction> {
     const tx = new Transaction();
     const basketMint = this.basketMintPDA({ basketId });
@@ -2039,73 +2047,23 @@ export class PieProgram {
     user,
     basketId,
     slippage,
+    inputAmount,
     mintAmount,
+    buySwapData,
     swapsPerBundle,
     tokenInfo,
-    feePercentageInBasisPoints,
   }: {
     user: PublicKey;
     basketId: BN;
     slippage: number;
-    mintAmount: number;
+    inputAmount: string;
+    mintAmount: string;
+    buySwapData: BuySwapData[];
     swapsPerBundle: number;
     tokenInfo: TokenInfo[];
-    feePercentageInBasisPoints: number;
   }): Promise<string[]> {
-    const asyncTasks = [];
-    asyncTasks.push(getTipAccounts());
-    asyncTasks.push(getTipInformation());
-    asyncTasks.push(this.generateLookupTableAccount());
-    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
-
-    const basketConfigData = await this.getBasketConfig({ basketId });
-    const swapData: Promise<SwapCompute>[] = [];
-    let depositData: DepositOrWithdrawSolInfo | undefined;
-    basketConfigData.components.forEach((component) => {
-      if (component.mint.toBase58() === NATIVE_MINT.toBase58()) {
-        depositData = {
-          type: "deposit",
-          amount: restoreRawDecimalRoundUp(
-            component.quantityInSysDecimal.mul(new BN(mintAmount))
-          ),
-        };
-      } else {
-        swapData.push(
-          getSwapData({
-            isSwapBaseOut: true,
-            inputMint: NATIVE_MINT.toBase58(),
-            outputMint: component.mint.toBase58(),
-            amount: restoreRawDecimalRoundUp(
-              component.quantityInSysDecimal.mul(new BN(mintAmount))
-            ),
-            slippage,
-          })
-        );
-      }
-    });
-
-    const swapDataResult = await Promise.all(swapData);
-    checkSwapDataError(swapDataResult);
-
-    let [
-      tipAccounts,
-      tipInformation,
-      addressLookupTablesAccount,
-      recentBlockhash,
-    ] = await Promise.all(asyncTasks);
-
     let tx = new Transaction();
     const serializedTxs: string[] = [];
-
-    // Calculate total amount needed
-    let totalAmountIn = swapDataResult.reduce(
-      (acc, curr) => acc + Number(curr.data.otherAmountThreshold),
-      0
-    );
-
-    if (depositData?.amount) {
-      totalAmountIn += depositData.amount;
-    }
 
     // Create WSOL account and wrap SOL
     const { tokenAccount: wsolAccount, tx: createWsolAtaTx } =
@@ -2120,26 +2078,89 @@ export class PieProgram {
       tx.add(createWsolAtaTx);
     }
 
-    const wrappedSolIx = wrapSOLInstruction(
-      user,
-      caculateTotalAmountWithFee(totalAmountIn, feePercentageInBasisPoints)
-    );
+    const wrappedSolIx = wrapSOLInstruction(user, Number(inputAmount));
     tx.add(...wrappedSolIx);
 
-    if (depositData) {
+    const deposit = findDepositAndRemoveInPlace(buySwapData);
+
+    if (deposit) {
       const depositIx = await this.depositWsol({
         user,
         basketId,
-        amount: depositData.amount,
+        amount: deposit.amountIn,
         userWsolAccount: wsolAccount,
       });
       tx.add(depositIx);
     }
 
+    const tokenLuts: Promise<
+      RpcResponseAndContext<AddressLookupTableAccount>
+    >[] = [];
+
+    // create all the buy component transactions
+    const buyComponentTxs: Promise<Transaction>[] = buySwapData.map((swap) => {
+      const token = getTokenFromTokenInfo(tokenInfo, swap.mint);
+      tokenLuts.push(
+        this.connection.getAddressLookupTable(new PublicKey(token.lut))
+      );
+      let buyComponentTx;
+      switch (token.type) {
+        case "amm":
+          buyComponentTx = this.buyComponent({
+            userSourceOwner: user,
+            basketId,
+            maxAmountIn: Number(swap.maxAmountIn),
+            amountOut: Number(swap.amountOut),
+            ammId: token.poolId,
+            unwrapSol: false,
+          });
+          break;
+        case "clmm":
+          buyComponentTx = this.buyComponentClmm({
+            user,
+            basketId,
+            amountOut: new BN(swap.amountOut),
+            outputMint: new PublicKey(token.mint),
+            poolId: token.poolId,
+            slippage,
+          });
+          break;
+        case "cpmm":
+          buyComponentTx = this.buyComponentCpmm({
+            user,
+            basketId,
+            amountOut: Number(swap.amountOut),
+            poolId: token.poolId,
+          });
+          break;
+      }
+      return buyComponentTx;
+    });
+
+    const asyncTasks = [];
+    asyncTasks.push(this.jito.getTipAccounts());
+    asyncTasks.push(this.jito.getTipInformation());
+    asyncTasks.push(this.generateLookupTableAccount());
+    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+
+    const [tokenLutsResult, buyComponentTxsResult, asyncTasksResult] =
+      await Promise.all([
+        Promise.all(tokenLuts),
+        Promise.all(buyComponentTxs),
+        Promise.all(asyncTasks),
+      ]);
+
+    let [
+      tipAccounts,
+      tipInformation,
+      addressLookupTablesAccount,
+      recentBlockhash,
+    ] = asyncTasksResult;
+
     // Process each component
-    for (let i = 0; i < swapDataResult.length; i++) {
+    for (let i = 0; i < buySwapData.length; i++) {
       if (i > 0 && i % swapsPerBundle === 0) {
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2151,51 +2172,13 @@ export class PieProgram {
         addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
-      const token = getTokenFromTokenInfo(
-        tokenInfo,
-        swapDataResult[i].data.outputMint
-      );
+      tx.add(buyComponentTxsResult[i]);
 
-      let buyComponentTx;
-      switch (token.type) {
-        case "amm":
-          buyComponentTx = await this.buyComponent({
-            userSourceOwner: user,
-            basketId,
-            maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
-            amountOut: Number(swapDataResult[i].data.outputAmount),
-            ammId: token.poolId,
-            unwrapSol: false,
-          });
-          break;
-        case "clmm":
-          buyComponentTx = await this.buyComponentClmm({
-            user,
-            basketId,
-            amountOut: new BN(swapDataResult[i].data.outputAmount),
-            outputMint: new PublicKey(token.mint),
-            poolId: token.poolId,
-            slippage,
-          });
-          break;
-        case "cpmm":
-          buyComponentTx = await this.buyComponentCpmm({
-            user,
-            basketId,
-            amountOut: Number(swapDataResult[i].data.outputAmount),
-            poolId: token.poolId,
-          });
-          break;
-      }
-      tx.add(buyComponentTx);
-
-      const lut = (
-        await this.connection.getAddressLookupTable(new PublicKey(token.lut))
-      ).value;
+      const lut = tokenLutsResult[i].value;
       addressLookupTablesAccount.push(lut);
 
       // Handle final transaction in bundle
-      if (i === swapData.length - 1) {
+      if (i === buySwapData.length - 1) {
         const mintBasketTokenTx = await this.mintBasketToken({
           user,
           basketId,
@@ -2205,7 +2188,7 @@ export class PieProgram {
 
         tx.add(createCloseAccountInstruction(wsolAccount, user, user));
 
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2247,17 +2230,6 @@ export class PieProgram {
     const swapData = [];
     const swapBackupData = [];
     const basketConfigData = await this.getBasketConfig({ basketId });
-    const asyncTasks = [];
-    asyncTasks.push(getTipAccounts());
-    asyncTasks.push(getTipInformation());
-    asyncTasks.push(this.generateLookupTableAccount());
-    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
-    asyncTasks.push(
-      this.getTokenBalance({
-        mint: basketConfigData.mint,
-        owner: user,
-      })
-    );
 
     let withdrawData: DepositOrWithdrawSolInfo | undefined;
     basketConfigData.components.forEach((component) => {
@@ -2266,7 +2238,7 @@ export class PieProgram {
           type: "withdraw",
           amount: restoreRawDecimal(
             component.quantityInSysDecimal.mul(new BN(redeemAmount))
-          ),
+          ).toString(),
         };
       } else {
         const getSwapDataInput = {
@@ -2275,10 +2247,9 @@ export class PieProgram {
           outputMint: NATIVE_MINT.toBase58(),
           amount: restoreRawDecimal(
             component.quantityInSysDecimal.mul(new BN(redeemAmount))
-          ),
-          slippage,
+          ).toString(),
+          slippagePct: slippage,
         };
-        console.log({ getSwapDataInput });
         swapData.push(getSwapData(getSwapDataInput));
 
         swapBackupData.push(getSwapDataInput);
@@ -2288,13 +2259,79 @@ export class PieProgram {
     const swapDataResult = await Promise.all(swapData);
     checkAndReplaceSwapDataError(swapDataResult, swapBackupData);
 
+    const tokenLuts: Promise<
+      RpcResponseAndContext<AddressLookupTableAccount>
+    >[] = [];
+    const sellComponentTxs: Promise<Transaction>[] = swapDataResult.map(
+      (swap) => {
+        const token = getTokenFromTokenInfo(tokenInfo, swap.data.inputMint);
+        tokenLuts.push(
+          this.connection.getAddressLookupTable(new PublicKey(token.lut))
+        );
+
+        let sellComponentTx;
+        switch (token.type) {
+          case "amm":
+            sellComponentTx = this.sellComponent({
+              user,
+              inputMint: new PublicKey(swap.data.inputMint),
+              basketId,
+              amountIn: Number(swap.data.inputAmount),
+              minimumAmountOut: Number(swap.data.otherAmountThreshold),
+              ammId: token.poolId,
+            });
+            break;
+          case "clmm":
+            sellComponentTx = this.sellComponentClmm({
+              user,
+              basketId,
+              amountIn: new BN(swap.data.inputAmount),
+              inputMint: new PublicKey(swap.data.inputMint),
+              poolId: token.poolId,
+              slippage,
+            });
+            break;
+          case "cpmm":
+            sellComponentTx = this.sellComponentCpmm({
+              user,
+              basketId,
+              inputMint: new PublicKey(swap.data.inputMint),
+              amountIn: Number(swap.data.inputAmount),
+              minimumAmountOut: Number(swap.data.otherAmountThreshold),
+              poolId: token.poolId,
+            });
+            break;
+        }
+        return sellComponentTx;
+      }
+    );
+
+    const asyncTasks = [];
+    asyncTasks.push(this.jito.getTipAccounts());
+    asyncTasks.push(this.jito.getTipInformation());
+    asyncTasks.push(this.generateLookupTableAccount());
+    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+    asyncTasks.push(
+      this.getTokenBalance({
+        mint: basketConfigData.mint,
+        owner: user,
+      })
+    );
+
+    const [tokenLutsResult, sellComponentTxsResult, asyncTasksResult] =
+      await Promise.all([
+        Promise.all(tokenLuts),
+        Promise.all(sellComponentTxs),
+        Promise.all(asyncTasks),
+      ]);
+
     let [
       tipAccounts,
       tipInformation,
       addressLookupTablesAccount,
       recentBlockhash,
       userBasketTokenBalance,
-    ] = await Promise.all(asyncTasks);
+    ] = asyncTasksResult;
 
     let tx = new Transaction();
     const serializedTxs: string[] = [];
@@ -2313,7 +2350,7 @@ export class PieProgram {
           await this.redeemBasketToken({ user, basketId, amount: redeemAmount })
         );
       } else if (i % swapsPerBundle === 0) {
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2325,53 +2362,9 @@ export class PieProgram {
         addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
-      const token = getTokenFromTokenInfo(
-        tokenInfo,
-        swapDataResult[i].data.inputMint
-      );
+      tx.add(sellComponentTxsResult[i]);
 
-      let sellComponentTx;
-      switch (token.type) {
-        case "amm":
-          sellComponentTx = await this.sellComponent({
-            user,
-            inputMint: new PublicKey(swapDataResult[i].data.inputMint),
-            basketId,
-            amountIn: Number(swapDataResult[i].data.inputAmount),
-            minimumAmountOut: Number(
-              swapDataResult[i].data.otherAmountThreshold
-            ),
-            ammId: token.poolId,
-          });
-          break;
-        case "clmm":
-          sellComponentTx = await this.sellComponentClmm({
-            user,
-            basketId,
-            amountIn: new BN(swapDataResult[i].data.inputAmount),
-            inputMint: new PublicKey(swapDataResult[i].data.inputMint),
-            poolId: token.poolId,
-            slippage,
-          });
-          break;
-        case "cpmm":
-          sellComponentTx = await this.sellComponentCpmm({
-            user,
-            basketId,
-            inputMint: new PublicKey(swapDataResult[i].data.inputMint),
-            amountIn: Number(swapDataResult[i].data.inputAmount),
-            minimumAmountOut: Number(
-              swapDataResult[i].data.otherAmountThreshold
-            ),
-            poolId: token.poolId,
-          });
-          break;
-      }
-      tx.add(sellComponentTx);
-
-      const lut = (
-        await this.connection.getAddressLookupTable(new PublicKey(token.lut))
-      ).value;
+      const lut = tokenLutsResult[i].value;
       addressLookupTablesAccount.push(lut);
 
       if (i === swapDataResult.length - 1) {
@@ -2398,7 +2391,7 @@ export class PieProgram {
           );
         }
 
-        const serializedTx = serializeJitoTransaction({
+        const serializedTx = this.jito.serializeJitoTransaction({
           recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
@@ -2434,8 +2427,6 @@ export class PieProgram {
     withStartRebalance?: boolean;
     withStopRebalance?: boolean;
   }): Promise<string[]> {
-    const tipAccounts = await getTipAccounts();
-    const tipInformation = await getTipInformation();
     const serializedTxs: string[] = [];
     let tx = new Transaction();
 
@@ -2448,8 +2439,8 @@ export class PieProgram {
           isSwapBaseOut: rebalance.isSwapBaseOut,
           inputMint: rebalance.inputMint,
           outputMint: rebalance.outputMint,
-          amount: Number(rebalance.amount),
-          slippage,
+          amount: rebalance.amount,
+          slippagePct: slippage,
         })
       );
     });
@@ -2457,7 +2448,97 @@ export class PieProgram {
     const swapDataResult = await Promise.all(swapData);
     checkSwapDataError(swapDataResult);
 
-    const blockhash = await this.connection.getLatestBlockhash();
+    const tokenLuts: Promise<
+      RpcResponseAndContext<AddressLookupTableAccount>
+    >[] = [];
+
+    const rebalanceTxs: Promise<Transaction>[] = [];
+    for (let i = 0; i < rebalanceInfo.length; i++) {
+      let rebalanceTx;
+      switch (rebalanceInfo[i].type) {
+        case "amm":
+          rebalanceTx = this.executeRebalancing({
+            rebalancer,
+            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+            amountIn: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.otherAmountThreshold
+              : swapDataResult[i].data.inputAmount,
+            amountOut: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.outputAmount
+              : swapDataResult[i].data.otherAmountThreshold,
+            ammId: rebalanceInfo[i].poolId,
+            basketId,
+            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
+            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
+            // do not create token account for native mint because it is already created in the startRebalanceTx
+            createTokenAccount:
+              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
+                ? false
+                : true,
+          });
+          rebalanceTxs.push(rebalanceTx);
+          break;
+        case "clmm":
+          rebalanceTx = this.executeRebalancingClmm({
+            rebalancer,
+            basketId,
+            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
+            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
+            amount: new BN(rebalanceInfo[i].amount),
+            poolId: rebalanceInfo[i].poolId,
+            slippage,
+            createTokenAccount:
+              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
+                ? false
+                : true,
+          });
+          rebalanceTxs.push(rebalanceTx);
+
+          break;
+        case "cpmm":
+          rebalanceTx = this.executeRebalancingCpmm({
+            rebalancer,
+            basketId,
+            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+            amountIn: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.otherAmountThreshold
+              : swapDataResult[i].data.inputAmount,
+            amountOut: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.outputAmount
+              : swapDataResult[i].data.otherAmountThreshold,
+            poolId: rebalanceInfo[i].poolId,
+            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
+            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
+            createTokenAccount:
+              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
+                ? false
+                : true,
+          });
+          rebalanceTxs.push(rebalanceTx);
+          break;
+      }
+
+      tokenLuts.push(
+        this.connection.getAddressLookupTable(
+          new PublicKey(rebalanceInfo[i].lut)
+        )
+      );
+    }
+
+    const asyncTasks = [];
+    asyncTasks.push(this.jito.getTipAccounts());
+    asyncTasks.push(this.jito.getTipInformation());
+    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+
+    const [tokenLutsResult, rebalanceTxsResult, asyncTasksResult] =
+      await Promise.all([
+        Promise.all(tokenLuts),
+        Promise.all(rebalanceTxs),
+        Promise.all(asyncTasks),
+      ]);
+
+    let [tipAccounts, tipInformation, recentBlockhash] = asyncTasksResult;
 
     for (let i = 0; i < rebalanceInfo.length; i++) {
       if (i === 0) {
@@ -2481,8 +2562,8 @@ export class PieProgram {
           tx.add(createNativeMintATATx);
         }
       } else if (i % swapsPerBundle === 0) {
-        const serializedTx = serializeJitoTransaction({
-          recentBlockhash: blockhash.blockhash,
+        const serializedTx = this.jito.serializeJitoTransaction({
+          recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
           signer: rebalancer,
@@ -2494,77 +2575,8 @@ export class PieProgram {
         addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
-      let rebalanceTx;
-      switch (rebalanceInfo[i].type) {
-        case "amm":
-          rebalanceTx = await this.executeRebalancing({
-            rebalancer,
-            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-            amountIn: rebalanceInfo[i].isSwapBaseOut
-              ? swapDataResult[i].data.otherAmountThreshold
-              : swapDataResult[i].data.inputAmount,
-            amountOut: rebalanceInfo[i].isSwapBaseOut
-              ? swapDataResult[i].data.outputAmount
-              : swapDataResult[i].data.otherAmountThreshold,
-            ammId: rebalanceInfo[i].poolId,
-            basketId,
-            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
-            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
-            // do not create token account for native mint because it is already created in the startRebalanceTx
-            createTokenAccount:
-              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
-                ? false
-                : true,
-          });
-          tx.add(rebalanceTx);
-          break;
-        case "clmm":
-          rebalanceTx = await this.executeRebalancingClmm({
-            rebalancer,
-            basketId,
-            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
-            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
-            amount: new BN(rebalanceInfo[i].amount),
-            poolId: rebalanceInfo[i].poolId,
-            slippage,
-            createTokenAccount:
-              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
-                ? false
-                : true,
-          });
-          tx.add(rebalanceTx);
-
-          break;
-        case "cpmm":
-          rebalanceTx = await this.executeRebalancingCpmm({
-            rebalancer,
-            basketId,
-            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-            amountIn: rebalanceInfo[i].isSwapBaseOut
-              ? swapDataResult[i].data.otherAmountThreshold
-              : swapDataResult[i].data.inputAmount,
-            amountOut: rebalanceInfo[i].isSwapBaseOut
-              ? swapDataResult[i].data.outputAmount
-              : swapDataResult[i].data.otherAmountThreshold,
-            poolId: rebalanceInfo[i].poolId,
-            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
-            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
-            createTokenAccount:
-              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
-                ? false
-                : true,
-          });
-          tx.add(rebalanceTx);
-          break;
-      }
-
-      const lut = (
-        await this.connection.getAddressLookupTable(
-          new PublicKey(rebalanceInfo[i].lut)
-        )
-      ).value;
-      addressLookupTablesAccount.push(lut);
+      tx.add(rebalanceTxsResult[i]);
+      addressLookupTablesAccount.push(tokenLutsResult[i].value);
 
       if (i == rebalanceInfo.length - 1) {
         if (withStopRebalance) {
@@ -2575,8 +2587,8 @@ export class PieProgram {
           tx.add(stopRebalanceTx);
         }
 
-        const serializedTx = serializeJitoTransaction({
-          recentBlockhash: blockhash.blockhash,
+        const serializedTx = this.jito.serializeJitoTransaction({
+          recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
           signer: rebalancer,
@@ -2592,6 +2604,170 @@ export class PieProgram {
     }
 
     return serializedTxs;
+  }
+
+  async calculateOptimalInputAmounts({
+    basketId,
+    userInputInLamports,
+    basketPriceInLamports,
+    slippagePct,
+    feePct,
+    bufferPct,
+    extraFeeInLamports,
+  }: {
+    basketId: string;
+    userInputInLamports: string;
+    basketPriceInLamports: string;
+    slippagePct: number;
+    feePct: number;
+    bufferPct: number;
+    extraFeeInLamports?: string;
+  }): Promise<{
+    finalInputSolRequiredInLamports: string;
+    revisedSwapData: BuySwapData[];
+    highestPriceImpactPct: number;
+    finalBasketAmountInRawDecimal: string;
+  }> {
+    const idealBasketAmountInRawDecimal = new BN(userInputInLamports)
+      .mul(new BN(SYS_DECIMALS))
+      .div(new BN(basketPriceInLamports));
+
+    const basketConfigData = await this.getBasketConfig({
+      basketId: new BN(basketId),
+    });
+    const swapData: Promise<SwapCompute>[] = [];
+    let depositData: DepositOrWithdrawSolInfo | undefined;
+    basketConfigData.components.forEach((component) => {
+      if (component.mint.toBase58() === NATIVE_MINT.toBase58()) {
+        depositData = {
+          type: "deposit",
+          amount: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(idealBasketAmountInRawDecimal)
+          ).toString(),
+        };
+      } else {
+        swapData.push(
+          getSwapData({
+            isSwapBaseOut: true,
+            inputMint: NATIVE_MINT.toBase58(),
+            outputMint: component.mint.toBase58(),
+            amount: restoreRawDecimalRoundUp(
+              component.quantityInSysDecimal.mul(idealBasketAmountInRawDecimal)
+            ).toString(),
+            slippagePct,
+          })
+        );
+      }
+    });
+    const swapDataResult = await Promise.all(swapData);
+    checkSwapDataError(swapDataResult);
+
+    let initialTotalAmountIn = swapDataResult.reduce(
+      (acc, curr) => acc.add(new BN(curr.data.inputAmount)),
+      new BN(0)
+    );
+
+    if (depositData?.amount) {
+      initialTotalAmountIn = initialTotalAmountIn.add(
+        new BN(depositData.amount)
+      );
+    }
+
+    const highestPriceImpactPct = swapDataResult.reduce(
+      (acc, curr) => Math.max(acc, curr.data.priceImpactPct),
+      0
+    );
+
+    // this should be equal to or less than 1 ex. 0.95
+    let multiplier =
+      1 -
+      (new BN(initialTotalAmountIn)
+        .sub(new BN(userInputInLamports))
+        .toNumber() /
+        Number(userInputInLamports) +
+        feePct / 100 +
+        bufferPct / 100);
+
+    if (multiplier > 1) {
+      multiplier = 1;
+    }
+
+    const finalBasketAmountInRawDecimal = new BN(
+      idealBasketAmountInRawDecimal.toNumber() * multiplier
+    );
+
+    // revised swap data based on the multiplier
+    const revisedSwapData: BuySwapData[] = [];
+
+    basketConfigData.components.forEach((component) => {
+      if (component.mint.toBase58() === NATIVE_MINT.toBase58()) {
+        revisedSwapData.push({
+          mint: component.mint.toBase58(),
+          amountIn: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+          ).toString(),
+          maxAmountIn: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+          ).toString(),
+          amountOut: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+          ).toString(),
+        });
+      } else {
+        const prevAmountIn = swapDataResult.find(
+          (swap) => swap.data.outputMint === component.mint.toBase58()
+        )?.data.inputAmount;
+
+        const prevMaxAmountIn = swapDataResult.find(
+          (swap) => swap.data.outputMint === component.mint.toBase58()
+        )?.data.otherAmountThreshold;
+
+        revisedSwapData.push({
+          mint: component.mint.toBase58(),
+          amountIn: prevAmountIn
+            ? Math.floor(Number(prevAmountIn) * multiplier).toString()
+            : "0",
+          maxAmountIn: prevMaxAmountIn
+            ? Math.floor(Number(prevMaxAmountIn) * multiplier).toString()
+            : "0",
+          amountOut: restoreRawDecimalRoundUp(
+            component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+          ).toString(),
+        });
+      }
+    });
+
+    // calculate requred amount based on the revised swap data
+    let i = 0;
+    let preVaultBalance = 0;
+    let requiredAmount = 0;
+    while (i < revisedSwapData.length) {
+      const result = processBuySwapData(
+        preVaultBalance,
+        revisedSwapData[i],
+        feePct
+      );
+      if (result.isEnough) {
+        preVaultBalance = result.postVaultBalance;
+        i++;
+      } else {
+        preVaultBalance += result.insufficientAmount;
+        requiredAmount += result.insufficientAmount;
+      }
+    }
+
+    const finalInputSolRequiredInLamports = Math.floor(
+      Number(requiredAmount) * (1 + bufferPct / 100) +
+        Number(extraFeeInLamports)
+    );
+
+    return {
+      finalInputSolRequiredInLamports:
+        finalInputSolRequiredInLamports.toString(),
+      revisedSwapData,
+      highestPriceImpactPct,
+      finalBasketAmountInRawDecimal: finalBasketAmountInRawDecimal.toString(),
+    };
   }
   /**
    * Adds an event listener for the 'CreateBasket' event.

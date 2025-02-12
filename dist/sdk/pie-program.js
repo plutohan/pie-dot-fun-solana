@@ -42,18 +42,21 @@ const raydium_sdk_v2_1 = require("@raydium-io/raydium-sdk-v2");
 const helper_1 = require("./utils/helper");
 const lookupTable_1 = require("./utils/lookupTable");
 const jito_1 = require("../sdk/jito");
+const constants_1 = require("./constants");
 const PROGRAM_STATE = "program_state";
 const USER_FUND = "user_fund";
 const BASKET_CONFIG = "basket_config";
 const BASKET_MINT = "basket_mint";
 const MPL_TOKEN_METADATA_PROGRAM_ID = new web3_js_1.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 class PieProgram {
-    constructor(connection, cluster, programId = PieIDL.address, sharedLookupTable = "2ZWHWfumGv3cC4My3xzgQXMWNEnmYGVGnURhpgW6SL7m") {
+    constructor(connection, cluster, jitoRpcUrl, programId = PieIDL.address, sharedLookupTable = "2ZWHWfumGv3cC4My3xzgQXMWNEnmYGVGnURhpgW6SL7m") {
         this.connection = connection;
         this.cluster = cluster;
+        this.jitoRpcUrl = jitoRpcUrl;
         this.sharedLookupTable = sharedLookupTable;
         this.idl = Object.assign({}, PieIDL);
         this.idl.address = programId;
+        this.jito = new jito_1.Jito(jitoRpcUrl);
         this.eventParser = new anchor_1.EventParser(new web3_js_1.PublicKey(programId), new anchor_1.BorshCoder(PieIDL));
     }
     async init() {
@@ -187,7 +190,7 @@ class PieProgram {
     async initializeSharedLookupTable({ admin, }) {
         console.log("creating new shared lookup table");
         const newLookupTable = await (0, lookupTable_1.createLookupTable)(this.connection, admin);
-        const tipAccounts = await (0, jito_1.getTipAccounts)();
+        const tipAccounts = await this.jito.getTipAccounts();
         await (0, lookupTable_1.addAddressesToTable)(this.connection, admin, newLookupTable, [
             this.program.programId,
             this.programStatePDA,
@@ -1205,62 +1208,79 @@ class PieProgram {
      * @param params Bundle creation parameters
      * @returns Array of serialized transactions
      */
-    async createBuyAndMintBundle({ user, basketId, slippage, mintAmount, swapsPerBundle, tokenInfo, feePercentageInBasisPoints, }) {
-        const asyncTasks = [];
-        asyncTasks.push((0, jito_1.getTipAccounts)());
-        asyncTasks.push((0, jito_1.getTipInformation)());
-        asyncTasks.push(this.generateLookupTableAccount());
-        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
-        const basketConfigData = await this.getBasketConfig({ basketId });
-        const swapData = [];
-        let depositData;
-        basketConfigData.components.forEach((component) => {
-            if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
-                depositData = {
-                    type: "deposit",
-                    amount: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(new anchor_1.BN(mintAmount))),
-                };
-            }
-            else {
-                swapData.push((0, helper_1.getSwapData)({
-                    isSwapBaseOut: true,
-                    inputMint: spl_token_1.NATIVE_MINT.toBase58(),
-                    outputMint: component.mint.toBase58(),
-                    amount: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(new anchor_1.BN(mintAmount))),
-                    slippage,
-                }));
-            }
-        });
-        const swapDataResult = await Promise.all(swapData);
-        (0, helper_1.checkSwapDataError)(swapDataResult);
-        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash,] = await Promise.all(asyncTasks);
+    async createBuyAndMintBundle({ user, basketId, slippage, inputAmount, mintAmount, buySwapData, swapsPerBundle, tokenInfo, }) {
         let tx = new web3_js_1.Transaction();
         const serializedTxs = [];
-        // Calculate total amount needed
-        let totalAmountIn = swapDataResult.reduce((acc, curr) => acc + Number(curr.data.otherAmountThreshold), 0);
-        if (depositData?.amount) {
-            totalAmountIn += depositData.amount;
-        }
         // Create WSOL account and wrap SOL
         const { tokenAccount: wsolAccount, tx: createWsolAtaTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, new web3_js_1.PublicKey(spl_token_1.NATIVE_MINT), user, user);
         if ((0, helper_1.isValidTransaction)(createWsolAtaTx)) {
             tx.add(createWsolAtaTx);
         }
-        const wrappedSolIx = (0, helper_1.wrapSOLInstruction)(user, (0, helper_1.caculateTotalAmountWithFee)(totalAmountIn, feePercentageInBasisPoints));
+        const wrappedSolIx = (0, helper_1.wrapSOLInstruction)(user, Number(inputAmount));
         tx.add(...wrappedSolIx);
-        if (depositData) {
+        const deposit = (0, helper_1.findDepositAndRemoveInPlace)(buySwapData);
+        if (deposit) {
             const depositIx = await this.depositWsol({
                 user,
                 basketId,
-                amount: depositData.amount,
+                amount: deposit.amountIn,
                 userWsolAccount: wsolAccount,
             });
             tx.add(depositIx);
         }
+        const tokenLuts = [];
+        // create all the buy component transactions
+        const buyComponentTxs = buySwapData.map((swap) => {
+            const token = (0, helper_1.getTokenFromTokenInfo)(tokenInfo, swap.mint);
+            tokenLuts.push(this.connection.getAddressLookupTable(new web3_js_1.PublicKey(token.lut)));
+            let buyComponentTx;
+            switch (token.type) {
+                case "amm":
+                    buyComponentTx = this.buyComponent({
+                        userSourceOwner: user,
+                        basketId,
+                        maxAmountIn: Number(swap.maxAmountIn),
+                        amountOut: Number(swap.amountOut),
+                        ammId: token.poolId,
+                        unwrapSol: false,
+                    });
+                    break;
+                case "clmm":
+                    buyComponentTx = this.buyComponentClmm({
+                        user,
+                        basketId,
+                        amountOut: new anchor_1.BN(swap.amountOut),
+                        outputMint: new web3_js_1.PublicKey(token.mint),
+                        poolId: token.poolId,
+                        slippage,
+                    });
+                    break;
+                case "cpmm":
+                    buyComponentTx = this.buyComponentCpmm({
+                        user,
+                        basketId,
+                        amountOut: Number(swap.amountOut),
+                        poolId: token.poolId,
+                    });
+                    break;
+            }
+            return buyComponentTx;
+        });
+        const asyncTasks = [];
+        asyncTasks.push(this.jito.getTipAccounts());
+        asyncTasks.push(this.jito.getTipInformation());
+        asyncTasks.push(this.generateLookupTableAccount());
+        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+        const [tokenLutsResult, buyComponentTxsResult, asyncTasksResult] = await Promise.all([
+            Promise.all(tokenLuts),
+            Promise.all(buyComponentTxs),
+            Promise.all(asyncTasks),
+        ]);
+        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash,] = asyncTasksResult;
         // Process each component
-        for (let i = 0; i < swapDataResult.length; i++) {
+        for (let i = 0; i < buySwapData.length; i++) {
             if (i > 0 && i % swapsPerBundle === 0) {
-                const serializedTx = (0, jito_1.serializeJitoTransaction)({
+                const serializedTx = this.jito.serializeJitoTransaction({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
@@ -1270,43 +1290,11 @@ class PieProgram {
                 tx = new web3_js_1.Transaction();
                 addressLookupTablesAccount = await this.generateLookupTableAccount();
             }
-            const token = (0, helper_1.getTokenFromTokenInfo)(tokenInfo, swapDataResult[i].data.outputMint);
-            let buyComponentTx;
-            switch (token.type) {
-                case "amm":
-                    buyComponentTx = await this.buyComponent({
-                        userSourceOwner: user,
-                        basketId,
-                        maxAmountIn: Number(swapDataResult[i].data.otherAmountThreshold),
-                        amountOut: Number(swapDataResult[i].data.outputAmount),
-                        ammId: token.poolId,
-                        unwrapSol: false,
-                    });
-                    break;
-                case "clmm":
-                    buyComponentTx = await this.buyComponentClmm({
-                        user,
-                        basketId,
-                        amountOut: new anchor_1.BN(swapDataResult[i].data.outputAmount),
-                        outputMint: new web3_js_1.PublicKey(token.mint),
-                        poolId: token.poolId,
-                        slippage,
-                    });
-                    break;
-                case "cpmm":
-                    buyComponentTx = await this.buyComponentCpmm({
-                        user,
-                        basketId,
-                        amountOut: Number(swapDataResult[i].data.outputAmount),
-                        poolId: token.poolId,
-                    });
-                    break;
-            }
-            tx.add(buyComponentTx);
-            const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(token.lut))).value;
+            tx.add(buyComponentTxsResult[i]);
+            const lut = tokenLutsResult[i].value;
             addressLookupTablesAccount.push(lut);
             // Handle final transaction in bundle
-            if (i === swapData.length - 1) {
+            if (i === buySwapData.length - 1) {
                 const mintBasketTokenTx = await this.mintBasketToken({
                     user,
                     basketId,
@@ -1314,7 +1302,7 @@ class PieProgram {
                 });
                 tx.add(mintBasketTokenTx);
                 tx.add((0, spl_token_1.createCloseAccountInstruction)(wsolAccount, user, user));
-                const serializedTx = (0, jito_1.serializeJitoTransaction)({
+                const serializedTx = this.jito.serializeJitoTransaction({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
@@ -1336,21 +1324,12 @@ class PieProgram {
         const swapData = [];
         const swapBackupData = [];
         const basketConfigData = await this.getBasketConfig({ basketId });
-        const asyncTasks = [];
-        asyncTasks.push((0, jito_1.getTipAccounts)());
-        asyncTasks.push((0, jito_1.getTipInformation)());
-        asyncTasks.push(this.generateLookupTableAccount());
-        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
-        asyncTasks.push(this.getTokenBalance({
-            mint: basketConfigData.mint,
-            owner: user,
-        }));
         let withdrawData;
         basketConfigData.components.forEach((component) => {
             if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
                 withdrawData = {
                     type: "withdraw",
-                    amount: (0, helper_1.restoreRawDecimal)(component.quantityInSysDecimal.mul(new anchor_1.BN(redeemAmount))),
+                    amount: (0, helper_1.restoreRawDecimal)(component.quantityInSysDecimal.mul(new anchor_1.BN(redeemAmount))).toString(),
                 };
             }
             else {
@@ -1358,17 +1337,69 @@ class PieProgram {
                     isSwapBaseOut: false,
                     inputMint: component.mint.toBase58(),
                     outputMint: spl_token_1.NATIVE_MINT.toBase58(),
-                    amount: (0, helper_1.restoreRawDecimal)(component.quantityInSysDecimal.mul(new anchor_1.BN(redeemAmount))),
-                    slippage,
+                    amount: (0, helper_1.restoreRawDecimal)(component.quantityInSysDecimal.mul(new anchor_1.BN(redeemAmount))).toString(),
+                    slippagePct: slippage,
                 };
-                console.log({ getSwapDataInput });
                 swapData.push((0, helper_1.getSwapData)(getSwapDataInput));
                 swapBackupData.push(getSwapDataInput);
             }
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkAndReplaceSwapDataError)(swapDataResult, swapBackupData);
-        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash, userBasketTokenBalance,] = await Promise.all(asyncTasks);
+        const tokenLuts = [];
+        const sellComponentTxs = swapDataResult.map((swap) => {
+            const token = (0, helper_1.getTokenFromTokenInfo)(tokenInfo, swap.data.inputMint);
+            tokenLuts.push(this.connection.getAddressLookupTable(new web3_js_1.PublicKey(token.lut)));
+            let sellComponentTx;
+            switch (token.type) {
+                case "amm":
+                    sellComponentTx = this.sellComponent({
+                        user,
+                        inputMint: new web3_js_1.PublicKey(swap.data.inputMint),
+                        basketId,
+                        amountIn: Number(swap.data.inputAmount),
+                        minimumAmountOut: Number(swap.data.otherAmountThreshold),
+                        ammId: token.poolId,
+                    });
+                    break;
+                case "clmm":
+                    sellComponentTx = this.sellComponentClmm({
+                        user,
+                        basketId,
+                        amountIn: new anchor_1.BN(swap.data.inputAmount),
+                        inputMint: new web3_js_1.PublicKey(swap.data.inputMint),
+                        poolId: token.poolId,
+                        slippage,
+                    });
+                    break;
+                case "cpmm":
+                    sellComponentTx = this.sellComponentCpmm({
+                        user,
+                        basketId,
+                        inputMint: new web3_js_1.PublicKey(swap.data.inputMint),
+                        amountIn: Number(swap.data.inputAmount),
+                        minimumAmountOut: Number(swap.data.otherAmountThreshold),
+                        poolId: token.poolId,
+                    });
+                    break;
+            }
+            return sellComponentTx;
+        });
+        const asyncTasks = [];
+        asyncTasks.push(this.jito.getTipAccounts());
+        asyncTasks.push(this.jito.getTipInformation());
+        asyncTasks.push(this.generateLookupTableAccount());
+        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+        asyncTasks.push(this.getTokenBalance({
+            mint: basketConfigData.mint,
+            owner: user,
+        }));
+        const [tokenLutsResult, sellComponentTxsResult, asyncTasksResult] = await Promise.all([
+            Promise.all(tokenLuts),
+            Promise.all(sellComponentTxs),
+            Promise.all(asyncTasks),
+        ]);
+        let [tipAccounts, tipInformation, addressLookupTablesAccount, recentBlockhash, userBasketTokenBalance,] = asyncTasksResult;
         let tx = new web3_js_1.Transaction();
         const serializedTxs = [];
         // Create native mint ATA
@@ -1381,7 +1412,7 @@ class PieProgram {
                 tx.add(await this.redeemBasketToken({ user, basketId, amount: redeemAmount }));
             }
             else if (i % swapsPerBundle === 0) {
-                const serializedTx = (0, jito_1.serializeJitoTransaction)({
+                const serializedTx = this.jito.serializeJitoTransaction({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
@@ -1391,42 +1422,8 @@ class PieProgram {
                 tx = new web3_js_1.Transaction();
                 addressLookupTablesAccount = await this.generateLookupTableAccount();
             }
-            const token = (0, helper_1.getTokenFromTokenInfo)(tokenInfo, swapDataResult[i].data.inputMint);
-            let sellComponentTx;
-            switch (token.type) {
-                case "amm":
-                    sellComponentTx = await this.sellComponent({
-                        user,
-                        inputMint: new web3_js_1.PublicKey(swapDataResult[i].data.inputMint),
-                        basketId,
-                        amountIn: Number(swapDataResult[i].data.inputAmount),
-                        minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-                        ammId: token.poolId,
-                    });
-                    break;
-                case "clmm":
-                    sellComponentTx = await this.sellComponentClmm({
-                        user,
-                        basketId,
-                        amountIn: new anchor_1.BN(swapDataResult[i].data.inputAmount),
-                        inputMint: new web3_js_1.PublicKey(swapDataResult[i].data.inputMint),
-                        poolId: token.poolId,
-                        slippage,
-                    });
-                    break;
-                case "cpmm":
-                    sellComponentTx = await this.sellComponentCpmm({
-                        user,
-                        basketId,
-                        inputMint: new web3_js_1.PublicKey(swapDataResult[i].data.inputMint),
-                        amountIn: Number(swapDataResult[i].data.inputAmount),
-                        minimumAmountOut: Number(swapDataResult[i].data.otherAmountThreshold),
-                        poolId: token.poolId,
-                    });
-                    break;
-            }
-            tx.add(sellComponentTx);
-            const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(token.lut))).value;
+            tx.add(sellComponentTxsResult[i]);
+            const lut = tokenLutsResult[i].value;
             addressLookupTablesAccount.push(lut);
             if (i === swapDataResult.length - 1) {
                 if (withdrawData) {
@@ -1442,7 +1439,7 @@ class PieProgram {
                 if (userBasketTokenBalance == redeemAmount) {
                     tx.add((0, spl_token_1.createCloseAccountInstruction)((0, spl_token_1.getAssociatedTokenAddressSync)(basketConfigData.mint, user, false), user, user));
                 }
-                const serializedTx = (0, jito_1.serializeJitoTransaction)({
+                const serializedTx = this.jito.serializeJitoTransaction({
                     recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
@@ -1456,8 +1453,6 @@ class PieProgram {
         return serializedTxs;
     }
     async createRebalanceBundle({ basketId, rebalancer, slippage, swapsPerBundle, rebalanceInfo, withStartRebalance, withStopRebalance, }) {
-        const tipAccounts = await (0, jito_1.getTipAccounts)();
-        const tipInformation = await (0, jito_1.getTipInformation)();
         const serializedTxs = [];
         let tx = new web3_js_1.Transaction();
         let addressLookupTablesAccount = await this.generateLookupTableAccount();
@@ -1467,44 +1462,19 @@ class PieProgram {
                 isSwapBaseOut: rebalance.isSwapBaseOut,
                 inputMint: rebalance.inputMint,
                 outputMint: rebalance.outputMint,
-                amount: Number(rebalance.amount),
-                slippage,
+                amount: rebalance.amount,
+                slippagePct: slippage,
             }));
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkSwapDataError)(swapDataResult);
-        const blockhash = await this.connection.getLatestBlockhash();
+        const tokenLuts = [];
+        const rebalanceTxs = [];
         for (let i = 0; i < rebalanceInfo.length; i++) {
-            if (i === 0) {
-                if (withStartRebalance) {
-                    const startRebalanceTx = await this.startRebalancing({
-                        rebalancer,
-                        basketId,
-                    });
-                    if ((0, helper_1.isValidTransaction)(startRebalanceTx)) {
-                        tx.add(startRebalanceTx);
-                    }
-                }
-                const { tx: createNativeMintATATx } = await (0, helper_1.getOrCreateNativeMintATA)(this.connection, rebalancer, this.basketConfigPDA({ basketId }));
-                if ((0, helper_1.isValidTransaction)(createNativeMintATATx)) {
-                    tx.add(createNativeMintATATx);
-                }
-            }
-            else if (i % swapsPerBundle === 0) {
-                const serializedTx = (0, jito_1.serializeJitoTransaction)({
-                    recentBlockhash: blockhash.blockhash,
-                    transaction: tx,
-                    lookupTables: addressLookupTablesAccount,
-                    signer: rebalancer,
-                });
-                serializedTxs.push(serializedTx);
-                tx = new web3_js_1.Transaction();
-                addressLookupTablesAccount = await this.generateLookupTableAccount();
-            }
             let rebalanceTx;
             switch (rebalanceInfo[i].type) {
                 case "amm":
-                    rebalanceTx = await this.executeRebalancing({
+                    rebalanceTx = this.executeRebalancing({
                         rebalancer,
                         isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
                         amountIn: rebalanceInfo[i].isSwapBaseOut
@@ -1522,10 +1492,10 @@ class PieProgram {
                             ? false
                             : true,
                     });
-                    tx.add(rebalanceTx);
+                    rebalanceTxs.push(rebalanceTx);
                     break;
                 case "clmm":
-                    rebalanceTx = await this.executeRebalancingClmm({
+                    rebalanceTx = this.executeRebalancingClmm({
                         rebalancer,
                         basketId,
                         isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
@@ -1538,10 +1508,10 @@ class PieProgram {
                             ? false
                             : true,
                     });
-                    tx.add(rebalanceTx);
+                    rebalanceTxs.push(rebalanceTx);
                     break;
                 case "cpmm":
-                    rebalanceTx = await this.executeRebalancingCpmm({
+                    rebalanceTx = this.executeRebalancingCpmm({
                         rebalancer,
                         basketId,
                         isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
@@ -1558,11 +1528,50 @@ class PieProgram {
                             ? false
                             : true,
                     });
-                    tx.add(rebalanceTx);
+                    rebalanceTxs.push(rebalanceTx);
                     break;
             }
-            const lut = (await this.connection.getAddressLookupTable(new web3_js_1.PublicKey(rebalanceInfo[i].lut))).value;
-            addressLookupTablesAccount.push(lut);
+            tokenLuts.push(this.connection.getAddressLookupTable(new web3_js_1.PublicKey(rebalanceInfo[i].lut)));
+        }
+        const asyncTasks = [];
+        asyncTasks.push(this.jito.getTipAccounts());
+        asyncTasks.push(this.jito.getTipInformation());
+        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+        const [tokenLutsResult, rebalanceTxsResult, asyncTasksResult] = await Promise.all([
+            Promise.all(tokenLuts),
+            Promise.all(rebalanceTxs),
+            Promise.all(asyncTasks),
+        ]);
+        let [tipAccounts, tipInformation, recentBlockhash] = asyncTasksResult;
+        for (let i = 0; i < rebalanceInfo.length; i++) {
+            if (i === 0) {
+                if (withStartRebalance) {
+                    const startRebalanceTx = await this.startRebalancing({
+                        rebalancer,
+                        basketId,
+                    });
+                    if ((0, helper_1.isValidTransaction)(startRebalanceTx)) {
+                        tx.add(startRebalanceTx);
+                    }
+                }
+                const { tx: createNativeMintATATx } = await (0, helper_1.getOrCreateNativeMintATA)(this.connection, rebalancer, this.basketConfigPDA({ basketId }));
+                if ((0, helper_1.isValidTransaction)(createNativeMintATATx)) {
+                    tx.add(createNativeMintATATx);
+                }
+            }
+            else if (i % swapsPerBundle === 0) {
+                const serializedTx = this.jito.serializeJitoTransaction({
+                    recentBlockhash: recentBlockhash.blockhash,
+                    transaction: tx,
+                    lookupTables: addressLookupTablesAccount,
+                    signer: rebalancer,
+                });
+                serializedTxs.push(serializedTx);
+                tx = new web3_js_1.Transaction();
+                addressLookupTablesAccount = await this.generateLookupTableAccount();
+            }
+            tx.add(rebalanceTxsResult[i]);
+            addressLookupTablesAccount.push(tokenLutsResult[i].value);
             if (i == rebalanceInfo.length - 1) {
                 if (withStopRebalance) {
                     const stopRebalanceTx = await this.stopRebalancing({
@@ -1571,8 +1580,8 @@ class PieProgram {
                     });
                     tx.add(stopRebalanceTx);
                 }
-                const serializedTx = (0, jito_1.serializeJitoTransaction)({
-                    recentBlockhash: blockhash.blockhash,
+                const serializedTx = this.jito.serializeJitoTransaction({
+                    recentBlockhash: recentBlockhash.blockhash,
                     transaction: tx,
                     lookupTables: addressLookupTablesAccount,
                     signer: rebalancer,
@@ -1583,6 +1592,101 @@ class PieProgram {
             }
         }
         return serializedTxs;
+    }
+    async calculateOptimalInputAmounts({ basketId, userInputInLamports, basketPriceInLamports, slippagePct, feePct, bufferPct, extraFeeInLamports, }) {
+        const idealBasketAmountInRawDecimal = new anchor_1.BN(userInputInLamports)
+            .mul(new anchor_1.BN(constants_1.SYS_DECIMALS))
+            .div(new anchor_1.BN(basketPriceInLamports));
+        const basketConfigData = await this.getBasketConfig({
+            basketId: new anchor_1.BN(basketId),
+        });
+        const swapData = [];
+        let depositData;
+        basketConfigData.components.forEach((component) => {
+            if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
+                depositData = {
+                    type: "deposit",
+                    amount: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(idealBasketAmountInRawDecimal)).toString(),
+                };
+            }
+            else {
+                swapData.push((0, helper_1.getSwapData)({
+                    isSwapBaseOut: true,
+                    inputMint: spl_token_1.NATIVE_MINT.toBase58(),
+                    outputMint: component.mint.toBase58(),
+                    amount: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(idealBasketAmountInRawDecimal)).toString(),
+                    slippagePct,
+                }));
+            }
+        });
+        const swapDataResult = await Promise.all(swapData);
+        (0, helper_1.checkSwapDataError)(swapDataResult);
+        let initialTotalAmountIn = swapDataResult.reduce((acc, curr) => acc.add(new anchor_1.BN(curr.data.inputAmount)), new anchor_1.BN(0));
+        if (depositData?.amount) {
+            initialTotalAmountIn = initialTotalAmountIn.add(new anchor_1.BN(depositData.amount));
+        }
+        const highestPriceImpactPct = swapDataResult.reduce((acc, curr) => Math.max(acc, curr.data.priceImpactPct), 0);
+        // this should be equal to or less than 1 ex. 0.95
+        let multiplier = 1 -
+            (new anchor_1.BN(initialTotalAmountIn)
+                .sub(new anchor_1.BN(userInputInLamports))
+                .toNumber() /
+                Number(userInputInLamports) +
+                feePct / 100 +
+                bufferPct / 100);
+        if (multiplier > 1) {
+            multiplier = 1;
+        }
+        const finalBasketAmountInRawDecimal = new anchor_1.BN(idealBasketAmountInRawDecimal.toNumber() * multiplier);
+        // revised swap data based on the multiplier
+        const revisedSwapData = [];
+        basketConfigData.components.forEach((component) => {
+            if (component.mint.toBase58() === spl_token_1.NATIVE_MINT.toBase58()) {
+                revisedSwapData.push({
+                    mint: component.mint.toBase58(),
+                    amountIn: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString(),
+                    maxAmountIn: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString(),
+                    amountOut: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString(),
+                });
+            }
+            else {
+                const prevAmountIn = swapDataResult.find((swap) => swap.data.outputMint === component.mint.toBase58())?.data.inputAmount;
+                const prevMaxAmountIn = swapDataResult.find((swap) => swap.data.outputMint === component.mint.toBase58())?.data.otherAmountThreshold;
+                revisedSwapData.push({
+                    mint: component.mint.toBase58(),
+                    amountIn: prevAmountIn
+                        ? Math.floor(Number(prevAmountIn) * multiplier).toString()
+                        : "0",
+                    maxAmountIn: prevMaxAmountIn
+                        ? Math.floor(Number(prevMaxAmountIn) * multiplier).toString()
+                        : "0",
+                    amountOut: (0, helper_1.restoreRawDecimalRoundUp)(component.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString(),
+                });
+            }
+        });
+        // calculate requred amount based on the revised swap data
+        let i = 0;
+        let preVaultBalance = 0;
+        let requiredAmount = 0;
+        while (i < revisedSwapData.length) {
+            const result = (0, helper_1.processBuySwapData)(preVaultBalance, revisedSwapData[i], feePct);
+            if (result.isEnough) {
+                preVaultBalance = result.postVaultBalance;
+                i++;
+            }
+            else {
+                preVaultBalance += result.insufficientAmount;
+                requiredAmount += result.insufficientAmount;
+            }
+        }
+        const finalInputSolRequiredInLamports = Math.floor(Number(requiredAmount) * (1 + bufferPct / 100) +
+            Number(extraFeeInLamports));
+        return {
+            finalInputSolRequiredInLamports: finalInputSolRequiredInLamports.toString(),
+            revisedSwapData,
+            highestPriceImpactPct,
+            finalBasketAmountInRawDecimal: finalBasketAmountInRawDecimal.toString(),
+        };
     }
     /**
      * Adds an event listener for the 'CreateBasket' event.

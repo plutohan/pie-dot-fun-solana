@@ -69,24 +69,28 @@ type FailedSimulationValue = {
     };
     transactionResults: TransactionResult[];
 };
-export declare function getTipInformation(): Promise<TipInformationResponse | null>;
-export declare function getTipAccounts(): Promise<TipAccountsResponse | null>;
-export declare function sendBundle(transactions: string[]): Promise<SendBundleResponse | null>;
-export declare function getInflightBundleStatuses(bundleId: string[]): Promise<InflightBundleStatusesResponse | null>;
-export declare function simulateBundle({ encodedTransactions, simulationBank, skipSigVerify, replaceRecentBlockhash, }: {
-    encodedTransactions: string[];
-    simulationBank?: string;
-    skipSigVerify?: boolean;
-    replaceRecentBlockhash?: boolean;
-}): Promise<SimulateBundleResponse | null>;
-export declare function serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, amountInLamports, }: {
-    recentBlockhash: string;
-    signer: PublicKey;
-    transaction: Transaction;
-    lookupTables: any;
-    jitoTipAccount?: PublicKey;
-    amountInLamports?: number;
-}): string;
-export declare function signSerializedTransaction(serializedTransaction: string, signer: Keypair): string;
+export declare class Jito {
+    private readonly rpcUrl;
+    constructor(rpcUrl: string);
+    getTipInformation(): Promise<TipInformationResponse | null>;
+    getTipAccounts(): Promise<TipAccountsResponse | null>;
+    sendBundle(transactions: string[]): Promise<SendBundleResponse | null>;
+    getInflightBundleStatuses(bundleId: string[]): Promise<InflightBundleStatusesResponse | null>;
+    simulateBundle({ encodedTransactions, simulationBank, skipSigVerify, replaceRecentBlockhash, }: {
+        encodedTransactions: string[];
+        simulationBank?: string;
+        skipSigVerify?: boolean;
+        replaceRecentBlockhash?: boolean;
+    }): Promise<SimulateBundleResponse | null>;
+    serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, amountInLamports, }: {
+        recentBlockhash: string;
+        signer: PublicKey;
+        transaction: Transaction;
+        lookupTables: any;
+        jitoTipAccount?: PublicKey;
+        amountInLamports?: number;
+    }): string;
+    signSerializedTransaction(serializedTransaction: string, signer: Keypair): string;
+}
 export {};
 //# sourceMappingURL=jito.d.ts.map

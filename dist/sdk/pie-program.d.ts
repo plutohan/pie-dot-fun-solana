@@ -2,7 +2,8 @@ import { BN, EventParser, Idl, IdlAccounts, IdlEvents, IdlTypes, Program } from 
 import { AddressLookupTableAccount, Cluster, Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { RebalanceInfo, TokenInfo } from "./types";
+import { Jito } from "../sdk/jito";
+import { BuySwapData, RebalanceInfo, TokenInfo } from "./types";
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
 export type UserFund = IdlAccounts<Pie>["userFund"];
@@ -22,11 +23,13 @@ export type RedeemBasketTokenEvent = IdlEvents<Pie>["redeemBasketTokenEvent"];
 export declare class PieProgram {
     readonly connection: Connection;
     readonly cluster: Cluster;
+    readonly jitoRpcUrl: string;
     sharedLookupTable: string;
     private idl;
     raydium: Raydium;
     eventParser: EventParser;
-    constructor(connection: Connection, cluster: Cluster, programId?: string, sharedLookupTable?: string);
+    jito: Jito;
+    constructor(connection: Connection, cluster: Cluster, jitoRpcUrl: string, programId?: string, sharedLookupTable?: string);
     init(): Promise<void>;
     get program(): Program<Idl>;
     get accounts(): any;
@@ -193,7 +196,7 @@ export declare class PieProgram {
     depositWsol({ user, basketId, amount, userWsolAccount, }: {
         user: PublicKey;
         basketId: BN;
-        amount: number;
+        amount: string;
         userWsolAccount: PublicKey;
     }): Promise<Transaction>;
     /**
@@ -313,7 +316,7 @@ export declare class PieProgram {
     withdrawWsol({ user, basketId, amount, userWsolAccount, }: {
         user: PublicKey;
         basketId: BN;
-        amount: number;
+        amount: string;
         userWsolAccount: PublicKey;
     }): Promise<Transaction>;
     /**
@@ -326,7 +329,7 @@ export declare class PieProgram {
     mintBasketToken({ user, basketId, amount, }: {
         user: PublicKey;
         basketId: BN;
-        amount: number;
+        amount: string;
     }): Promise<Transaction>;
     /**
      * Redeems a basket token.
@@ -441,14 +444,15 @@ export declare class PieProgram {
      * @param params Bundle creation parameters
      * @returns Array of serialized transactions
      */
-    createBuyAndMintBundle({ user, basketId, slippage, mintAmount, swapsPerBundle, tokenInfo, feePercentageInBasisPoints, }: {
+    createBuyAndMintBundle({ user, basketId, slippage, inputAmount, mintAmount, buySwapData, swapsPerBundle, tokenInfo, }: {
         user: PublicKey;
         basketId: BN;
         slippage: number;
-        mintAmount: number;
+        inputAmount: string;
+        mintAmount: string;
+        buySwapData: BuySwapData[];
         swapsPerBundle: number;
         tokenInfo: TokenInfo[];
-        feePercentageInBasisPoints: number;
     }): Promise<string[]>;
     /**
      * Creates a bundle of transactions for redeeming basket tokens and selling components
@@ -472,6 +476,20 @@ export declare class PieProgram {
         withStartRebalance?: boolean;
         withStopRebalance?: boolean;
     }): Promise<string[]>;
+    calculateOptimalInputAmounts({ basketId, userInputInLamports, basketPriceInLamports, slippagePct, feePct, bufferPct, extraFeeInLamports, }: {
+        basketId: string;
+        userInputInLamports: string;
+        basketPriceInLamports: string;
+        slippagePct: number;
+        feePct: number;
+        bufferPct: number;
+        extraFeeInLamports?: string;
+    }): Promise<{
+        finalInputSolRequiredInLamports: string;
+        revisedSwapData: BuySwapData[];
+        highestPriceImpactPct: number;
+        finalBasketAmountInRawDecimal: string;
+    }>;
     /**
      * Adds an event listener for the 'CreateBasket' event.
      * @param handler - The function to handle the event.

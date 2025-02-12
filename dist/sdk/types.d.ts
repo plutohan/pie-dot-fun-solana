@@ -1,4 +1,4 @@
-export declare interface RebalanceInfo {
+export interface RebalanceInfo {
     name?: string;
     inputMint: string;
     outputMint: string;
@@ -8,15 +8,21 @@ export declare interface RebalanceInfo {
     amount: string;
     type: "cpmm" | "clmm" | "amm";
 }
-export declare interface TokenInfo {
+export interface TokenInfo {
     name: string;
     mint: string;
     lut: string;
     poolId: string;
     type: "amm" | "clmm" | "cpmm";
 }
-export declare interface DepositOrWithdrawSolInfo {
+export interface DepositOrWithdrawSolInfo {
     type: "deposit" | "withdraw";
-    amount: number;
+    amount: string;
+}
+export interface BuySwapData {
+    mint: string;
+    amountIn: string;
+    maxAmountIn: string;
+    amountOut: string;
 }
 //# sourceMappingURL=types.d.ts.map
