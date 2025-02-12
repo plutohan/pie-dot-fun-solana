@@ -634,3 +634,13 @@ export const processBuySwapData = (
     };
   }
 };
+
+export function findDepositAndRemoveInPlace(
+  arr: BuySwapData[]
+): BuySwapData | null {
+  const index = arr.findIndex((item) => item.mint === NATIVE_MINT.toBase58());
+  if (index !== -1) {
+    return arr.splice(index, 1)[0];
+  }
+  return null;
+}

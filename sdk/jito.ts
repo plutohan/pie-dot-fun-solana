@@ -3,7 +3,7 @@ import { SystemProgram } from "@solana/web3.js";
 import { Transaction } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
-import { JITO_RPC_URL } from "./constants";
+import { JITO_RPC_URL, JITO_TIP_FLOOR_URL } from "./constants";
 import axios from "axios";
 
 type TipAccountsResponse = string[];
@@ -100,7 +100,7 @@ export class Jito {
 
   async getTipInformation(): Promise<TipInformationResponse | null> {
     try {
-      const res = await axios.get(this.rpcUrl + "/bundles/tip_floor");
+      const res = await axios.get(JITO_TIP_FLOOR_URL);
       return res.data[0];
     } catch (error) {
       console.log({ error });

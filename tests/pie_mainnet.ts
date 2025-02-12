@@ -21,6 +21,7 @@ import { getMint, NATIVE_MINT } from "@solana/spl-token";
 import {
   getExplorerUrl,
   getOrCreateNativeMintATA,
+  getTokenListFromSolanaClient,
   isValidTransaction,
   showBasketConfigTable,
   simulateTransaction,
@@ -40,7 +41,7 @@ describe("pie", () => {
   const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: priorityFee,
   });
-  const swapsPerBundle = 3;
+  const swapsPerBundle = 2;
   const slippage = 50;
   const jito = new Jito(QUICKNODE_RPC_URL);
 
@@ -263,8 +264,9 @@ describe("pie", () => {
   });
 
   it("Buy components and mint basket token using Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
+    // const programState = await pieProgram.getProgramState();
+    // const basketId = programState.basketCounter.sub(new BN(1));
+    const basketId = new BN(3);
     const basketConfigData = await pieProgram.getBasketConfig({ basketId });
 
     const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance({
@@ -274,19 +276,38 @@ describe("pie", () => {
     console.log({ userBaksetTokenBalanceBefore });
 
     const serializedSignedTxs: string[] = [];
-    const mintAmount = 1000000;
+
+    const {
+      finalInputSolRequiredInLamports,
+      revisedSwapData,
+      highestPriceImpactPct,
+      finalBasketAmountInRawDecimal,
+    } = await pieProgram.calculateOptimalInputAmounts({
+      basketId: basketId.toString(),
+      userInputInLamports: "100000000",
+      basketPriceInLamports: "569408",
+      slippagePct: slippage,
+      feePct: 1,
+      bufferPct: 2,
+      extraFeeInLamports: "17500000",
+    });
+
+    if (highestPriceImpactPct > slippage) {
+      console.log(
+        `warning: highest price impact (${highestPriceImpactPct}) is greater than slippage (${slippage})`
+      );
+    }
 
     console.log("creating bundle...");
     const serializedTxs = await pieProgram.createBuyAndMintBundle({
       user: admin.publicKey,
       basketId,
       slippage,
-      mintAmount,
+      mintAmount: finalBasketAmountInRawDecimal,
+      buySwapData: revisedSwapData,
       swapsPerBundle,
-      tokenInfo: tokens,
-      feePercentageInBasisPoints:
-        programState.platformFeePercentage.toNumber() +
-        programState.creatorFeePercentage.toNumber(),
+      tokenInfo: await getTokenListFromSolanaClient(),
+      inputAmount: finalInputSolRequiredInLamports,
     });
 
     console.log("signing bundle...");
