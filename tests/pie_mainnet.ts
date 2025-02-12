@@ -423,8 +423,8 @@ describe("pie", () => {
   });
 
   it("Redeem basket token and sell components using Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
+    // const programState = await pieProgram.getProgramState();
+    const basketId = new BN(3); // programState.basketCounter.sub(new BN(1));
     const basketConfigData = await pieProgram.getBasketConfig({ basketId });
     const serializedSignedTxs: string[] = [];
 
@@ -445,7 +445,7 @@ describe("pie", () => {
       slippage,
       redeemAmount,
       swapsPerBundle,
-      tokenInfo: tokens,
+      tokenInfo: await getTokenListFromSolanaClient(),
     });
 
     console.log("signing bundle...");

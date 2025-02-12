@@ -2230,17 +2230,6 @@ export class PieProgram {
     const swapData = [];
     const swapBackupData = [];
     const basketConfigData = await this.getBasketConfig({ basketId });
-    const asyncTasks = [];
-    asyncTasks.push(this.jito.getTipAccounts());
-    asyncTasks.push(this.jito.getTipInformation());
-    asyncTasks.push(this.generateLookupTableAccount());
-    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
-    asyncTasks.push(
-      this.getTokenBalance({
-        mint: basketConfigData.mint,
-        owner: user,
-      })
-    );
 
     let withdrawData: DepositOrWithdrawSolInfo | undefined;
     basketConfigData.components.forEach((component) => {
@@ -2261,7 +2250,6 @@ export class PieProgram {
           ).toString(),
           slippagePct: slippage,
         };
-        console.log({ getSwapDataInput });
         swapData.push(getSwapData(getSwapDataInput));
 
         swapBackupData.push(getSwapDataInput);
@@ -2271,13 +2259,79 @@ export class PieProgram {
     const swapDataResult = await Promise.all(swapData);
     checkAndReplaceSwapDataError(swapDataResult, swapBackupData);
 
+    const tokenLuts: Promise<
+      RpcResponseAndContext<AddressLookupTableAccount>
+    >[] = [];
+    const sellComponentTxs: Promise<Transaction>[] = swapDataResult.map(
+      (swap) => {
+        const token = getTokenFromTokenInfo(tokenInfo, swap.data.inputMint);
+        tokenLuts.push(
+          this.connection.getAddressLookupTable(new PublicKey(token.lut))
+        );
+
+        let sellComponentTx;
+        switch (token.type) {
+          case "amm":
+            sellComponentTx = this.sellComponent({
+              user,
+              inputMint: new PublicKey(swap.data.inputMint),
+              basketId,
+              amountIn: Number(swap.data.inputAmount),
+              minimumAmountOut: Number(swap.data.otherAmountThreshold),
+              ammId: token.poolId,
+            });
+            break;
+          case "clmm":
+            sellComponentTx = this.sellComponentClmm({
+              user,
+              basketId,
+              amountIn: new BN(swap.data.inputAmount),
+              inputMint: new PublicKey(swap.data.inputMint),
+              poolId: token.poolId,
+              slippage,
+            });
+            break;
+          case "cpmm":
+            sellComponentTx = this.sellComponentCpmm({
+              user,
+              basketId,
+              inputMint: new PublicKey(swap.data.inputMint),
+              amountIn: Number(swap.data.inputAmount),
+              minimumAmountOut: Number(swap.data.otherAmountThreshold),
+              poolId: token.poolId,
+            });
+            break;
+        }
+        return sellComponentTx;
+      }
+    );
+
+    const asyncTasks = [];
+    asyncTasks.push(this.jito.getTipAccounts());
+    asyncTasks.push(this.jito.getTipInformation());
+    asyncTasks.push(this.generateLookupTableAccount());
+    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+    asyncTasks.push(
+      this.getTokenBalance({
+        mint: basketConfigData.mint,
+        owner: user,
+      })
+    );
+
+    const [tokenLutsResult, sellComponentTxsResult, asyncTasksResult] =
+      await Promise.all([
+        Promise.all(tokenLuts),
+        Promise.all(sellComponentTxs),
+        Promise.all(asyncTasks),
+      ]);
+
     let [
       tipAccounts,
       tipInformation,
       addressLookupTablesAccount,
       recentBlockhash,
       userBasketTokenBalance,
-    ] = await Promise.all(asyncTasks);
+    ] = asyncTasksResult;
 
     let tx = new Transaction();
     const serializedTxs: string[] = [];
@@ -2308,53 +2362,9 @@ export class PieProgram {
         addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
-      const token = getTokenFromTokenInfo(
-        tokenInfo,
-        swapDataResult[i].data.inputMint
-      );
+      tx.add(sellComponentTxsResult[i]);
 
-      let sellComponentTx;
-      switch (token.type) {
-        case "amm":
-          sellComponentTx = await this.sellComponent({
-            user,
-            inputMint: new PublicKey(swapDataResult[i].data.inputMint),
-            basketId,
-            amountIn: Number(swapDataResult[i].data.inputAmount),
-            minimumAmountOut: Number(
-              swapDataResult[i].data.otherAmountThreshold
-            ),
-            ammId: token.poolId,
-          });
-          break;
-        case "clmm":
-          sellComponentTx = await this.sellComponentClmm({
-            user,
-            basketId,
-            amountIn: new BN(swapDataResult[i].data.inputAmount),
-            inputMint: new PublicKey(swapDataResult[i].data.inputMint),
-            poolId: token.poolId,
-            slippage,
-          });
-          break;
-        case "cpmm":
-          sellComponentTx = await this.sellComponentCpmm({
-            user,
-            basketId,
-            inputMint: new PublicKey(swapDataResult[i].data.inputMint),
-            amountIn: Number(swapDataResult[i].data.inputAmount),
-            minimumAmountOut: Number(
-              swapDataResult[i].data.otherAmountThreshold
-            ),
-            poolId: token.poolId,
-          });
-          break;
-      }
-      tx.add(sellComponentTx);
-
-      const lut = (
-        await this.connection.getAddressLookupTable(new PublicKey(token.lut))
-      ).value;
+      const lut = tokenLutsResult[i].value;
       addressLookupTablesAccount.push(lut);
 
       if (i === swapDataResult.length - 1) {
@@ -2417,8 +2427,6 @@ export class PieProgram {
     withStartRebalance?: boolean;
     withStopRebalance?: boolean;
   }): Promise<string[]> {
-    const tipAccounts = await this.jito.getTipAccounts();
-    const tipInformation = await this.jito.getTipInformation();
     const serializedTxs: string[] = [];
     let tx = new Transaction();
 
@@ -2440,7 +2448,97 @@ export class PieProgram {
     const swapDataResult = await Promise.all(swapData);
     checkSwapDataError(swapDataResult);
 
-    const blockhash = await this.connection.getLatestBlockhash();
+    const tokenLuts: Promise<
+      RpcResponseAndContext<AddressLookupTableAccount>
+    >[] = [];
+
+    const rebalanceTxs: Promise<Transaction>[] = [];
+    for (let i = 0; i < rebalanceInfo.length; i++) {
+      let rebalanceTx;
+      switch (rebalanceInfo[i].type) {
+        case "amm":
+          rebalanceTx = this.executeRebalancing({
+            rebalancer,
+            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+            amountIn: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.otherAmountThreshold
+              : swapDataResult[i].data.inputAmount,
+            amountOut: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.outputAmount
+              : swapDataResult[i].data.otherAmountThreshold,
+            ammId: rebalanceInfo[i].poolId,
+            basketId,
+            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
+            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
+            // do not create token account for native mint because it is already created in the startRebalanceTx
+            createTokenAccount:
+              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
+                ? false
+                : true,
+          });
+          rebalanceTxs.push(rebalanceTx);
+          break;
+        case "clmm":
+          rebalanceTx = this.executeRebalancingClmm({
+            rebalancer,
+            basketId,
+            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
+            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
+            amount: new BN(rebalanceInfo[i].amount),
+            poolId: rebalanceInfo[i].poolId,
+            slippage,
+            createTokenAccount:
+              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
+                ? false
+                : true,
+          });
+          rebalanceTxs.push(rebalanceTx);
+
+          break;
+        case "cpmm":
+          rebalanceTx = this.executeRebalancingCpmm({
+            rebalancer,
+            basketId,
+            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+            amountIn: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.otherAmountThreshold
+              : swapDataResult[i].data.inputAmount,
+            amountOut: rebalanceInfo[i].isSwapBaseOut
+              ? swapDataResult[i].data.outputAmount
+              : swapDataResult[i].data.otherAmountThreshold,
+            poolId: rebalanceInfo[i].poolId,
+            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
+            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
+            createTokenAccount:
+              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
+                ? false
+                : true,
+          });
+          rebalanceTxs.push(rebalanceTx);
+          break;
+      }
+
+      tokenLuts.push(
+        this.connection.getAddressLookupTable(
+          new PublicKey(rebalanceInfo[i].lut)
+        )
+      );
+    }
+
+    const asyncTasks = [];
+    asyncTasks.push(this.jito.getTipAccounts());
+    asyncTasks.push(this.jito.getTipInformation());
+    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+
+    const [tokenLutsResult, rebalanceTxsResult, asyncTasksResult] =
+      await Promise.all([
+        Promise.all(tokenLuts),
+        Promise.all(rebalanceTxs),
+        Promise.all(asyncTasks),
+      ]);
+
+    let [tipAccounts, tipInformation, recentBlockhash] = asyncTasksResult;
 
     for (let i = 0; i < rebalanceInfo.length; i++) {
       if (i === 0) {
@@ -2465,7 +2563,7 @@ export class PieProgram {
         }
       } else if (i % swapsPerBundle === 0) {
         const serializedTx = this.jito.serializeJitoTransaction({
-          recentBlockhash: blockhash.blockhash,
+          recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
           signer: rebalancer,
@@ -2477,77 +2575,8 @@ export class PieProgram {
         addressLookupTablesAccount = await this.generateLookupTableAccount();
       }
 
-      let rebalanceTx;
-      switch (rebalanceInfo[i].type) {
-        case "amm":
-          rebalanceTx = await this.executeRebalancing({
-            rebalancer,
-            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-            amountIn: rebalanceInfo[i].isSwapBaseOut
-              ? swapDataResult[i].data.otherAmountThreshold
-              : swapDataResult[i].data.inputAmount,
-            amountOut: rebalanceInfo[i].isSwapBaseOut
-              ? swapDataResult[i].data.outputAmount
-              : swapDataResult[i].data.otherAmountThreshold,
-            ammId: rebalanceInfo[i].poolId,
-            basketId,
-            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
-            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
-            // do not create token account for native mint because it is already created in the startRebalanceTx
-            createTokenAccount:
-              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
-                ? false
-                : true,
-          });
-          tx.add(rebalanceTx);
-          break;
-        case "clmm":
-          rebalanceTx = await this.executeRebalancingClmm({
-            rebalancer,
-            basketId,
-            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
-            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
-            amount: new BN(rebalanceInfo[i].amount),
-            poolId: rebalanceInfo[i].poolId,
-            slippage,
-            createTokenAccount:
-              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
-                ? false
-                : true,
-          });
-          tx.add(rebalanceTx);
-
-          break;
-        case "cpmm":
-          rebalanceTx = await this.executeRebalancingCpmm({
-            rebalancer,
-            basketId,
-            isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-            amountIn: rebalanceInfo[i].isSwapBaseOut
-              ? swapDataResult[i].data.otherAmountThreshold
-              : swapDataResult[i].data.inputAmount,
-            amountOut: rebalanceInfo[i].isSwapBaseOut
-              ? swapDataResult[i].data.outputAmount
-              : swapDataResult[i].data.otherAmountThreshold,
-            poolId: rebalanceInfo[i].poolId,
-            inputMint: new PublicKey(rebalanceInfo[i].inputMint),
-            outputMint: new PublicKey(rebalanceInfo[i].outputMint),
-            createTokenAccount:
-              rebalanceInfo[i].outputMint === NATIVE_MINT.toBase58()
-                ? false
-                : true,
-          });
-          tx.add(rebalanceTx);
-          break;
-      }
-
-      const lut = (
-        await this.connection.getAddressLookupTable(
-          new PublicKey(rebalanceInfo[i].lut)
-        )
-      ).value;
-      addressLookupTablesAccount.push(lut);
+      tx.add(rebalanceTxsResult[i]);
+      addressLookupTablesAccount.push(tokenLutsResult[i].value);
 
       if (i == rebalanceInfo.length - 1) {
         if (withStopRebalance) {
@@ -2559,7 +2588,7 @@ export class PieProgram {
         }
 
         const serializedTx = this.jito.serializeJitoTransaction({
-          recentBlockhash: blockhash.blockhash,
+          recentBlockhash: recentBlockhash.blockhash,
           transaction: tx,
           lookupTables: addressLookupTablesAccount,
           signer: rebalancer,
