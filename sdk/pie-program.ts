@@ -2613,7 +2613,6 @@ export class PieProgram {
     slippagePct,
     feePct,
     bufferPct,
-    extraFeeInLamports,
   }: {
     basketId: string;
     userInputInLamports: string;
@@ -2621,7 +2620,6 @@ export class PieProgram {
     slippagePct: number;
     feePct: number;
     bufferPct: number;
-    extraFeeInLamports?: string;
   }): Promise<{
     finalInputSolRequiredInLamports: string;
     revisedSwapData: BuySwapData[];
@@ -2757,8 +2755,7 @@ export class PieProgram {
     }
 
     const finalInputSolRequiredInLamports = Math.floor(
-      Number(requiredAmount) * (1 + bufferPct / 100) +
-        Number(extraFeeInLamports)
+      Number(requiredAmount) * (1 + bufferPct / 100)
     );
 
     return {
