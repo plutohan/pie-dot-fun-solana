@@ -1593,7 +1593,7 @@ class PieProgram {
         }
         return serializedTxs;
     }
-    async calculateOptimalInputAmounts({ basketId, userInputInLamports, basketPriceInLamports, slippagePct, feePct, bufferPct, extraFeeInLamports, }) {
+    async calculateOptimalInputAmounts({ basketId, userInputInLamports, basketPriceInLamports, slippagePct, feePct, bufferPct, }) {
         const idealBasketAmountInRawDecimal = new anchor_1.BN(userInputInLamports)
             .mul(new anchor_1.BN(constants_1.SYS_DECIMALS))
             .div(new anchor_1.BN(basketPriceInLamports));
@@ -1679,8 +1679,7 @@ class PieProgram {
                 requiredAmount += result.insufficientAmount;
             }
         }
-        const finalInputSolRequiredInLamports = Math.floor(Number(requiredAmount) * (1 + bufferPct / 100) +
-            Number(extraFeeInLamports));
+        const finalInputSolRequiredInLamports = Math.floor(Number(requiredAmount) * (1 + bufferPct / 100));
         return {
             finalInputSolRequiredInLamports: finalInputSolRequiredInLamports.toString(),
             revisedSwapData,

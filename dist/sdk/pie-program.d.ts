@@ -476,14 +476,13 @@ export declare class PieProgram {
         withStartRebalance?: boolean;
         withStopRebalance?: boolean;
     }): Promise<string[]>;
-    calculateOptimalInputAmounts({ basketId, userInputInLamports, basketPriceInLamports, slippagePct, feePct, bufferPct, extraFeeInLamports, }: {
+    calculateOptimalInputAmounts({ basketId, userInputInLamports, basketPriceInLamports, slippagePct, feePct, bufferPct, }: {
         basketId: string;
         userInputInLamports: string;
         basketPriceInLamports: string;
         slippagePct: number;
         feePct: number;
         bufferPct: number;
-        extraFeeInLamports?: string;
     }): Promise<{
         finalInputSolRequiredInLamports: string;
         revisedSwapData: BuySwapData[];
