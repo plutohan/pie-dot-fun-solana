@@ -289,7 +289,6 @@ describe("pie", () => {
       slippagePct: slippage,
       feePct: 1,
       bufferPct: 2,
-      extraFeeInLamports: "17500000",
     });
 
     if (highestPriceImpactPct > slippage) {

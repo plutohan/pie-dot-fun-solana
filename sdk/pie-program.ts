@@ -2735,6 +2735,9 @@ export class PieProgram {
       }
     });
 
+    // sort the revised swap data by the descending order of the amountIn
+    revisedSwapData.sort((a, b) => Number(b.amountIn) - Number(a.amountIn));
+
     // calculate requred amount based on the revised swap data
     let i = 0;
     let preVaultBalance = 0;
