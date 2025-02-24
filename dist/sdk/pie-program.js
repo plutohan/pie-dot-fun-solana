@@ -889,8 +889,8 @@ class PieProgram {
      * Executes rebalancing.
      * @param rebalancer - The rebalancer account.
      * @param isSwapBaseOut - Whether to swap base out.
-     * @param amountIn - The amount in.
-     * @param amountOut - The amount out.
+     * @param amount - The amount in when swap base in, or the amount out when swap base out.
+     * @param otherAmountThreshold - Maximum amount in or minimum amount out.
      * @param ammId - The AMM ID.
      * @param basketId - The basket ID.
      * @param inputMint - The input mint.
@@ -898,7 +898,7 @@ class PieProgram {
      * @param createTokenAccount - Whether to create the output token account.
      * @returns A promise that resolves to a transaction or null.
      */
-    async executeRebalancing({ rebalancer, isSwapBaseOut, amountIn, amountOut, ammId, basketId, inputMint, outputMint, createTokenAccount = true, }) {
+    async executeRebalancing({ rebalancer, isSwapBaseOut, amount, otherAmountThreshold, ammId, basketId, inputMint, outputMint, createTokenAccount = true, }) {
         const tx = new web3_js_1.Transaction();
         const data = await this.raydium.liquidity.getPoolInfoFromRpc({
             poolId: ammId,
@@ -911,6 +911,8 @@ class PieProgram {
         if (createTokenAccount && (0, helper_1.isValidTransaction)(outputTx)) {
             tx.add(outputTx);
         }
+        const amountIn = isSwapBaseOut ? otherAmountThreshold : amount;
+        const amountOut = isSwapBaseOut ? amount : otherAmountThreshold;
         const executeRebalancingTx = await this.program.methods
             .executeRebalancing(isSwapBaseOut, new anchor_1.BN(amountIn), new anchor_1.BN(amountOut))
             .accountsPartial({
@@ -940,7 +942,7 @@ class PieProgram {
         tx.add(executeRebalancingTx);
         return tx;
     }
-    async executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amountIn, amountOut, poolId, basketId, inputMint, outputMint, createTokenAccount = true, }) {
+    async executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amount, otherAmountThreshold, poolId, basketId, inputMint, outputMint, createTokenAccount = true, }) {
         const tx = new web3_js_1.Transaction();
         const data = await this.raydium.cpmm.getPoolInfoFromRpc(poolId);
         const basketMint = this.basketMintPDA({ basketId });
@@ -975,6 +977,8 @@ class PieProgram {
             inputTokenMint = new web3_js_1.PublicKey(poolKeys.mintB.address);
             outputTokenMint = new web3_js_1.PublicKey(poolKeys.mintA.address);
         }
+        const amountIn = isSwapBaseOut ? otherAmountThreshold : amount;
+        const amountOut = isSwapBaseOut ? amount : otherAmountThreshold;
         const executeRebalancingTx = await this.program.methods
             .executeRebalancingCpmm(isSwapBaseOut, new anchor_1.BN(amountIn), new anchor_1.BN(amountOut))
             .accountsPartial({
@@ -1009,7 +1013,7 @@ class PieProgram {
      * @param inputMint - The mint address of the input token
      * @param outputMint - The mint address of the output token
      */
-    async executeRebalancingClmm({ rebalancer, isSwapBaseOut, basketId, amount, slippage, poolId, inputMint, outputMint, createTokenAccount = true, }) {
+    async executeRebalancingClmm({ rebalancer, isSwapBaseOut, basketId, amount, otherAmountThreshold, slippage, poolId, inputMint, outputMint, createTokenAccount = true, }) {
         const tx = new web3_js_1.Transaction();
         const basketConfigPDA = this.basketConfigPDA({ basketId });
         const data = await this.raydium.clmm.getPoolInfoFromRpc(poolId);
@@ -1018,7 +1022,7 @@ class PieProgram {
         const clmmPoolInfo = data.computePoolInfo;
         const tickCache = data.tickData;
         let remainingAccounts;
-        let otherAmountThreshold;
+        // let otherAmountThreshold;
         const isInputMintA = inputMint.toBase58() === poolKeys.mintA.address;
         const sqrtPriceLimitX64 = isInputMintA
             ? raydium_sdk_v2_1.MIN_SQRT_PRICE_X64.add(new anchor_1.BN(1))
@@ -1027,19 +1031,18 @@ class PieProgram {
             const computed = raydium_sdk_v2_1.PoolUtils.computeAmountIn({
                 poolInfo: clmmPoolInfo,
                 tickArrayCache: tickCache[poolId],
-                amountOut: amount,
+                amountOut: new anchor_1.BN(amount),
                 baseMint: outputMint,
                 slippage,
                 epochInfo: await this.raydium.fetchEpochInfo(),
             });
             remainingAccounts = computed.remainingAccounts;
-            otherAmountThreshold = computed.maxAmountIn.amount;
         }
         else {
             const computed = raydium_sdk_v2_1.PoolUtils.computeAmountOut({
                 poolInfo: clmmPoolInfo,
                 tickArrayCache: tickCache[poolId],
-                amountIn: amount,
+                amountIn: new anchor_1.BN(amount),
                 baseMint: inputMint,
                 slippage,
                 epochInfo: await this.raydium.fetchEpochInfo(),
@@ -1047,7 +1050,7 @@ class PieProgram {
             });
             remainingAccounts = computed.remainingAccounts;
             // @TODO should be computed.minAmountOut.amount, but it's not working
-            otherAmountThreshold = new anchor_1.BN(0);
+            // otherAmountThreshold = new BN(0);
         }
         const { tokenAccount: outputTokenAccount, tx: outputTx } = await (0, helper_1.getOrCreateTokenAccountTx)(this.connection, outputMint, rebalancer, basketConfigPDA);
         if (createTokenAccount && (0, helper_1.isValidTransaction)(outputTx)) {
@@ -1458,13 +1461,16 @@ class PieProgram {
         let addressLookupTablesAccount = await this.generateLookupTableAccount();
         const swapData = [];
         rebalanceInfo.forEach((rebalance) => {
-            swapData.push((0, helper_1.getSwapData)({
-                isSwapBaseOut: rebalance.isSwapBaseOut,
-                inputMint: rebalance.inputMint,
-                outputMint: rebalance.outputMint,
-                amount: rebalance.amount,
-                slippagePct: slippage,
-            }));
+            // if otherAmountThreshold is not set, we need to get the swap data
+            if (!rebalance.otherAmountThreshold) {
+                swapData.push((0, helper_1.getSwapData)({
+                    isSwapBaseOut: rebalance.isSwapBaseOut,
+                    inputMint: rebalance.inputMint,
+                    outputMint: rebalance.outputMint,
+                    amount: rebalance.amount,
+                    slippagePct: slippage,
+                }));
+            }
         });
         const swapDataResult = await Promise.all(swapData);
         (0, helper_1.checkSwapDataError)(swapDataResult);
@@ -1472,17 +1478,16 @@ class PieProgram {
         const rebalanceTxs = [];
         for (let i = 0; i < rebalanceInfo.length; i++) {
             let rebalanceTx;
+            const amount = rebalanceInfo[i].amount;
+            const otherAmountThreshold = rebalanceInfo[i].otherAmountThreshold ||
+                swapDataResult.find((swap) => swap.data.outputMint === rebalanceInfo[i].outputMint)?.data.otherAmountThreshold;
             switch (rebalanceInfo[i].type) {
                 case "amm":
                     rebalanceTx = this.executeRebalancing({
                         rebalancer,
                         isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-                        amountIn: rebalanceInfo[i].isSwapBaseOut
-                            ? swapDataResult[i].data.otherAmountThreshold
-                            : swapDataResult[i].data.inputAmount,
-                        amountOut: rebalanceInfo[i].isSwapBaseOut
-                            ? swapDataResult[i].data.outputAmount
-                            : swapDataResult[i].data.otherAmountThreshold,
+                        amount,
+                        otherAmountThreshold,
                         ammId: rebalanceInfo[i].poolId,
                         basketId,
                         inputMint: new web3_js_1.PublicKey(rebalanceInfo[i].inputMint),
@@ -1492,7 +1497,21 @@ class PieProgram {
                             ? false
                             : true,
                     });
-                    rebalanceTxs.push(rebalanceTx);
+                    break;
+                case "cpmm":
+                    rebalanceTx = this.executeRebalancingCpmm({
+                        rebalancer,
+                        basketId,
+                        isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
+                        amount,
+                        otherAmountThreshold,
+                        poolId: rebalanceInfo[i].poolId,
+                        inputMint: new web3_js_1.PublicKey(rebalanceInfo[i].inputMint),
+                        outputMint: new web3_js_1.PublicKey(rebalanceInfo[i].outputMint),
+                        createTokenAccount: rebalanceInfo[i].outputMint === spl_token_1.NATIVE_MINT.toBase58()
+                            ? false
+                            : true,
+                    });
                     break;
                 case "clmm":
                     rebalanceTx = this.executeRebalancingClmm({
@@ -1501,36 +1520,17 @@ class PieProgram {
                         isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
                         inputMint: new web3_js_1.PublicKey(rebalanceInfo[i].inputMint),
                         outputMint: new web3_js_1.PublicKey(rebalanceInfo[i].outputMint),
-                        amount: new anchor_1.BN(rebalanceInfo[i].amount),
+                        amount: rebalanceInfo[i].amount,
+                        otherAmountThreshold,
                         poolId: rebalanceInfo[i].poolId,
                         slippage,
                         createTokenAccount: rebalanceInfo[i].outputMint === spl_token_1.NATIVE_MINT.toBase58()
                             ? false
                             : true,
                     });
-                    rebalanceTxs.push(rebalanceTx);
-                    break;
-                case "cpmm":
-                    rebalanceTx = this.executeRebalancingCpmm({
-                        rebalancer,
-                        basketId,
-                        isSwapBaseOut: rebalanceInfo[i].isSwapBaseOut,
-                        amountIn: rebalanceInfo[i].isSwapBaseOut
-                            ? swapDataResult[i].data.otherAmountThreshold
-                            : swapDataResult[i].data.inputAmount,
-                        amountOut: rebalanceInfo[i].isSwapBaseOut
-                            ? swapDataResult[i].data.outputAmount
-                            : swapDataResult[i].data.otherAmountThreshold,
-                        poolId: rebalanceInfo[i].poolId,
-                        inputMint: new web3_js_1.PublicKey(rebalanceInfo[i].inputMint),
-                        outputMint: new web3_js_1.PublicKey(rebalanceInfo[i].outputMint),
-                        createTokenAccount: rebalanceInfo[i].outputMint === spl_token_1.NATIVE_MINT.toBase58()
-                            ? false
-                            : true,
-                    });
-                    rebalanceTxs.push(rebalanceTx);
                     break;
             }
+            rebalanceTxs.push(rebalanceTx);
             tokenLuts.push(this.connection.getAddressLookupTable(new web3_js_1.PublicKey(rebalanceInfo[i].lut)));
         }
         const asyncTasks = [];
@@ -1666,6 +1666,7 @@ class PieProgram {
         });
         // sort the revised swap data by the descending order of the amountIn
         revisedSwapData.sort((a, b) => Number(b.amountIn) - Number(a.amountIn));
+        console.log(JSON.stringify(revisedSwapData, null, 2));
         // calculate requred amount based on the revised swap data
         let i = 0;
         let preVaultBalance = 0;
