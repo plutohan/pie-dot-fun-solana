@@ -367,8 +367,8 @@ export declare class PieProgram {
      * Executes rebalancing.
      * @param rebalancer - The rebalancer account.
      * @param isSwapBaseOut - Whether to swap base out.
-     * @param amountIn - The amount in.
-     * @param amountOut - The amount out.
+     * @param amount - The amount in when swap base in, or the amount out when swap base out.
+     * @param otherAmountThreshold - Maximum amount in or minimum amount out.
      * @param ammId - The AMM ID.
      * @param basketId - The basket ID.
      * @param inputMint - The input mint.
@@ -376,22 +376,22 @@ export declare class PieProgram {
      * @param createTokenAccount - Whether to create the output token account.
      * @returns A promise that resolves to a transaction or null.
      */
-    executeRebalancing({ rebalancer, isSwapBaseOut, amountIn, amountOut, ammId, basketId, inputMint, outputMint, createTokenAccount, }: {
+    executeRebalancing({ rebalancer, isSwapBaseOut, amount, otherAmountThreshold, ammId, basketId, inputMint, outputMint, createTokenAccount, }: {
         rebalancer: PublicKey;
         isSwapBaseOut: boolean;
-        amountIn: string;
-        amountOut: string;
+        amount: string;
+        otherAmountThreshold: string;
         ammId: string;
         basketId: BN;
         inputMint: PublicKey;
         outputMint: PublicKey;
         createTokenAccount?: boolean;
     }): Promise<Transaction | null>;
-    executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amountIn, amountOut, poolId, basketId, inputMint, outputMint, createTokenAccount, }: {
+    executeRebalancingCpmm({ rebalancer, isSwapBaseOut, amount, otherAmountThreshold, poolId, basketId, inputMint, outputMint, createTokenAccount, }: {
         rebalancer: PublicKey;
         isSwapBaseOut: boolean;
-        amountIn: string;
-        amountOut: string;
+        amount: string;
+        otherAmountThreshold: string;
         poolId: string;
         basketId: BN;
         inputMint: PublicKey;
@@ -409,11 +409,12 @@ export declare class PieProgram {
      * @param inputMint - The mint address of the input token
      * @param outputMint - The mint address of the output token
      */
-    executeRebalancingClmm({ rebalancer, isSwapBaseOut, basketId, amount, slippage, poolId, inputMint, outputMint, createTokenAccount, }: {
+    executeRebalancingClmm({ rebalancer, isSwapBaseOut, basketId, amount, otherAmountThreshold, slippage, poolId, inputMint, outputMint, createTokenAccount, }: {
         rebalancer: PublicKey;
         isSwapBaseOut: boolean;
         basketId: BN;
-        amount: BN;
+        amount: string;
+        otherAmountThreshold: string;
         slippage: number;
         poolId: string;
         inputMint: PublicKey;
