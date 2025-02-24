@@ -556,8 +556,8 @@ describe("pie", () => {
     const executeRebalanceTx = await pieProgram.executeRebalancing({
       rebalancer: admin.publicKey,
       isSwapBaseOut: false,
-      amountIn: availableAmount.div(new BN(2)).toString(),
-      amountOut: "0",
+      amount: availableAmount.div(new BN(2)).toString(),
+      otherAmountThreshold: "0",
       ammId: ammPoolToken.poolId,
       basketId,
       inputMint: new PublicKey(ammPoolToken.mint),
@@ -617,8 +617,8 @@ describe("pie", () => {
     const executeRebalanceTx = await pieProgram.executeRebalancingCpmm({
       rebalancer: admin.publicKey,
       isSwapBaseOut: false,
-      amountIn: availableAmount.div(new BN(2)).toString(),
-      amountOut: "0",
+      amount: availableAmount.div(new BN(2)).toString(),
+      otherAmountThreshold: "0",
       poolId: AI16Z.poolId,
       basketId,
       inputMint: new PublicKey(AI16Z.mint),
@@ -683,7 +683,8 @@ describe("pie", () => {
     const executeRebalanceTx = await pieProgram.executeRebalancingClmm({
       rebalancer: admin.publicKey,
       isSwapBaseOut: false,
-      amount: availableAmount,
+      amount: availableAmount.div(new BN(2)).toString(),
+      otherAmountThreshold: "0",
       slippage: 100,
       poolId: clmmPoolToken.poolId,
       basketId,

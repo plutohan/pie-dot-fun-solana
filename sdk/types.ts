@@ -6,6 +6,7 @@ export interface RebalanceInfo {
   poolId: string;
   isSwapBaseOut: boolean;
   amount: string;
+  otherAmountThreshold?: string;
   type: "cpmm" | "clmm" | "amm";
 }
 export interface TokenInfo {
