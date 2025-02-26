@@ -1788,12 +1788,11 @@ export class PieProgram {
     if (createTokenAccount && isValidTransaction(outputTx)) {
       tx.add(outputTx);
     }
-
     const executeRabalancingClmmTx = await this.program.methods
       .executeRebalancingClmm(
         isSwapBaseOut,
-        amount,
-        otherAmountThreshold,
+        new BN(amount),
+        new BN(otherAmountThreshold),
         sqrtPriceLimitX64
       )
       .accountsPartial({
@@ -1839,7 +1838,6 @@ export class PieProgram {
         )
       )
       .transaction();
-
     tx.add(executeRabalancingClmmTx);
     return tx;
   }
@@ -2470,7 +2468,9 @@ export class PieProgram {
       const otherAmountThreshold =
         rebalanceInfo[i].otherAmountThreshold ||
         swapDataResult.find(
-          (swap) => swap.data.outputMint === rebalanceInfo[i].outputMint
+          (swap) =>
+            swap.data.inputMint === rebalanceInfo[i].inputMint &&
+            swap.data.outputMint === rebalanceInfo[i].outputMint
         )?.data.otherAmountThreshold;
 
       switch (rebalanceInfo[i].type) {

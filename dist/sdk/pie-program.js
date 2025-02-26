@@ -1057,7 +1057,7 @@ class PieProgram {
             tx.add(outputTx);
         }
         const executeRabalancingClmmTx = await this.program.methods
-            .executeRebalancingClmm(isSwapBaseOut, amount, otherAmountThreshold, sqrtPriceLimitX64)
+            .executeRebalancingClmm(isSwapBaseOut, new anchor_1.BN(amount), new anchor_1.BN(otherAmountThreshold), sqrtPriceLimitX64)
             .accountsPartial({
             rebalancer,
             basketConfig: this.basketConfigPDA({ basketId }),
@@ -1480,7 +1480,8 @@ class PieProgram {
             let rebalanceTx;
             const amount = rebalanceInfo[i].amount;
             const otherAmountThreshold = rebalanceInfo[i].otherAmountThreshold ||
-                swapDataResult.find((swap) => swap.data.outputMint === rebalanceInfo[i].outputMint)?.data.otherAmountThreshold;
+                swapDataResult.find((swap) => swap.data.inputMint === rebalanceInfo[i].inputMint &&
+                    swap.data.outputMint === rebalanceInfo[i].outputMint)?.data.otherAmountThreshold;
             switch (rebalanceInfo[i].type) {
                 case "amm":
                     rebalanceTx = this.executeRebalancing({
