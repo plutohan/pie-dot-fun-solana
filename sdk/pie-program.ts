@@ -2693,8 +2693,13 @@ export class PieProgram {
         feePct / 100 +
         bufferPct / 100);
 
-    if (multiplier > 1) {
-      multiplier = 1;
+    // In case when the initialTotalAmountIn is less than the userInputInLamports,
+    // the multiplier should be greater than 1
+    if (initialTotalAmountIn.lt(new BN(userInputInLamports))) {
+      multiplier =
+        Number(userInputInLamports) / Number(initialTotalAmountIn) -
+        feePct / 100 -
+        bufferPct / 100;
     }
 
     const finalBasketAmountInRawDecimal = new BN(
