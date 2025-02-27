@@ -127,7 +127,7 @@ export class PieProgram {
       connection: this.connection as any,
       cluster: this.cluster as any,
       disableFeatureCheck: true,
-      blockhashCommitment: "finalized",
+      blockhashCommitment: "confirmed",
     });
   }
 
@@ -2147,7 +2147,7 @@ export class PieProgram {
     asyncTasks.push(this.jito.getTipAccounts());
     asyncTasks.push(this.jito.getTipInformation());
     asyncTasks.push(this.generateLookupTableAccount());
-    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+    asyncTasks.push(this.connection.getLatestBlockhash("confirmed"));
 
     const [tokenLutsResult, buyComponentTxsResult, asyncTasksResult] =
       await Promise.all([
@@ -2316,7 +2316,7 @@ export class PieProgram {
     asyncTasks.push(this.jito.getTipAccounts());
     asyncTasks.push(this.jito.getTipInformation());
     asyncTasks.push(this.generateLookupTableAccount());
-    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+    asyncTasks.push(this.connection.getLatestBlockhash("confirmed"));
     asyncTasks.push(
       this.getTokenBalance({
         mint: basketConfigData.mint,
@@ -2536,7 +2536,7 @@ export class PieProgram {
     const asyncTasks = [];
     asyncTasks.push(this.jito.getTipAccounts());
     asyncTasks.push(this.jito.getTipInformation());
-    asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+    asyncTasks.push(this.connection.getLatestBlockhash("confirmed"));
 
     const [tokenLutsResult, rebalanceTxsResult, asyncTasksResult] =
       await Promise.all([
@@ -2693,8 +2693,13 @@ export class PieProgram {
         feePct / 100 +
         bufferPct / 100);
 
-    if (multiplier > 1) {
-      multiplier = 1;
+    // In case when the initialTotalAmountIn is less than the userInputInLamports,
+    // the multiplier should be greater than 1
+    if (initialTotalAmountIn.lt(new BN(userInputInLamports))) {
+      multiplier =
+        Number(userInputInLamports) / Number(initialTotalAmountIn) -
+        feePct / 100 -
+        bufferPct / 100;
     }
 
     const finalBasketAmountInRawDecimal = new BN(

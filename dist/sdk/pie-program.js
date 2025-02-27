@@ -64,7 +64,7 @@ class PieProgram {
             connection: this.connection,
             cluster: this.cluster,
             disableFeatureCheck: true,
-            blockhashCommitment: "finalized",
+            blockhashCommitment: "confirmed",
         });
     }
     get program() {
@@ -1273,7 +1273,7 @@ class PieProgram {
         asyncTasks.push(this.jito.getTipAccounts());
         asyncTasks.push(this.jito.getTipInformation());
         asyncTasks.push(this.generateLookupTableAccount());
-        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+        asyncTasks.push(this.connection.getLatestBlockhash("confirmed"));
         const [tokenLutsResult, buyComponentTxsResult, asyncTasksResult] = await Promise.all([
             Promise.all(tokenLuts),
             Promise.all(buyComponentTxs),
@@ -1392,7 +1392,7 @@ class PieProgram {
         asyncTasks.push(this.jito.getTipAccounts());
         asyncTasks.push(this.jito.getTipInformation());
         asyncTasks.push(this.generateLookupTableAccount());
-        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+        asyncTasks.push(this.connection.getLatestBlockhash("confirmed"));
         asyncTasks.push(this.getTokenBalance({
             mint: basketConfigData.mint,
             owner: user,
@@ -1537,7 +1537,7 @@ class PieProgram {
         const asyncTasks = [];
         asyncTasks.push(this.jito.getTipAccounts());
         asyncTasks.push(this.jito.getTipInformation());
-        asyncTasks.push(this.connection.getLatestBlockhash("finalized"));
+        asyncTasks.push(this.connection.getLatestBlockhash("confirmed"));
         const [tokenLutsResult, rebalanceTxsResult, asyncTasksResult] = await Promise.all([
             Promise.all(tokenLuts),
             Promise.all(rebalanceTxs),
@@ -1635,8 +1635,13 @@ class PieProgram {
                 Number(userInputInLamports) +
                 feePct / 100 +
                 bufferPct / 100);
-        if (multiplier > 1) {
-            multiplier = 1;
+        // In case when the initialTotalAmountIn is less than the userInputInLamports,
+        // the multiplier should be greater than 1
+        if (initialTotalAmountIn.lt(new anchor_1.BN(userInputInLamports))) {
+            multiplier =
+                Number(userInputInLamports) / Number(initialTotalAmountIn) -
+                    feePct / 100 -
+                    bufferPct / 100;
         }
         const finalBasketAmountInRawDecimal = new anchor_1.BN(idealBasketAmountInRawDecimal.toNumber() * multiplier);
         // revised swap data based on the multiplier
