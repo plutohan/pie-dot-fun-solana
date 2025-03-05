@@ -2702,7 +2702,7 @@ export class PieProgram {
         bufferPct / 100;
     }
 
-    const finalBasketAmountInRawDecimal = new BN(
+    let finalBasketAmountInRawDecimal = new BN(
       idealBasketAmountInRawDecimal.toNumber() * multiplier
     );
 
@@ -2770,13 +2770,34 @@ export class PieProgram {
       }
     }
 
-    const finalInputSolRequiredInLamports = Math.floor(
+    let finalInputSolRequiredInLamports = Math.floor(
       Number(requiredAmount) * (1 + bufferPct / 100)
-    );
+    ).toString();
+
+    // if the finalInputSolRequiredInLamports still is greater than the userInputInLamports,
+    // we need to adjust the multiplier and the swap data
+    if (Number(finalInputSolRequiredInLamports) > Number(userInputInLamports)) {
+      multiplier =
+        Number(userInputInLamports) / Number(finalInputSolRequiredInLamports);
+      revisedSwapData.forEach((swap) => {
+        swap.amountIn = Math.floor(
+          Number(swap.amountIn) * multiplier
+        ).toString();
+        swap.maxAmountIn = Math.floor(
+          Number(swap.maxAmountIn) * multiplier
+        ).toString();
+        swap.amountOut = Math.floor(
+          Number(swap.amountOut) * multiplier
+        ).toString();
+      });
+      finalInputSolRequiredInLamports = userInputInLamports;
+      finalBasketAmountInRawDecimal = new BN(
+        finalBasketAmountInRawDecimal.toNumber() * multiplier
+      );
+    }
 
     return {
-      finalInputSolRequiredInLamports:
-        finalInputSolRequiredInLamports.toString(),
+      finalInputSolRequiredInLamports,
       revisedSwapData,
       highestPriceImpactPct,
       finalBasketAmountInRawDecimal: finalBasketAmountInRawDecimal.toString(),
