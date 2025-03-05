@@ -1643,7 +1643,7 @@ class PieProgram {
                     feePct / 100 -
                     bufferPct / 100;
         }
-        const finalBasketAmountInRawDecimal = new anchor_1.BN(idealBasketAmountInRawDecimal.toNumber() * multiplier);
+        let finalBasketAmountInRawDecimal = new anchor_1.BN(idealBasketAmountInRawDecimal.toNumber() * multiplier);
         // revised swap data based on the multiplier
         const revisedSwapData = [];
         basketConfigData.components.forEach((component) => {
@@ -1688,9 +1688,22 @@ class PieProgram {
                 requiredAmount += result.insufficientAmount;
             }
         }
-        const finalInputSolRequiredInLamports = Math.floor(Number(requiredAmount) * (1 + bufferPct / 100));
+        let finalInputSolRequiredInLamports = Math.floor(Number(requiredAmount) * (1 + bufferPct / 100)).toString();
+        // if the finalInputSolRequiredInLamports still is greater than the userInputInLamports,
+        // we need to adjust the multiplier and the swap data
+        if (Number(finalInputSolRequiredInLamports) > Number(userInputInLamports)) {
+            multiplier =
+                Number(userInputInLamports) / Number(finalInputSolRequiredInLamports);
+            revisedSwapData.forEach((swap) => {
+                swap.amountIn = Math.floor(Number(swap.amountIn) * multiplier).toString();
+                swap.maxAmountIn = Math.floor(Number(swap.maxAmountIn) * multiplier).toString();
+                swap.amountOut = Math.floor(Number(swap.amountOut) * multiplier).toString();
+            });
+            finalInputSolRequiredInLamports = userInputInLamports;
+            finalBasketAmountInRawDecimal = new anchor_1.BN(finalBasketAmountInRawDecimal.toNumber() * multiplier);
+        }
         return {
-            finalInputSolRequiredInLamports: finalInputSolRequiredInLamports.toString(),
+            finalInputSolRequiredInLamports,
             revisedSwapData,
             highestPriceImpactPct,
             finalBasketAmountInRawDecimal: finalBasketAmountInRawDecimal.toString(),
