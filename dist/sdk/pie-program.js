@@ -1693,7 +1693,7 @@ class PieProgram {
         // @dev: debug
         console.log({
             finalInputSolRequiredInLamports,
-            finalBasketAmountInRawDecimal,
+            finalBasketAmountInRawDecimal: finalBasketAmountInRawDecimal.toString(),
         });
         // if the finalInputSolRequiredInLamports still is greater than the userInputInLamports,
         // we need to adjust the multiplier and the swap data
@@ -1715,8 +1715,8 @@ class PieProgram {
                         ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString();
                 }
                 else {
-                    swap.amountIn = (Number(swap.amountIn) * multiplier).toString();
-                    swap.maxAmountIn = (Number(swap.maxAmountIn) * multiplier).toString();
+                    swap.amountIn = Math.floor(Number(swap.amountIn) * multiplier).toString();
+                    swap.maxAmountIn = Math.floor(Number(swap.maxAmountIn) * multiplier).toString();
                     swap.amountOut = (0, helper_1.restoreRawDecimalRoundUp)(basketConfigData.components
                         .find((component) => component.mint.toBase58() === swap.mint)
                         ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString();
