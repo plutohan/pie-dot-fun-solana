@@ -1672,6 +1672,7 @@ class PieProgram {
         });
         // sort the revised swap data by the descending order of the amountIn
         revisedSwapData.sort((a, b) => Number(b.amountIn) - Number(a.amountIn));
+        // @dev: debug
         console.log(JSON.stringify(revisedSwapData, null, 2));
         // calculate requred amount based on the revised swap data
         let i = 0;
@@ -1689,6 +1690,11 @@ class PieProgram {
             }
         }
         let finalInputSolRequiredInLamports = Math.floor(Number(requiredAmount) * (1 + bufferPct / 100)).toString();
+        // @dev: debug
+        console.log({
+            finalInputSolRequiredInLamports,
+            finalBasketAmountInRawDecimal,
+        });
         // if the finalInputSolRequiredInLamports still is greater than the userInputInLamports,
         // we need to adjust the multiplier and the swap data
         if (Number(finalInputSolRequiredInLamports) > Number(userInputInLamports)) {
