@@ -1692,20 +1692,29 @@ class PieProgram {
         // if the finalInputSolRequiredInLamports still is greater than the userInputInLamports,
         // we need to adjust the multiplier and the swap data
         if (Number(finalInputSolRequiredInLamports) > Number(userInputInLamports)) {
+            multiplier =
+                Number(userInputInLamports) / Number(finalInputSolRequiredInLamports);
             finalInputSolRequiredInLamports = userInputInLamports;
-            finalBasketAmountInRawDecimal = new anchor_1.BN((finalBasketAmountInRawDecimal.toNumber() *
-                Number(userInputInLamports)) /
-                Number(finalInputSolRequiredInLamports));
+            finalBasketAmountInRawDecimal = new anchor_1.BN(finalBasketAmountInRawDecimal.toNumber() * multiplier);
             revisedSwapData.forEach((swap) => {
-                swap.amountIn = (0, helper_1.restoreRawDecimalRoundUp)(basketConfigData.components
-                    .find((component) => component.mint.toBase58() === swap.mint)
-                    ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString();
-                swap.maxAmountIn = (0, helper_1.restoreRawDecimalRoundUp)(basketConfigData.components
-                    .find((component) => component.mint.toBase58() === swap.mint)
-                    ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString();
-                swap.amountOut = (0, helper_1.restoreRawDecimalRoundUp)(basketConfigData.components
-                    .find((component) => component.mint.toBase58() === swap.mint)
-                    ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString();
+                if (swap.mint === spl_token_1.NATIVE_MINT.toBase58()) {
+                    swap.amountIn = (0, helper_1.restoreRawDecimalRoundUp)(basketConfigData.components
+                        .find((component) => component.mint.toBase58() === swap.mint)
+                        ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString();
+                    swap.maxAmountIn = (0, helper_1.restoreRawDecimalRoundUp)(basketConfigData.components
+                        .find((component) => component.mint.toBase58() === swap.mint)
+                        ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString();
+                    swap.amountOut = (0, helper_1.restoreRawDecimalRoundUp)(basketConfigData.components
+                        .find((component) => component.mint.toBase58() === swap.mint)
+                        ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString();
+                }
+                else {
+                    swap.amountIn = (Number(swap.amountIn) * multiplier).toString();
+                    swap.maxAmountIn = (Number(swap.maxAmountIn) * multiplier).toString();
+                    swap.amountOut = (0, helper_1.restoreRawDecimalRoundUp)(basketConfigData.components
+                        .find((component) => component.mint.toBase58() === swap.mint)
+                        ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)).toString();
+                }
             });
         }
         return {
