@@ -2777,23 +2777,30 @@ export class PieProgram {
     // if the finalInputSolRequiredInLamports still is greater than the userInputInLamports,
     // we need to adjust the multiplier and the swap data
     if (Number(finalInputSolRequiredInLamports) > Number(userInputInLamports)) {
-      multiplier =
-        Number(userInputInLamports) / Number(finalInputSolRequiredInLamports);
-      revisedSwapData.forEach((swap) => {
-        swap.amountIn = Math.floor(
-          Number(swap.amountIn) * multiplier
-        ).toString();
-        swap.maxAmountIn = Math.floor(
-          Number(swap.maxAmountIn) * multiplier
-        ).toString();
-        swap.amountOut = Math.floor(
-          Number(swap.amountOut) * multiplier
-        ).toString();
-      });
       finalInputSolRequiredInLamports = userInputInLamports;
       finalBasketAmountInRawDecimal = new BN(
-        finalBasketAmountInRawDecimal.toNumber() * multiplier
+        (finalBasketAmountInRawDecimal.toNumber() *
+          Number(userInputInLamports)) /
+          Number(finalInputSolRequiredInLamports)
       );
+
+      revisedSwapData.forEach((swap) => {
+        swap.amountIn = restoreRawDecimalRoundUp(
+          basketConfigData.components
+            .find((component) => component.mint.toBase58() === swap.mint)
+            ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+        ).toString();
+        swap.maxAmountIn = restoreRawDecimalRoundUp(
+          basketConfigData.components
+            .find((component) => component.mint.toBase58() === swap.mint)
+            ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+        ).toString();
+        swap.amountOut = restoreRawDecimalRoundUp(
+          basketConfigData.components
+            .find((component) => component.mint.toBase58() === swap.mint)
+            ?.quantityInSysDecimal.mul(finalBasketAmountInRawDecimal)
+        ).toString();
+      });
     }
 
     return {
