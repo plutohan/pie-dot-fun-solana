@@ -371,8 +371,6 @@ export class PieProgram {
     console.log("creating new shared lookup table");
     const newLookupTable = await createLookupTable(this.connection, admin);
 
-    const tipAccounts = await this.jito.getTipAccounts();
-
     await addAddressesToTable(this.connection, admin, newLookupTable, [
       this.program.programId,
       this.programStatePDA,
@@ -382,7 +380,6 @@ export class PieProgram {
       TOKEN_PROGRAM_ID,
       TOKEN_2022_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID,
-      ...tipAccounts.map((tipAccount) => new PublicKey(tipAccount)),
     ]);
 
     this.sharedLookupTable = newLookupTable.toBase58();
@@ -1876,7 +1873,6 @@ export class PieProgram {
       new PublicKey(poolKeys.marketQuoteVault),
       new PublicKey(poolKeys.marketAuthority),
       new PublicKey(poolKeys.programId),
-      TOKEN_PROGRAM_ID,
     ];
 
     if (lookupTable) {
@@ -1934,8 +1930,6 @@ export class PieProgram {
       new PublicKey(poolInfo.id),
       new PublicKey(poolKeys.vault.A),
       new PublicKey(poolKeys.vault.B),
-      TOKEN_PROGRAM_ID,
-      TOKEN_2022_PROGRAM_ID,
       new PublicKey(poolKeys.programId),
       getPdaObservationId(
         new PublicKey(poolInfo.programId),
@@ -1996,8 +1990,6 @@ export class PieProgram {
       new PublicKey(poolKeys.vault.A),
       new PublicKey(poolKeys.vault.B),
       new PublicKey(poolKeys.config.id),
-      TOKEN_PROGRAM_ID,
-      TOKEN_2022_PROGRAM_ID,
       new PublicKey(poolKeys.programId),
       getPdaObservationId(
         new PublicKey(poolInfo.programId),

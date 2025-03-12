@@ -190,7 +190,6 @@ class PieProgram {
     async initializeSharedLookupTable({ admin, }) {
         console.log("creating new shared lookup table");
         const newLookupTable = await (0, lookupTable_1.createLookupTable)(this.connection, admin);
-        const tipAccounts = await this.jito.getTipAccounts();
         await (0, lookupTable_1.addAddressesToTable)(this.connection, admin, newLookupTable, [
             this.program.programId,
             this.programStatePDA,
@@ -200,7 +199,6 @@ class PieProgram {
             spl_token_1.TOKEN_PROGRAM_ID,
             spl_token_1.TOKEN_2022_PROGRAM_ID,
             spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID,
-            ...tipAccounts.map((tipAccount) => new web3_js_1.PublicKey(tipAccount)),
         ]);
         this.sharedLookupTable = newLookupTable.toBase58();
         return newLookupTable;
@@ -1115,7 +1113,6 @@ class PieProgram {
             new web3_js_1.PublicKey(poolKeys.marketQuoteVault),
             new web3_js_1.PublicKey(poolKeys.marketAuthority),
             new web3_js_1.PublicKey(poolKeys.programId),
-            spl_token_1.TOKEN_PROGRAM_ID,
         ];
         if (lookupTable) {
             const addressesStored = await (0, lookupTable_1.findAddressesInTable)(connection, lookupTable);
@@ -1147,8 +1144,6 @@ class PieProgram {
             new web3_js_1.PublicKey(poolInfo.id),
             new web3_js_1.PublicKey(poolKeys.vault.A),
             new web3_js_1.PublicKey(poolKeys.vault.B),
-            spl_token_1.TOKEN_PROGRAM_ID,
-            spl_token_1.TOKEN_2022_PROGRAM_ID,
             new web3_js_1.PublicKey(poolKeys.programId),
             (0, raydium_sdk_v2_1.getPdaObservationId)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey,
         ];
@@ -1180,8 +1175,6 @@ class PieProgram {
             new web3_js_1.PublicKey(poolKeys.vault.A),
             new web3_js_1.PublicKey(poolKeys.vault.B),
             new web3_js_1.PublicKey(poolKeys.config.id),
-            spl_token_1.TOKEN_PROGRAM_ID,
-            spl_token_1.TOKEN_2022_PROGRAM_ID,
             new web3_js_1.PublicKey(poolKeys.programId),
             (0, raydium_sdk_v2_1.getPdaObservationId)(new web3_js_1.PublicKey(poolInfo.programId), new web3_js_1.PublicKey(poolInfo.id)).publicKey,
             new web3_js_1.PublicKey(poolKeys.exBitmapAccount),
