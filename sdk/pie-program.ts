@@ -11,6 +11,7 @@ import {
 import {
   AddressLookupTableAccount,
   Cluster,
+  Commitment,
   ComputeBudgetProgram,
   Connection,
   Keypair,
@@ -251,15 +252,18 @@ export class PieProgram {
   async getTokenBalance({
     mint,
     owner,
+    commitment = "confirmed",
   }: {
     mint: PublicKey;
     owner: PublicKey;
+    commitment?: Commitment;
   }): Promise<number> {
     const tokenAccount = getAssociatedTokenAddressSync(mint, owner, true);
 
     try {
       const balance = await this.connection.getTokenAccountBalance(
-        tokenAccount
+        tokenAccount,
+        commitment
       );
       return Number(balance.value.amount);
     } catch (error) {
