@@ -3,7 +3,7 @@ import { SystemProgram } from "@solana/web3.js";
 import { Transaction } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
-import { JITO_RPC_URL, JITO_TIP_FLOOR_URL } from "./constants";
+import { JITO_RPC_URL, JITO_TIP_FLOOR_URL, JITO_TIP_AMOUNT } from "./constants";
 import axios from "axios";
 
 type TipAccountsResponse = string[];
@@ -237,11 +237,11 @@ export class Jito {
     jitoTipAccount?: PublicKey;
     amountInLamports?: number;
   }) {
-    if (jitoTipAccount && amountInLamports) {
+    if (jitoTipAccount) {
       const transferInstruction = SystemProgram.transfer({
         fromPubkey: signer,
         toPubkey: new PublicKey(jitoTipAccount),
-        lamports: amountInLamports,
+        lamports: amountInLamports || JITO_TIP_AMOUNT,
       });
       transaction.add(transferInstruction);
     }

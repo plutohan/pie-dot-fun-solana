@@ -119,11 +119,11 @@ class Jito {
         }
     }
     serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, amountInLamports, }) {
-        if (jitoTipAccount && amountInLamports) {
+        if (jitoTipAccount) {
             const transferInstruction = web3_js_2.SystemProgram.transfer({
                 fromPubkey: signer,
                 toPubkey: new web3_js_3.PublicKey(jitoTipAccount),
-                lamports: amountInLamports,
+                lamports: amountInLamports || constants_1.JITO_TIP_AMOUNT,
             });
             transaction.add(transferInstruction);
         }
