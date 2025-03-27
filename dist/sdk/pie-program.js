@@ -132,10 +132,10 @@ class PieProgram {
             return null;
         }
     }
-    async getTokenBalance({ mint, owner, }) {
+    async getTokenBalance({ mint, owner, commitment = "confirmed", }) {
         const tokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(mint, owner, true);
         try {
-            const balance = await this.connection.getTokenAccountBalance(tokenAccount);
+            const balance = await this.connection.getTokenAccountBalance(tokenAccount, commitment);
             return Number(balance.value.amount);
         }
         catch (error) {

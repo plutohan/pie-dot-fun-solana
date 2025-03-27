@@ -1,5 +1,5 @@
 import { BN, EventParser, Idl, IdlAccounts, IdlEvents, IdlTypes, Program } from "@coral-xyz/anchor";
-import { AddressLookupTableAccount, Cluster, Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
+import { AddressLookupTableAccount, Cluster, Commitment, Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { Pie } from "../target/types/pie";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { Jito } from "../sdk/jito";
@@ -59,9 +59,10 @@ export declare class PieProgram {
         user: PublicKey;
         basketId: BN;
     }): Promise<UserFund | null>;
-    getTokenBalance({ mint, owner, }: {
+    getTokenBalance({ mint, owner, commitment, }: {
         mint: PublicKey;
         owner: PublicKey;
+        commitment?: Commitment;
     }): Promise<number>;
     getAllTokenAccountWithBalance({ owner }: {
         owner: PublicKey;
