@@ -185,41 +185,8 @@ export type Pie = {
                 "path": "basketConfig"
               },
               {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
+                "kind": "account",
+                "path": "tokenProgram"
               },
               {
                 "kind": "account",
@@ -3885,6 +3852,19 @@ export type Pie = {
       ]
     },
     {
+      "name": "depositComponentEvent",
+      "discriminator": [
+        39,
+        156,
+        3,
+        157,
+        178,
+        5,
+        184,
+        156
+      ]
+    },
+    {
       "name": "depositWsolEvent",
       "discriminator": [
         196,
@@ -4051,6 +4031,19 @@ export type Pie = {
         153,
         136,
         63
+      ]
+    },
+    {
+      "name": "withdrawComponentEvent",
+      "discriminator": [
+        133,
+        136,
+        192,
+        72,
+        25,
+        127,
+        69,
+        31
       ]
     },
     {
@@ -4410,6 +4403,30 @@ export type Pie = {
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "depositComponentEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
@@ -5038,6 +5055,30 @@ export type Pie = {
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "withdrawComponentEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }

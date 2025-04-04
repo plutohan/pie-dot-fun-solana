@@ -673,6 +673,66 @@ export class PieProgram {
   }
 
   /**
+   * Deposits a component into the basket.
+   * @param user - The user account.
+   * @param basketId - The basket ID.
+   * @param amount - The amount of component to deposit.
+   * @param mint - The mint of the component.
+   * @returns A promise that resolves to a transaction.
+   */
+  async depositComponent({
+    user,
+    basketId,
+    amount,
+    mint,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amount: string;
+    mint: PublicKey;
+  }): Promise<Transaction> {
+    const basketConfig = this.basketConfigPDA({ basketId });
+    const tx = new Transaction();
+
+    const { tokenAccount: userTokenAccount } = await getOrCreateTokenAccountTx(
+      this.connection,
+      mint,
+      user,
+      user
+    );
+
+    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+      await getOrCreateTokenAccountTx(
+        this.connection,
+        mint,
+        user,
+        basketConfig
+      );
+
+    if (isValidTransaction(outputTx)) {
+      tx.add(outputTx);
+    }
+
+    const depositComponentTx = await this.program.methods
+      .depositComponent(new BN(amount))
+      .accountsPartial({
+        user,
+        programState: this.programStatePDA,
+        userFund: this.userFundPDA({ user, basketId }),
+        basketConfig: basketConfig,
+        userTokenAccount,
+        vaultTokenAccount: outputTokenAccount,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
+      })
+      .transaction();
+
+    tx.add(depositComponentTx);
+
+    return tx;
+  }
+
+  /**
    * Buys a component.
    * @param userSourceOwner - The user source owner account.
    * @param basketId - The basket ID.
@@ -1320,7 +1380,7 @@ export class PieProgram {
   }
 
   /**
-   * Deposits WSOL into the basket.
+   * Withdraws a WSOL from the basket.
    * @param user - The user account.
    * @param basketId - The basket ID.
    * @param amount - The amount of WSOL to deposit.
@@ -1370,6 +1430,62 @@ export class PieProgram {
 
     return tx;
   }
+
+  /**
+   * Withdraws a component from the basket.
+   * @param user - The user account.
+   * @param basketId - The basket ID.
+   * @param amount - The amount of component to withdraw.
+   * @param mint - The mint of the component.
+   * @returns A promise that resolves to a transaction.
+   */
+  async withdrawComponent({
+    user,
+    basketId,
+    amount,
+    mint,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amount: string;
+    mint: PublicKey;
+  }): Promise<Transaction> {
+    const basketConfig = this.basketConfigPDA({ basketId });
+    const tx = new Transaction();
+
+    const { tokenAccount: vaultTokenAccount } = await getOrCreateTokenAccountTx(
+      this.connection,
+      mint,
+      user,
+      basketConfig
+    );
+
+    const { tokenAccount: userTokenAccount, tx: createUserTokenAccountTx } =
+      await getOrCreateTokenAccountTx(this.connection, mint, user, user);
+
+    if (isValidTransaction(createUserTokenAccountTx)) {
+      tx.add(createUserTokenAccountTx);
+    }
+
+    const withdrawComponentTx = await this.program.methods
+      .withdrawComponent(new BN(amount))
+      .accountsPartial({
+        user,
+        programState: this.programStatePDA,
+        userFund: this.userFundPDA({ user, basketId }),
+        basketConfig: basketConfig,
+        userTokenAccount,
+        vaultTokenAccount,
+        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
+        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
+      })
+      .transaction();
+
+    tx.add(withdrawComponentTx);
+
+    return tx;
+  }
+
   /**
    * Mints a basket token.
    * @param user - The user account.

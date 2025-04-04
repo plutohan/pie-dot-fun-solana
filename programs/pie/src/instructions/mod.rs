@@ -36,3 +36,9 @@ pub use deposit_wsol::*;
 
 pub mod withdraw_wsol;
 pub use withdraw_wsol::*;
+
+pub mod deposit_component;
+pub use deposit_component::*;
+
+pub mod withdraw_component;
+pub use withdraw_component::*;
