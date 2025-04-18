@@ -1,8 +1,8 @@
 pub mod initialize;
 pub use initialize::*;
 
-pub mod transfer_admin;
-pub use transfer_admin::*;
+pub mod update_admin;
+pub use update_admin::*;
 
 pub mod update_fee;
 pub use update_fee::*;
