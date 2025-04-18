@@ -3429,64 +3429,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "updateWhitelistedCreators",
-      "discriminator": [
-        81,
-        36,
-        13,
-        65,
-        143,
-        129,
-        14,
-        114
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "newWhitelistedCreators",
-          "type": {
-            "vec": "pubkey"
-          }
-        }
-      ]
-    },
-    {
       "name": "withdrawWsol",
       "discriminator": [
         120,
@@ -4018,19 +3960,6 @@ export type Pie = {
         132,
         153,
         70
-      ]
-    },
-    {
-      "name": "updateWhitelistedCreatorsEvent",
-      "discriminator": [
-        213,
-        44,
-        255,
-        22,
-        202,
-        153,
-        136,
-        63
       ]
     },
     {
@@ -4805,12 +4734,6 @@ export type Pie = {
           {
             "name": "isInitialized",
             "type": "bool"
-          },
-          {
-            "name": "whitelistedCreators",
-            "type": {
-              "vec": "pubkey"
-            }
           }
         ]
       }
@@ -4997,26 +4920,6 @@ export type Pie = {
           {
             "name": "newRebalancer",
             "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "updateWhitelistedCreatorsEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "oldWhitelistedCreators",
-            "type": {
-              "vec": "pubkey"
-            }
-          },
-          {
-            "name": "newWhitelistedCreators",
-            "type": {
-              "vec": "pubkey"
-            }
           }
         ]
       }

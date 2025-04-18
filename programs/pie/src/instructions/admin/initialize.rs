@@ -41,7 +41,6 @@ pub fn initialize(
     program_state.bump = ctx.bumps.program_state;
     program_state.is_initialized = true;
     program_state.admin = initial_admin;
-    program_state.whitelisted_creators.push(initial_creator);
     program_state.basket_counter = 0;
     program_state.platform_fee_wallet = initial_platform_fee_wallet;
     program_state.platform_fee_percentage = initial_platform_fee_percentage;
