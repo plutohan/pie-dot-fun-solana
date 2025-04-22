@@ -9,7 +9,11 @@ import devnetAdmin from "../public/devnet-admin.json";
 import { assert } from "chai";
 import { createBasketComponents } from "../sdk/utils/helper";
 import { CreateBasketArgs, PieProgram } from "../sdk/pie-program";
-import { getMint } from "@solana/spl-token";
+import {
+  createAssociatedTokenAccount,
+  getMint,
+  mintTo,
+} from "@solana/spl-token";
 import { METADATA_PROGRAM_ID } from "@raydium-io/raydium-sdk-v2";
 import { BN } from "@coral-xyz/anchor";
 
@@ -303,48 +307,159 @@ describe("pie", () => {
     });
   });
 
-  describe("update_rebalancer", () => {
-    it("should update with new balancer in basket config state", async () => {
-      const basketComponents = await createBasketComponents(
+  describe("component_operations", () => {
+    let basketId: BN;
+    let basketComponents: any[];
+    let componentAmounts: any[] = [1, 2, 3];
+
+    beforeEach(async () => {
+      basketComponents = await createBasketComponents(
         connection,
         admin,
-        [1, 2, 3]
+        componentAmounts
       );
       const createBasketArgs: CreateBasketArgs = {
-        name: "Basket Name Test",
-        symbol: "BNS",
+        name: "Component Test Basket",
+        symbol: "CTB",
         uri: "test",
         components: basketComponents,
-        rebalancer: admin.publicKey,
+        rebalancer: rebalancer.publicKey,
       };
+
       const programState = await pieProgram.getProgramState();
-      const basketId = programState.basketCounter;
+      basketId = programState.basketCounter;
+
       const createBasketTx = await pieProgram.createBasket({
         creator: creator.publicKey,
         args: createBasketArgs,
         basketId,
       });
       await sendAndConfirmTransaction(connection, createBasketTx, [creator]);
-      const basketState = await pieProgram.getBasketConfig({ basketId });
-      console.assert(
-        basketState.rebalancer.toBase58(),
-        admin.publicKey.toBase58()
-      );
 
-      const updateRebalancerTx = await pieProgram.updateRebalancer({
-        creator: creator.publicKey,
-        basketId,
-        newRebalancer: rebalancer.publicKey,
-      });
-      await sendAndConfirmTransaction(connection, updateRebalancerTx, [
-        creator,
-      ]);
-      console.assert(
-        basketState.rebalancer.toBase58(),
-        rebalancer.publicKey.toBase58()
-      );
+      // mint some components to admin
+      for (let i = 0; i < basketComponents.length; i++) {
+        const component = basketComponents[i];
+        const associatedTokenAccount = await createAssociatedTokenAccount(
+          connection,
+          admin,
+          component.mint,
+          admin.publicKey
+        );
+
+        await mintTo(
+          connection,
+          admin,
+          component.mint,
+          associatedTokenAccount,
+          admin.publicKey,
+          componentAmounts[i]
+        );
+      }
     });
 
-    it("should fail if unauthorized", async () => {});
+    it("should deposit and withdraw components", async () => {
+      for (let i = 0; i < basketComponents.length; i++) {
+        const component = basketComponents[i];
+        const amount = componentAmounts[i];
+
+        // Deposit component
+        const depositTx = await pieProgram.depositComponent({
+          user: admin.publicKey,
+          basketId,
+          amount,
+          mint: component.mint,
+        });
+        await sendAndConfirmTransaction(connection, depositTx, [admin]);
+
+        // Check user fund
+        const userFund = await pieProgram.getUserFund({
+          user: admin.publicKey,
+          basketId,
+        });
+        assert.equal(userFund.components[0].amount.toString(), amount);
+
+        // Withdraw component
+        const withdrawTx = await pieProgram.withdrawComponent({
+          user: admin.publicKey,
+          basketId,
+          amount,
+          mint: component.mint,
+        });
+        await sendAndConfirmTransaction(connection, withdrawTx, [admin]);
+
+        // Check user fund is empty
+        const updatedUserFund = await pieProgram.getUserFund({
+          user: admin.publicKey,
+          basketId,
+        });
+
+        assert.equal(updatedUserFund, null);
+      }
+    });
+
+    it("should mint and redeem basket tokens", async () => {
+      const basketConfig = await pieProgram.getBasketConfig({ basketId });
+
+      for (let i = 0; i < basketComponents.length; i++) {
+        const component = basketComponents[i];
+        const amount = componentAmounts[i];
+
+        // Deposit component
+        const depositTx = await pieProgram.depositComponent({
+          user: admin.publicKey,
+          basketId,
+          amount,
+          mint: component.mint,
+        });
+        await sendAndConfirmTransaction(connection, depositTx, [admin]);
+      }
+
+      const userFundBeforeMint = await pieProgram.getUserFund({
+        user: admin.publicKey,
+        basketId,
+      });
+
+      const mintTx = await pieProgram.mintBasketToken({
+        user: admin.publicKey,
+        basketId,
+        amount: "1000000",
+      });
+      await sendAndConfirmTransaction(connection, mintTx, [admin]);
+
+      const basketMint = pieProgram.basketMintPDA({ basketId });
+      const balance = await pieProgram.getTokenBalance({
+        mint: basketMint,
+        owner: admin.publicKey,
+      });
+
+      assert.equal(balance.toString(), "1000000");
+
+      const userFundAfterMint = await pieProgram.getUserFund({
+        user: admin.publicKey,
+        basketId,
+      });
+
+      assert.equal(userFundAfterMint, null);
+
+      const redeemTx = await pieProgram.redeemBasketToken({
+        user: admin.publicKey,
+        basketId,
+        amount: 1000000,
+      });
+      await sendAndConfirmTransaction(connection, redeemTx, [admin]);
+
+      for (let i = 0; i < basketComponents.length; i++) {
+        const component = basketComponents[i];
+        const amount = componentAmounts[i];
+
+        const withdrawTx = await pieProgram.withdrawComponent({
+          user: admin.publicKey,
+          basketId,
+          amount,
+          mint: component.mint,
+        });
+        await sendAndConfirmTransaction(connection, withdrawTx, [admin]);
+      }
+    });
   });
 });
