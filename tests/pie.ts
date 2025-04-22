@@ -30,7 +30,7 @@ describe("pie", () => {
   const newCreator = Keypair.generate();
   const platformFeeWallet = Keypair.generate();
 
-  const pieProgram = new PieProgram(connection, "devnet");
+  const pieProgram = new PieProgram(connection, "devnet", "");
 
   it("is success deploy without admin change", async () => {
     await Promise.all([
