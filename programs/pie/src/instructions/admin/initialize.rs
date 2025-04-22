@@ -1,6 +1,6 @@
 use crate::constant::PROGRAM_STATE;
 use crate::error::PieError;
-use crate::{ProgramState, INITIALIZER};
+use crate::ProgramState;
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -28,11 +28,6 @@ pub fn initialize(
     initial_platform_fee_percentage: u64,
 ) -> Result<()> {
     let program_state = &mut ctx.accounts.program_state;
-
-    require!(
-        ctx.accounts.initializer.key() == INITIALIZER,
-        PieError::Unauthorized
-    );
 
     if program_state.is_initialized {
         return Err(PieError::ProgramInitialized.into());
