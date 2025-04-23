@@ -424,6 +424,7 @@ describe("pie", () => {
         basketId,
         amount: "1000000",
       });
+
       await sendAndConfirmTransaction(connection, mintTx, [admin]);
 
       const basketMint = pieProgram.basketMintPDA({ basketId });
