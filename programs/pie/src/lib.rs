@@ -57,14 +57,6 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn update_whitelisted_creators(
-        ctx: Context<UpdateWhitelistedCreatorsContext>,
-        new_whitelisted_creators: Vec<Pubkey>,
-    ) -> Result<()> {
-        instructions::update_whitelisted_creators(ctx, new_whitelisted_creators)?;
-        Ok(())
-    }
-
     // Creator
     pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
         instructions::create_basket(ctx, args)?;

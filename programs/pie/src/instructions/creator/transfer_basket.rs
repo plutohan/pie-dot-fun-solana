@@ -14,9 +14,9 @@ pub struct TransferBasketContext<'info> {
     pub basket_config: Account<'info, BasketConfig>,
 
     #[account(
-        mut, 
-        seeds = [PROGRAM_STATE], 
-        bump = program_state.bump 
+        mut,
+        seeds = [PROGRAM_STATE],
+        bump = program_state.bump
     )]
     pub program_state: Account<'info, ProgramState>,
 
@@ -35,11 +35,6 @@ pub fn transfer_basket(ctx: Context<TransferBasketContext>, new_creator: Pubkey)
     let basket_config = &mut ctx.accounts.basket_config;
     let old_creator = basket_config.creator;
     basket_config.creator = new_creator;
-
-    // Authorization check
-    if !ctx.accounts.program_state.whitelisted_creators.contains(&new_creator) {
-        return Err(PieError::Unauthorized.into());
-    }
 
     emit!(TransferBasketEvent {
         basket_id: basket_config.id,
