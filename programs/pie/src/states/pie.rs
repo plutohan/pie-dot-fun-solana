@@ -10,7 +10,6 @@ pub struct ProgramState {
     pub creator_fee_percentage: u64,
     pub platform_fee_percentage: u64,
     pub is_initialized: bool,
-    pub whitelisted_creators: Vec<Pubkey>,
 }
 
 impl Space for ProgramState {
@@ -22,6 +21,5 @@ impl Space for ProgramState {
         + 8   // creator_fee_percentage (u64)
         + 8   // platform_fee_percentage (u64)
         + 1   // is_initialized (bool)
-        + 4   // vec length
-        + 32 * MAX_WHITELISTED_CREATORS as usize; // vec items
+        + 4;   // vec length
 }

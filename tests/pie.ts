@@ -255,55 +255,6 @@ describe("pie", () => {
           assert.isNotEmpty(e);
         }
       });
-
-      it("should success when the new creator is authorized", async () => {
-        const updateWhitelistedCreatorTx =
-          await pieProgram.updateWhitelistedCreators({
-            admin: admin.publicKey,
-            newWhitelistedCreators: [creator.publicKey, newCreator.publicKey],
-          });
-
-        await sendAndConfirmTransaction(
-          connection,
-          updateWhitelistedCreatorTx,
-          [admin]
-        );
-
-        const programState = await pieProgram.getProgramState();
-        assert.equal(programState.whitelistedCreators.length, 2);
-        assert.equal(
-          programState.whitelistedCreators[0].toBase58(),
-          creator.publicKey.toBase58()
-        );
-        assert.equal(
-          programState.whitelistedCreators[1].toBase58(),
-          newCreator.publicKey.toBase58()
-        );
-
-        const basketComponents = await createBasketComponents(
-          connection,
-          admin,
-          [1, 2, 3]
-        );
-
-        const createBasketArgs: CreateBasketArgs = {
-          name: "Basket Name Test",
-          symbol: "BNS",
-          uri: "test",
-          components: basketComponents,
-          rebalancer: admin.publicKey,
-        };
-
-        const createBasketTx = await pieProgram.createBasket({
-          creator: newCreator.publicKey,
-          args: createBasketArgs,
-          basketId: programState.basketCounter,
-        });
-
-        await sendAndConfirmTransaction(connection, createBasketTx, [
-          newCreator,
-        ]);
-      });
     });
   });
 

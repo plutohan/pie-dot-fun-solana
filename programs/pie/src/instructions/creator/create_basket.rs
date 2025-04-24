@@ -18,9 +18,9 @@ pub struct CreateBasketContext<'info> {
     #[account(mut)]
     pub creator: Signer<'info>,
     #[account(
-        mut, 
-        seeds = [PROGRAM_STATE], 
-        bump = program_state.bump 
+        mut,
+        seeds = [PROGRAM_STATE],
+        bump = program_state.bump
     )]
     pub program_state: Account<'info, ProgramState>,
 
@@ -80,11 +80,6 @@ pub struct CreateBasketEvent {
 pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
     let program_state = &ctx.accounts.program_state;
 
-    // Authorization check
-    if !program_state.whitelisted_creators.contains(&ctx.accounts.creator.key()) {
-        return Err(PieError::Unauthorized.into());
-    }
-    
     // Validate components
     validate_components(&args.components)?;
 
