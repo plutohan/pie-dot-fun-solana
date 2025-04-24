@@ -3639,64 +3639,6 @@
       ]
     },
     {
-      "name": "update_whitelisted_creators",
-      "discriminator": [
-        81,
-        36,
-        13,
-        65,
-        143,
-        129,
-        14,
-        114
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "program_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_whitelisted_creators",
-          "type": {
-            "vec": "pubkey"
-          }
-        }
-      ]
-    },
-    {
       "name": "withdraw_component",
       "discriminator": [
         192,
@@ -4444,19 +4386,6 @@
         132,
         153,
         70
-      ]
-    },
-    {
-      "name": "UpdateWhitelistedCreatorsEvent",
-      "discriminator": [
-        213,
-        44,
-        255,
-        22,
-        202,
-        153,
-        136,
-        63
       ]
     },
     {
@@ -5231,12 +5160,6 @@
           {
             "name": "is_initialized",
             "type": "bool"
-          },
-          {
-            "name": "whitelisted_creators",
-            "type": {
-              "vec": "pubkey"
-            }
           }
         ]
       }
@@ -5423,26 +5346,6 @@
           {
             "name": "new_rebalancer",
             "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "UpdateWhitelistedCreatorsEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_whitelisted_creators",
-            "type": {
-              "vec": "pubkey"
-            }
-          },
-          {
-            "name": "new_whitelisted_creators",
-            "type": {
-              "vec": "pubkey"
-            }
           }
         ]
       }
