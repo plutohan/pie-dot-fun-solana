@@ -115,20 +115,4 @@ export class AdminInstructions extends ProgramStateManager {
       .accountsPartial({ admin, programState: this.programStatePDA() })
       .transaction();
   }
-
-  /**
-   * Updates the whitelisted creators
-   */
-  async updateWhitelistedCreators({
-    admin,
-    newWhitelistedCreators,
-  }: {
-    admin: PublicKey;
-    newWhitelistedCreators: PublicKey[];
-  }): Promise<Transaction> {
-    return await this.program.methods
-      .updateWhitelistedCreators(newWhitelistedCreators)
-      .accountsPartial({ admin, programState: this.programStatePDA() })
-      .transaction();
-  }
 }
