@@ -1,5 +1,6 @@
 import {
   Connection,
+  Commitment,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
@@ -31,7 +32,7 @@ import { Raydium, API_URLS } from "@raydium-io/raydium-sdk-v2";
 import { BasketComponent, PieProgram } from "../pie-program";
 import { Table } from "console-table-printer";
 import axios from "axios";
-import { BuySwapData, TokenInfo } from "../types";
+import { BuySwapData, TokenInfo, TokenBalance } from "../pie-program/types";
 import { SYS_DECIMALS } from "../constants";
 
 export async function createUserWithLamports(
@@ -270,10 +271,10 @@ export async function showBasketConfigTable(
   pieProgram: PieProgram,
   basketId: BN
 ) {
-  const basketConfig = await pieProgram.getBasketConfig({ basketId });
+  const basketConfig = await pieProgram.state.getBasketConfig({ basketId });
   const basketMintInfo = await getMint(
     connection,
-    pieProgram.basketMintPDA({ basketId })
+    pieProgram.state.basketMintPDA({ basketId })
   );
   const table = new Table({
     columns: [
@@ -295,7 +296,7 @@ export async function showBasketConfigTable(
 
     const vaultTokenPDA = getAssociatedTokenAddressSync(
       basketConfig.components[i].mint,
-      pieProgram.basketConfigPDA({ basketId }),
+      pieProgram.state.basketConfigPDA({ basketId }),
       true,
       programId
     );
@@ -319,7 +320,10 @@ export async function showUserFundTable(
   userPubkey: PublicKey,
   basketId: BN
 ) {
-  const userFund = await pieProgram.getUserFund({ user: userPubkey, basketId });
+  const userFund = await pieProgram.state.getUserFund({
+    user: userPubkey,
+    basketId,
+  });
 
   if (!userFund) {
     console.log("User fund not found");
@@ -643,4 +647,51 @@ export function findDepositAndRemoveInPlace(
     return arr.splice(index, 1)[0];
   }
   return null;
+}
+
+export async function getTokenBalance({
+  connection,
+  mint,
+  owner,
+  commitment = "confirmed",
+}: {
+  connection: Connection;
+  mint: PublicKey;
+  owner: PublicKey;
+  commitment?: Commitment;
+}): Promise<number> {
+  const tokenAccount = getAssociatedTokenAddressSync(mint, owner, true);
+
+  try {
+    const balance = await connection.getTokenAccountBalance(
+      tokenAccount,
+      commitment
+    );
+    return Number(balance.value.amount);
+  } catch (error) {
+    // Return 0 if the token account doesn't exist
+    return 0;
+  }
+}
+
+/**
+ * Fetches all token accounts with balances for a given owner
+ */
+export async function getAllTokenAccountWithBalance({
+  connection,
+  owner,
+}: {
+  connection: Connection;
+  owner: PublicKey;
+}): Promise<TokenBalance[]> {
+  const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, {
+    programId: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), // TOKEN_PROGRAM_ID
+  });
+
+  return tokenAccounts.value.map((tokenAccount) => ({
+    mint: new PublicKey(tokenAccount.account.data.parsed.info.mint),
+    owner: new PublicKey(tokenAccount.account.data.parsed.info.owner),
+    pubkey: tokenAccount.pubkey,
+    tokenAmount: tokenAccount.account.data.parsed.info.tokenAmount,
+  }));
 }

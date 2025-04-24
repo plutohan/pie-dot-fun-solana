@@ -1,24 +1,24 @@
-import { BN, Program } from "@coral-xyz/anchor";
-import { PublicKey, Transaction } from "@solana/web3.js";
-import { PDAs } from "../pda";
-import { Pie } from "../../../target/types/pie";
-import { NATIVE_MINT } from "@solana/spl-token";
+import { BN } from "@coral-xyz/anchor";
+import { Transaction, PublicKey, Connection } from "@solana/web3.js";
 import {
   getOrCreateTokenAccountTx,
   isValidTransaction,
 } from "../../utils/helper";
+import { NATIVE_MINT } from "@solana/spl-token";
+import { ProgramStateManager } from "../state";
 
 /**
  * Class for handling admin-related instructions
  */
-export class AdminInstructions {
-  constructor(
-    private readonly program: Program<Pie>,
-    private readonly pda: PDAs
-  ) {}
+export class AdminInstructions extends ProgramStateManager {
+  constructor(readonly connection: Connection, readonly programId: PublicKey) {
+    super(programId, connection);
+  }
 
   /**
-   * Initializes the program
+   * Initializes the program.
+   * @param admin - The admin account.
+   * @returns A promise that resolves to a transaction.
    */
   async initialize({
     initializer,
@@ -40,7 +40,7 @@ export class AdminInstructions {
 
     const { tx: createPlatformFeeTokenAccountTx } =
       await getOrCreateTokenAccountTx(
-        this.program.provider.connection,
+        this.connection,
         new PublicKey(NATIVE_MINT),
         initializer,
         platformFeeWallet
@@ -70,7 +70,11 @@ export class AdminInstructions {
   }
 
   /**
-   * Updates the fee (10000 = 100% => 1000 = 1%)
+   * Updates the fee. 10000 = 100% => 1000 = 1%
+   * @param admin - The admin account.
+   * @param newCreatorFeePercentage - The new creator fee percentage.
+   * @param newPlatformFeePercentage - The new platform fee percentage.
+   * @returns A promise that resolves to a transaction.
    */
   async updateFee({
     admin,
@@ -88,13 +92,16 @@ export class AdminInstructions {
       )
       .accountsPartial({
         admin,
-        programState: this.pda.programState,
+        programState: this.programStatePDA(),
       })
       .transaction();
   }
 
   /**
-   * Updates the platform fee wallet
+   * Updates the platform fee wallet.
+   * @param admin - The admin account.
+   * @param newPlatformFeeWallet - The new platform fee wallet.
+   * @returns A promise that resolves to a transaction.
    */
   async updatePlatformFeeWallet({
     admin,
@@ -105,10 +112,7 @@ export class AdminInstructions {
   }): Promise<Transaction> {
     return await this.program.methods
       .updatePlatformFeeWallet(newPlatformFeeWallet)
-      .accountsPartial({
-        admin,
-        programState: this.pda.programState,
-      })
+      .accountsPartial({ admin, programState: this.programStatePDA() })
       .transaction();
   }
 
@@ -124,10 +128,7 @@ export class AdminInstructions {
   }): Promise<Transaction> {
     return await this.program.methods
       .updateWhitelistedCreators(newWhitelistedCreators)
-      .accountsPartial({
-        admin,
-        programState: this.pda.programState,
-      })
+      .accountsPartial({ admin, programState: this.programStatePDA() })
       .transaction();
   }
 }
