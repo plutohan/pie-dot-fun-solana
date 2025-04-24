@@ -19,7 +19,6 @@ import {
 import { CurveCalculator, Raydium } from "@raydium-io/raydium-sdk-v2";
 import { tokensAmm, tokensCpmm } from "./fixtures/devnet/token_test";
 import { Table } from "console-table-printer";
-import { initSdk } from "../sdk/utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
   getOrCreateNativeMintATA,
