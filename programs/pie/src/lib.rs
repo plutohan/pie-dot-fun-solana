@@ -174,6 +174,11 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn deposit_component(ctx: Context<DepositComponent>, amount: u64) -> Result<()> {
+        instructions::deposit_component(ctx, amount)?;
+        Ok(())
+    }
+
     pub fn sell_component(
         ctx: Context<SellComponentContext>,
         amount_in: u64,
@@ -209,6 +214,11 @@ pub mod pie {
 
     pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
         instructions::withdraw_wsol(ctx, amount)?;
+        Ok(())
+    }
+
+    pub fn withdraw_component(ctx: Context<WithdrawComponent>, amount: u64) -> Result<()> {
+        instructions::withdraw_component(ctx, amount)?;
         Ok(())
     }
 }
