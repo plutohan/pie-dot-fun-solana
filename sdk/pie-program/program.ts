@@ -39,17 +39,12 @@ export interface PieProgramConfig {
  * ```
  */
 export class PieProgram {
-  private readonly idl = Object.assign({}, PieIDL);
-  private raydium: Raydium | null = null;
-  private readonly jito: Jito;
-  private readonly events: EventHandler;
-  private readonly program: Program<Pie>;
-  private readonly _eventParser: EventParser;
+  private readonly _idl = Object.assign({}, PieIDL);
+  private _raydium: Raydium | null = null;
   private readonly _cluster: Cluster;
-  private readonly _commitment: Commitment;
 
-  private readonly programStateManager: ProgramStateManager;
-  private readonly instructions: {
+  private readonly _programStateManager: ProgramStateManager;
+  private readonly _instructions: {
     admin: AdminInstructions;
     buy: BuyInstructions;
     sell: SellInstructions;
@@ -57,12 +52,18 @@ export class PieProgram {
     rebalancer: RebalancerInstructions;
   };
 
+  public readonly jito: Jito;
+  public readonly events: EventHandler;
+  public readonly connection: Connection;
+  public readonly programId: PublicKey;
+  public readonly program: Program<Pie>;
+  public readonly eventParser: EventParser;
   public readonly admin: AdminInstructions;
   public readonly buy: BuyInstructions;
   public readonly sell: SellInstructions;
   public readonly creator: CreatorInstructions;
   public readonly rebalancer: RebalancerInstructions;
-
+  public readonly state: ProgramStateManager;
   /**
    * Creates a new instance of PieProgram
    * @param config Configuration options for the program
@@ -77,38 +78,37 @@ export class PieProgram {
       commitment = "confirmed",
     } = config;
 
-    this._cluster = cluster;
-    this._commitment = commitment;
-    this.idl.address = programId;
+    this.programId = new PublicKey(programId);
     this.jito = new Jito(jitoRpcUrl);
 
-    const programPubkey = new PublicKey(programId);
-    this.programStateManager = new ProgramStateManager(
-      programPubkey,
+    this._programStateManager = new ProgramStateManager(
+      this.programId,
       connection
     );
-    this.program = this.programStateManager.program;
-    this._eventParser = new EventParser(programPubkey, this.program.coder);
+    this.program = this._programStateManager.program;
+    this.eventParser = new EventParser(this.programId, this.program.coder);
 
     // Initialize instructions with null raydium - will be set in init()
-    this.instructions = {
-      admin: new AdminInstructions(connection, programPubkey),
-      buy: new BuyInstructions(connection, programPubkey, null as any),
-      sell: new SellInstructions(connection, programPubkey, null as any),
-      creator: new CreatorInstructions(connection, programPubkey),
+    this._instructions = {
+      admin: new AdminInstructions(connection, this.programId),
+      buy: new BuyInstructions(connection, this.programId, null as any),
+      sell: new SellInstructions(connection, this.programId, null as any),
+      creator: new CreatorInstructions(connection, this.programId),
       rebalancer: new RebalancerInstructions(
         connection,
-        programPubkey,
+        this.programId,
         null as any
       ),
     };
 
-    this.admin = this.instructions.admin;
-    this.buy = this.instructions.buy;
-    this.sell = this.instructions.sell;
-    this.creator = this.instructions.creator;
-    this.rebalancer = this.instructions.rebalancer;
-    this.events = new EventHandler(programPubkey, this.program);
+    this.admin = this._instructions.admin;
+    this.buy = this._instructions.buy;
+    this.sell = this._instructions.sell;
+    this.creator = this._instructions.creator;
+    this.rebalancer = this._instructions.rebalancer;
+    this.events = new EventHandler(this.programId, this.program);
+    this.connection = connection;
+    this.state = this._programStateManager;
   }
 
   /**
@@ -117,80 +117,14 @@ export class PieProgram {
    */
   async init(): Promise<void> {
     try {
-      this.raydium = await Raydium.load({
+      this._raydium = await Raydium.load({
         connection: this.connection as any,
-        cluster: this.cluster as any,
+        cluster: this._cluster as any,
         disableFeatureCheck: true,
         blockhashCommitment: "confirmed",
       });
-
-      // Update instructions with initialized raydium
-      this.instructions.buy = new BuyInstructions(
-        this.connection,
-        this.programId,
-        this.raydium
-      );
-      this.instructions.sell = new SellInstructions(
-        this.connection,
-        this.programId,
-        this.raydium
-      );
-      this.instructions.rebalancer = new RebalancerInstructions(
-        this.connection,
-        this.programId,
-        this.raydium
-      );
     } catch (error) {
       throw new Error(`Failed to initialize PieProgram: ${error.message}`);
     }
-  }
-
-  /**
-   * Get the program's public key
-   */
-  get programId(): PublicKey {
-    return this.state.programId;
-  }
-
-  /**
-   * Get the program's connection
-   */
-  get connection(): Connection {
-    return this.programStateManager.connection;
-  }
-
-  /**
-   * Get the program's cluster
-   */
-  get cluster(): Cluster {
-    return this._cluster;
-  }
-
-  /**
-   * Get the program's commitment level
-   */
-  get commitment(): Commitment {
-    return this._commitment;
-  }
-
-  /**
-   * Get the program's event parser
-   */
-  get eventParser(): EventParser {
-    return this._eventParser;
-  }
-
-  /**
-   * Get the program's event handler
-   */
-  get eventHandler(): EventHandler {
-    return this.events;
-  }
-
-  /**
-   * Get the program's state manager
-   */
-  get state(): ProgramStateManager {
-    return this.programStateManager;
   }
 }

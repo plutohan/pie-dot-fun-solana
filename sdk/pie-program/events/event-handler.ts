@@ -24,7 +24,7 @@ import {
  * Class for parsing and handling program events
  */
 export class EventHandler {
-  private eventParser: AnchorEventParser;
+  public eventParser: AnchorEventParser;
 
   constructor(programId: PublicKey, program: Program<Pie>) {
     this.eventParser = new AnchorEventParser(
