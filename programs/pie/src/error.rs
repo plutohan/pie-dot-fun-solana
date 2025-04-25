@@ -14,9 +14,6 @@ pub enum PieError {
     #[msg("Max asset exceeded")]
     MaxAssetsExceeded,
 
-    #[msg("Component change not allowed basket")]
-    ComponentChangeNotAllowedBasket,
-
     #[msg("Insufficient Balance")]
     InsufficientBalance,
 
@@ -64,4 +61,7 @@ pub enum PieError {
 
     #[msg("Invalid token program")]
     InvalidTokenProgram,
+
+    #[msg("Component change not allowed basket")]
+    ComponentChangeNotAllowedBasket,
 }
