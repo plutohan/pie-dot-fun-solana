@@ -15,6 +15,7 @@ pub struct BasketConfig {
     pub rebalancer: Pubkey,
     pub mint: Pubkey,
     pub is_rebalancing: bool,
+    pub allow_component_change: bool,
     pub components: Vec<BasketComponent>,
 }
 
@@ -26,6 +27,7 @@ impl Space for BasketConfig {
         + 32 // rebalancer
         + 32 // mint
         + 1  // is_rebalancing (bool)
+        + 1  // allow_component_change (bool)
         + 4 // vec length
         + (32 + 16) * MAX_COMPONENTS as usize; // vec items
 }
@@ -48,6 +50,12 @@ impl BasketConfig {
         if let Some(component) = self.find_component_mut(mint) {
             component.quantity_in_sys_decimal = quantity_in_sys_decimal;
         } else {
+            // validate if the basket allow component change
+            require!(
+                self.allow_component_change,
+                PieError::ComponentChangeNotAllowedBasket
+            );
+            // validate if new component exceed the max components limit
             require!(
                 self.components.len() < MAX_COMPONENTS as usize,
                 PieError::MaxAssetsExceeded

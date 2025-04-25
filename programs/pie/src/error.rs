@@ -14,6 +14,9 @@ pub enum PieError {
     #[msg("Max asset exceeded")]
     MaxAssetsExceeded,
 
+    #[msg("Component change not allowed basket")]
+    ComponentChangeNotAllowedBasket,
+
     #[msg("Insufficient Balance")]
     InsufficientBalance,
 

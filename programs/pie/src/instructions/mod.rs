@@ -42,3 +42,6 @@ pub use deposit_component::*;
 
 pub mod withdraw_component;
 pub use withdraw_component::*;
+
+pub mod migrate_basket_config_allow_component_change;
+pub use migrate_basket_config_allow_component_change::*;

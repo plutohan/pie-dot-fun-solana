@@ -2295,6 +2295,36 @@ export type Pie = {
       ]
     },
     {
+      "name": "migrateBasketConfigAllowComponentChange",
+      "discriminator": [
+        72,
+        112,
+        130,
+        173,
+        112,
+        160,
+        112,
+        117
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "allowComponentChange",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "mintBasketToken",
       "discriminator": [
         190,
@@ -4444,81 +4474,86 @@ export type Pie = {
     },
     {
       "code": 6004,
+      "name": "componentChangeNotAllowedBasket",
+      "msg": "Component change not allowed basket"
+    },
+    {
+      "code": 6005,
       "name": "insufficientBalance",
       "msg": "Insufficient Balance"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "invalidBasket",
       "msg": "Invalid Basket"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "invalidAmount",
       "msg": "Invalid Amount"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "componentNotFound",
       "msg": "Component not found"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "notInRebalancing",
       "msg": "Not in rebalancing"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "alreadyRebalancing",
       "msg": "Already rebalancing"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "conversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "invalidBasketMint",
       "msg": "Invalid basket mint"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "duplicateComponent",
       "msg": "Duplicate component"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "invalidMint",
       "msg": "Invalid mint"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "invalidComponentQuantity",
       "msg": "Invalid component quantity"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "invalidQuantity",
       "msg": "Invalid quantity"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "rebalancingInProgress",
       "msg": "Rebalancing in process"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "invalidComponent",
       "msg": "Invalid component"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "maxWhitelistedCreatorsExceeded",
       "msg": "Max whitelisted creators exceeded"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "invalidTokenProgram",
       "msg": "Invalid token program"
     }
@@ -4656,6 +4691,10 @@ export type Pie = {
             "type": "bool"
           },
           {
+            "name": "allowComponentChange",
+            "type": "bool"
+          },
+          {
             "name": "components",
             "type": {
               "vec": {
@@ -4722,6 +4761,10 @@ export type Pie = {
           {
             "name": "rebalancer",
             "type": "pubkey"
+          },
+          {
+            "name": "allowComponentChange",
+            "type": "bool"
           }
         ]
       }
@@ -4764,6 +4807,10 @@ export type Pie = {
                 }
               }
             }
+          },
+          {
+            "name": "allowComponentChange",
+            "type": "bool"
           }
         ]
       }

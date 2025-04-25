@@ -1,3 +1,4 @@
+use std::alloc::alloc;
 use anchor_lang::prelude::*;
 use anchor_spl::metadata::mpl_token_metadata::types::DataV2;
 use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3, Metadata};
@@ -64,6 +65,7 @@ pub struct CreateBasketArgs {
     pub symbol: String,
     pub uri: String,
     pub rebalancer: Pubkey,
+    pub allow_component_change: bool,
 }
 
 #[event]
@@ -75,6 +77,7 @@ pub struct CreateBasketEvent {
     pub creator: Pubkey,
     pub mint: Pubkey,
     pub components: Vec<BasketComponent>,
+    pub allow_component_change: bool,
 }
 
 pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
@@ -92,6 +95,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     basket_config.id = config.basket_counter;
     basket_config.mint = ctx.accounts.basket_mint.key();
     basket_config.components = args.components.clone();
+    basket_config.allow_component_change = args.allow_component_change;
 
     config.basket_counter += 1;
 
@@ -138,6 +142,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
         creator: basket_config.creator,
         mint: basket_config.mint,
         components: basket_config.components.clone(),
+        allow_component_change: basket_config.allow_component_change,
     });
 
     Ok(())

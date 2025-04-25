@@ -14,7 +14,6 @@ use states::*;
 
 #[program]
 pub mod pie {
-
     use super::*;
 
     // Admin
@@ -219,6 +218,14 @@ pub mod pie {
 
     pub fn withdraw_component(ctx: Context<WithdrawComponent>, amount: u64) -> Result<()> {
         instructions::withdraw_component(ctx, amount)?;
+        Ok(())
+    }
+
+    pub fn migrate_basket_config_allow_component_change(
+        ctx: Context<MigrateBasketConfig>,
+        allow_component_change: bool,
+    ) -> Result<()> {
+        instructions::migrate_basket_config_allow_component_change(ctx, allow_component_change)?;
         Ok(())
     }
 }
