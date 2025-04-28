@@ -115,4 +115,30 @@ export class AdminInstructions extends ProgramStateManager {
       .accountsPartial({ admin, programState: this.programStatePDA() })
       .transaction();
   }
+
+  /**
+   * Mirgate basket allow_component_change
+   * @param user - The creator account.
+   * @param basketId - The basket ID.
+   * @param allowComponentChange - Whethere allow component change
+   * @returns A promise that resolves to a transaction.
+   */
+  async migrateBasketAllowComponentChange({
+                                            creator,
+                                            basketId,
+                                            allowComponentChange,
+                                          }: {
+    creator: PublicKey;
+    basketId: BN;
+    allowComponentChange: boolean;
+  }): Promise<Transaction> {
+    const basketConfig = this.basketConfigPDA({basketId});
+    return await this.program.methods
+      .migrateBasketConfigAllowComponentChange(allowComponentChange)
+      .accountsPartial({
+        creator,
+        basketConfig,
+      })
+      .transaction();
+  }
 }

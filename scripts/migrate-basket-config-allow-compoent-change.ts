@@ -13,18 +13,18 @@ async function main() {
 
   console.log(`사용하는 지갑 주소: ${wallet.publicKey.toString()}`);
 
-  const pieProgram = new PieProgram(
+  const pieProgram = new PieProgram({
     connection,
-    "mainnet-beta",
-    RPC_URL
-  );
+    cluster: "mainnet-beta",
+    jitoRpcUrl: RPC_URL
+  });
 
   //
-  const programState = await pieProgram.getProgramState();
+  const programState = await pieProgram.state.getProgramState();
   const maxBasketId = programState.basketCounter.toNumber();
   for (let i = 0; i < maxBasketId; i++) {
     const basketId = new BN(i);
-    const basketConfig = await pieProgram.getBasketConfig({
+    const basketConfig = await pieProgram.state.getBasketConfig({
       basketId
     });
     if (basketConfig == null) {
@@ -36,7 +36,7 @@ async function main() {
       console.log(`계정 ${basketConfig.mint.toString()} 마이그레이션 중...`);
 
       // 마이그레이션 트랜잭션 생성
-      const tx = await pieProgram.migrateBasketAllowComponentChange({
+      const tx = await pieProgram.admin.migrateBasketAllowComponentChange({
         creator: wallet.publicKey,
         basketId,
         allowComponentChange: true, // true로 설정
