@@ -10,3 +10,5 @@ pub use update_fee::*;
 pub mod update_platform_fee_wallet;
 pub use update_platform_fee_wallet::*;
 
+pub mod migrate_basket_config_allow_component_change;
+pub use migrate_basket_config_allow_component_change::*;
