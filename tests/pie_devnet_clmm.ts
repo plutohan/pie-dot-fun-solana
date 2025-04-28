@@ -18,7 +18,6 @@ import {
 } from "../sdk/pie-program";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { Table } from "console-table-printer";
-import { initSdk } from "../sdk/utils/config";
 import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import {
   getOrCreateNativeMintATA,
