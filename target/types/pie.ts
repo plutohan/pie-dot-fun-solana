@@ -2227,6 +2227,256 @@ export type Pie = {
       ]
     },
     {
+      "name": "executeRebalancingJupiter",
+      "discriminator": [
+        125,
+        141,
+        12,
+        197,
+        38,
+        236,
+        193,
+        185
+      ],
+      "accounts": [
+        {
+          "name": "rebalancer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketMint",
+          "writable": true
+        },
+        {
+          "name": "vaultTokenSourceMint"
+        },
+        {
+          "name": "vaultTokenSource",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vaultTokenSourceMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "vaultTokenDestinationMint"
+        },
+        {
+          "name": "vaultTokenDestination",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vaultTokenDestinationMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "jupiterProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -4252,19 +4502,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "executeRebalancingEvent",
-      "discriminator": [
-        140,
-        52,
-        83,
-        126,
-        197,
-        196,
-        44,
-        246
-      ]
-    },
-    {
       "name": "mintBasketTokenEvent",
       "discriminator": [
         169,
@@ -4419,6 +4656,32 @@ export type Pie = {
         209,
         74
       ]
+    },
+    {
+      "name": "pie::instructions::rebalancer::execute_rebalancing::ExecuteRebalancingEvent",
+      "discriminator": [
+        140,
+        52,
+        83,
+        126,
+        197,
+        196,
+        44,
+        246
+      ]
+    },
+    {
+      "name": "pie::instructions::rebalancer::execute_rebalancing_jupiter::ExecuteRebalancingEvent",
+      "discriminator": [
+        140,
+        52,
+        83,
+        126,
+        197,
+        196,
+        44,
+        246
+      ]
     }
   ],
   "errors": [
@@ -4521,6 +4784,16 @@ export type Pie = {
       "code": 6019,
       "name": "invalidTokenProgram",
       "msg": "Invalid token program"
+    },
+    {
+      "code": 6020,
+      "name": "invalidJupiterProgram",
+      "msg": "Invalid Jupiter program"
+    },
+    {
+      "code": 6021,
+      "name": "invalidSwapResult",
+      "msg": "Invalid swap result"
     }
   ],
   "types": [
@@ -4807,50 +5080,6 @@ export type Pie = {
           },
           {
             "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "executeRebalancingEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "inputMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "outputMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "isSwapBaseOut",
-            "type": "bool"
-          },
-          {
-            "name": "initialAvailableSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "initialAvailableDestinationBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalAvailableSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalAvailableDestinationBalance",
             "type": "u64"
           }
         ]
@@ -5433,6 +5662,94 @@ export type Pie = {
           },
           {
             "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "pie::instructions::rebalancer::execute_rebalancing::ExecuteRebalancingEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "inputMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "outputMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "isSwapBaseOut",
+            "type": "bool"
+          },
+          {
+            "name": "initialAvailableSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "initialAvailableDestinationBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalAvailableSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalAvailableDestinationBalance",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "pie::instructions::rebalancer::execute_rebalancing_jupiter::ExecuteRebalancingEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "inputMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "outputMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "isSwapBaseOut",
+            "type": "bool"
+          },
+          {
+            "name": "initialAvailableSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "initialAvailableDestinationBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalAvailableSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalAvailableDestinationBalance",
             "type": "u64"
           }
         ]

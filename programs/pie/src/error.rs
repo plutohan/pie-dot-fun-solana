@@ -61,4 +61,10 @@ pub enum PieError {
 
     #[msg("Invalid token program")]
     InvalidTokenProgram,
+
+    #[msg("Invalid Jupiter program")]
+    InvalidJupiterProgram,
+
+    #[msg("Invalid swap result")]
+    InvalidSwapResult,
 }
