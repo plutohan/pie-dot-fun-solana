@@ -196,6 +196,8 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.vault_token_destination_mint.key(),
         amount: amount_received,
+        creator_fee: creator_fee_amount,
+        platform_fee: platform_fee_amount,
     });
 
     Ok(())
