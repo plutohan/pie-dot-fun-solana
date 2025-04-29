@@ -54,9 +54,9 @@ export class AdminInstructions extends ProgramStateManager {
   }
 
   /**
-   * Transfers the admin role to a new account
+   * Update admin account
    */
-  async transferAdmin({
+  async updateAdmin({
     admin,
     newAdmin,
   }: {
@@ -64,7 +64,7 @@ export class AdminInstructions extends ProgramStateManager {
     newAdmin: PublicKey;
   }): Promise<Transaction> {
     return await this.program.methods
-      .transferAdmin(newAdmin)
+      .updateAdmin(newAdmin)
       .accounts({ admin })
       .transaction();
   }

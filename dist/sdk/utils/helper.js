@@ -31,6 +31,8 @@ exports.caculateTotalAmountWithFee = caculateTotalAmountWithFee;
 exports.getTokenFromTokenInfo = getTokenFromTokenInfo;
 exports.simulateTransaction = simulateTransaction;
 exports.findDepositAndRemoveInPlace = findDepositAndRemoveInPlace;
+exports.getTokenBalance = getTokenBalance;
+exports.getAllTokenAccountWithBalance = getAllTokenAccountWithBalance;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const anchor_1 = require("@coral-xyz/anchor");
@@ -138,8 +140,8 @@ function wrapSOLInstruction(recipient, amount) {
     return ixs;
 }
 async function showBasketConfigTable(connection, pieProgram, basketId) {
-    const basketConfig = await pieProgram.getBasketConfig({ basketId });
-    const basketMintInfo = await (0, spl_token_1.getMint)(connection, pieProgram.basketMintPDA({ basketId }));
+    const basketConfig = await pieProgram.state.getBasketConfig({ basketId });
+    const basketMintInfo = await (0, spl_token_1.getMint)(connection, pieProgram.state.basketMintPDA({ basketId }));
     const table = new console_table_printer_1.Table({
         columns: [
             { name: "mint", alignment: "left", color: "cyan" },
@@ -153,7 +155,7 @@ async function showBasketConfigTable(connection, pieProgram, basketId) {
         const programId = (await isToken2022Mint(connection, basketConfig.components[i].mint))
             ? spl_token_1.TOKEN_2022_PROGRAM_ID
             : spl_token_1.TOKEN_PROGRAM_ID;
-        const vaultTokenPDA = (0, spl_token_1.getAssociatedTokenAddressSync)(basketConfig.components[i].mint, pieProgram.basketConfigPDA({ basketId }), true, programId);
+        const vaultTokenPDA = (0, spl_token_1.getAssociatedTokenAddressSync)(basketConfig.components[i].mint, pieProgram.state.basketConfigPDA({ basketId }), true, programId);
         const balance = await connection.getTokenAccountBalance(vaultTokenPDA);
         let component = basketConfig.components[i];
         table.addRow({
@@ -167,7 +169,10 @@ async function showBasketConfigTable(connection, pieProgram, basketId) {
     return table;
 }
 async function showUserFundTable(pieProgram, userPubkey, basketId) {
-    const userFund = await pieProgram.getUserFund({ user: userPubkey, basketId });
+    const userFund = await pieProgram.state.getUserFund({
+        user: userPubkey,
+        basketId,
+    });
     if (!userFund) {
         console.log("User fund not found");
         return;
@@ -351,5 +356,30 @@ function findDepositAndRemoveInPlace(arr) {
         return arr.splice(index, 1)[0];
     }
     return null;
+}
+async function getTokenBalance({ connection, mint, owner, commitment = "confirmed", }) {
+    const tokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(mint, owner, true);
+    try {
+        const balance = await connection.getTokenAccountBalance(tokenAccount, commitment);
+        return Number(balance.value.amount);
+    }
+    catch (error) {
+        // Return 0 if the token account doesn't exist
+        return 0;
+    }
+}
+/**
+ * Fetches all token accounts with balances for a given owner
+ */
+async function getAllTokenAccountWithBalance({ connection, owner, }) {
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, {
+        programId: new web3_js_1.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), // TOKEN_PROGRAM_ID
+    });
+    return tokenAccounts.value.map((tokenAccount) => ({
+        mint: new web3_js_1.PublicKey(tokenAccount.account.data.parsed.info.mint),
+        owner: new web3_js_1.PublicKey(tokenAccount.account.data.parsed.info.owner),
+        pubkey: tokenAccount.pubkey,
+        tokenAmount: tokenAccount.account.data.parsed.info.tokenAmount,
+    }));
 }
 //# sourceMappingURL=helper.js.map
