@@ -1,9 +1,9 @@
-import { Connection, PublicKey, Signer, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { Connection, Commitment, PublicKey, Signer, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { BasketComponent, PieProgram } from "../pie-program";
 import { Table } from "console-table-printer";
-import { BuySwapData, TokenInfo } from "../types";
+import { BuySwapData, TokenInfo, TokenBalance } from "../pie-program/types";
 export declare function createUserWithLamports(connection: Connection, lamports: number): Promise<Signer>;
 export declare function createNewMint(connection: Connection, creator: Signer, decimals: number): Promise<PublicKey>;
 export declare function mintTokenTo(connection: Connection, tokenMint: PublicKey, mintAuthority: Signer, payer: Signer, to: PublicKey, amount: number): Promise<PublicKey>;
@@ -87,4 +87,17 @@ export declare const processBuySwapData: (preVaultBalance: number, swapData: Buy
     insufficientAmount?: number;
 };
 export declare function findDepositAndRemoveInPlace(arr: BuySwapData[]): BuySwapData | null;
+export declare function getTokenBalance({ connection, mint, owner, commitment, }: {
+    connection: Connection;
+    mint: PublicKey;
+    owner: PublicKey;
+    commitment?: Commitment;
+}): Promise<number>;
+/**
+ * Fetches all token accounts with balances for a given owner
+ */
+export declare function getAllTokenAccountWithBalance({ connection, owner, }: {
+    connection: Connection;
+    owner: PublicKey;
+}): Promise<TokenBalance[]>;
 //# sourceMappingURL=helper.d.ts.map

@@ -15,7 +15,7 @@ export type CreateBasketArgs = IdlTypes<Pie>["createBasketArgs"];
 // Event Types
 export type CreateBasketEvent = IdlEvents<Pie>["createBasketEvent"];
 export type UpdateRebalancerEvent = IdlEvents<Pie>["updateRebalancerEvent"];
-export type TransferAdminEvent = IdlEvents<Pie>["transferAdminEvent"];
+export type UpdateAdminEvent = IdlEvents<Pie>["updateAdminEvent"];
 export type TransferBasketEvent = IdlEvents<Pie>["transferBasketEvent"];
 export type ExecuteRebalancingEvent = IdlEvents<Pie>["executeRebalancingEvent"];
 export type StartRebalancingEvent = IdlEvents<Pie>["startRebalancingEvent"];
