@@ -1,3 +1,4 @@
+use crate::{constant::PROGRAM_STATE, error::PieError, ProgramState};
 use anchor_lang::prelude::*;
 
 use crate::BasketConfig;
@@ -14,11 +15,18 @@ pub fn migrate_basket_config_allow_component_change(ctx: Context<MigrateBasketCo
 #[derive(Accounts)]
 pub struct MigrateBasketConfig<'info> {
     #[account(mut)]
-    pub creator: Signer<'info>,
+    pub admin: Signer<'info>,
 
     #[account(
         mut,
-        constraint = basket_config.creator == creator.key() || basket_config.rebalancer == creator.key()
+        seeds = [PROGRAM_STATE],
+        bump = program_state.bump,
+        constraint = program_state.admin == admin.key() @ PieError::Unauthorized
+    )]
+    pub program_state: Account<'info, ProgramState>,
+
+    #[account(
+        mut,
     )]
     pub basket_config: Account<'info, BasketConfig>,
 }
