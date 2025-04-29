@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import { AnchorProvider, BN } from "@coral-xyz/anchor";
 import {
   ComputeBudgetProgram,
   Connection,
@@ -6,8 +6,11 @@ import {
   PublicKey,
   sendAndConfirmTransaction,
   Transaction,
+  TransactionMessage,
+  VersionedTransaction,
 } from "@solana/web3.js";
-import mainnetAdmin from "../.config/solana/id.json";
+import qaAdmin from "../.config/solana/qa-admin.json";
+import qaRebalancer from "../.config/solana/qa-rebalancer.json";
 import { assert } from "chai";
 import {
   BasketComponent,
@@ -19,25 +22,28 @@ import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
 import { Table } from "console-table-printer";
 import { getMint, NATIVE_MINT } from "@solana/spl-token";
 import {
+  getBaksetIdFromBasketMint,
   getExplorerUrl,
   getOrCreateNativeMintATA,
+  getTokenBalance,
   getTokenListFromSolanaClient,
   isValidTransaction,
   showBasketConfigTable,
   simulateTransaction,
 } from "../sdk/utils/helper";
-import { Jito } from "../sdk/jito";
 import { QUICKNODE_RPC_URL } from "./constants";
 
 describe("pie", () => {
-  const admin = Keypair.fromSecretKey(new Uint8Array(mainnetAdmin));
+  const admin = Keypair.fromSecretKey(new Uint8Array(qaAdmin));
+  const rebalancer = Keypair.fromSecretKey(new Uint8Array(qaRebalancer));
   const connection = new Connection(QUICKNODE_RPC_URL, "confirmed");
-  const pieProgram = new PieProgram(
+
+  const pieProgram = new PieProgram({
     connection,
-    "mainnet-beta",
-    QUICKNODE_RPC_URL
-  );
-  const jito = pieProgram.jito;
+    cluster: "mainnet-beta",
+    jitoRpcUrl: QUICKNODE_RPC_URL,
+  });
+
   const priorityFee = 100000;
   const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: priorityFee,
@@ -48,7 +54,9 @@ describe("pie", () => {
   const startPollingJitoBundle = async (bundleId: string) => {
     await new Promise<void>((resolve) => {
       let interval = setInterval(async () => {
-        const statuses = await jito.getInflightBundleStatuses([bundleId]);
+        const statuses = await pieProgram.jito.getInflightBundleStatuses([
+          bundleId,
+        ]);
         console.log(JSON.stringify({ statuses }));
         if (statuses?.value[0]?.status === "Landed") {
           console.log("bundle confirmed");
@@ -63,8 +71,8 @@ describe("pie", () => {
     await pieProgram.init();
   });
 
-  it("Setup and Initialized if needed ", async () => {
-    let programState = await pieProgram.getProgramState();
+  it("Setup and Initialized if needed", async () => {
+    let programState = await pieProgram.state.getProgramState();
 
     const platformFeeWallet = new PublicKey(
       "DU2tpPP3yHY811yLrDATdyCjMu51bp3jz1fpEbpf5Crq"
@@ -79,7 +87,7 @@ describe("pie", () => {
     if (!programState) {
       console.log("initializing program...");
       //create platform fee token account if needed
-      const initializeTx = await pieProgram.initialize({
+      const initializeTx = await pieProgram.admin.initialize({
         initializer: admin.publicKey,
         admin: newAdmin,
         creator: newCreator,
@@ -122,250 +130,112 @@ describe("pie", () => {
         `Program initialized at tx: https://solscan.io/tx/${initializeTxResult}`
       );
     }
-
-    if (!pieProgram.sharedLookupTable) {
-      await pieProgram.initializeSharedLookupTable({ admin });
-    }
   });
 
-  it("Create Basket", async () => {
-    const components: BasketComponent[] = tokens.map((token) => ({
-      mint: new PublicKey(token.mint),
-      quantityInSysDecimal: new BN(1 * 10 ** 6),
-    }));
+  // it("Create Basket", async () => {
+  //   const components: BasketComponent[] = tokens.map((token) => ({
+  //     mint: new PublicKey(token.mint),
+  //     quantityInSysDecimal: new BN(1 * 10 ** 6),
+  //   }));
 
-    // ADD WSOL
-    components.push({
-      mint: NATIVE_MINT,
-      quantityInSysDecimal: new BN(1 * 10 ** 6),
-    });
+  //   // ADD WSOL
+  //   components.push({
+  //     mint: NATIVE_MINT,
+  //     quantityInSysDecimal: new BN(1 * 10 ** 6),
+  //   });
 
-    const createBasketArgs: CreateBasketArgs = {
-      name: "Basket 3",
-      symbol: "B-3",
-      uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
-      components: components,
-      rebalancer: admin.publicKey,
-    };
+  //   const createBasketArgs: CreateBasketArgs = {
+  //     name: "Basket 3",
+  //     symbol: "B-3",
+  //     uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
+  //     components: components,
+  //     rebalancer: admin.publicKey,
+  //   };
 
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter;
+  //   const programState = await pieProgram.state.getProgramState();
+  //   const basketId = programState.basketCounter;
 
-    console.log("creating basket...");
-    const createBasketTx = await pieProgram.createBasket({
-      creator: admin.publicKey,
-      args: createBasketArgs,
-      basketId,
-    });
+  //   console.log("creating basket...");
+  //   const createBasketTx = await pieProgram.creator.createBasket({
+  //     creator: admin.publicKey,
+  //     args: createBasketArgs,
+  //     basketId,
+  //   });
 
-    createBasketTx.add(priorityFeeInstruction);
+  //   createBasketTx.add(priorityFeeInstruction);
 
-    const createBasketTxResult = await sendAndConfirmTransaction(
-      connection,
-      createBasketTx,
-      [admin],
-      { skipPreflight: true, commitment: "confirmed" }
+  //   const createBasketTxResult = await sendAndConfirmTransaction(
+  //     connection,
+  //     createBasketTx,
+  //     [admin],
+  //     { skipPreflight: true, commitment: "confirmed" }
+  //   );
+
+  //   console.log(
+  //     `Basket created at tx: ${getExplorerUrl(createBasketTxResult, "mainnet")}`
+  //   );
+
+  //   console.log("adding basket to shared lookup table...");
+  //   await pieProgram.addBaksetToSharedLookupTable({
+  //     basketId,
+  //     admin,
+  //   });
+
+  //   const { tx } = await pieProgram.createBasketVaultAccounts({
+  //     creator: admin.publicKey,
+  //     args: createBasketArgs,
+  //     basketId,
+  //   });
+
+  //   if (isValidTransaction(tx)) {
+  //     console.log("creating vault accounts..");
+  //     tx.add(priorityFeeInstruction);
+  //     const creatingVaultsTxResult = await sendAndConfirmTransaction(
+  //       connection,
+  //       tx,
+  //       [admin],
+  //       {
+  //         skipPreflight: true,
+  //         commitment: "confirmed",
+  //       }
+  //     );
+
+  //     console.log(
+  //       `Vaults created at tx: ${getExplorerUrl(
+  //         creatingVaultsTxResult,
+  //         "mainnet"
+  //       )}`
+  //     );
+  //   }
+
+  //   const basket = await pieProgram.state.getBasketConfig({ basketId });
+  //   assert.equal(basket.components.length, createBasketArgs.components.length);
+  //   assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
+  //   assert.equal(basket.id.toString(), basketId.toString());
+  //   assert.equal(basket.rebalancer.toString(), admin.publicKey.toString());
+
+  //   const table = new Table({
+  //     columns: [
+  //       { name: "mint", alignment: "left", color: "cyan" },
+  //       { name: "quantity", alignment: "right", color: "green" },
+  //     ],
+  //   });
+
+  //   for (let i = 0; i < basket.components.length; i++) {
+  //     let component = basket.components[i];
+  //     table.addRow({
+  //       mint: component.mint.toBase58(),
+  //       quantity: component.quantityInSysDecimal.toString(),
+  //     });
+  //   }
+  //   table.printTable();
+  // });
+
+  it("Rebalance basket using Jupiter", async () => {
+    const basketId = await getBaksetIdFromBasketMint(
+      new PublicKey("Awx3hshHvVDDrrcvxfyWEHZq7kC6SEXUrLqNdEGWDoiC"),
+      pieProgram
     );
-
-    console.log(
-      `Basket created at tx: ${getExplorerUrl(createBasketTxResult, "mainnet")}`
-    );
-
-    // @TODO uncomment this when needed
-    // console.log("creating lookup tables for each component...");
-    // const lookupTables = [];
-    // for (let i = 0; i < createBasketArgs.components.length; i++) {
-    //   console.log(
-    //     `creating lookup table for ${i + 1} of ${
-    //       createBasketArgs.components.length
-    //     }`
-    //   );
-    //   let lut;
-    //   switch (tokens[i].type) {
-    //     case "amm":
-    //       lut = await pieProgram.addRaydiumAmmToAddressLookupTable({
-    //         connection,
-    //         signer: admin,
-    //         ammId: tokens[i].poolId,
-    //       });
-    //       break;
-    //     case "clmm":
-    //       lut = await pieProgram.addRaydiumClmmToAddressLookupTable({
-    //         connection,
-    //         signer: admin,
-    //         poolId: tokens[i].poolId,
-    //       });
-    //       break;
-    //     case "cpmm":
-    //       lut = await pieProgram.addRaydiumCpmmToAddressLookupTable({
-    //         connection,
-    //         signer: admin,
-    //         poolId: tokens[i].poolId,
-    //       });
-    //       break;
-    //   }
-    //   lookupTables.push(lut.toBase58());
-    // }
-    // console.log("lookup tables created:", lookupTables);
-
-    console.log("adding basket to shared lookup table...");
-    await pieProgram.addBaksetToSharedLookupTable({
-      basketId,
-      admin,
-    });
-
-    const { tx } = await pieProgram.createBasketVaultAccounts({
-      creator: admin.publicKey,
-      args: createBasketArgs,
-      basketId,
-    });
-
-    if (isValidTransaction(tx)) {
-      console.log("creating vault accounts..");
-      tx.add(priorityFeeInstruction);
-      const creatingVaultsTxResult = await sendAndConfirmTransaction(
-        connection,
-        tx,
-        [admin],
-        {
-          skipPreflight: true,
-          commitment: "confirmed",
-        }
-      );
-
-      console.log(
-        `Vaults created at tx: ${getExplorerUrl(
-          creatingVaultsTxResult,
-          "mainnet"
-        )}`
-      );
-    }
-
-    const basket = await pieProgram.getBasketConfig({ basketId });
-    assert.equal(basket.components.length, createBasketArgs.components.length);
-    assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
-    assert.equal(basket.id.toString(), basketId.toString());
-    assert.equal(basket.rebalancer.toString(), admin.publicKey.toString());
-    const table = new Table({
-      columns: [
-        { name: "mint", alignment: "left", color: "cyan" },
-        { name: "quantity", alignment: "right", color: "green" },
-      ],
-    });
-
-    for (let i = 0; i < basket.components.length; i++) {
-      let component = basket.components[i];
-      table.addRow({
-        mint: component.mint.toBase58(),
-        quantity: component.quantityInSysDecimal.toString(),
-      });
-    }
-    table.printTable();
-  });
-
-  it("Buy components and mint basket token using Jito bundle", async () => {
-    // const programState = await pieProgram.getProgramState();
-    // const basketId = programState.basketCounter.sub(new BN(1));
-    const basketId = new BN(3);
-    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
-
-    const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance({
-      mint: basketConfigData.mint,
-      owner: admin.publicKey,
-    });
-    console.log({ userBaksetTokenBalanceBefore });
-
-    const serializedSignedTxs: string[] = [];
-
-    const {
-      finalInputSolRequiredInLamports,
-      revisedSwapData,
-      highestPriceImpactPct,
-      finalBasketAmountInRawDecimal,
-    } = await pieProgram.calculateOptimalInputAmounts({
-      basketId: basketId.toString(),
-      userInputInLamports: "100000000",
-      basketPriceInLamports: "569408",
-      slippagePct: slippage,
-      feePct: 1,
-      bufferPct: 2,
-    });
-
-    if (highestPriceImpactPct > slippage) {
-      console.log(
-        `warning: highest price impact (${highestPriceImpactPct}) is greater than slippage (${slippage})`
-      );
-    }
-
-    console.log("creating bundle...");
-    const serializedTxs = await pieProgram.createBuyAndMintBundle({
-      user: admin.publicKey,
-      basketId,
-      slippage,
-      mintAmount: finalBasketAmountInRawDecimal,
-      buySwapData: revisedSwapData,
-      swapsPerBundle,
-      tokenInfo: await getTokenListFromSolanaClient(),
-      inputAmount: finalInputSolRequiredInLamports,
-    });
-
-    console.log("signing bundle...");
-    for (const serializedTx of serializedTxs) {
-      const tx = jito.signSerializedTransaction(serializedTx, admin);
-      // @debug
-      // await sendAndConfirmRawTransaction(
-      //   connection,
-      //   Buffer.from(tx, "base64"),
-      //   {
-      //     skipPreflight: true,
-      //     commitment: "confirmed",
-      //   }
-      // );
-      serializedSignedTxs.push(tx);
-    }
-
-    console.log("start simulating bundle...");
-    const bundleSimluationResult = await jito.simulateBundle({
-      encodedTransactions: serializedSignedTxs,
-    });
-
-    console.log(
-      `bundle simulation result: ${JSON.stringify(
-        bundleSimluationResult.value
-      )}`
-    );
-
-    if (bundleSimluationResult.value.summary !== "succeeded") {
-      for (const serializedSignedTx of serializedSignedTxs) {
-        await simulateTransaction(connection, serializedSignedTx);
-      }
-      throw new Error("bundle simulation failed");
-    }
-
-    console.log("start sending bundles..!!");
-    const bundleId = await jito.sendBundle(serializedSignedTxs);
-    await startPollingJitoBundle(bundleId);
-    console.log(`basket ${basketId.toString()} data:`);
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
-
-    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance({
-      mint: basketConfigData.mint,
-      owner: admin.publicKey,
-    });
-    console.log({ userBaksetTokenBalanceAfter });
-  });
-
-  it("Rebalance basket using Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-
-    const basketConfig = await pieProgram.getBasketConfig({ basketId });
-    assert.equal(basketConfig.isRebalancing, false);
 
     console.log(`basket ${basketId.toString()} data before:`);
     let basketMintTable = await showBasketConfigTable(
@@ -375,42 +245,86 @@ describe("pie", () => {
     );
     basketMintTable.printTable();
 
-    const serializedSignedTxs: string[] = [];
-    console.log("creating bundle...");
-    const serializedTxs = await pieProgram.createRebalanceBundle({
-      rebalancer: admin.publicKey,
+    const startRebalanceTx = await pieProgram.rebalancer.startRebalancing({
+      rebalancer: rebalancer.publicKey,
       basketId,
-      slippage,
-      swapsPerBundle,
-      rebalanceInfo,
-      withStartRebalance: true,
-      withStopRebalance: true,
     });
 
-    console.log("signing bundle...");
-    for (const serializedTx of serializedTxs) {
-      const tx = jito.signSerializedTransaction(serializedTx, admin);
-      serializedSignedTxs.push(tx);
-    }
+    const { swapIx, addressLookupTableAccounts } =
+      await pieProgram.rebalancer.executeRebalancingJupiterIx({
+        basketId,
+        inputMint: new PublicKey(
+          "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump"
+        ),
+        outputMint: new PublicKey(
+          "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"
+        ),
+        amount: 9271377,
+        swapMode: "ExactIn",
+        rebalancer: rebalancer.publicKey,
+      });
 
-    console.log("start simulating bundle...");
-    const bundleSimluationResult = await jito.simulateBundle({
-      encodedTransactions: serializedSignedTxs,
+    const stopRebalanceTx = await pieProgram.rebalancer.stopRebalancing({
+      rebalancer: rebalancer.publicKey,
+      basketId,
     });
 
-    console.log(
-      `bundle simulation result: ${JSON.stringify(
-        bundleSimluationResult.value
-      )}`
+    const recentBlockhash = (await connection.getLatestBlockhash("confirmed"))
+      .blockhash;
+
+    const simulateMessage = new TransactionMessage({
+      recentBlockhash,
+      payerKey: rebalancer.publicKey,
+      instructions: [
+        ...startRebalanceTx.instructions,
+        swapIx,
+        ...stopRebalanceTx.instructions,
+      ],
+    }).compileToV0Message(addressLookupTableAccounts);
+
+    const simulateTx = new VersionedTransaction(simulateMessage);
+    simulateTx.sign([rebalancer]);
+
+    const simulation = await connection.simulateTransaction(simulateTx, {
+      commitment: "confirmed",
+      replaceRecentBlockhash: true,
+      sigVerify: false,
+    });
+
+    console.log(simulation.value.logs, "simulation.value.logs");
+
+    // Build final transaction
+    const cuIx = ComputeBudgetProgram.setComputeUnitLimit({
+      units: simulation.value.unitsConsumed + 100_000,
+    });
+
+    const message = new TransactionMessage({
+      payerKey: rebalancer.publicKey,
+      recentBlockhash,
+      instructions: [
+        cuIx,
+        ...startRebalanceTx.instructions,
+        swapIx,
+        ...stopRebalanceTx.instructions,
+      ],
+    }).compileToV0Message(addressLookupTableAccounts);
+
+    const tx = new VersionedTransaction(message);
+    tx.sign([rebalancer]);
+
+    // Send and confirm transaction
+    const signature = await connection.sendTransaction(tx, {
+      skipPreflight: true,
+    });
+
+    const confirmation = await connection.confirmTransaction(
+      signature,
+      "confirmed"
     );
 
-    if (bundleSimluationResult.value.summary !== "succeeded") {
-      throw new Error("bundle simulation failed");
-    }
-
-    console.log("start sending bundles..!!");
-    const bundleId = await jito.sendBundle(serializedSignedTxs);
-    await startPollingJitoBundle(bundleId);
+    console.log(
+      `Rebalance basket at tx: ${getExplorerUrl(signature, "mainnet")}`
+    );
 
     console.log(`basket ${basketId.toString()} data after:`);
     basketMintTable = await showBasketConfigTable(
@@ -421,351 +335,180 @@ describe("pie", () => {
     basketMintTable.printTable();
   });
 
-  it("Redeem basket token and sell components using Jito bundle", async () => {
-    // const programState = await pieProgram.getProgramState();
-    const basketId = new BN(3); // programState.basketCounter.sub(new BN(1));
-    const basketConfigData = await pieProgram.getBasketConfig({ basketId });
-    const serializedSignedTxs: string[] = [];
+  // it("Buy components and mint basket token using Jito bundle", async () => {
+  //   const basketId = new BN(3);
+  //   const basketConfigData = await pieProgram.state.getBasketConfig({
+  //     basketId,
+  //   });
 
-    const userSolBalanceBefore = await connection.getBalance(admin.publicKey);
-    const userBaksetTokenBalanceBefore = await pieProgram.getTokenBalance({
-      mint: basketConfigData.mint,
-      owner: admin.publicKey,
-    });
+  //   const userBaksetTokenBalanceBefore = await getTokenBalance(
+  //     {
+  //       connection,
+  //       mint: basketConfigData.mint,
+  //       owner: admin.publicKey,
+  //     }
+  //   );
+  //   console.log({ userBaksetTokenBalanceBefore });
 
-    console.log({ userSolBalanceBefore, userBaksetTokenBalanceBefore });
+  //   const serializedSignedTxs: string[] = [];
 
-    const redeemAmount = userBaksetTokenBalanceBefore / 2;
+  //   const {
+  //     finalInputSolRequiredInLamports,
+  //     revisedSwapData,
+  //     highestPriceImpactPct,
+  //     finalBasketAmountInRawDecimal,
+  //   } = await pieProgram.calculateOptimalInputAmounts({
+  //     basketId: basketId.toString(),
+  //     userInputInLamports: "100000000",
+  //     basketPriceInLamports: "569408",
+  //     slippagePct: slippage,
+  //     feePct: 1,
+  //     bufferPct: 2,
+  //   });
 
-    console.log("creating bundle...");
-    const serializedTxs = await pieProgram.createRedeemAndSellBundle({
-      user: admin.publicKey,
-      basketId,
-      slippage,
-      redeemAmount,
-      swapsPerBundle,
-      tokenInfo: await getTokenListFromSolanaClient(),
-    });
+  //   if (highestPriceImpactPct > slippage) {
+  //     console.log(
+  //       `warning: highest price impact (${highestPriceImpactPct}) is greater than slippage (${slippage})`
+  //     );
+  //   }
 
-    console.log("signing bundle...");
-    for (const serializedTx of serializedTxs) {
-      const tx = jito.signSerializedTransaction(serializedTx, admin);
-      serializedSignedTxs.push(tx);
-    }
+  //   console.log("creating bundle...");
+  //   const serializedTxs = await pieProgram.createBuyAndMintBundle({
+  //     user: admin.publicKey,
+  //     basketId,
+  //     slippage,
+  //     mintAmount: finalBasketAmountInRawDecimal,
+  //     buySwapData: revisedSwapData,
+  //     swapsPerBundle,
+  //     tokenInfo: await getTokenListFromSolanaClient(),
+  //     inputAmount: finalInputSolRequiredInLamports,
+  //   });
 
-    console.log("start simulating bundle...");
-    const bundleSimluationResult = await jito.simulateBundle({
-      encodedTransactions: serializedSignedTxs,
-    });
-    console.log(
-      `bundle simulation result: ${JSON.stringify(
-        bundleSimluationResult.value
-      )}`
-    );
+  //   console.log("signing bundle...");
+  //   for (const serializedTx of serializedTxs) {
+  //     const tx = pieProgram.eventHandler.signSerializedTransaction(
+  //       serializedTx,
+  //       admin
+  //     );
+  //     serializedSignedTxs.push(tx);
+  //   }
 
-    console.log("start sending bundles..!!");
-    const bundleId = await jito.sendBundle(serializedSignedTxs);
+  //   console.log("start simulating bundle...");
+  //   const bundleSimluationResult = await pieProgram.eventHandler.simulateBundle(
+  //     {
+  //       encodedTransactions: serializedSignedTxs,
+  //     }
+  //   );
 
-    if (bundleSimluationResult.value.summary !== "succeeded") {
-      for (const serializedSignedTx of serializedSignedTxs) {
-        await simulateTransaction(connection, serializedSignedTx);
-      }
-      throw new Error("bundle simulation failed");
-    }
+  //   console.log(
+  //     `bundle simulation result: ${JSON.stringify(
+  //       bundleSimluationResult.value
+  //     )}`
+  //   );
 
-    await startPollingJitoBundle(bundleId);
+  //   if (bundleSimluationResult.value.summary !== "succeeded") {
+  //     for (const serializedSignedTx of serializedSignedTxs) {
+  //       await simulateTransaction(connection, serializedSignedTx);
+  //     }
+  //     throw new Error("bundle simulation failed");
+  //   }
 
-    console.log(`basket ${basketId.toString()} data:`);
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
+  //   console.log("start sending bundles..!!");
+  //   const bundleId = await pieProgram.eventHandler.sendBundle(
+  //     serializedSignedTxs
+  //   );
+  //   await startPollingJitoBundle(bundleId);
+  //   console.log(`basket ${basketId.toString()} data:`);
+  //   const basketMintTable = await showBasketConfigTable(
+  //     connection,
+  //     pieProgram,
+  //     basketId
+  //   );
+  //   basketMintTable.printTable();
 
-    const userBaksetTokenBalanceAfter = await pieProgram.getTokenBalance({
-      mint: basketConfigData.mint,
-      owner: admin.publicKey,
-    });
-    console.log({ userBaksetTokenBalanceAfter });
-  });
+  //   const userBaksetTokenBalanceAfter = await pieProgram.state.getTokenBalance({
+  //     mint: basketConfigData.mint,
+  //     owner: admin.publicKey,
+  //   });
+  //   console.log({ userBaksetTokenBalanceAfter });
+  // });
 
-  it.skip("Start rebalancing basket without Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
+  // it("Redeem basket token and sell components using Jito bundle", async () => {
+  //   const basketId = new BN(3);
+  //   const basketConfigData = await pieProgram.state.getBasketConfig({
+  //     basketId,
+  //   });
+  //   const serializedSignedTxs: string[] = [];
 
-    const tx = new Transaction();
+  //   const userSolBalanceBefore = await connection.getBalance(admin.publicKey);
+  //   const userBaksetTokenBalanceBefore = await pieProgram.state.getTokenBalance(
+  //     {
+  //       mint: basketConfigData.mint,
+  //       owner: admin.publicKey,
+  //     }
+  //   );
 
-    //@dev When sending tx without Jito bundle, we need to set the compute unit price manually
-    tx.add(priorityFeeInstruction);
+  //   console.log({ userSolBalanceBefore, userBaksetTokenBalanceBefore });
 
-    const startRebalanceTx = await pieProgram.startRebalancing({
-      rebalancer: admin.publicKey,
-      basketId,
-    });
-    tx.add(startRebalanceTx);
-    const startRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
-    console.log(
-      `Start rebalance at tx: https://solscan.io/tx/${startRebalanceTxResult}`
-    );
+  //   const redeemAmount = userBaksetTokenBalanceBefore / 2;
 
-    const basketConfig = await pieProgram.getBasketConfig({ basketId });
-    assert.equal(basketConfig.isRebalancing, true);
+  //   console.log("creating bundle...");
+  //   const serializedTxs = await pieProgram.createRedeemAndSellBundle({
+  //     user: admin.publicKey,
+  //     basketId,
+  //     slippage,
+  //     redeemAmount,
+  //     swapsPerBundle,
+  //     tokenInfo: await getTokenListFromSolanaClient(),
+  //   });
 
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
-  });
+  //   console.log("signing bundle...");
+  //   for (const serializedTx of serializedTxs) {
+  //     const tx = pieProgram.eventHandler.signSerializedTransaction(
+  //       serializedTx,
+  //       admin
+  //     );
+  //     serializedSignedTxs.push(tx);
+  //   }
 
-  it.skip("Rebalance amm pool without Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
+  //   console.log("start simulating bundle...");
+  //   const bundleSimluationResult = await pieProgram.eventHandler.simulateBundle(
+  //     {
+  //       encodedTransactions: serializedSignedTxs,
+  //     }
+  //   );
+  //   console.log(
+  //     `bundle simulation result: ${JSON.stringify(
+  //       bundleSimluationResult.value
+  //     )}`
+  //   );
 
-    const basketConfig = await pieProgram.getBasketConfig({ basketId });
-    assert.equal(basketConfig.isRebalancing, true);
+  //   console.log("start sending bundles..!!");
+  //   const bundleId = await pieProgram.eventHandler.sendBundle(
+  //     serializedSignedTxs
+  //   );
 
-    const basketMintInfo = await getMint(
-      connection,
-      pieProgram.basketMintPDA({ basketId })
-    );
-    const ammPoolToken = tokens.find((token) => token.type === "amm");
-    const basketSupply = new BN(basketMintInfo.supply.toString());
-    const ammPoolTokenQuantityInSysDecimal = basketConfig.components.find(
-      (component) => component.mint.toBase58() === ammPoolToken.mint
-    ).quantityInSysDecimal;
+  //   if (bundleSimluationResult.value.summary !== "succeeded") {
+  //     for (const serializedSignedTx of serializedSignedTxs) {
+  //       await simulateTransaction(connection, serializedSignedTx);
+  //     }
+  //     throw new Error("bundle simulation failed");
+  //   }
 
-    // availableAmount = bakset supply * ammPoolTokenQuantityInSysDecimal  / 10^6(sys decimal)
-    const availableAmount = basketSupply
-      .mul(ammPoolTokenQuantityInSysDecimal)
-      .div(new BN(10 ** 6));
-    console.log({ availableAmount });
+  //   await startPollingJitoBundle(bundleId);
 
-    const tx = new Transaction();
-    tx.add(priorityFeeInstruction);
-    const executeRebalanceTx = await pieProgram.executeRebalancing({
-      rebalancer: admin.publicKey,
-      isSwapBaseOut: false,
-      amount: availableAmount.div(new BN(2)).toString(),
-      otherAmountThreshold: "0",
-      ammId: ammPoolToken.poolId,
-      basketId,
-      inputMint: new PublicKey(ammPoolToken.mint),
-      outputMint: NATIVE_MINT,
-    });
+  //   console.log(`basket ${basketId.toString()} data:`);
+  //   const basketMintTable = await showBasketConfigTable(
+  //     connection,
+  //     pieProgram,
+  //     basketId
+  //   );
+  //   basketMintTable.printTable();
 
-    tx.add(executeRebalanceTx);
-
-    console.log("sending execute rebalance AMM tx...");
-
-    const executeRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [admin],
-      { skipPreflight: true, commitment: "confirmed" }
-    );
-
-    console.log(
-      `Rebalance at tx: https://solscan.io/tx/${executeRebalanceTxResult}`
-    );
-
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
-  });
-
-  it.skip("Rebalance cpmm pool without Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-
-    const basketConfig = await pieProgram.getBasketConfig({ basketId });
-    assert.equal(basketConfig.isRebalancing, true);
-
-    const basketMintInfo = await getMint(
-      connection,
-      pieProgram.basketMintPDA({ basketId })
-    );
-    const AI16Z = tokens.find((token) => token.type === "cpmm");
-    const basketSupply = new BN(basketMintInfo.supply.toString());
-    const AI16ZQuantityInSysDecimal = basketConfig.components.find(
-      (component) => component.mint.toBase58() === AI16Z.mint
-    ).quantityInSysDecimal;
-
-    // availableAmount = supply * AI16ZQuantityInSysDecimal / 10^6(sys decimal)
-    const availableAmount = basketSupply
-      .mul(AI16ZQuantityInSysDecimal)
-      .div(new BN(10 ** 6));
-    console.log({ availableAmount });
-
-    const tx = new Transaction();
-
-    tx.add(priorityFeeInstruction);
-
-    const executeRebalanceTx = await pieProgram.executeRebalancingCpmm({
-      rebalancer: admin.publicKey,
-      isSwapBaseOut: false,
-      amount: availableAmount.div(new BN(2)).toString(),
-      otherAmountThreshold: "0",
-      poolId: AI16Z.poolId,
-      basketId,
-      inputMint: new PublicKey(AI16Z.mint),
-      outputMint: NATIVE_MINT,
-    });
-
-    tx.add(executeRebalanceTx);
-
-    console.log("sending execute rebalance CPMM tx...");
-
-    const executeRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [admin],
-      { skipPreflight: true, commitment: "confirmed" }
-    );
-
-    console.log(
-      `Rebalance at tx: https://solscan.io/tx/${executeRebalanceTxResult}`
-    );
-
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
-  });
-
-  it.skip("Rebalance clmm pool without Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-
-    const basketConfig = await pieProgram.getBasketConfig({ basketId });
-    assert.equal(basketConfig.isRebalancing, true);
-
-    const basketMintInfo = await getMint(
-      connection,
-      pieProgram.basketMintPDA({ basketId })
-    );
-
-    const clmmPoolToken = tokens.find((token) => token.type === "clmm");
-    const basketSupply = new BN(basketMintInfo.supply.toString());
-    const clmmPoolTokenQuantityInSysDecimal = basketConfig.components.find(
-      (component) => component.mint.toBase58() === clmmPoolToken.mint
-    ).quantityInSysDecimal;
-
-    const availableAmount = basketSupply
-      .mul(clmmPoolTokenQuantityInSysDecimal)
-      .div(new BN(10 ** 6));
-
-    console.log({
-      clmmPoolToken: clmmPoolToken.mint,
-      availableAmount: availableAmount.toString(),
-    });
-
-    const tx = new Transaction();
-
-    tx.add(priorityFeeInstruction);
-
-    //base in
-    const executeRebalanceTx = await pieProgram.executeRebalancingClmm({
-      rebalancer: admin.publicKey,
-      isSwapBaseOut: false,
-      amount: availableAmount.div(new BN(2)).toString(),
-      otherAmountThreshold: "0",
-      slippage: 100,
-      poolId: clmmPoolToken.poolId,
-      basketId,
-      inputMint: new PublicKey(clmmPoolToken.mint),
-      outputMint: NATIVE_MINT,
-    });
-
-    //base out
-    // const executeRebalanceTx = await pieProgram.executeRebalancingClmm({
-    //   rebalancer: admin.publicKey,
-    //   isSwapBaseOut: true,
-    //   amount: new BN(1000),
-    //   slippage,
-    //   poolId: clmmPoolToken.ammId,
-    //   basketId,
-    //   inputMint: new PublicKey(clmmPoolToken.mint),
-    //   outputMint: NATIVE_MINT,
-    // });
-
-    tx.add(executeRebalanceTx);
-
-    console.log("sending execute rebalance CPMM tx...");
-
-    const executeRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [admin],
-      { skipPreflight: true, commitment: "confirmed" }
-    );
-
-    console.log(
-      `Rebalance at tx: https://solscan.io/tx/${executeRebalanceTxResult}`
-    );
-
-    const basketMintTable = await showBasketConfigTable(
-      connection,
-      pieProgram,
-      basketId
-    );
-    basketMintTable.printTable();
-  });
-
-  it.skip("Stop rebalancing basket without Jito bundle", async () => {
-    const programState = await pieProgram.getProgramState();
-    const basketId = programState.basketCounter.sub(new BN(1));
-
-    const tx = new Transaction();
-
-    //@dev When sending tx without Jito bundle, we need to set the compute unit price manually
-    tx.add(priorityFeeInstruction);
-
-    const stopRebalanceTx = await pieProgram.stopRebalancing({
-      rebalancer: admin.publicKey,
-      basketId,
-    });
-    tx.add(stopRebalanceTx);
-    const stopRebalanceTxResult = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [admin],
-      {
-        skipPreflight: true,
-        commitment: "confirmed",
-      }
-    );
-    console.log(
-      `Stop rebalance at tx: https://solscan.io/tx/${stopRebalanceTxResult}`
-    );
-  });
-
-  it("Parses events", async () => {
-    const sampleTx =
-      "3bu4FcPy85Rscgre415eSK8KLT2nGs5cidBds5KVMHUDAfTSFgD6w7tb2faRsdcTGGQrbqiDiQzqLjphf7hX5Wkz";
-    const tx = await connection.getTransaction(sampleTx, {
-      maxSupportedTransactionVersion: 0,
-    });
-
-    const events = pieProgram.eventParser.parseLogs(tx.meta.logMessages);
-
-    for (const event of events) {
-      console.log(event);
-    }
-  });
+  //   const userBaksetTokenBalanceAfter = await pieProgram.state.getTokenBalance({
+  //     mint: basketConfigData.mint,
+  //     owner: admin.publicKey,
+  //   });
+  //   console.log({ userBaksetTokenBalanceAfter });
+  // });
 });
