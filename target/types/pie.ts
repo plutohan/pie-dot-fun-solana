@@ -4688,6 +4688,14 @@ export type Pie = {
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "creatorFee",
+            "type": "u64"
+          },
+          {
+            "name": "platformFee",
+            "type": "u64"
           }
         ]
       }
@@ -5213,6 +5221,14 @@ export type Pie = {
           },
           {
             "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "creatorFee",
+            "type": "u64"
+          },
+          {
+            "name": "platformFee",
             "type": "u64"
           }
         ]

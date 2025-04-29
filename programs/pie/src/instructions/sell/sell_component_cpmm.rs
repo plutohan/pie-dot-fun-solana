@@ -205,6 +205,8 @@ pub fn sell_component_cpmm(
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.vault_token_source_mint.key(),
         amount: amount_in,
+        creator_fee: creator_fee_amount,
+        platform_fee: platform_fee_amount,
     });
 
     Ok(())

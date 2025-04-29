@@ -4682,6 +4682,14 @@
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "creator_fee",
+            "type": "u64"
+          },
+          {
+            "name": "platform_fee",
+            "type": "u64"
           }
         ]
       }
@@ -5207,6 +5215,14 @@
           },
           {
             "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "creator_fee",
+            "type": "u64"
+          },
+          {
+            "name": "platform_fee",
             "type": "u64"
           }
         ]
