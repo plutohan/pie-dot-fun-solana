@@ -13,7 +13,7 @@ impl Rebalance {
         vault_token_source: &InterfaceAccount<'_, TokenAccount>,
         vault_token_destination: &InterfaceAccount<'_, TokenAccount>,
         basket_total_supply: u64,
-        amount_in: u64,
+        amount_in: u64, // TODO: remove this field when removing raydium
     ) -> Result<(u64, u64, u64, u64)> {
         let initial_available_source_balance;
         let mut initial_available_destination_balance = 0;

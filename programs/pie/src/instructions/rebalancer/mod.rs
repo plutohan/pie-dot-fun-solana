@@ -12,3 +12,6 @@ pub use stop_rebalancing::*;
 
 pub mod execute_rebalancing_clmm;
 pub use execute_rebalancing_clmm::*;
+
+pub mod execute_rebalancing_jupiter;
+pub use execute_rebalancing_jupiter::*;
