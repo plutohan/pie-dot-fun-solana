@@ -428,6 +428,23 @@ export async function getTokenAccount(
   return tokenAccount;
 }
 
+export async function getTokenAccountWithTokenProgram(
+  connection: Connection,
+  mint: PublicKey,
+  owner: PublicKey
+) {
+  const tokenProgram = (await isToken2022Mint(connection, mint))
+    ? TOKEN_2022_PROGRAM_ID
+    : TOKEN_PROGRAM_ID;
+  const tokenAccount = getAssociatedTokenAddressSync(
+    mint,
+    owner,
+    true,
+    tokenProgram
+  );
+  return { tokenAccount, tokenProgram };
+}
+
 export async function isToken2022Mint(
   connection: Connection,
   mint: PublicKey
@@ -694,4 +711,28 @@ export async function getAllTokenAccountWithBalance({
     pubkey: tokenAccount.pubkey,
     tokenAmount: tokenAccount.account.data.parsed.info.tokenAmount,
   }));
+}
+
+export async function getBaksetIdFromBasketMint(
+  mint: PublicKey,
+  pieProgram: PieProgram
+) {
+  const programState = await pieProgram.state.getProgramState();
+  const basketId = programState.basketCounter;
+
+  for (let i = 0; i < programState.basketCounter.toNumber(); i++) {
+    const basketConfig = await pieProgram.state.getBasketConfig({
+      basketId: new BN(i),
+    });
+
+    if (!basketConfig) {
+      continue;
+    }
+
+    if (basketConfig.mint.equals(mint)) {
+      return new BN(i);
+    }
+  }
+
+  return null;
 }

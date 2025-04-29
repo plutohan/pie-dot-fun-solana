@@ -13,18 +13,11 @@ import { ProgramStateManager } from "../state";
 import {
   buildClmmRemainingAccounts,
   getTokenAccount,
+  getTokenAccountWithTokenProgram,
   isValidTransaction,
-  unwrapSolIx,
 } from "../../utils/helper";
-import {
-  createCloseAccountInstruction,
-  getAssociatedTokenAddressSync,
-  NATIVE_MINT,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
 import { getOrCreateTokenAccountTx } from "../../utils/helper";
 import {
-  CurveCalculator,
   getPdaExBitmapAccount,
   getPdaObservationId,
   MAX_SQRT_PRICE_X64,
@@ -109,6 +102,7 @@ export class RebalancerInstructions extends ProgramStateManager {
     amount,
     swapMode,
     maxAccounts,
+    rebalancer,
   }: {
     basketId: BN;
     inputMint: PublicKey;
@@ -116,6 +110,7 @@ export class RebalancerInstructions extends ProgramStateManager {
     amount: number;
     swapMode: "ExactIn" | "ExactOut";
     maxAccounts?: number;
+    rebalancer: PublicKey;
   }): Promise<{
     swapIx: TransactionInstruction;
     addressLookupTableAccounts: AddressLookupTableAccount[];
@@ -133,24 +128,35 @@ export class RebalancerInstructions extends ProgramStateManager {
         maxAccounts,
       });
 
+    const { tokenAccount: vaultTokenSource, tokenProgram: inputTokenProgram } =
+      await getTokenAccountWithTokenProgram(
+        this.connection,
+        inputMint,
+        basketConfig
+      );
+    const {
+      tokenAccount: vaultTokenDestination,
+      tokenProgram: outputTokenProgram,
+    } = await getTokenAccountWithTokenProgram(
+      this.connection,
+      outputMint,
+      basketConfig
+    );
+
     const swapIx = await this.program.methods
       .executeRebalancingJupiter(
         Buffer.from(swapInstructions.swapInstruction.data, "base64")
       )
       .accountsPartial({
+        rebalancer,
         basketConfig,
+        basketMint: this.basketMintPDA({ basketId }),
         vaultTokenSourceMint: inputMint,
         vaultTokenDestinationMint: outputMint,
-        vaultTokenSource: await getTokenAccount(
-          this.connection,
-          inputMint,
-          basketConfig
-        ),
-        vaultTokenDestination: await getTokenAccount(
-          this.connection,
-          outputMint,
-          basketConfig
-        ),
+        vaultTokenSource: vaultTokenSource,
+        vaultTokenDestination: vaultTokenDestination,
+        inputTokenProgram,
+        outputTokenProgram,
         jupiterProgram: new PublicKey(JUPITER_PROGRAM_ID),
       })
       .remainingAccounts(
@@ -204,6 +210,7 @@ export class RebalancerInstructions extends ProgramStateManager {
         amount,
         swapMode,
         maxAccounts,
+        rebalancer,
       });
 
     const recentBlockhash = (await connection.getLatestBlockhash("confirmed"))
@@ -241,7 +248,6 @@ export class RebalancerInstructions extends ProgramStateManager {
 
     return tx;
   }
-
   /**
    * Executes rebalancing.
    * @param rebalancer - The rebalancer account.
