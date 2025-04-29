@@ -64,7 +64,7 @@ export class AdminInstructions extends ProgramStateManager {
     newAdmin: PublicKey;
   }): Promise<Transaction> {
     return await this.program.methods
-      .transferAdmin(newAdmin)
+      .updateAdmin(newAdmin)
       .accounts({ admin })
       .transaction();
   }
@@ -120,21 +120,21 @@ export class AdminInstructions extends ProgramStateManager {
    * Mirgate basket is_component_fixed
    * @param admin - The admin account.
    * @param basketId - The basket ID.
-   * @param allowComponentChange - Whethere allow component change
+   * @param isComponentFixed - Whethere allow component change
    * @returns A promise that resolves to a transaction.
    */
-  async migrateBasketAllowComponentChange({
+  async migrateBasketIsComponentFixed({
                                             admin,
                                             basketId,
-                                            allowComponentChange,
+                                            isComponentFixed,
                                           }: {
     admin: PublicKey;
     basketId: BN;
-    allowComponentChange: boolean;
+    isComponentFixed: boolean;
   }): Promise<Transaction> {
     const basketConfig = this.basketConfigPDA({basketId});
     return await this.program.methods
-      .migrateBasketConfigIsComponentFixed(allowComponentChange)
+      .migrateBasketConfigIsComponentFixed(isComponentFixed)
       .accountsPartial({
         admin,
         programState: this.programStatePDA(),

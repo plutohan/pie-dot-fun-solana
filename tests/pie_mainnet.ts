@@ -146,6 +146,7 @@ describe("pie", () => {
       uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
       components: components,
       rebalancer: admin.publicKey,
+      isComponentFixed: false,
     };
 
     const programState = await pieProgram.getProgramState();
