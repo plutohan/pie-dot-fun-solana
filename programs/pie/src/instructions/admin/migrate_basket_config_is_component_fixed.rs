@@ -3,11 +3,11 @@ use anchor_lang::prelude::*;
 
 use crate::BasketConfig;
 
-pub fn migrate_basket_config_allow_component_change(ctx: Context<MigrateBasketConfig>, allow_component_change: bool) -> Result<()> {
+pub fn migrate_basket_config_is_component_fixed(ctx: Context<MigrateBasketConfig>, is_component_fixed: bool) -> Result<()> {
     let basket_config = &mut ctx.accounts.basket_config;
 
     // 새로운 필드 초기화
-    basket_config.allow_component_change = allow_component_change;
+    basket_config.is_component_fixed = is_component_fixed;
 
     Ok(())
 }

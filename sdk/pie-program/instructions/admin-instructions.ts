@@ -117,7 +117,7 @@ export class AdminInstructions extends ProgramStateManager {
   }
 
   /**
-   * Mirgate basket allow_component_change
+   * Mirgate basket is_component_fixed
    * @param admin - The admin account.
    * @param basketId - The basket ID.
    * @param allowComponentChange - Whethere allow component change
@@ -134,7 +134,7 @@ export class AdminInstructions extends ProgramStateManager {
   }): Promise<Transaction> {
     const basketConfig = this.basketConfigPDA({basketId});
     return await this.program.methods
-      .migrateBasketConfigAllowComponentChange(allowComponentChange)
+      .migrateBasketConfigIsComponentFixed(allowComponentChange)
       .accountsPartial({
         admin,
         programState: this.programStatePDA(),

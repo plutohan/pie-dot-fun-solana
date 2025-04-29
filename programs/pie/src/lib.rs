@@ -221,11 +221,11 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn migrate_basket_config_allow_component_change(
+    pub fn migrate_basket_config_is_component_fixed(
         ctx: Context<MigrateBasketConfig>,
-        allow_component_change: bool,
+        is_component_fixed: bool,
     ) -> Result<()> {
-        instructions::migrate_basket_config_allow_component_change(ctx, allow_component_change)?;
+        instructions::migrate_basket_config_is_component_fixed(ctx, is_component_fixed)?;
         Ok(())
     }
 }

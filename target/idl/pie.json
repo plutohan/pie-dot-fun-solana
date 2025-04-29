@@ -2289,16 +2289,16 @@
       ]
     },
     {
-      "name": "migrate_basket_config_allow_component_change",
+      "name": "migrate_basket_config_is_component_fixed",
       "discriminator": [
-        72,
-        112,
-        130,
-        173,
-        112,
-        160,
-        112,
-        117
+        0,
+        61,
+        197,
+        95,
+        174,
+        131,
+        253,
+        46
       ],
       "accounts": [
         {
@@ -2339,7 +2339,7 @@
       ],
       "args": [
         {
-          "name": "allow_component_change",
+          "name": "is_component_fixed",
           "type": "bool"
         }
       ]
@@ -4711,10 +4711,6 @@
             "type": "bool"
           },
           {
-            "name": "allow_component_change",
-            "type": "bool"
-          },
-          {
             "name": "components",
             "type": {
               "vec": {
@@ -4723,6 +4719,10 @@
                 }
               }
             }
+          },
+          {
+            "name": "is_component_fixed",
+            "type": "bool"
           }
         ]
       }
@@ -4783,7 +4783,7 @@
             "type": "pubkey"
           },
           {
-            "name": "allow_component_change",
+            "name": "is_component_fixed",
             "type": "bool"
           }
         ]
@@ -4829,7 +4829,7 @@
             }
           },
           {
-            "name": "allow_component_change",
+            "name": "is_component_fixed",
             "type": "bool"
           }
         ]

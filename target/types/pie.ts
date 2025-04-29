@@ -2295,16 +2295,16 @@ export type Pie = {
       ]
     },
     {
-      "name": "migrateBasketConfigAllowComponentChange",
+      "name": "migrateBasketConfigIsComponentFixed",
       "discriminator": [
-        72,
-        112,
-        130,
-        173,
-        112,
-        160,
-        112,
-        117
+        0,
+        61,
+        197,
+        95,
+        174,
+        131,
+        253,
+        46
       ],
       "accounts": [
         {
@@ -2345,7 +2345,7 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "allowComponentChange",
+          "name": "isComponentFixed",
           "type": "bool"
         }
       ]
@@ -4717,10 +4717,6 @@ export type Pie = {
             "type": "bool"
           },
           {
-            "name": "allowComponentChange",
-            "type": "bool"
-          },
-          {
             "name": "components",
             "type": {
               "vec": {
@@ -4729,6 +4725,10 @@ export type Pie = {
                 }
               }
             }
+          },
+          {
+            "name": "isComponentFixed",
+            "type": "bool"
           }
         ]
       }
@@ -4789,7 +4789,7 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "allowComponentChange",
+            "name": "isComponentFixed",
             "type": "bool"
           }
         ]
@@ -4835,7 +4835,7 @@ export type Pie = {
             }
           },
           {
-            "name": "allowComponentChange",
+            "name": "isComponentFixed",
             "type": "bool"
           }
         ]
