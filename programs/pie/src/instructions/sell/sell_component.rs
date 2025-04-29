@@ -118,6 +118,8 @@ pub struct SellComponentEvent {
     pub user: Pubkey,
     pub mint: Pubkey,
     pub amount: u64,
+    pub creator_fee: u64,
+    pub platform_fee: u64,
 }
 
 pub fn sell_component(
@@ -229,6 +231,8 @@ pub fn sell_component(
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.vault_token_source.mint.key(),
         amount: amount_in,
+        creator_fee: creator_fee_amount,
+        platform_fee: platform_fee_amount,
     });
 
     Ok(())

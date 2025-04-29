@@ -34,8 +34,8 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn transfer_admin(ctx: Context<TransferAdminContext>, new_admin: Pubkey) -> Result<()> {
-        instructions::transfer_admin(ctx, new_admin)?;
+    pub fn update_admin(ctx: Context<UpdateAdminContext>, new_admin: Pubkey) -> Result<()> {
+        instructions::update_admin(ctx, new_admin)?;
         Ok(())
     }
 

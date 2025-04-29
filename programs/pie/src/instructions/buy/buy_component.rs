@@ -6,7 +6,7 @@ use anchor_spl::{
 use raydium_amm_cpi::{library::swap_base_out, program::RaydiumAmm, SwapBaseOut};
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE
+    constant::USER_FUND, error::PieError, utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -25,12 +25,12 @@ pub struct BuyComponentContext<'info> {
         mut, 
         seeds = [PROGRAM_STATE], 
         bump = program_state.bump
-    )]    
+    )]
     pub program_state: Box<Account<'info, ProgramState>>,
     #[account(        
         mut,
         seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
-        bump    
+        bump
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
     /// CHECK: Safe. amm Account
@@ -119,6 +119,8 @@ pub struct BuyComponentEvent {
     pub user: Pubkey,
     pub mint: Pubkey,
     pub amount: u64,
+    pub creator_fee: u64,
+    pub platform_fee: u64,
 }
 
 pub fn buy_component(
@@ -223,6 +225,8 @@ pub fn buy_component(
         user: ctx.accounts.user_source_owner.key(),
         mint: ctx.accounts.vault_token_destination.mint.key(),
         amount: amount_received,
+        creator_fee: creator_fee_amount,
+        platform_fee: platform_fee_amount,
     });
 
     Ok(())

@@ -2289,62 +2289,6 @@
       ]
     },
     {
-      "name": "migrate_basket_config_is_component_fixed",
-      "discriminator": [
-        0,
-        61,
-        197,
-        95,
-        174,
-        131,
-        253,
-        46
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "program_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "basket_config",
-          "writable": true
-        }
-      ],
-      "args": [
-        {
-          "name": "is_component_fixed",
-          "type": "bool"
-        }
-      ]
-    },
-    {
       "name": "mint_basket_token",
       "discriminator": [
         190,
@@ -4571,11 +4515,6 @@
       "code": 6019,
       "name": "InvalidTokenProgram",
       "msg": "Invalid token program"
-    },
-    {
-      "code": 6020,
-      "name": "ComponentChangeNotAllowedBasket",
-      "msg": "Component change not allowed basket"
     }
   ],
   "types": [
@@ -4719,10 +4658,6 @@
                 }
               }
             }
-          },
-          {
-            "name": "is_component_fixed",
-            "type": "bool"
           }
         ]
       }
@@ -4746,6 +4681,14 @@
           },
           {
             "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "creator_fee",
+            "type": "u64"
+          },
+          {
+            "name": "platform_fee",
             "type": "u64"
           }
         ]
@@ -4781,10 +4724,6 @@
           {
             "name": "rebalancer",
             "type": "pubkey"
-          },
-          {
-            "name": "is_component_fixed",
-            "type": "bool"
           }
         ]
       }
@@ -4827,10 +4766,6 @@
                 }
               }
             }
-          },
-          {
-            "name": "is_component_fixed",
-            "type": "bool"
           }
         ]
       }
@@ -5280,6 +5215,14 @@
           },
           {
             "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "creator_fee",
+            "type": "u64"
+          },
+          {
+            "name": "platform_fee",
             "type": "u64"
           }
         ]

@@ -3416,62 +3416,6 @@ export type Pie = {
       "args": []
     },
     {
-      "name": "transferAdmin",
-      "discriminator": [
-        42,
-        242,
-        66,
-        106,
-        228,
-        10,
-        111,
-        156
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "newAdmin",
-          "type": "pubkey"
-        }
-      ]
-    },
-    {
       "name": "transferBasket",
       "discriminator": [
         85,
@@ -3527,6 +3471,62 @@ export type Pie = {
       "args": [
         {
           "name": "newCreator",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "updateAdmin",
+      "discriminator": [
+        161,
+        176,
+        40,
+        213,
+        60,
+        184,
+        179,
+        228
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "newAdmin",
           "type": "pubkey"
         }
       ]
@@ -4386,19 +4386,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "transferAdminEvent",
-      "discriminator": [
-        183,
-        79,
-        12,
-        111,
-        236,
-        250,
-        14,
-        10
-      ]
-    },
-    {
       "name": "transferBasketEvent",
       "discriminator": [
         82,
@@ -4409,6 +4396,19 @@ export type Pie = {
         38,
         192,
         114
+      ]
+    },
+    {
+      "name": "updateAdminEvent",
+      "discriminator": [
+        225,
+        152,
+        171,
+        87,
+        246,
+        63,
+        66,
+        234
       ]
     },
     {
@@ -4752,6 +4752,14 @@ export type Pie = {
           },
           {
             "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "creatorFee",
+            "type": "u64"
+          },
+          {
+            "name": "platformFee",
             "type": "u64"
           }
         ]
@@ -5287,6 +5295,14 @@ export type Pie = {
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "creatorFee",
+            "type": "u64"
+          },
+          {
+            "name": "platformFee",
+            "type": "u64"
           }
         ]
       }
@@ -5342,22 +5358,6 @@ export type Pie = {
       }
     },
     {
-      "name": "transferAdminEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "oldAdmin",
-            "type": "pubkey"
-          },
-          {
-            "name": "newAdmin",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "transferBasketEvent",
       "type": {
         "kind": "struct",
@@ -5376,6 +5376,22 @@ export type Pie = {
           },
           {
             "name": "newCreator",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "updateAdminEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oldAdmin",
+            "type": "pubkey"
+          },
+          {
+            "name": "newAdmin",
             "type": "pubkey"
           }
         ]
