@@ -27,6 +27,7 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import { createJupiterSwapIx } from "../../utils/jupiter";
 import { JUPITER_PROGRAM_ID } from "../../constants";
+import { SwapInstructionsResponse } from "@jup-ag/api";
 
 /**
  * Class for handling rebalancer-related instructions
@@ -85,7 +86,10 @@ export class RebalancerInstructions extends ProgramStateManager {
   }
 
   /**
-   * Executes rebalancing using Jupiter.
+   * Executes rebalancing instructions using Jupiter.
+   * @dev This function returns executeRebalancingJupiterIx along with swapInstructions and
+   *      addressLookupTableAccounts which can be used to build a custom transaction.
+   *      For example, to add additional instructions such as startRebalancing or stopRebalancing.
    * @param rebalancer - The rebalancer account.
    * @param basketId - The basket ID.
    * @param inputMint - The input mint.
@@ -112,7 +116,8 @@ export class RebalancerInstructions extends ProgramStateManager {
     maxAccounts?: number;
     rebalancer: PublicKey;
   }): Promise<{
-    swapIx: TransactionInstruction;
+    executeRebalancingJupiterIx: TransactionInstruction;
+    swapInstructions: SwapInstructionsResponse;
     addressLookupTableAccounts: AddressLookupTableAccount[];
   }> {
     const basketConfig = this.basketConfigPDA({ basketId });
@@ -143,7 +148,7 @@ export class RebalancerInstructions extends ProgramStateManager {
       basketConfig
     );
 
-    const swapIx = await this.program.methods
+    const executeRebalancingJupiterIx = await this.program.methods
       .executeRebalancingJupiter(
         Buffer.from(swapInstructions.swapInstruction.data, "base64")
       )
@@ -168,11 +173,17 @@ export class RebalancerInstructions extends ProgramStateManager {
       )
       .instruction();
 
-    return { swapIx, addressLookupTableAccounts };
+    return {
+      executeRebalancingJupiterIx,
+      swapInstructions,
+      addressLookupTableAccounts,
+    };
   }
 
   /**
    * Executes rebalancing using Jupiter.
+   * @dev This function returns a versioned transaction that can be signed and sent to the network.
+   *      If you want to customize the transaction, you can use the executeRebalancingJupiterIx function.
    * @param rebalancer - The rebalancer account.
    * @param connection - The connection to the network.
    * @param basketId - The basket ID.
@@ -202,28 +213,58 @@ export class RebalancerInstructions extends ProgramStateManager {
     swapMode: "ExactIn" | "ExactOut";
     maxAccounts?: number;
   }): Promise<VersionedTransaction> {
-    const { swapIx, addressLookupTableAccounts } =
-      await this.executeRebalancingJupiterIx({
-        basketId,
-        inputMint,
-        outputMint,
-        amount,
-        swapMode,
-        maxAccounts,
-        rebalancer,
-      });
+    const {
+      executeRebalancingJupiterIx,
+      swapInstructions,
+      addressLookupTableAccounts,
+    } = await this.executeRebalancingJupiterIx({
+      basketId,
+      inputMint,
+      outputMint,
+      amount,
+      swapMode,
+      maxAccounts,
+      rebalancer,
+    });
 
     const recentBlockhash = (await connection.getLatestBlockhash("confirmed"))
       .blockhash;
 
-    const simulateMessage = new Transaction({
-      recentBlockhash,
-      feePayer: rebalancer,
-    }).add(swapIx);
+    const setupInstructions = swapInstructions.setupInstructions.map((ix) => ({
+      programId: new PublicKey(ix.programId),
+      keys: ix.accounts.map((acc) => ({
+        pubkey: new PublicKey(acc.pubkey),
+        isSigner: acc.isSigner,
+        isWritable: acc.isWritable,
+      })),
+      data: Buffer.from(ix.data, "base64"),
+    }));
 
-    const simulateTx = VersionedTransaction.deserialize(
-      new Uint8Array(simulateMessage.serialize())
-    );
+    const cleanupInstruction = swapInstructions.cleanupInstruction
+      ? {
+          programId: new PublicKey(
+            swapInstructions.cleanupInstruction.programId
+          ),
+          keys: swapInstructions.cleanupInstruction.accounts.map((acc) => ({
+            pubkey: new PublicKey(acc.pubkey),
+            isSigner: acc.isSigner,
+            isWritable: acc.isWritable,
+          })),
+          data: Buffer.from(swapInstructions.cleanupInstruction.data, "base64"),
+        }
+      : null;
+
+    const simulateMessage = new TransactionMessage({
+      recentBlockhash,
+      payerKey: rebalancer,
+      instructions: [
+        ...setupInstructions,
+        executeRebalancingJupiterIx,
+        ...(cleanupInstruction ? [cleanupInstruction] : []),
+      ],
+    }).compileToV0Message(addressLookupTableAccounts);
+
+    const simulateTx = new VersionedTransaction(simulateMessage);
 
     const simulation = await connection.simulateTransaction(simulateTx, {
       commitment: "confirmed",
@@ -241,13 +282,19 @@ export class RebalancerInstructions extends ProgramStateManager {
     const message = new TransactionMessage({
       payerKey: rebalancer,
       recentBlockhash,
-      instructions: [cuIx, swapIx],
+      instructions: [
+        cuIx,
+        ...setupInstructions,
+        executeRebalancingJupiterIx,
+        ...(cleanupInstruction ? [cleanupInstruction] : []),
+      ],
     }).compileToV0Message(addressLookupTableAccounts);
 
     const tx = new VersionedTransaction(message);
 
     return tx;
   }
+
   /**
    * Executes rebalancing.
    * @param rebalancer - The rebalancer account.

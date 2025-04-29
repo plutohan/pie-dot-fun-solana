@@ -250,19 +250,18 @@ describe("pie", () => {
       basketId,
     });
 
-    const { swapIx, addressLookupTableAccounts } =
-      await pieProgram.rebalancer.executeRebalancingJupiterIx({
-        basketId,
-        inputMint: new PublicKey(
-          "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump"
-        ),
-        outputMint: new PublicKey(
-          "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"
-        ),
-        amount: 9271377,
-        swapMode: "ExactIn",
-        rebalancer: rebalancer.publicKey,
-      });
+    const {
+      executeRebalancingJupiterIx,
+      swapInstructions,
+      addressLookupTableAccounts,
+    } = await pieProgram.rebalancer.executeRebalancingJupiterIx({
+      basketId,
+      inputMint: new PublicKey("9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump"),
+      outputMint: new PublicKey("HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"),
+      amount: 100000,
+      swapMode: "ExactIn",
+      rebalancer: rebalancer.publicKey,
+    });
 
     const stopRebalanceTx = await pieProgram.rebalancer.stopRebalancing({
       rebalancer: rebalancer.publicKey,
@@ -277,13 +276,12 @@ describe("pie", () => {
       payerKey: rebalancer.publicKey,
       instructions: [
         ...startRebalanceTx.instructions,
-        swapIx,
+        executeRebalancingJupiterIx,
         ...stopRebalanceTx.instructions,
       ],
     }).compileToV0Message(addressLookupTableAccounts);
 
     const simulateTx = new VersionedTransaction(simulateMessage);
-    simulateTx.sign([rebalancer]);
 
     const simulation = await connection.simulateTransaction(simulateTx, {
       commitment: "confirmed",
@@ -304,7 +302,7 @@ describe("pie", () => {
       instructions: [
         cuIx,
         ...startRebalanceTx.instructions,
-        swapIx,
+        executeRebalancingJupiterIx,
         ...stopRebalanceTx.instructions,
       ],
     }).compileToV0Message(addressLookupTableAccounts);
