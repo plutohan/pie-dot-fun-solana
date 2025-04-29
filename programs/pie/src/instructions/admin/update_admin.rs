@@ -2,7 +2,7 @@ use crate::{constant::PROGRAM_STATE, error::PieError, ProgramState};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
-pub struct TransferAdminContext<'info> {
+pub struct UpdateAdminContext<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
 
@@ -17,16 +17,16 @@ pub struct TransferAdminContext<'info> {
 }
 
 #[event]
-pub struct TransferAdminEvent {
+pub struct UpdateAdminEvent {
     pub old_admin: Pubkey,
     pub new_admin: Pubkey,
 }
 
-pub fn transfer_admin(ctx: Context<TransferAdminContext>, new_admin: Pubkey) -> Result<()> {
+pub fn update_admin(ctx: Context<UpdateAdminContext>, new_admin: Pubkey) -> Result<()> {
     let old_admin = ctx.accounts.program_state.admin;
     ctx.accounts.program_state.admin = new_admin;
 
-    emit!(TransferAdminEvent {
+    emit!(UpdateAdminEvent {
         old_admin,
         new_admin,
     });

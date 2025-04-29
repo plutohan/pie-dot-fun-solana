@@ -3354,62 +3354,6 @@
       "args": []
     },
     {
-      "name": "transfer_admin",
-      "discriminator": [
-        42,
-        242,
-        66,
-        106,
-        228,
-        10,
-        111,
-        156
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "program_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_admin",
-          "type": "pubkey"
-        }
-      ]
-    },
-    {
       "name": "transfer_basket",
       "discriminator": [
         85,
@@ -3465,6 +3409,62 @@
       "args": [
         {
           "name": "new_creator",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "update_admin",
+      "discriminator": [
+        161,
+        176,
+        40,
+        213,
+        60,
+        184,
+        179,
+        228
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_admin",
           "type": "pubkey"
         }
       ]
@@ -4324,19 +4324,6 @@
       ]
     },
     {
-      "name": "TransferAdminEvent",
-      "discriminator": [
-        183,
-        79,
-        12,
-        111,
-        236,
-        250,
-        14,
-        10
-      ]
-    },
-    {
       "name": "TransferBasketEvent",
       "discriminator": [
         82,
@@ -4347,6 +4334,19 @@
         38,
         192,
         114
+      ]
+    },
+    {
+      "name": "UpdateAdminEvent",
+      "discriminator": [
+        225,
+        152,
+        171,
+        87,
+        246,
+        63,
+        66,
+        234
       ]
     },
     {
@@ -5279,22 +5279,6 @@
       }
     },
     {
-      "name": "TransferAdminEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_admin",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_admin",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "TransferBasketEvent",
       "type": {
         "kind": "struct",
@@ -5313,6 +5297,22 @@
           },
           {
             "name": "new_creator",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateAdminEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_admin",
             "type": "pubkey"
           }
         ]
