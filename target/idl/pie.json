@@ -4886,6 +4886,10 @@
           {
             "name": "is_component_fixed",
             "type": "bool"
+          },
+          {
+            "name": "creator_fee_percentage",
+            "type": "u64"
           }
         ]
       }
@@ -4956,6 +4960,10 @@
           {
             "name": "is_component_fixed",
             "type": "bool"
+          },
+          {
+            "name": "creator_fee_percentage",
+            "type": "u64"
           }
         ]
       }
@@ -5002,6 +5010,10 @@
           {
             "name": "is_component_fixed",
             "type": "bool"
+          },
+          {
+            "name": "creator_fee_percentage",
+            "type": "u64"
           }
         ]
       }

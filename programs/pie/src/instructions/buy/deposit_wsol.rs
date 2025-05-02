@@ -82,7 +82,11 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
     );
     require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
     let user_fund = &mut ctx.accounts.user_fund;
-    let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(&ctx.accounts.program_state, amount)?;
+    let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
+        ctx.accounts.program_state.platform_fee_percentage,
+        ctx.accounts.basket_config.creator_fee_percentage,
+        amount,
+    )?;
 
     transfer_fees(
         &ctx.accounts.user_wsol_account.to_account_info(),

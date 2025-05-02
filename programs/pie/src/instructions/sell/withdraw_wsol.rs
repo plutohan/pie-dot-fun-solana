@@ -100,8 +100,11 @@ pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
     )?;
 
     ctx.accounts.user_wsol_account.reload()?;
-    let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(&ctx.accounts.program_state, amount)?;
-
+    let (platform_fee_amount, creator_fee_amount) =  calculate_fee_amount(
+        ctx.accounts.program_state.platform_fee_percentage,
+        ctx.accounts.basket_config.creator_fee_percentage,
+        amount,
+    )?;
     //transfer fees for creator and platform fee
     transfer_fees(
         &ctx.accounts.user_wsol_account.to_account_info(),

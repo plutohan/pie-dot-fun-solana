@@ -4892,6 +4892,10 @@ export type Pie = {
           {
             "name": "isComponentFixed",
             "type": "bool"
+          },
+          {
+            "name": "creatorFeePercentage",
+            "type": "u64"
           }
         ]
       }
@@ -4962,6 +4966,10 @@ export type Pie = {
           {
             "name": "isComponentFixed",
             "type": "bool"
+          },
+          {
+            "name": "creatorFeePercentage",
+            "type": "u64"
           }
         ]
       }
@@ -5008,6 +5016,10 @@ export type Pie = {
           {
             "name": "isComponentFixed",
             "type": "bool"
+          },
+          {
+            "name": "creatorFeePercentage",
+            "type": "u64"
           }
         ]
       }
