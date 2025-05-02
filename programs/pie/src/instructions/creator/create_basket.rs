@@ -5,12 +5,12 @@ use anchor_spl::token::{Mint, Token};
 
 use std::collections::HashSet;
 
-use crate::{BASKET_DECIMALS, BASKET_MINT};
 use crate::{
     constant::{BASKET_CONFIG, PROGRAM_STATE},
     error::PieError,
     BasketComponent, BasketConfig, ProgramState,
 };
+use crate::{BASKET_DECIMALS, BASKET_MINT};
 
 #[derive(Accounts)]
 #[instruction(args: CreateBasketArgs)]
@@ -80,8 +80,6 @@ pub struct CreateBasketEvent {
 }
 
 pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
-    let program_state = &ctx.accounts.program_state;
-
     // Validate components
     validate_components(&args.components)?;
 

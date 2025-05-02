@@ -2295,62 +2295,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "migrateBasketConfigIsComponentFixed",
-      "discriminator": [
-        0,
-        61,
-        197,
-        95,
-        174,
-        131,
-        253,
-        46
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "basketConfig",
-          "writable": true
-        }
-      ],
-      "args": [
-        {
-          "name": "isComponentFixed",
-          "type": "bool"
-        }
-      ]
-    },
-    {
       "name": "mintBasketToken",
       "discriminator": [
         190,

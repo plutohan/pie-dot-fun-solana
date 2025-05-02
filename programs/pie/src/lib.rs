@@ -220,12 +220,4 @@ pub mod pie {
         instructions::withdraw_component(ctx, amount)?;
         Ok(())
     }
-
-    pub fn migrate_basket_config_is_component_fixed(
-        ctx: Context<MigrateBasketConfig>,
-        is_component_fixed: bool,
-    ) -> Result<()> {
-        instructions::migrate_basket_config_is_component_fixed(ctx, is_component_fixed)?;
-        Ok(())
-    }
 }

@@ -100,8 +100,7 @@ describe("pie", () => {
         });
         await sendAndConfirmTransaction(connection, transferTx, [newAdmin]);
         assert.fail("Transaction should have failed");
-      } catch (e) {
-      }
+      } catch (e) {}
     });
   });
 
@@ -215,7 +214,7 @@ describe("pie", () => {
           basketId,
         });
 
-        const basketMint = pieProgram.state.basketMintPDA({basketId});
+        const basketMint = pieProgram.state.basketMintPDA({ basketId });
         const basketConfigData = await pieProgram.state.getBasketConfig({
           basketId,
         });
@@ -361,7 +360,7 @@ describe("pie", () => {
 
       await sendAndConfirmTransaction(connection, mintTx, [admin]);
 
-      const basketMint = pieProgram.state.basketMintPDA({basketId});
+      const basketMint = pieProgram.state.basketMintPDA({ basketId });
 
       const balance = await getTokenBalance({
         connection,
@@ -450,35 +449,5 @@ describe("pie", () => {
         );
       }
     });
-
-    it("should migrate is_component_fixed if signed by admin", async () => {
-      const migrateTx = await pieProgram.admin.migrateBasketIsComponentFixed({
-        admin: admin.publicKey,
-        basketId,
-        isComponentFixed: true,
-      });
-      await sendAndConfirmTransaction(connection, migrateTx, [admin]);
-
-      const basketConfig = await pieProgram.state.getBasketConfig({
-        basketId,
-      });
-
-      assert.equal(basketConfig.isComponentFixed, true);
-    });
-
-    it("should failed to migrate is_component_fixed if signed by non-admin", async () => {
-      const migrateTx = await pieProgram.admin.migrateBasketIsComponentFixed({
-        admin: admin.publicKey,
-        basketId,
-        isComponentFixed: true,
-      });
-      try {
-        await sendAndConfirmTransaction(connection, migrateTx, [creator]);  // signed by non-admin
-        assert.fail("Transaction should have failed");
-      } catch (e) {
-
-      }
-    });
-
   });
 });
