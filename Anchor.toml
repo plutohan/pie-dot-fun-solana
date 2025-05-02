@@ -12,7 +12,7 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "Localnet"
-wallet = ".config/solana/id.json"
+wallet  = ".config/solana/qa-admin.json"
 
 [workspace]
 members = ["programs/pie"]
