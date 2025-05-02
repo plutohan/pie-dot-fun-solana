@@ -73,6 +73,13 @@ impl BasketConfig {
 
     /// Removes a component with the given mint.
     pub fn remove_component(&mut self, mint: Pubkey) {
-        self.components.retain(|component| component.mint != mint);
+        // if the basket is component fixed, instead of removing the component, we set the quantity to 0
+        if self.is_component_fixed {
+            if let Some(component) = self.find_component_mut(mint) {
+                component.quantity_in_sys_decimal = 0;
+            }
+        } else {
+            self.components.retain(|component| component.mint != mint);
+        }
     }
 }
