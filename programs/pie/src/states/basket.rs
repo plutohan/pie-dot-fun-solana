@@ -19,6 +19,7 @@ pub struct BasketConfig {
     pub is_component_fixed: bool,
 }
 
+// @dev: V2
 impl Space for BasketConfig {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
         + 1 // bump
@@ -28,8 +29,9 @@ impl Space for BasketConfig {
         + 32 // mint
         + 1  // is_rebalancing (bool)
         + 4 // vec length
-        + (32 + 16) * MAX_COMPONENTS as usize // vec items
-        + 1;  // is_component_fixed (bool)
+        + (32 + 16) * MAX_COMPONENTS as usize // MAX_COMPONENTS was 30 in V1, now 15
+        + 1  // is_component_fixed (bool)
+        + 100; // buffer for future use
 }
 
 impl BasketConfig {
