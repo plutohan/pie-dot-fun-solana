@@ -67,13 +67,13 @@ describe("pie", () => {
     assert.equal(programState.admin.toBase58(), admin.publicKey.toBase58());
   });
 
-  describe("transfer_admin", () => {
-    it("should be transfer with new admin", async () => {
-      const transferTx = await pieProgram.admin.transferAdmin({
+  describe("update_admin", () => {
+    it("should be updated with new admin", async () => {
+      const updateAdminTx = await pieProgram.admin.updateAdmin({
         admin: admin.publicKey,
         newAdmin: newAdmin.publicKey,
       });
-      await sendAndConfirmTransaction(connection, transferTx, [admin]);
+      await sendAndConfirmTransaction(connection, updateAdminTx, [admin]);
 
       let programState = await pieProgram.state.getProgramState();
       assert.equal(
@@ -82,11 +82,11 @@ describe("pie", () => {
       );
 
       //transfer back
-      const transferBackTx = await pieProgram.admin.transferAdmin({
+      const updateAdminBackTx = await pieProgram.admin.updateAdmin({
         admin: newAdmin.publicKey,
         newAdmin: admin.publicKey,
       });
-      await sendAndConfirmTransaction(connection, transferBackTx, [newAdmin]);
+      await sendAndConfirmTransaction(connection, updateAdminBackTx, [newAdmin]);
 
       programState = await pieProgram.state.getProgramState();
       assert.equal(programState.admin.toBase58(), admin.publicKey.toBase58());
@@ -94,11 +94,11 @@ describe("pie", () => {
 
     it("should fail if the admin is unauthorized", async () => {
       try {
-        const transferTx = await pieProgram.admin.transferAdmin({
+        const updateAdminTx = await pieProgram.admin.updateAdmin({
           admin: newAdmin.publicKey,
           newAdmin: admin.publicKey,
         });
-        await sendAndConfirmTransaction(connection, transferTx, [newAdmin]);
+        await sendAndConfirmTransaction(connection, updateAdminTx, [newAdmin]);
         assert.fail("Transaction should have failed");
       } catch (e) {}
     });

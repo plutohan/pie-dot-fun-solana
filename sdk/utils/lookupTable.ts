@@ -1,4 +1,5 @@
 import {
+  AddressLookupTableAccount,
   AddressLookupTableProgram,
   Connection,
   Keypair,
@@ -24,7 +25,7 @@ export async function finalizeTransaction(
   }).compileToV0Message(lookupTables);
   const transactionV0 = new VersionedTransaction(messageV0);
   transactionV0.sign([keyPair]);
-  console.log('tx len', transactionV0.serialize().length);
+  console.log("tx len", transactionV0.serialize().length);
 
   const txid = await connection.sendTransaction(transactionV0, {
     maxRetries: 5,
@@ -133,4 +134,26 @@ export async function findAddressesInTable(
     return [];
   }
   return lookupTableAccount.value.state.addresses;
+}
+
+export async function getAddressLookupTableAccounts(
+  connection: Connection,
+  addresses: PublicKey[]
+): Promise<AddressLookupTableAccount[]> {
+  const accounts: AddressLookupTableAccount[] = [];
+
+  for (const address of addresses) {
+    try {
+      const account = await connection.getAddressLookupTable(address);
+      if (account && account.value) {
+        accounts.push(account.value);
+      }
+    } catch (error) {
+      console.error(
+        `Error fetching lookup table account ${address.toString()}: ${error}`
+      );
+    }
+  }
+
+  return accounts;
 }

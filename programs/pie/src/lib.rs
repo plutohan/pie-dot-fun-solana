@@ -119,6 +119,14 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn execute_rebalancing_jupiter<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingJupiter<'info>>,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        instructions::execute_rebalancing_jupiter(ctx, data)?;
+        Ok(())
+    }
+
     pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
         instructions::stop_rebalancing(ctx)?;
         Ok(())

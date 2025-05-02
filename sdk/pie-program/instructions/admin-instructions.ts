@@ -54,9 +54,9 @@ export class AdminInstructions extends ProgramStateManager {
   }
 
   /**
-   * Transfers the admin role to a new account
+   * Update admin account
    */
-  async transferAdmin({
+  async updateAdmin({
     admin,
     newAdmin,
   }: {

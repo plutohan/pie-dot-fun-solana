@@ -15,7 +15,7 @@ import {
   SellComponentEvent,
   StartRebalancingEvent,
   StopRebalancingEvent,
-  TransferAdminEvent,
+  UpdateAdminEvent,
   TransferBasketEvent,
   UpdateRebalancerEvent,
 } from "../types";
@@ -62,15 +62,15 @@ export class EventHandler {
   }
 
   /**
-   * Register a listener for TransferAdmin events
+   * Register a listener for UpdateAdmin events
    */
-  onTransferAdmin(
+  onUpdateAdmin(
     connection: Connection,
-    callback: (event: TransferAdminEvent) => void
+    callback: (event: UpdateAdminEvent) => void
   ): number {
-    return this.registerEventListener<TransferAdminEvent>(
+    return this.registerEventListener<UpdateAdminEvent>(
       connection,
-      "TransferAdminEvent",
+      "UpdateAdminEvent",
       callback
     );
   }

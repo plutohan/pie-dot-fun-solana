@@ -64,4 +64,10 @@ pub enum PieError {
 
     #[msg("Component change not allowed basket")]
     ComponentChangeNotAllowedBasket,
+
+    #[msg("Invalid Jupiter program")]
+    InvalidJupiterProgram,
+
+    #[msg("Invalid swap result")]
+    InvalidSwapResult,
 }

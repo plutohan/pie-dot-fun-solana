@@ -6,3 +6,5 @@ export const JITO_RPC_URL = "https://mainnet.block-engine.jito.wtf/api/v1";
 export const SYS_DECIMALS = 10 ** 6;
 
 export const JITO_TIP_AMOUNT = 1000000; // 0.001 SOL
+
+export const JUPITER_PROGRAM_ID = "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4";
