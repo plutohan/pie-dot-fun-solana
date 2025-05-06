@@ -60,7 +60,7 @@ pub struct DepositWsol<'info> {
         token::authority = basket_config.creator,
         token::mint = NATIVE_MINT,
     )]
-    pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub creator_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -71,6 +71,8 @@ pub struct DepositWsolEvent {
     pub basket_id: u64,
     pub user: Pubkey,
     pub amount: u64,
+    pub creator_fee: u64,
+    pub platform_fee: u64,
 }
 
 pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
@@ -81,7 +83,9 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
         PieError::InvalidComponent
     );
     require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    
     let user_fund = &mut ctx.accounts.user_fund;
+
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
         ctx.accounts.program_state.platform_fee_percentage,
         ctx.accounts.basket_config.creator_fee_percentage,
@@ -91,7 +95,7 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
     transfer_fees(
         &ctx.accounts.user_wsol_account.to_account_info(),
         &ctx.accounts.platform_fee_token_account.to_account_info(),
-        &ctx.accounts.creator_token_account.to_account_info(),
+        &ctx.accounts.creator_fee_token_account.to_account_info(),
         &ctx.accounts.user.to_account_info(),
         &ctx.accounts.token_program.to_account_info(),
         platform_fee_amount,
@@ -115,7 +119,9 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
     emit!(DepositWsolEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        amount
+        amount,
+        creator_fee: creator_fee_amount,
+        platform_fee: platform_fee_amount,
     });
 
     Ok(())

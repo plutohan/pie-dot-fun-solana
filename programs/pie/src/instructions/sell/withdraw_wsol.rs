@@ -70,6 +70,8 @@ pub struct WithdrawWsolEvent {
     pub basket_id: u64,
     pub user: Pubkey,
     pub amount: u64,
+    pub creator_fee: u64,
+    pub platform_fee: u64,
 }
 
 pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
@@ -126,7 +128,9 @@ pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
     emit!(WithdrawWsolEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        amount
+        amount,
+        creator_fee: creator_fee_amount,
+        platform_fee: platform_fee_amount,
     });
 
     Ok(())
