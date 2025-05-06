@@ -1,4 +1,5 @@
 use crate::constant::JUPITER_PROGRAM_ID;
+use crate::instructions::ExecuteRebalancingEvent;
 use crate::utils::Rebalance;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use anchor_lang::{
@@ -58,19 +59,6 @@ pub struct ExecuteRebalancingJupiter<'info> {
 
     /// CHECK: Jupiter program will be checked in require
     pub jupiter_program: UncheckedAccount<'info>,
-}
-
-#[event]
-pub struct ExecuteRebalancingEvent {
-    pub basket_id: u64,
-    pub basket_mint: Pubkey,
-    pub input_mint: Pubkey,
-    pub output_mint: Pubkey,
-    pub is_swap_base_out: bool,
-    pub initial_available_source_balance: u64,
-    pub initial_available_destination_balance: u64,
-    pub final_available_source_balance: u64,
-    pub final_available_destination_balance: u64,
 }
 
 pub fn execute_rebalancing_jupiter<'a, 'b, 'c: 'info, 'info>(

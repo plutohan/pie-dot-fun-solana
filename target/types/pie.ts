@@ -4448,6 +4448,19 @@ export type Pie = {
       ]
     },
     {
+      "name": "executeRebalancingEvent",
+      "discriminator": [
+        140,
+        52,
+        83,
+        126,
+        197,
+        196,
+        44,
+        246
+      ]
+    },
+    {
       "name": "mintBasketTokenEvent",
       "discriminator": [
         169,
@@ -4601,32 +4614,6 @@ export type Pie = {
         95,
         209,
         74
-      ]
-    },
-    {
-      "name": "pie::instructions::rebalancer::execute_rebalancing::ExecuteRebalancingEvent",
-      "discriminator": [
-        140,
-        52,
-        83,
-        126,
-        197,
-        196,
-        44,
-        246
-      ]
-    },
-    {
-      "name": "pie::instructions::rebalancer::execute_rebalancing_jupiter::ExecuteRebalancingEvent",
-      "discriminator": [
-        140,
-        52,
-        83,
-        126,
-        197,
-        196,
-        44,
-        246
       ]
     }
   ],
@@ -5063,6 +5050,50 @@ export type Pie = {
           },
           {
             "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "executeRebalancingEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "inputMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "outputMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "isSwapBaseOut",
+            "type": "bool"
+          },
+          {
+            "name": "initialAvailableSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "initialAvailableDestinationBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalAvailableSourceBalance",
+            "type": "u64"
+          },
+          {
+            "name": "finalAvailableDestinationBalance",
             "type": "u64"
           }
         ]
@@ -5653,94 +5684,6 @@ export type Pie = {
           },
           {
             "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "pie::instructions::rebalancer::execute_rebalancing::ExecuteRebalancingEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "inputMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "outputMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "isSwapBaseOut",
-            "type": "bool"
-          },
-          {
-            "name": "initialAvailableSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "initialAvailableDestinationBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalAvailableSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalAvailableDestinationBalance",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "pie::instructions::rebalancer::execute_rebalancing_jupiter::ExecuteRebalancingEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "inputMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "outputMint",
-            "type": "pubkey"
-          },
-          {
-            "name": "isSwapBaseOut",
-            "type": "bool"
-          },
-          {
-            "name": "initialAvailableSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "initialAvailableDestinationBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalAvailableSourceBalance",
-            "type": "u64"
-          },
-          {
-            "name": "finalAvailableDestinationBalance",
             "type": "u64"
           }
         ]
