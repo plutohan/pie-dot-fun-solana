@@ -59,7 +59,7 @@ pub struct WithdrawWsol<'info> {
         token::authority = basket_config.creator,
         token::mint = NATIVE_MINT,
     )]
-    pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub creator_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -74,7 +74,7 @@ pub struct WithdrawWsolEvent {
     pub platform_fee: u64,
 }
 
-pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
+pub fn withdraw_wsol(ctx: Context<WithdrawWsol>) -> Result<()> {
     require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
     let user_fund = &mut ctx.accounts.user_fund;
 
@@ -84,7 +84,28 @@ pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
     .find(|a| a.mint == NATIVE_MINT)
     .ok_or(PieError::ComponentNotFound)?;
 
-    require!(component.amount >= amount, PieError::InsufficientBalance);
+    let amount_before_fee = component.amount;
+
+    let (platform_fee_amount, creator_fee_amount) =  calculate_fee_amount(
+        ctx.accounts.program_state.platform_fee_percentage,
+        ctx.accounts.basket_config.creator_fee_percentage,
+        amount_before_fee,
+    )?;
+
+    //transfer fees for creator and platform fee
+    transfer_fees(
+        &ctx.accounts.user_wsol_account.to_account_info(),
+        &ctx.accounts.platform_fee_token_account.to_account_info(),
+        &ctx.accounts.creator_fee_token_account.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.token_program.to_account_info(),
+        platform_fee_amount,
+        creator_fee_amount,
+    )?;
+
+    ctx.accounts.user_wsol_account.reload()?;
+
+    let amount_after_fee = ctx.accounts.user_wsol_account.amount;
 
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
@@ -97,38 +118,20 @@ pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
         &ctx.accounts.user_wsol_account.to_account_info(),
         &ctx.accounts.basket_config.to_account_info(),
         &ctx.accounts.token_program,
-        amount,
+        amount_after_fee,
         signer
     )?;
 
-    ctx.accounts.user_wsol_account.reload()?;
-    let (platform_fee_amount, creator_fee_amount) =  calculate_fee_amount(
-        ctx.accounts.program_state.platform_fee_percentage,
-        ctx.accounts.basket_config.creator_fee_percentage,
-        amount,
-    )?;
-    //transfer fees for creator and platform fee
-    transfer_fees(
-        &ctx.accounts.user_wsol_account.to_account_info(),
-        &ctx.accounts.platform_fee_token_account.to_account_info(),
-        &ctx.accounts.creator_token_account.to_account_info(),
-        &ctx.accounts.user.to_account_info(),
-        &ctx.accounts.token_program.to_account_info(),
-        platform_fee_amount,
-        creator_fee_amount,
-    )?;
-
     // Update user's component balance
-    component.amount = component.amount.checked_sub(amount).unwrap();
-    // Remove components with zero amount
-    user_fund.components.retain(|component| component.amount > 0);
+    user_fund.remove_component(NATIVE_MINT, amount_before_fee)?;
+
     // Close user fund if it is empty
     user_fund.close_if_empty(user_fund.to_account_info(), ctx.accounts.user.to_account_info())?;
 
     emit!(WithdrawWsolEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        amount,
+        amount: amount_after_fee,
         creator_fee: creator_fee_amount,
         platform_fee: platform_fee_amount,
     });

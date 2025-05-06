@@ -219,8 +219,8 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn withdraw_wsol(ctx: Context<WithdrawWsol>, amount: u64) -> Result<()> {
-        instructions::withdraw_wsol(ctx, amount)?;
+    pub fn withdraw_wsol(ctx: Context<WithdrawWsol>) -> Result<()> {
+        instructions::withdraw_wsol(ctx)?;
         Ok(())
     }
 
