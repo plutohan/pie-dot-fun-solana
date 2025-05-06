@@ -18,7 +18,7 @@ pub struct UserFund {
 impl UserFund {
     /// Adds `amount` of the given `mint` to `self.components`.
     /// - If `mint` already exists in `components`, it increments the existing amount.
-    /// - Otherwise, it creates a new `UserComponent`, provided we haven’t hit `MAX_COMPONENTS`.
+    /// - Otherwise, it creates a new `UserComponent`, provided we haven't hit `MAX_COMPONENTS`.
     pub fn upsert_component(&mut self, mint: Pubkey, amount: u64) -> Result<()> {
         if let Some(asset) = self
             .components
@@ -38,6 +38,31 @@ impl UserFund {
         }
         Ok(())
     }
+
+    /// Removes `amount` of the given `mint` from `self.components`.
+    /// - If `mint` exists in `components`, it decrements the existing amount.
+    /// - If the amount becomes 0, the component is removed from the vector.
+    /// - Returns an error if the mint doesn't exist or if amount to remove is greater than current amount.
+    pub fn remove_component(&mut self, mint: Pubkey, amount: u64) -> Result<()> {
+        let index = self
+            .components
+            .iter()
+            .position(|component| component.mint == mint)
+            .ok_or(PieError::InvalidComponent)?;
+
+        let component = &mut self.components[index];
+        component.amount = component
+            .amount
+            .checked_sub(amount)
+            .ok_or(PieError::InvalidAmount)?;
+
+        if component.amount == 0 {
+            self.components.remove(index);
+        }
+
+        Ok(())
+    }
+
     pub fn close_if_empty(
         &self,
         user_fund: AccountInfo,
@@ -83,5 +108,5 @@ impl Space for UserFund {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
         + 1 //bump
         + 4 // vec length
-        + (32 + 8) * MAX_COMPONENTS as usize; // vec items
+    + (32 + 8) * MAX_COMPONENTS as usize; // vec items
 }
