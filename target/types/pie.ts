@@ -4733,11 +4733,16 @@ export type Pie = {
     },
     {
       "code": 6020,
+      "name": "componentChangeNotAllowedBasket",
+      "msg": "Component change not allowed basket"
+    },
+    {
+      "code": 6021,
       "name": "invalidJupiterProgram",
       "msg": "Invalid Jupiter program"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "invalidSwapResult",
       "msg": "Invalid swap result"
     }
@@ -4883,6 +4888,10 @@ export type Pie = {
                 }
               }
             }
+          },
+          {
+            "name": "isComponentFixed",
+            "type": "bool"
           }
         ]
       }
@@ -4949,6 +4958,10 @@ export type Pie = {
           {
             "name": "rebalancer",
             "type": "pubkey"
+          },
+          {
+            "name": "isComponentFixed",
+            "type": "bool"
           }
         ]
       }
@@ -4991,6 +5004,10 @@ export type Pie = {
                 }
               }
             }
+          },
+          {
+            "name": "isComponentFixed",
+            "type": "bool"
           }
         ]
       }

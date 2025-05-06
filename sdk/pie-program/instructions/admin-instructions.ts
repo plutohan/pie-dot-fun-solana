@@ -115,4 +115,31 @@ export class AdminInstructions extends ProgramStateManager {
       .accountsPartial({ admin, programState: this.programStatePDA() })
       .transaction();
   }
+
+  /**
+   * Mirgate basket is_component_fixed
+   * @param admin - The admin account.
+   * @param basketId - The basket ID.
+   * @param isComponentFixed - Whethere allow component change
+   * @returns A promise that resolves to a transaction.
+   */
+  async migrateBasketIsComponentFixed({
+                                            admin,
+                                            basketId,
+                                            isComponentFixed,
+                                          }: {
+    admin: PublicKey;
+    basketId: BN;
+    isComponentFixed: boolean;
+  }): Promise<Transaction> {
+    const basketConfig = this.basketConfigPDA({basketId});
+    return await this.program.methods
+      .migrateBasketConfigIsComponentFixed(isComponentFixed)
+      .accountsPartial({
+        admin,
+        programState: this.programStatePDA(),
+        basketConfig,
+      })
+      .transaction();
+  }
 }

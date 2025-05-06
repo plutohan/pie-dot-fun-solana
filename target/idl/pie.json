@@ -4727,11 +4727,16 @@
     },
     {
       "code": 6020,
+      "name": "ComponentChangeNotAllowedBasket",
+      "msg": "Component change not allowed basket"
+    },
+    {
+      "code": 6021,
       "name": "InvalidJupiterProgram",
       "msg": "Invalid Jupiter program"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "InvalidSwapResult",
       "msg": "Invalid swap result"
     }
@@ -4877,6 +4882,10 @@
                 }
               }
             }
+          },
+          {
+            "name": "is_component_fixed",
+            "type": "bool"
           }
         ]
       }
@@ -4943,6 +4952,10 @@
           {
             "name": "rebalancer",
             "type": "pubkey"
+          },
+          {
+            "name": "is_component_fixed",
+            "type": "bool"
           }
         ]
       }
@@ -4985,6 +4998,10 @@
                 }
               }
             }
+          },
+          {
+            "name": "is_component_fixed",
+            "type": "bool"
           }
         ]
       }

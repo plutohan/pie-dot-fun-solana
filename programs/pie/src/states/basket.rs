@@ -16,8 +16,10 @@ pub struct BasketConfig {
     pub mint: Pubkey,
     pub is_rebalancing: bool,
     pub components: Vec<BasketComponent>,
+    pub is_component_fixed: bool,
 }
 
+// @dev: V2
 impl Space for BasketConfig {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
         + 1 // bump
@@ -27,7 +29,9 @@ impl Space for BasketConfig {
         + 32 // mint
         + 1  // is_rebalancing (bool)
         + 4 // vec length
-        + (32 + 16) * MAX_COMPONENTS as usize; // vec items
+        + (32 + 16) * MAX_COMPONENTS as usize // MAX_COMPONENTS was 30 in V1, now 15
+        + 1  // is_component_fixed (bool)
+        + 100; // buffer for future use
 }
 
 impl BasketConfig {
@@ -48,6 +52,12 @@ impl BasketConfig {
         if let Some(component) = self.find_component_mut(mint) {
             component.quantity_in_sys_decimal = quantity_in_sys_decimal;
         } else {
+            // validate if the basket allow component change
+            require!(
+                !self.is_component_fixed,
+                PieError::ComponentChangeNotAllowedBasket
+            );
+            // validate if new component exceed the max components limit
             require!(
                 self.components.len() < MAX_COMPONENTS as usize,
                 PieError::MaxAssetsExceeded
@@ -63,6 +73,13 @@ impl BasketConfig {
 
     /// Removes a component with the given mint.
     pub fn remove_component(&mut self, mint: Pubkey) {
-        self.components.retain(|component| component.mint != mint);
+        // if the basket is component fixed, instead of removing the component, we set the quantity to 0
+        if self.is_component_fixed {
+            if let Some(component) = self.find_component_mut(mint) {
+                component.quantity_in_sys_decimal = 0;
+            }
+        } else {
+            self.components.retain(|component| component.mint != mint);
+        }
     }
 }

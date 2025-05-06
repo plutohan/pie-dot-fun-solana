@@ -197,6 +197,7 @@ describe("pie", () => {
           uri: "test",
           components: basketComponents,
           rebalancer: admin.publicKey,
+          isComponentFixed: false,
         };
         const programState = await pieProgram.state.getProgramState();
         const basketId = programState.basketCounter;
@@ -223,6 +224,7 @@ describe("pie", () => {
         );
         assert.equal(basketConfigData.mint.toBase58(), basketMint.toBase58());
         assert.equal(basketConfigData.components.length, 3);
+        assert.equal(basketConfigData.isComponentFixed, false);
 
         const mintData = await getMint(connection, basketMint);
         assert.equal(mintData.supply.toString(), "0");
@@ -252,6 +254,7 @@ describe("pie", () => {
         uri: "test",
         components: basketComponents,
         rebalancer: rebalancer.publicKey,
+        isComponentFixed: false,
       };
 
       const programState = await pieProgram.state.getProgramState();
@@ -392,6 +395,58 @@ describe("pie", () => {
           mint: component.mint,
         });
         await sendAndConfirmTransaction(connection, withdrawTx, [admin]);
+      }
+    });
+  });
+
+  describe("migrate", () => {
+    let basketId: BN;
+    let basketComponents: any[];
+    let componentAmounts: any[] = [1, 2, 3];
+
+    beforeEach(async () => {
+      basketComponents = await createBasketComponents(
+        connection,
+        admin,
+        componentAmounts
+      );
+      const createBasketArgs: CreateBasketArgs = {
+        name: "Component Test Basket",
+        symbol: "CTB",
+        uri: "test",
+        components: basketComponents,
+        rebalancer: rebalancer.publicKey,
+        isComponentFixed: false,
+      };
+
+      const programState = await pieProgram.state.getProgramState();
+      basketId = programState.basketCounter;
+
+      const createBasketTx = await pieProgram.creator.createBasket({
+        creator: creator.publicKey,
+        args: createBasketArgs,
+        basketId,
+      });
+      await sendAndConfirmTransaction(connection, createBasketTx, [creator]);
+
+      // mint some components to admin
+      for (let i = 0; i < basketComponents.length; i++) {
+        const component = basketComponents[i];
+        const associatedTokenAccount = await createAssociatedTokenAccount(
+          connection,
+          admin,
+          component.mint,
+          admin.publicKey
+        );
+
+        await mintTo(
+          connection,
+          admin,
+          component.mint,
+          associatedTokenAccount,
+          admin.publicKey,
+          componentAmounts[i]
+        );
       }
     });
   });

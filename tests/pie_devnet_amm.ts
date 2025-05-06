@@ -153,6 +153,7 @@ describe("pie", () => {
       uri: "test",
       components: components,
       rebalancer: admin.publicKey,
+      isComponentFixed: false,
     };
 
     const programState = await pieProgram.getProgramState();

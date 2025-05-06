@@ -9,4 +9,3 @@ pub use update_fee::*;
 
 pub mod update_platform_fee_wallet;
 pub use update_platform_fee_wallet::*;
-

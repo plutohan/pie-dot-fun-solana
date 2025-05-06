@@ -5,12 +5,12 @@ use anchor_spl::token::{Mint, Token};
 
 use std::collections::HashSet;
 
-use crate::{BASKET_DECIMALS, BASKET_MINT};
 use crate::{
     constant::{BASKET_CONFIG, PROGRAM_STATE},
     error::PieError,
     BasketComponent, BasketConfig, ProgramState,
 };
+use crate::{BASKET_DECIMALS, BASKET_MINT};
 
 #[derive(Accounts)]
 #[instruction(args: CreateBasketArgs)]
@@ -64,6 +64,7 @@ pub struct CreateBasketArgs {
     pub symbol: String,
     pub uri: String,
     pub rebalancer: Pubkey,
+    pub is_component_fixed: bool,
 }
 
 #[event]
@@ -75,11 +76,10 @@ pub struct CreateBasketEvent {
     pub creator: Pubkey,
     pub mint: Pubkey,
     pub components: Vec<BasketComponent>,
+    pub is_component_fixed: bool,
 }
 
 pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
-    let program_state = &ctx.accounts.program_state;
-
     // Validate components
     validate_components(&args.components)?;
 
@@ -92,6 +92,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     basket_config.id = config.basket_counter;
     basket_config.mint = ctx.accounts.basket_mint.key();
     basket_config.components = args.components.clone();
+    basket_config.is_component_fixed = args.is_component_fixed;
 
     config.basket_counter += 1;
 
@@ -138,6 +139,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
         creator: basket_config.creator,
         mint: basket_config.mint,
         components: basket_config.components.clone(),
+        is_component_fixed: basket_config.is_component_fixed,
     });
 
     Ok(())

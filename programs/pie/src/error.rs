@@ -62,6 +62,9 @@ pub enum PieError {
     #[msg("Invalid token program")]
     InvalidTokenProgram,
 
+    #[msg("Component change not allowed basket")]
+    ComponentChangeNotAllowedBasket,
+
     #[msg("Invalid Jupiter program")]
     InvalidJupiterProgram,
 
