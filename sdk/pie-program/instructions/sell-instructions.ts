@@ -5,6 +5,7 @@ import {
   buildClmmRemainingAccounts,
   getTokenAccount,
   isValidTransaction,
+  unwrapSolIx,
 } from "../../utils/helper";
 import {
   createCloseAccountInstruction,
@@ -369,50 +370,56 @@ export class SellInstructions extends ProgramStateManager {
    * Withdraws a WSOL from the basket.
    * @param user - The user account.
    * @param basketId - The basket ID.
-   * @param amount - The amount of WSOL to deposit.
    * @returns A promise that resolves to a transaction.
    */
   async withdrawWsol({
     user,
     basketId,
-    amount,
-    userWsolAccount,
   }: {
     user: PublicKey;
     basketId: BN;
-    amount: string;
-    userWsolAccount: PublicKey;
   }): Promise<Transaction> {
-    const basketConfig = this.basketConfigPDA({ basketId });
+    const basketConfigPDA = this.basketConfigPDA({ basketId });
+    const basketConfig = await this.getBasketConfig({ basketId });
+
     const tx = new Transaction();
+    const { tokenAccount: userWsolAccount, tx: createUserWsolAccountTx } =
+      await getOrCreateTokenAccountTx(this.connection, NATIVE_MINT, user, user);
 
-    const { tokenAccount: outputTokenAccount, tx: outputTx } =
-      await getOrCreateTokenAccountTx(
-        this.connection,
-        NATIVE_MINT,
-        user,
-        basketConfig
-      );
+    if (isValidTransaction(createUserWsolAccountTx)) {
+      tx.add(createUserWsolAccountTx);
+    }
 
-    if (isValidTransaction(outputTx)) {
-      tx.add(outputTx);
+    const {
+      tokenAccount: creatorFeeTokenAccount,
+      tx: creatorFeeTokenAccountCreationTx,
+    } = await getOrCreateTokenAccountTx(
+      this.connection,
+      NATIVE_MINT,
+      user,
+      basketConfig.creator
+    );
+
+    if (isValidTransaction(creatorFeeTokenAccountCreationTx)) {
+      tx.add(creatorFeeTokenAccountCreationTx);
     }
 
     const withdrawWsolTx = await this.program.methods
-      .withdrawWsol(new BN(amount))
+      .withdrawWsol()
       .accountsPartial({
         user,
         programState: this.programStatePDA(),
         userFund: this.userFundPDA({ user, basketId }),
-        basketConfig: basketConfig,
+        basketConfig: basketConfigPDA,
         userWsolAccount,
-        vaultWsolAccount: outputTokenAccount,
         platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorTokenAccount: await this.getCreatorFeeTokenAccount({ basketId }),
+        creatorFeeTokenAccount,
       })
       .transaction();
 
     tx.add(withdrawWsolTx);
+
+    tx.add(unwrapSolIx(userWsolAccount, user, user));
 
     return tx;
   }

@@ -6,6 +6,7 @@ import {
   getTokenAccount,
   isValidTransaction,
   unwrapSolIx,
+  wrapSOLIx,
 } from "../../utils/helper";
 import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { getOrCreateTokenAccountTx } from "../../utils/helper";
@@ -42,26 +43,49 @@ export class BuyInstructions extends ProgramStateManager {
     user,
     basketId,
     amount,
-    userWsolAccount,
   }: {
     user: PublicKey;
     basketId: BN;
     amount: string;
-    userWsolAccount: PublicKey;
   }): Promise<Transaction> {
-    const basketConfig = this.basketConfigPDA({ basketId });
+    const basketConfigPDA = this.basketConfigPDA({ basketId });
+    const basketConfig = await this.getBasketConfig({ basketId });
+
     const tx = new Transaction();
 
-    const { tokenAccount: outputTokenAccount, tx: outputTx } =
+    const { tokenAccount: userWsolAccount, tx: createUserWsolAccountTx } =
+      await getOrCreateTokenAccountTx(this.connection, NATIVE_MINT, user, user);
+
+    if (isValidTransaction(createUserWsolAccountTx)) {
+      tx.add(createUserWsolAccountTx);
+    }
+
+    tx.add(...wrapSOLIx(user, Number(amount)));
+
+    const {
+      tokenAccount: creatorFeeTokenAccount,
+      tx: creatorFeeTokenAccountCreationTx,
+    } = await getOrCreateTokenAccountTx(
+      this.connection,
+      NATIVE_MINT,
+      user,
+      basketConfig.creator
+    );
+
+    if (isValidTransaction(creatorFeeTokenAccountCreationTx)) {
+      tx.add(creatorFeeTokenAccountCreationTx);
+    }
+
+    const { tokenAccount: vaultWsolAccount, tx: createVaultWsolAccountTx } =
       await getOrCreateTokenAccountTx(
         this.connection,
         NATIVE_MINT,
         user,
-        basketConfig
+        basketConfigPDA
       );
 
-    if (isValidTransaction(outputTx)) {
-      tx.add(outputTx);
+    if (isValidTransaction(createVaultWsolAccountTx)) {
+      tx.add(createVaultWsolAccountTx);
     }
 
     const depositWsolTx = await this.program.methods
@@ -70,9 +94,10 @@ export class BuyInstructions extends ProgramStateManager {
         user,
         programState: this.programStatePDA(),
         userFund: this.userFundPDA({ user, basketId }),
-        basketConfig: basketConfig,
+        basketConfig: basketConfigPDA,
         userWsolAccount,
-        vaultWsolAccount: outputTokenAccount,
+        vaultWsolAccount,
+        creatorFeeTokenAccount,
       })
       .transaction();
 
