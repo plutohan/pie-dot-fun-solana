@@ -14,6 +14,9 @@ pub enum PieError {
     #[msg("Max asset exceeded")]
     MaxAssetsExceeded,
 
+    #[msg("Max balances exceeded")]
+    MaxBalancesExceeded,
+
     #[msg("Insufficient Balance")]
     InsufficientBalance,
 

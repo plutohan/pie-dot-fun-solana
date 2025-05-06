@@ -6,3 +6,6 @@ pub use basket_config::*;
 
 pub mod user_fund;
 pub use user_fund::*;
+
+pub mod user_balance;
+pub use user_balance::*;
