@@ -174,7 +174,11 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
     )?;
 
     let (platform_fee_amount, creator_fee_amount) =
-        calculate_fee_amount(&ctx.accounts.program_state, amount_swapped)?;
+        calculate_fee_amount(
+            ctx.accounts.program_state.platform_fee_percentage,
+            ctx.accounts.basket_config.creator_fee_percentage,
+            amount_swapped,
+        )?;
 
     //transfer fees for creator and platform fee
     transfer_fees(

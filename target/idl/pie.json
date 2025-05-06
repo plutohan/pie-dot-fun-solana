@@ -4442,6 +4442,19 @@
       ]
     },
     {
+      "name": "ExecuteRebalancingEvent",
+      "discriminator": [
+        140,
+        52,
+        83,
+        126,
+        197,
+        196,
+        44,
+        246
+      ]
+    },
+    {
       "name": "MintBasketTokenEvent",
       "discriminator": [
         169,
@@ -4595,32 +4608,6 @@
         95,
         209,
         74
-      ]
-    },
-    {
-      "name": "pie::instructions::rebalancer::execute_rebalancing::ExecuteRebalancingEvent",
-      "discriminator": [
-        140,
-        52,
-        83,
-        126,
-        197,
-        196,
-        44,
-        246
-      ]
-    },
-    {
-      "name": "pie::instructions::rebalancer::execute_rebalancing_jupiter::ExecuteRebalancingEvent",
-      "discriminator": [
-        140,
-        52,
-        83,
-        126,
-        197,
-        196,
-        44,
-        246
       ]
     }
   ],
@@ -4886,6 +4873,10 @@
           {
             "name": "is_component_fixed",
             "type": "bool"
+          },
+          {
+            "name": "creator_fee_percentage",
+            "type": "u64"
           }
         ]
       }
@@ -4956,6 +4947,10 @@
           {
             "name": "is_component_fixed",
             "type": "bool"
+          },
+          {
+            "name": "creator_fee_percentage",
+            "type": "u64"
           }
         ]
       }
@@ -5002,6 +4997,10 @@
           {
             "name": "is_component_fixed",
             "type": "bool"
+          },
+          {
+            "name": "creator_fee_percentage",
+            "type": "u64"
           }
         ]
       }
@@ -5045,6 +5044,50 @@
           },
           {
             "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ExecuteRebalancingEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basket_id",
+            "type": "u64"
+          },
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "input_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "output_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "is_swap_base_out",
+            "type": "bool"
+          },
+          {
+            "name": "initial_available_source_balance",
+            "type": "u64"
+          },
+          {
+            "name": "initial_available_destination_balance",
+            "type": "u64"
+          },
+          {
+            "name": "final_available_source_balance",
+            "type": "u64"
+          },
+          {
+            "name": "final_available_destination_balance",
             "type": "u64"
           }
         ]
@@ -5635,94 +5678,6 @@
           },
           {
             "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "pie::instructions::rebalancer::execute_rebalancing::ExecuteRebalancingEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basket_id",
-            "type": "u64"
-          },
-          {
-            "name": "basket_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "input_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "output_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "is_swap_base_out",
-            "type": "bool"
-          },
-          {
-            "name": "initial_available_source_balance",
-            "type": "u64"
-          },
-          {
-            "name": "initial_available_destination_balance",
-            "type": "u64"
-          },
-          {
-            "name": "final_available_source_balance",
-            "type": "u64"
-          },
-          {
-            "name": "final_available_destination_balance",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "pie::instructions::rebalancer::execute_rebalancing_jupiter::ExecuteRebalancingEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basket_id",
-            "type": "u64"
-          },
-          {
-            "name": "basket_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "input_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "output_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "is_swap_base_out",
-            "type": "bool"
-          },
-          {
-            "name": "initial_available_source_balance",
-            "type": "u64"
-          },
-          {
-            "name": "initial_available_destination_balance",
-            "type": "u64"
-          },
-          {
-            "name": "final_available_source_balance",
-            "type": "u64"
-          },
-          {
-            "name": "final_available_destination_balance",
             "type": "u64"
           }
         ]

@@ -4,7 +4,7 @@ use anchor_spl::{
     token_interface::TokenAccount,
 };
 
-use crate::{ProgramState, BASIS_POINTS};
+use crate::BASIS_POINTS;
 
 pub fn transfer_from_pool_vault_to_user<'info>(
     from_vault: &AccountInfo<'info>,
@@ -30,7 +30,6 @@ pub fn transfer_from_pool_vault_to_user<'info>(
         amount,
     )
 }
-
 
 pub fn transfer_from_user_to_pool_vault<'info>(
     from: &AccountInfo<'info>,
@@ -92,14 +91,18 @@ pub fn transfer_fees<'info>(
     Ok(())
 }
 
-pub fn calculate_fee_amount(program_state: &ProgramState, amount: u64) -> Result<(u64, u64)> {
+pub fn calculate_fee_amount(
+    platform_fee_percentage: u64,
+    creator_fee_percentage: u64,
+    amount: u64,
+) -> Result<(u64, u64)> {
     let platform_fee_amount = amount
-        .checked_mul(program_state.platform_fee_percentage)
+        .checked_mul(platform_fee_percentage)
         .unwrap()
         .checked_div(BASIS_POINTS)
         .unwrap();
     let creator_fee_amount = amount
-        .checked_mul(program_state.creator_fee_percentage)
+        .checked_mul(creator_fee_percentage)
         .unwrap()
         .checked_div(BASIS_POINTS)
         .unwrap();

@@ -86,7 +86,9 @@ describe("pie", () => {
         admin: newAdmin.publicKey,
         newAdmin: admin.publicKey,
       });
-      await sendAndConfirmTransaction(connection, updateAdminBackTx, [newAdmin]);
+      await sendAndConfirmTransaction(connection, updateAdminBackTx, [
+        newAdmin,
+      ]);
 
       programState = await pieProgram.state.getProgramState();
       assert.equal(programState.admin.toBase58(), admin.publicKey.toBase58());
@@ -183,57 +185,53 @@ describe("pie", () => {
   });
 
   describe("create_basket", () => {
-    describe("v1", () => {
-      it("should create a basket with metadata", async () => {
-        const basketComponents = await createBasketComponents(
-          connection,
-          admin,
-          [1, 2, 3]
-        );
+    it("should create a basket with metadata", async () => {
+      const basketComponents = await createBasketComponents(
+        connection,
+        admin,
+        [1, 2, 3]
+      );
 
-        const createBasketArgs: CreateBasketArgs = {
-          name: "Basket Name Test",
-          symbol: "BNS",
-          uri: "test",
-          components: basketComponents,
-          rebalancer: admin.publicKey,
-          isComponentFixed: false,
-        };
-        const programState = await pieProgram.state.getProgramState();
-        const basketId = programState.basketCounter;
+      const createBasketArgs: CreateBasketArgs = {
+        name: "Basket Name Test",
+        symbol: "BNS",
+        uri: "test",
+        components: basketComponents,
+        rebalancer: admin.publicKey,
+        isComponentFixed: false,
+        creatorFeePercentage: new BN(100),
+      };
+      const programState = await pieProgram.state.getProgramState();
+      const basketId = programState.basketCounter;
 
-        const createBasketTx = await pieProgram.creator.createBasket({
-          creator: creator.publicKey,
-          args: createBasketArgs,
-          basketId,
-        });
-
-        await sendAndConfirmTransaction(connection, createBasketTx, [creator]);
-
-        const basketConfig = pieProgram.state.basketConfigPDA({
-          basketId,
-        });
-
-        const basketMint = pieProgram.state.basketMintPDA({ basketId });
-        const basketConfigData = await pieProgram.state.getBasketConfig({
-          basketId,
-        });
-        assert.equal(
-          basketConfigData.creator.toBase58(),
-          creator.publicKey.toBase58()
-        );
-        assert.equal(basketConfigData.mint.toBase58(), basketMint.toBase58());
-        assert.equal(basketConfigData.components.length, 3);
-        assert.equal(basketConfigData.isComponentFixed, false);
-
-        const mintData = await getMint(connection, basketMint);
-        assert.equal(mintData.supply.toString(), "0");
-        assert.equal(mintData.decimals, 6);
-        assert.equal(
-          mintData.mintAuthority?.toBase58(),
-          basketConfig.toBase58()
-        );
+      const createBasketTx = await pieProgram.creator.createBasket({
+        creator: creator.publicKey,
+        args: createBasketArgs,
+        basketId,
       });
+
+      await sendAndConfirmTransaction(connection, createBasketTx, [creator]);
+
+      const basketConfig = pieProgram.state.basketConfigPDA({
+        basketId,
+      });
+
+      const basketMint = pieProgram.state.basketMintPDA({ basketId });
+      const basketConfigData = await pieProgram.state.getBasketConfig({
+        basketId,
+      });
+      assert.equal(
+        basketConfigData.creator.toBase58(),
+        creator.publicKey.toBase58()
+      );
+      assert.equal(basketConfigData.mint.toBase58(), basketMint.toBase58());
+      assert.equal(basketConfigData.components.length, 3);
+      assert.equal(basketConfigData.isComponentFixed, false);
+
+      const mintData = await getMint(connection, basketMint);
+      assert.equal(mintData.supply.toString(), "0");
+      assert.equal(mintData.decimals, 6);
+      assert.equal(mintData.mintAuthority?.toBase58(), basketConfig.toBase58());
     });
   });
 
@@ -255,6 +253,7 @@ describe("pie", () => {
         components: basketComponents,
         rebalancer: rebalancer.publicKey,
         isComponentFixed: false,
+        creatorFeePercentage: new BN(100),
       };
 
       const programState = await pieProgram.state.getProgramState();
@@ -395,58 +394,6 @@ describe("pie", () => {
           mint: component.mint,
         });
         await sendAndConfirmTransaction(connection, withdrawTx, [admin]);
-      }
-    });
-  });
-
-  describe("migrate", () => {
-    let basketId: BN;
-    let basketComponents: any[];
-    let componentAmounts: any[] = [1, 2, 3];
-
-    beforeEach(async () => {
-      basketComponents = await createBasketComponents(
-        connection,
-        admin,
-        componentAmounts
-      );
-      const createBasketArgs: CreateBasketArgs = {
-        name: "Component Test Basket",
-        symbol: "CTB",
-        uri: "test",
-        components: basketComponents,
-        rebalancer: rebalancer.publicKey,
-        isComponentFixed: false,
-      };
-
-      const programState = await pieProgram.state.getProgramState();
-      basketId = programState.basketCounter;
-
-      const createBasketTx = await pieProgram.creator.createBasket({
-        creator: creator.publicKey,
-        args: createBasketArgs,
-        basketId,
-      });
-      await sendAndConfirmTransaction(connection, createBasketTx, [creator]);
-
-      // mint some components to admin
-      for (let i = 0; i < basketComponents.length; i++) {
-        const component = basketComponents[i];
-        const associatedTokenAccount = await createAssociatedTokenAccount(
-          connection,
-          admin,
-          component.mint,
-          admin.publicKey
-        );
-
-        await mintTo(
-          connection,
-          admin,
-          component.mint,
-          associatedTokenAccount,
-          admin.publicKey,
-          componentAmounts[i]
-        );
       }
     });
   });
