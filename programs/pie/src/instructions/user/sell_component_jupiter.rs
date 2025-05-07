@@ -1,8 +1,14 @@
-use anchor_lang::{prelude::*, solana_program::{ instruction::Instruction, program::invoke_signed}};
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use crate::{
-    constant::{JUPITER_PROGRAM_ID, USER_FUND}, error::PieError, utils::calculate_amounts_swapped_and_received, BasketConfig, UserFund, BASKET_CONFIG, NATIVE_MINT,
+    constant::{JUPITER_PROGRAM_ID, USER_FUND},
+    error::PieError,
+    utils::calculate_amounts_swapped_and_received,
+    BasketConfig, UserFund, BASKET_CONFIG, NATIVE_MINT,
 };
+use anchor_lang::{
+    prelude::*,
+    solana_program::{instruction::Instruction, program::invoke_signed},
+};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 #[derive(Accounts)]
 pub struct SellComponentJupiterContext<'info> {
@@ -22,7 +28,7 @@ pub struct SellComponentJupiterContext<'info> {
         bump
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
-    
+
     #[account(
         address = vault_token_source.mint
     )]
@@ -35,7 +41,7 @@ pub struct SellComponentJupiterContext<'info> {
         associated_token::token_program = input_token_program
     )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
-    
+
     /// SPL program for input token transfers
     pub input_token_program: Interface<'info, TokenInterface>,
 
@@ -62,9 +68,14 @@ pub fn sell_component_jupiter(
     ctx: Context<SellComponentJupiterContext>,
     data: Vec<u8>,
 ) -> Result<()> {
-    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
     require!(
-        ctx.accounts.basket_config.components
+        !ctx.accounts.basket_config.is_rebalancing,
+        PieError::RebalancingInProgress
+    );
+    require!(
+        ctx.accounts
+            .basket_config
+            .components
             .iter()
             .any(|c| c.mint == ctx.accounts.vault_token_source_mint.key()),
         PieError::InvalidComponent
@@ -116,7 +127,6 @@ pub fn sell_component_jupiter(
         signer_seeds,
     )?;
 
-
     ctx.accounts.vault_token_source.reload()?;
     ctx.accounts.vault_token_destination.reload()?;
 
@@ -135,8 +145,7 @@ pub fn sell_component_jupiter(
     user_fund.remove_component(ctx.accounts.vault_token_source_mint.key(), amount_swapped)?;
 
     // Add output token to user fund
-    user_fund
-        .upsert_component(NATIVE_MINT, amount_received)?;
+    user_fund.upsert_component(NATIVE_MINT, amount_received)?;
 
     emit!(SellComponentJupiterEvent {
         basket_id: ctx.accounts.basket_config.id,

@@ -293,7 +293,7 @@ describe("pie", () => {
         const amount = componentAmounts[i];
 
         // Deposit component
-        const depositTx = await pieProgram.buy.depositComponent({
+        const depositTx = await pieProgram.user.depositComponent({
           user: admin.publicKey,
           basketId,
           amount,
@@ -309,7 +309,7 @@ describe("pie", () => {
         assert.equal(userFund.components[0].amount.toString(), amount);
 
         // Withdraw component
-        const withdrawTx = await pieProgram.sell.withdrawComponent({
+        const withdrawTx = await pieProgram.user.withdrawComponent({
           user: admin.publicKey,
           basketId,
           amount,
@@ -337,7 +337,7 @@ describe("pie", () => {
         const amount = componentAmounts[i];
 
         // Deposit component
-        const depositTx = await pieProgram.buy.depositComponent({
+        const depositTx = await pieProgram.user.depositComponent({
           user: admin.publicKey,
           basketId,
           amount,
@@ -351,10 +351,9 @@ describe("pie", () => {
         basketId,
       });
 
-      const mintTx = await pieProgram.buy.mintBasketToken({
+      const mintTx = await pieProgram.user.mintBasketToken({
         user: admin.publicKey,
         basketId,
-        amount: "1000000",
       });
 
       await sendAndConfirmTransaction(connection, mintTx, [admin]);
@@ -376,7 +375,7 @@ describe("pie", () => {
 
       assert.equal(userFundAfterMint, null);
 
-      const redeemTx = await pieProgram.sell.redeemBasketToken({
+      const redeemTx = await pieProgram.user.redeemBasketToken({
         user: admin.publicKey,
         basketId,
         amount: 1000000,
@@ -387,7 +386,7 @@ describe("pie", () => {
         const component = basketComponents[i];
         const amount = componentAmounts[i];
 
-        const withdrawTx = await pieProgram.sell.withdrawComponent({
+        const withdrawTx = await pieProgram.user.withdrawComponent({
           user: admin.publicKey,
           basketId,
           amount,

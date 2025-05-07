@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    token::Token, token_interface::TokenAccount
-};
+use anchor_spl::{token::Token, token_interface::TokenAccount};
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees, transfer_from_pool_vault_to_user}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE 
+    constant::USER_FUND,
+    error::PieError,
+    utils::{calculate_fee_amount, transfer_fees, transfer_from_pool_vault_to_user},
+    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -13,12 +14,12 @@ pub struct WithdrawWsol<'info> {
     pub user: Signer<'info>,
 
     #[account(
-        mut, 
-        seeds = [PROGRAM_STATE], 
+        mut,
+        seeds = [PROGRAM_STATE],
         bump = program_state.bump
-        )]    
+        )]
     pub program_state: Box<Account<'info, ProgramState>>,
-    
+
     #[account(
         mut,
         seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
@@ -26,7 +27,7 @@ pub struct WithdrawWsol<'info> {
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
 
-    #[account(        
+    #[account(
         mut,
         seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
         bump    
@@ -45,7 +46,7 @@ pub struct WithdrawWsol<'info> {
         associated_token::mint = NATIVE_MINT,
         associated_token::authority = basket_config
     )]
-    pub vault_wsol_account:  Box<InterfaceAccount<'info, TokenAccount>>,
+    pub vault_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -75,18 +76,21 @@ pub struct WithdrawWsolEvent {
 }
 
 pub fn withdraw_wsol(ctx: Context<WithdrawWsol>) -> Result<()> {
-    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    require!(
+        !ctx.accounts.basket_config.is_rebalancing,
+        PieError::RebalancingInProgress
+    );
     let user_fund = &mut ctx.accounts.user_fund;
 
     let component = user_fund
-    .components
-    .iter_mut()
-    .find(|a| a.mint == NATIVE_MINT)
-    .ok_or(PieError::ComponentNotFound)?;
+        .components
+        .iter_mut()
+        .find(|a| a.mint == NATIVE_MINT)
+        .ok_or(PieError::ComponentNotFound)?;
 
     let amount_before_fee = component.amount;
 
-    let (platform_fee_amount, creator_fee_amount) =  calculate_fee_amount(
+    let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
         ctx.accounts.program_state.platform_fee_percentage,
         ctx.accounts.basket_config.creator_fee_percentage,
         amount_before_fee,
@@ -119,14 +123,17 @@ pub fn withdraw_wsol(ctx: Context<WithdrawWsol>) -> Result<()> {
         &ctx.accounts.basket_config.to_account_info(),
         &ctx.accounts.token_program,
         amount_after_fee,
-        signer
+        signer,
     )?;
 
     // Update user's component balance
     user_fund.remove_component(NATIVE_MINT, amount_before_fee)?;
 
     // Close user fund if it is empty
-    user_fund.close_if_empty(user_fund.to_account_info(), ctx.accounts.user.to_account_info())?;
+    user_fund.close_if_empty(
+        user_fund.to_account_info(),
+        ctx.accounts.user.to_account_info(),
+    )?;
 
     emit!(WithdrawWsolEvent {
         basket_id: ctx.accounts.basket_config.id,

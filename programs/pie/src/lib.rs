@@ -16,7 +16,9 @@ use states::*;
 pub mod pie {
     use super::*;
 
-    // Admin
+    ///////////////////////////////
+    //          Admin            //
+    ///////////////////////////////
     pub fn initialize(
         ctx: Context<Initialize>,
         initial_admin: Pubkey,
@@ -56,7 +58,9 @@ pub mod pie {
         Ok(())
     }
 
-    // Creator
+    ///////////////////////////////
+    //          Creator          //
+    ///////////////////////////////
     pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
         instructions::create_basket(ctx, args)?;
         Ok(())
@@ -75,12 +79,70 @@ pub mod pie {
         Ok(())
     }
 
-    // Rebalancer
-
+    ///////////////////////////////
+    //        Rebalancer         //
+    ///////////////////////////////
     pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
         instructions::start_rebalancing(ctx)?;
         Ok(())
     }
+
+    pub fn execute_rebalancing_jupiter<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingJupiter<'info>>,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        instructions::execute_rebalancing_jupiter(ctx, data)?;
+        Ok(())
+    }
+
+    pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
+        instructions::stop_rebalancing(ctx)?;
+        Ok(())
+    }
+
+    ///////////////////////////////
+    //          User             //
+    ///////////////////////////////
+
+    pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
+        instructions::deposit_wsol(ctx, amount)?;
+        Ok(())
+    }
+
+    pub fn buy_component_jupiter(
+        ctx: Context<BuyComponentJupiterContext>,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        instructions::buy_component_jupiter(ctx, data)?;
+        Ok(())
+    }
+
+    pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
+        instructions::mint_basket_token(ctx)?;
+        Ok(())
+    }
+
+    pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) -> Result<()> {
+        instructions::redeem_basket_token(ctx, amount)?;
+        Ok(())
+    }
+
+    pub fn sell_component_jupiter(
+        ctx: Context<SellComponentJupiterContext>,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        instructions::sell_component_jupiter(ctx, data)?;
+        Ok(())
+    }
+
+    pub fn withdraw_wsol(ctx: Context<WithdrawWsol>) -> Result<()> {
+        instructions::withdraw_wsol(ctx)?;
+        Ok(())
+    }
+
+    ///////////////////////////////
+    //        Deprecated         //
+    ///////////////////////////////
 
     pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancing<'info>>,
@@ -119,44 +181,12 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn execute_rebalancing_jupiter<'a, 'b, 'c: 'info, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, ExecuteRebalancingJupiter<'info>>,
-        data: Vec<u8>,
-    ) -> Result<()> {
-        instructions::execute_rebalancing_jupiter(ctx, data)?;
-        Ok(())
-    }
-
-    pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
-        instructions::stop_rebalancing(ctx)?;
-        Ok(())
-    }
-
-    // User
-    pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>, amount: u64) -> Result<()> {
-        instructions::mint_basket_token(ctx, amount)?;
-        Ok(())
-    }
-
-    pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) -> Result<()> {
-        instructions::redeem_basket_token(ctx, amount)?;
-        Ok(())
-    }
-
     pub fn buy_component(
         ctx: Context<BuyComponentContext>,
         max_amount_in: u64,
         amount_out: u64,
     ) -> Result<()> {
         instructions::buy_component(ctx, max_amount_in, amount_out)?;
-        Ok(())
-    }
-
-    pub fn buy_component_jupiter(
-        ctx: Context<BuyComponentJupiterContext>,
-        data: Vec<u8>,
-    ) -> Result<()> {
-        instructions::buy_component_jupiter(ctx, data)?;
         Ok(())
     }
 
@@ -184,11 +214,6 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
-        instructions::deposit_wsol(ctx, amount)?;
-        Ok(())
-    }
-
     pub fn deposit_component(ctx: Context<DepositComponent>, amount: u64) -> Result<()> {
         instructions::deposit_component(ctx, amount)?;
         Ok(())
@@ -200,14 +225,6 @@ pub mod pie {
         minimum_amount_out: u64,
     ) -> Result<()> {
         instructions::sell_component(ctx, amount_in, minimum_amount_out)?;
-        Ok(())
-    }
-
-    pub fn sell_component_jupiter(
-        ctx: Context<SellComponentJupiterContext>,
-        data: Vec<u8>,
-    ) -> Result<()> {
-        instructions::sell_component_jupiter(ctx, data)?;
         Ok(())
     }
 
@@ -232,11 +249,6 @@ pub mod pie {
             other_amount_threshold,
             sqrt_price_limit_x64,
         )?;
-        Ok(())
-    }
-
-    pub fn withdraw_wsol(ctx: Context<WithdrawWsol>) -> Result<()> {
-        instructions::withdraw_wsol(ctx)?;
         Ok(())
     }
 

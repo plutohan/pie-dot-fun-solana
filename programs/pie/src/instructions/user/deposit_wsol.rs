@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    token::Token, token_interface::TokenAccount
-};
+use anchor_spl::{token::Token, token_interface::TokenAccount};
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE 
+    constant::USER_FUND,
+    error::PieError,
+    utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault},
+    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -16,7 +17,7 @@ pub struct DepositWsol<'info> {
         mut, 
         seeds = [PROGRAM_STATE], 
         bump = program_state.bump
-        )]    
+        )]
     pub program_state: Box<Account<'info, ProgramState>>,
 
     #[account(
@@ -46,7 +47,7 @@ pub struct DepositWsol<'info> {
         associated_token::mint = NATIVE_MINT,
         associated_token::authority = basket_config
     )]
-    pub vault_wsol_account:  Box<InterfaceAccount<'info, TokenAccount>>,
+    pub vault_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -77,13 +78,18 @@ pub struct DepositWsolEvent {
 
 pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
     require!(
-        ctx.accounts.basket_config.components
+        ctx.accounts
+            .basket_config
+            .components
             .iter()
             .any(|c| c.mint == NATIVE_MINT),
         PieError::InvalidComponent
     );
-    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
-    
+    require!(
+        !ctx.accounts.basket_config.is_rebalancing,
+        PieError::RebalancingInProgress
+    );
+
     let user_fund = &mut ctx.accounts.user_fund;
 
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
@@ -101,20 +107,17 @@ pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
         platform_fee_amount,
         creator_fee_amount,
     )?;
-    
+
     transfer_from_user_to_pool_vault(
         &ctx.accounts.user_wsol_account.to_account_info(),
         &ctx.accounts.vault_wsol_account.to_account_info(),
         &ctx.accounts.user.to_account_info(),
         &ctx.accounts.token_program,
-        amount
+        amount,
     )?;
 
     user_fund.bump = ctx.bumps.user_fund;
-    user_fund.upsert_component(
-        NATIVE_MINT,
-        amount
-    )?;
+    user_fund.upsert_component(NATIVE_MINT, amount)?;
 
     emit!(DepositWsolEvent {
         basket_id: ctx.accounts.basket_config.id,

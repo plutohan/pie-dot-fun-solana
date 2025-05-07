@@ -2,8 +2,7 @@ import { BN, EventParser, Program } from "@coral-xyz/anchor";
 import { Cluster, Commitment, Connection, PublicKey } from "@solana/web3.js";
 import { ProgramStateManager } from "./state/program-state";
 import { AdminInstructions } from "./instructions/admin-instructions";
-import { BuyInstructions } from "./instructions/buy-instructions";
-import { SellInstructions } from "./instructions/sell-instructions";
+import { UserInstructions } from "./instructions/user-instructions";
 import { CreatorInstructions } from "./instructions/creator-instructions";
 import { RebalancerInstructions } from "./instructions/rebalancer-instructions";
 import { Jito } from "../jito";
@@ -40,14 +39,12 @@ export interface PieProgramConfig {
  */
 export class PieProgram {
   private readonly _idl = Object.assign({}, PieIDL);
-  private _raydium: Raydium | null = null;
   private readonly _cluster: Cluster;
 
   private readonly _programStateManager: ProgramStateManager;
   private readonly _instructions: {
     admin: AdminInstructions;
-    buy: BuyInstructions;
-    sell: SellInstructions;
+    user: UserInstructions;
     creator: CreatorInstructions;
     rebalancer: RebalancerInstructions;
   };
@@ -59,8 +56,7 @@ export class PieProgram {
   public readonly program: Program<Pie>;
   public readonly eventParser: EventParser;
   public readonly admin: AdminInstructions;
-  public readonly buy: BuyInstructions;
-  public readonly sell: SellInstructions;
+  public readonly user: UserInstructions;
   public readonly creator: CreatorInstructions;
   public readonly rebalancer: RebalancerInstructions;
   public readonly state: ProgramStateManager;
@@ -74,7 +70,6 @@ export class PieProgram {
       cluster,
       jitoRpcUrl,
       programId = PieIDL.address,
-      sharedLookupTable = "2ZWHWfumGv3cC4My3xzgQXMWNEnmYGVGnURhpgW6SL7m",
       commitment = "confirmed",
     } = config;
 
@@ -91,40 +86,17 @@ export class PieProgram {
     // Initialize instructions with null raydium - will be set in init()
     this._instructions = {
       admin: new AdminInstructions(connection, this.programId),
-      buy: new BuyInstructions(connection, this.programId, null as any),
-      sell: new SellInstructions(connection, this.programId, null as any),
+      user: new UserInstructions(connection, this.programId),
       creator: new CreatorInstructions(connection, this.programId),
-      rebalancer: new RebalancerInstructions(
-        connection,
-        this.programId,
-        null as any
-      ),
+      rebalancer: new RebalancerInstructions(connection, this.programId),
     };
 
     this.admin = this._instructions.admin;
-    this.buy = this._instructions.buy;
-    this.sell = this._instructions.sell;
+    this.user = this._instructions.user;
     this.creator = this._instructions.creator;
     this.rebalancer = this._instructions.rebalancer;
     this.events = new EventHandler(this.programId, this.program);
     this.connection = connection;
     this.state = this._programStateManager;
-  }
-
-  /**
-   * Initialize the program and its dependencies
-   * @throws Error if initialization fails
-   */
-  async init(): Promise<void> {
-    try {
-      this._raydium = await Raydium.load({
-        connection: this.connection as any,
-        cluster: this._cluster as any,
-        disableFeatureCheck: true,
-        blockhashCommitment: "confirmed",
-      });
-    } catch (error) {
-      throw new Error(`Failed to initialize PieProgram: ${error.message}`);
-    }
   }
 }

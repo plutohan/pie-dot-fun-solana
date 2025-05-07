@@ -169,47 +169,6 @@ export async function createBasketComponents(
   return components;
 }
 
-export async function getRaydiumPoolAccounts(
-  connection: Connection,
-  raydium: Raydium,
-  ammId: string,
-  inputMint: PublicKey,
-  user: PublicKey,
-  amountIn: number
-) {
-  const txInstructions: any[] = [];
-
-  const data = await raydium.liquidity.getPoolInfoFromRpc({
-    poolId: ammId,
-  });
-  const poolKeys = data.poolKeys;
-
-  const baseIn = inputMint.toString() === poolKeys.mintA.address;
-
-  const [mintIn, mintOut] = baseIn
-    ? [poolKeys.mintA.address, poolKeys.mintB.address]
-    : [poolKeys.mintB.address, poolKeys.mintA.address];
-
-  const inputTokenAccount = getAssociatedTokenAddressSync(
-    new PublicKey(mintIn),
-    user,
-    false
-  );
-
-  const { tokenAccount: outputTokenAccount, ixs: outputIxs } =
-    await getOrCreateTokenAccountIx(
-      connection,
-      new PublicKey(mintOut),
-      user,
-      user
-    );
-  if (inputMint.equals(NATIVE_MINT)) {
-    const wrappedSolIx = wrapSOLIx(user, amountIn);
-    outputIxs.push(...wrappedSolIx);
-  }
-
-  return { ixs: outputIxs, tokenAccount: outputTokenAccount };
-}
 export async function getOrCreateTokenAccountIx(
   connection: Connection,
   mint: PublicKey,
@@ -233,20 +192,6 @@ export async function getOrCreateTokenAccountIx(
     );
   }
   return { tokenAccount: tokenAccount, ixs: instructions };
-}
-
-export async function buildClmmRemainingAccounts(
-  tickArray: PublicKey[],
-  exTickArrayBitmap?: PublicKey
-): Promise<any> {
-  const remainingAccounts = [
-    ...(exTickArrayBitmap
-      ? [{ pubkey: exTickArrayBitmap, isSigner: false, isWritable: true }]
-      : []),
-    ...tickArray.map((i) => ({ pubkey: i, isSigner: false, isWritable: true })),
-  ];
-
-  return remainingAccounts;
 }
 
 export function wrapSOLIx(
