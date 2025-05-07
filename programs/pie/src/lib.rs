@@ -144,6 +144,14 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn withdraw_user_balance(
+        ctx: Context<WithdrawUserBalanceContext>,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        instructions::withdraw_user_balance(ctx, data)?;
+        Ok(())
+    }
+
     ///////////////////////////////
     //        Deprecated         //
     ///////////////////////////////

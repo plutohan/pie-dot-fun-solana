@@ -18,3 +18,6 @@ pub use withdraw_wsol::*;
 
 pub mod initialize_user_balance;
 pub use initialize_user_balance::*;
+
+pub mod withdraw_user_balance;
+pub use withdraw_user_balance::*;
