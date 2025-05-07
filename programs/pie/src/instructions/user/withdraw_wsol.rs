@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct WithdrawWsol<'info> {
+pub struct WithdrawWsolContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
@@ -75,7 +75,7 @@ pub struct WithdrawWsolEvent {
     pub platform_fee: u64,
 }
 
-pub fn withdraw_wsol(ctx: Context<WithdrawWsol>) -> Result<()> {
+pub fn withdraw_wsol(ctx: Context<WithdrawWsolContext>) -> Result<()> {
     require!(
         !ctx.accounts.basket_config.is_rebalancing,
         PieError::RebalancingInProgress

@@ -108,7 +108,7 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
+    pub fn deposit_wsol(ctx: Context<DepositWsolContext>, amount: u64) -> Result<()> {
         instructions::deposit_wsol(ctx, amount)?;
         Ok(())
     }
@@ -139,7 +139,7 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn withdraw_wsol(ctx: Context<WithdrawWsol>) -> Result<()> {
+    pub fn withdraw_wsol(ctx: Context<WithdrawWsolContext>) -> Result<()> {
         instructions::withdraw_wsol(ctx)?;
         Ok(())
     }

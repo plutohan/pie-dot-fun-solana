@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct DepositWsol<'info> {
+pub struct DepositWsolContext<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
@@ -76,7 +76,7 @@ pub struct DepositWsolEvent {
     pub platform_fee: u64,
 }
 
-pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
+pub fn deposit_wsol(ctx: Context<DepositWsolContext>, amount: u64) -> Result<()> {
     require!(
         ctx.accounts
             .basket_config
