@@ -4695,6 +4695,172 @@ export type Pie = {
       ]
     },
     {
+      "name": "withdrawUserBalance",
+      "discriminator": [
+        176,
+        213,
+        146,
+        154,
+        155,
+        196,
+        171,
+        166
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userBalance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vaultTokenSourceMint"
+        },
+        {
+          "name": "vaultTokenSource",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "account",
+                "path": "inputTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "vaultTokenSourceMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "inputTokenProgram",
+          "docs": [
+            "SPL program for input token transfers"
+          ]
+        },
+        {
+          "name": "userWsolAccount",
+          "writable": true
+        },
+        {
+          "name": "jupiterProgram"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "withdrawWsol",
       "discriminator": [
         120,
@@ -5770,6 +5936,10 @@ export type Pie = {
             "type": "u64"
           },
           {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
             "name": "user",
             "type": "pubkey"
           },
@@ -6460,6 +6630,10 @@ export type Pie = {
           {
             "name": "basketId",
             "type": "u64"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
           },
           {
             "name": "user",

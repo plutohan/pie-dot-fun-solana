@@ -70,6 +70,7 @@ pub struct DepositWsolContext<'info> {
 #[event]
 pub struct DepositWsolEvent {
     pub basket_id: u64,
+    pub basket_mint: Pubkey,
     pub user: Pubkey,
     pub amount: u64,
     pub creator_fee: u64,
@@ -121,6 +122,7 @@ pub fn deposit_wsol(ctx: Context<DepositWsolContext>, amount: u64) -> Result<()>
 
     emit!(DepositWsolEvent {
         basket_id: ctx.accounts.basket_config.id,
+        basket_mint: ctx.accounts.basket_config.mint,
         user: ctx.accounts.user.key(),
         amount,
         creator_fee: creator_fee_amount,
