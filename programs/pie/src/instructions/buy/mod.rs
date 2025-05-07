@@ -15,3 +15,6 @@ pub use deposit_component::*;
 
 pub mod deposit_wsol;
 pub use deposit_wsol::*;
+
+pub mod buy_component_jupiter;
+pub use buy_component_jupiter::*;

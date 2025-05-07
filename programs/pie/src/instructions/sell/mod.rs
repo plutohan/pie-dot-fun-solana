@@ -15,3 +15,6 @@ pub use withdraw_component::*;
 
 pub mod withdraw_wsol;
 pub use withdraw_wsol::*;
+
+pub mod sell_component_jupiter;
+pub use sell_component_jupiter::*;

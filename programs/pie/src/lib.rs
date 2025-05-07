@@ -152,6 +152,14 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn buy_component_jupiter(
+        ctx: Context<BuyComponentJupiterContext>,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        instructions::buy_component_jupiter(ctx, data)?;
+        Ok(())
+    }
+
     pub fn buy_component_cpmm(
         ctx: Context<BuyComponentCpmm>,
         max_amount_in: u64,
@@ -192,6 +200,14 @@ pub mod pie {
         minimum_amount_out: u64,
     ) -> Result<()> {
         instructions::sell_component(ctx, amount_in, minimum_amount_out)?;
+        Ok(())
+    }
+
+    pub fn sell_component_jupiter(
+        ctx: Context<SellComponentJupiterContext>,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        instructions::sell_component_jupiter(ctx, data)?;
         Ok(())
     }
 
