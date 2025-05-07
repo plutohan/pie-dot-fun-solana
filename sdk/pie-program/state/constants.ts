@@ -1,6 +1,7 @@
 // Constants for PDA seeds
 export const PROGRAM_STATE = "program_state";
 export const USER_FUND = "user_fund";
+export const USER_BALANCE = "user_balance";
 export const BASKET_CONFIG = "basket_config";
 export const BASKET_MINT = "basket_mint";
 

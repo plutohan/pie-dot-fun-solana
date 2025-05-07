@@ -96,17 +96,17 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
                 .checked_sub(amount_to_deduct_in_raw_decimal)
                 .ok_or(PieError::InsufficientBalance)?;
 
-            // Record the amount left in the user balance
-            user_balance.upsert_balance(basket_config.id, token_config.mint, amount_left)?;
             asset.amount = 0;
+
+            if amount_left > 0 {
+                // Record the amount left in the user balance
+                user_balance.upsert_balance(basket_config.id, token_config.mint, amount_left)?;
+            }
         }
     }
 
     // Remove components with zero amount
     user_fund.components.retain(|component: &crate::states::UserComponent| component.amount > 0);
-
-    // Close user fund if it is empty
-    user_fund.close_if_empty(user_fund.to_account_info(), ctx.accounts.user.to_account_info())?;
 
     // Reallocate user_balance
     let required_space = UserBalance::size_for_len(user_balance.balances.len());
@@ -144,6 +144,11 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
     mint_to(cpi_ctx, mint_amount)?;
+
+
+    // Close user fund if it is empty
+    // @dev First you have to put the transfer function and then the try_borrow_mut_lamports() function
+    user_fund.close_if_empty(user_fund.to_account_info(), ctx.accounts.user.to_account_info())?;
 
     emit!(MintBasketTokenEvent {
         basket_id: ctx.accounts.basket_config.id,

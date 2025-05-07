@@ -103,6 +103,10 @@ pub mod pie {
     ///////////////////////////////
     //          User             //
     ///////////////////////////////
+    pub fn initialize_user_balance(ctx: Context<InitializeUserBalanceContext>) -> Result<()> {
+        instructions::initialize_user_balance(ctx)?;
+        Ok(())
+    }
 
     pub fn deposit_wsol(ctx: Context<DepositWsol>, amount: u64) -> Result<()> {
         instructions::deposit_wsol(ctx, amount)?;

@@ -14,6 +14,25 @@ export class UserInstructions extends ProgramStateManager {
   }
 
   /**
+   * Initializes the user balance.
+   * @param user - The user account.
+   * @returns A promise that resolves to a transaction.
+   */
+  async initializeUserBalance({
+    user,
+  }: {
+    user: PublicKey;
+  }): Promise<Transaction> {
+    const tx = new Transaction();
+    const initializeUserBalanceTx = await this.program.methods
+      .initializeUserBalance()
+      .accountsPartial({ user })
+      .transaction();
+    tx.add(initializeUserBalanceTx);
+    return tx;
+  }
+
+  /**
    * Deposits WSOL into the basket.
    * @param user - The user account.
    * @param basketId - The basket ID.

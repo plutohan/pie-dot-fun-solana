@@ -86,8 +86,15 @@ impl UserBalance {
 
     /// Computes the total account size for a given number of balances.
     pub fn size_for_len(len: usize) -> usize {
-        1 //bump
+        8 // Account discriminator added by Anchor for each account
+        + 1 //bump
         + 4 // vec length
         + (8 + 32 + 8) * len // 8 bytes per u64 element
     }
+}
+
+impl Space for UserBalance {
+    const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
+    + 1 // bump
+    + 4; // vec length
 }

@@ -15,3 +15,6 @@ pub use sell_component_jupiter::*;
 
 pub mod withdraw_wsol;
 pub use withdraw_wsol::*;
+
+pub mod initialize_user_balance;
+pub use initialize_user_balance::*;

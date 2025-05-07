@@ -1,12 +1,13 @@
 import { BN, Idl, Program } from "@coral-xyz/anchor";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { BasketConfig, ProgramState, UserFund } from "../types";
+import { BasketConfig, ProgramState, UserBalance, UserFund } from "../types";
 import {
   PROGRAM_STATE,
   USER_FUND,
   BASKET_CONFIG,
   BASKET_MINT,
   MPL_TOKEN_METADATA_PROGRAM_ID,
+  USER_BALANCE,
 } from "./constants";
 import * as PieIDL from "../../../target/idl/pie.json";
 import { Pie } from "../../../target/types/pie";
@@ -49,6 +50,13 @@ export class ProgramStateManager {
   basketMintPDA({ basketId }: { basketId: BN }): PublicKey {
     return PublicKey.findProgramAddressSync(
       [Buffer.from(BASKET_MINT), basketId.toArrayLike(Buffer, "be", 8)],
+      this.programId
+    )[0];
+  }
+
+  userBalancePDA({ user }: { user: PublicKey }): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from(USER_BALANCE), user.toBuffer()],
       this.programId
     )[0];
   }
@@ -156,6 +164,19 @@ export class ProgramStateManager {
     const userFundPDA = this.userFundPDA({ user, basketId });
     try {
       return await this.accounts.userFund.fetch(userFundPDA);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async getUserBalance({
+    user,
+  }: {
+    user: PublicKey;
+  }): Promise<UserBalance | null> {
+    const userBalancePDA = this.userBalancePDA({ user });
+    try {
+      return await this.accounts.userBalance.fetch(userBalancePDA);
     } catch (error) {
       return null;
     }

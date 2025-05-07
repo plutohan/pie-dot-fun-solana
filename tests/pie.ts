@@ -346,6 +346,19 @@ describe("pie", () => {
         await sendAndConfirmTransaction(connection, depositTx, [admin]);
       }
 
+      const initializeUserBalanceTx =
+        await pieProgram.user.initializeUserBalance({
+          user: admin.publicKey,
+        });
+      await sendAndConfirmTransaction(connection, initializeUserBalanceTx, [
+        admin,
+      ]);
+
+      const userBalanceBeforeMint = await pieProgram.state.getUserBalance({
+        user: admin.publicKey,
+      });
+      assert.equal(userBalanceBeforeMint.balances.length, 0);
+
       const userFundBeforeMint = await pieProgram.state.getUserFund({
         user: admin.publicKey,
         basketId,

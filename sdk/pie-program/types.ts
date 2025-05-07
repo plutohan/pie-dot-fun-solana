@@ -7,6 +7,7 @@ import { PublicKey } from "@solana/web3.js";
 export type ProgramState = IdlAccounts<Pie>["programState"];
 export type BasketConfig = IdlAccounts<Pie>["basketConfig"];
 export type UserFund = IdlAccounts<Pie>["userFund"];
+export type UserBalance = IdlAccounts<Pie>["userBalance"];
 
 // Instruction Types
 export type BasketComponent = IdlTypes<Pie>["basketComponent"];
