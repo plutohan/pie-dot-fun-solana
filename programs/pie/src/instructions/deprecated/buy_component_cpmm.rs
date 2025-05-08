@@ -11,7 +11,11 @@ use raydium_cpmm_cpi::{
 };
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees}, BasketConfig, BuyComponentEvent, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE
+    constant::USER_FUND,
+    error::PieError,
+    utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees},
+    BasketConfig, BuyComponentEvent, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT,
+    PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -36,7 +40,7 @@ pub struct BuyComponentCpmm<'info> {
         mut,
         seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
         bump    
-    )]    
+    )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
@@ -116,9 +120,14 @@ pub fn buy_component_cpmm(
     amount_out: u64,
 ) -> Result<()> {
     require!(max_amount_in > 0, PieError::InvalidAmount);
-    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
     require!(
-        ctx.accounts.basket_config.components
+        !ctx.accounts.basket_config.is_rebalancing,
+        PieError::RebalancingInProgress
+    );
+    require!(
+        ctx.accounts
+            .basket_config
+            .components
             .iter()
             .any(|c| c.mint == ctx.accounts.vault_token_destination_mint.key()),
         PieError::InvalidComponent
@@ -157,13 +166,11 @@ pub fn buy_component_cpmm(
         balance_out_before,
     )?;
 
-    let (platform_fee_amount, creator_fee_amount) =
-    calculate_fee_amount(
+    let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
         ctx.accounts.program_state.platform_fee_percentage,
         ctx.accounts.basket_config.creator_fee_percentage,
         amount_swapped,
     )?;
-
 
     //transfer fees for creator and platform fee
     transfer_fees(
@@ -177,8 +184,10 @@ pub fn buy_component_cpmm(
     )?;
 
     user_fund.bump = ctx.bumps.user_fund;
-    user_fund
-        .upsert_component(ctx.accounts.vault_token_destination_mint.key(), amount_received)?;
+    user_fund.upsert_component(
+        ctx.accounts.vault_token_destination_mint.key(),
+        amount_received,
+    )?;
 
     emit!(BuyComponentEvent {
         basket_id: ctx.accounts.basket_config.id,

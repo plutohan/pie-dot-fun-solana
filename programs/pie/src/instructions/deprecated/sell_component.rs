@@ -1,38 +1,40 @@
-use anchor_lang::{prelude::*, solana_program};
-use anchor_spl::{
-    token::Token,
-    token_interface::{Mint, TokenAccount},
-};
-use raydium_amm_cpi::{library::swap_base_out, program::RaydiumAmm, SwapBaseOut};
-
 use crate::{
-    constant::USER_FUND, error::PieError, utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
+    constant::USER_FUND,
+    error::PieError,
+    utils::{calculate_fee_amount, transfer_fees},
+    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
 };
+use anchor_lang::{prelude::*, solana_program};
+use anchor_spl::token_interface::TokenAccount;
+use anchor_spl::{token::Token, token_interface::Mint};
+use raydium_amm_cpi::program::RaydiumAmm;
+use raydium_amm_cpi::{library::swap_base_in, SwapBaseIn};
 
 #[derive(Accounts)]
-pub struct BuyComponentContext<'info> {
+pub struct SellComponentContext<'info> {
     #[account(mut)]
-    pub user_source_owner: Signer<'info>,
+    pub user: Signer<'info>,
     #[account(
-        init_if_needed,
-        payer = user_source_owner,
-        space = UserFund::INIT_SPACE,
-        seeds = [USER_FUND, &user_source_owner.key().as_ref(), &basket_config.id.to_be_bytes()],
-        bump
+        mut,
+        seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
+        bump = user_fund.bump
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
     #[account(
-        mut, 
-        seeds = [PROGRAM_STATE], 
+        mut,
+        seeds = [PROGRAM_STATE],
         bump = program_state.bump
     )]
     pub program_state: Box<Account<'info, ProgramState>>,
-    #[account(        
+    #[account(
         mut,
-        seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
-        bump
+        constraint = basket_config.mint == basket_mint.key() @PieError::InvalidBasketMint
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
+
+    #[account(mut)]
+    pub basket_mint: Box<InterfaceAccount<'info, Mint>>,
+
     /// CHECK: Safe. amm Account
     #[account(mut)]
     pub amm: AccountInfo<'info>,
@@ -69,26 +71,20 @@ pub struct BuyComponentContext<'info> {
     pub market_pc_vault: AccountInfo<'info>,
     /// CHECK: Safe. vault_signer Account
     pub market_vault_signer: AccountInfo<'info>,
-    /// CHECK: Safe. user source token Account
-    #[account(
-        mut,
-        token::authority = user_source_owner,
-        token::mint = NATIVE_MINT,
-    )]
-    pub user_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        address = vault_token_destination.mint
+        address = vault_token_source.mint
     )]
-    pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub vault_token_source_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(
-        mut,
+    #[account(mut,
         associated_token::authority = basket_config,
-        associated_token::mint = vault_token_destination_mint,
-        associated_token::token_program = token_program
+        associated_token::mint = vault_token_source_mint,
     )]
-    pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(mut)]
+    pub user_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: Safe. user source token Account
     #[account(
@@ -114,7 +110,7 @@ pub struct BuyComponentContext<'info> {
 }
 
 #[event]
-pub struct BuyComponentEvent {
+pub struct SellComponentEvent {
     pub basket_id: u64,
     pub user: Pubkey,
     pub mint: Pubkey,
@@ -123,26 +119,35 @@ pub struct BuyComponentEvent {
     pub platform_fee: u64,
 }
 
-pub fn buy_component(
-    ctx: Context<BuyComponentContext>,
-    max_amount_in: u64,
-    amount_out: u64,
+pub fn sell_component(
+    ctx: Context<SellComponentContext>,
+    amount_in: u64,
+    minimum_amount_out: u64,
 ) -> Result<()> {
-    require!(max_amount_in > 0, PieError::InvalidAmount);
-    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    require!(amount_in > 0, PieError::InvalidAmount);
     require!(
-        ctx.accounts.basket_config.components
-            .iter()
-            .any(|c| c.mint == ctx.accounts.vault_token_destination_mint.key()),
-        PieError::InvalidComponent
+        !ctx.accounts.basket_config.is_rebalancing,
+        PieError::RebalancingInProgress
     );
 
     let user_fund = &mut ctx.accounts.user_fund;
+    let component = user_fund
+        .components
+        .iter_mut()
+        .find(|a| a.mint == ctx.accounts.vault_token_source.mint.key())
+        .ok_or(PieError::ComponentNotFound)?;
 
-    let balance_in_before = ctx.accounts.user_token_source.amount;
-    let balance_out_before = ctx.accounts.vault_token_destination.amount;
+    require!(component.amount >= amount_in, PieError::InsufficientBalance);
 
-    let swap_base_out_inx = swap_base_out(
+    let balance_before = ctx.accounts.user_token_destination.amount;
+
+    let signer: &[&[&[u8]]] = &[&[
+        BASKET_CONFIG,
+        &ctx.accounts.basket_config.id.to_be_bytes(),
+        &[ctx.accounts.basket_config.bump],
+    ]];
+
+    let swap_base_in_inx = swap_base_in(
         &ctx.accounts.amm_program.key(),
         &ctx.accounts.amm.key(),
         &ctx.accounts.amm_authority.key(),
@@ -157,16 +162,16 @@ pub fn buy_component(
         &ctx.accounts.market_coin_vault.key(),
         &ctx.accounts.market_pc_vault.key(),
         &ctx.accounts.market_vault_signer.key(),
-        &ctx.accounts.user_token_source.key(),
-        &ctx.accounts.vault_token_destination.key(),
-        &ctx.accounts.user_source_owner.key(),
-        max_amount_in,
-        amount_out,
+        &ctx.accounts.vault_token_source.key(),
+        &ctx.accounts.user_token_destination.key(),
+        &ctx.accounts.basket_config.key(),
+        amount_in,
+        minimum_amount_out,
     )?;
 
-    let cpi_context = CpiContext::new(
+    let cpi_context = CpiContext::new_with_signer(
         ctx.accounts.amm_program.to_account_info(),
-        SwapBaseOut {
+        SwapBaseIn {
             amm: ctx.accounts.amm.to_account_info(),
             amm_authority: ctx.accounts.amm_authority.to_account_info(),
             amm_open_orders: ctx.accounts.amm_open_orders.to_account_info(),
@@ -180,56 +185,59 @@ pub fn buy_component(
             market_coin_vault: ctx.accounts.market_coin_vault.to_account_info(),
             market_pc_vault: ctx.accounts.market_pc_vault.to_account_info(),
             market_vault_signer: ctx.accounts.market_vault_signer.to_account_info(),
-            user_token_source: ctx.accounts.user_token_source.to_account_info(),
-            user_token_destination: ctx.accounts.vault_token_destination.to_account_info(),
-            user_source_owner: ctx.accounts.user_source_owner.to_account_info(),
+            user_token_source: ctx.accounts.vault_token_source.to_account_info(),
+            user_token_destination: ctx.accounts.user_token_destination.to_account_info(),
+            user_source_owner: ctx.accounts.basket_config.to_account_info(),
             token_program: ctx.accounts.token_program.to_account_info(),
         },
+        signer,
     );
 
-    solana_program::program::invoke(
-        &swap_base_out_inx,
+    solana_program::program::invoke_signed(
+        &swap_base_in_inx,
         &ToAccountInfos::to_account_infos(&cpi_context),
+        signer,
     )?;
 
-    ctx.accounts.user_token_source.reload()?;
-    ctx.accounts.vault_token_destination.reload()?;
+    ctx.accounts.user_token_destination.reload()?;
 
-    let (amount_swapped, amount_received) = calculate_amounts_swapped_and_received(
-        &ctx.accounts.user_token_source,
-        &ctx.accounts.vault_token_destination,
-        balance_in_before,
-        balance_out_before,
-    )?;
+    let balance_after = ctx.accounts.user_token_destination.amount;
 
-    let (platform_fee_amount, creator_fee_amount) =
-    calculate_fee_amount(
+    let amount_received: u64 = balance_after.checked_sub(balance_before).unwrap();
+
+    let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
         ctx.accounts.program_state.platform_fee_percentage,
         ctx.accounts.basket_config.creator_fee_percentage,
-        amount_swapped,
+        amount_received,
     )?;
-
-
     //transfer fees for creator and platform fee
     transfer_fees(
-        &ctx.accounts.user_token_source.to_account_info(),
+        &ctx.accounts.user_token_destination.to_account_info(),
         &ctx.accounts.platform_fee_token_account.to_account_info(),
         &ctx.accounts.creator_token_account.to_account_info(),
-        &ctx.accounts.user_source_owner.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
         &ctx.accounts.token_program.to_account_info(),
         platform_fee_amount,
         creator_fee_amount,
     )?;
 
-    user_fund.bump = ctx.bumps.user_fund;
+    // Update user's component balance
+    component.amount = component.amount.checked_sub(amount_in).unwrap();
+    // Remove components with zero amount
     user_fund
-        .upsert_component(ctx.accounts.vault_token_destination.mint.key(), amount_received)?;
+        .components
+        .retain(|component| component.amount > 0);
+    // Close user fund if it is empty
+    user_fund.close_if_empty(
+        user_fund.to_account_info(),
+        ctx.accounts.user.to_account_info(),
+    )?;
 
-    emit!(BuyComponentEvent {
+    emit!(SellComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
-        user: ctx.accounts.user_source_owner.key(),
-        mint: ctx.accounts.vault_token_destination.mint.key(),
-        amount: amount_received,
+        user: ctx.accounts.user.key(),
+        mint: ctx.accounts.vault_token_source.mint.key(),
+        amount: amount_in,
         creator_fee: creator_fee_amount,
         platform_fee: platform_fee_amount,
     });

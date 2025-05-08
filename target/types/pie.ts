@@ -775,6 +775,286 @@ export type Pie = {
       ]
     },
     {
+      "name": "buyComponentJupiter",
+      "discriminator": [
+        219,
+        34,
+        152,
+        225,
+        123,
+        3,
+        165,
+        207
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vaultTokenSource",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  155,
+                  136,
+                  87,
+                  254,
+                  171,
+                  129,
+                  132,
+                  251,
+                  104,
+                  127,
+                  99,
+                  70,
+                  24,
+                  192,
+                  53,
+                  218,
+                  196,
+                  57,
+                  220,
+                  26,
+                  235,
+                  59,
+                  85,
+                  152,
+                  160,
+                  240,
+                  0,
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "vaultTokenDestinationMint"
+        },
+        {
+          "name": "vaultTokenDestination",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "account",
+                "path": "outputTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "vaultTokenDestinationMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "outputTokenProgram",
+          "docs": [
+            "SPL program for output token transfers"
+          ]
+        },
+        {
+          "name": "jupiterProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "createBasket",
       "discriminator": [
         47,
@@ -1370,7 +1650,7 @@ export type Pie = {
           "writable": true
         },
         {
-          "name": "creatorTokenAccount",
+          "name": "creatorFeeTokenAccount",
           "writable": true
         },
         {
@@ -2491,6 +2771,60 @@ export type Pie = {
       ]
     },
     {
+      "name": "initializeUserBalance",
+      "discriminator": [
+        65,
+        60,
+        31,
+        85,
+        143,
+        18,
+        45,
+        58
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userBalance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "mintBasketToken",
       "discriminator": [
         190,
@@ -2600,6 +2934,35 @@ export type Pie = {
           }
         },
         {
+          "name": "userBalance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
           "name": "userBasketTokenAccount",
           "writable": true
         },
@@ -2612,12 +2975,7 @@ export type Pie = {
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "redeemBasketToken",
@@ -3452,6 +3810,286 @@ export type Pie = {
       ]
     },
     {
+      "name": "sellComponentJupiter",
+      "discriminator": [
+        223,
+        84,
+        61,
+        14,
+        128,
+        120,
+        219,
+        200
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userFund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vaultTokenSourceMint"
+        },
+        {
+          "name": "vaultTokenSource",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "account",
+                "path": "inputTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "vaultTokenSourceMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "inputTokenProgram",
+          "docs": [
+            "SPL program for input token transfers"
+          ]
+        },
+        {
+          "name": "vaultTokenDestination",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  155,
+                  136,
+                  87,
+                  254,
+                  171,
+                  129,
+                  132,
+                  251,
+                  104,
+                  127,
+                  99,
+                  70,
+                  24,
+                  192,
+                  53,
+                  218,
+                  196,
+                  57,
+                  220,
+                  26,
+                  235,
+                  59,
+                  85,
+                  152,
+                  160,
+                  240,
+                  0,
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "jupiterProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "startRebalancing",
       "discriminator": [
         146,
@@ -4057,6 +4695,172 @@ export type Pie = {
       ]
     },
     {
+      "name": "withdrawUserBalance",
+      "discriminator": [
+        176,
+        213,
+        146,
+        154,
+        155,
+        196,
+        171,
+        166
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "userBalance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "basket_config.id",
+                "account": "basketConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vaultTokenSourceMint"
+        },
+        {
+          "name": "vaultTokenSource",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basketConfig"
+              },
+              {
+                "kind": "account",
+                "path": "inputTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "vaultTokenSourceMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "inputTokenProgram",
+          "docs": [
+            "SPL program for input token transfers"
+          ]
+        },
+        {
+          "name": "userWsolAccount",
+          "writable": true
+        },
+        {
+          "name": "jupiterProgram"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "withdrawWsol",
       "discriminator": [
         120,
@@ -4294,7 +5098,7 @@ export type Pie = {
           "writable": true
         },
         {
-          "name": "creatorTokenAccount",
+          "name": "creatorFeeTokenAccount",
           "writable": true
         },
         {
@@ -4306,12 +5110,7 @@ export type Pie = {
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
+      "args": []
     }
   ],
   "accounts": [
@@ -4381,6 +5180,19 @@ export type Pie = {
       ]
     },
     {
+      "name": "userBalance",
+      "discriminator": [
+        187,
+        237,
+        208,
+        146,
+        86,
+        132,
+        29,
+        191
+      ]
+    },
+    {
       "name": "userFund",
       "discriminator": [
         11,
@@ -4406,6 +5218,19 @@ export type Pie = {
         188,
         216,
         61
+      ]
+    },
+    {
+      "name": "buyComponentJupiterEvent",
+      "discriminator": [
+        40,
+        237,
+        255,
+        224,
+        107,
+        223,
+        137,
+        127
       ]
     },
     {
@@ -4497,6 +5322,19 @@ export type Pie = {
         76,
         229,
         226
+      ]
+    },
+    {
+      "name": "sellComponentJupiterEvent",
+      "discriminator": [
+        162,
+        252,
+        101,
+        213,
+        15,
+        66,
+        37,
+        208
       ]
     },
     {
@@ -4640,96 +5478,101 @@ export type Pie = {
     },
     {
       "code": 6004,
+      "name": "maxBalancesExceeded",
+      "msg": "Max balances exceeded"
+    },
+    {
+      "code": 6005,
       "name": "insufficientBalance",
       "msg": "Insufficient Balance"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "invalidBasket",
       "msg": "Invalid Basket"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "invalidAmount",
       "msg": "Invalid Amount"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "componentNotFound",
       "msg": "Component not found"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "notInRebalancing",
       "msg": "Not in rebalancing"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "alreadyRebalancing",
       "msg": "Already rebalancing"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "conversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "invalidBasketMint",
       "msg": "Invalid basket mint"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "duplicateComponent",
       "msg": "Duplicate component"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "invalidMint",
       "msg": "Invalid mint"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "invalidComponentQuantity",
       "msg": "Invalid component quantity"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "invalidQuantity",
       "msg": "Invalid quantity"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "rebalancingInProgress",
       "msg": "Rebalancing in process"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "invalidComponent",
       "msg": "Invalid component"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "maxWhitelistedCreatorsExceeded",
       "msg": "Max whitelisted creators exceeded"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "invalidTokenProgram",
       "msg": "Invalid token program"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "componentChangeNotAllowedBasket",
       "msg": "Component change not allowed basket"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "invalidJupiterProgram",
       "msg": "Invalid Jupiter program"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "invalidSwapResult",
       "msg": "Invalid swap result"
     }
@@ -4817,6 +5660,26 @@ export type Pie = {
                 16
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "balance",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
@@ -4914,6 +5777,34 @@ export type Pie = {
           },
           {
             "name": "platformFee",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "buyComponentJupiterEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amountSwapped",
+            "type": "u64"
+          },
+          {
+            "name": "amountReceived",
             "type": "u64"
           }
         ]
@@ -5045,11 +5936,23 @@ export type Pie = {
             "type": "u64"
           },
           {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
             "name": "user",
             "type": "pubkey"
           },
           {
             "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "creatorFee",
+            "type": "u64"
+          },
+          {
+            "name": "platformFee",
             "type": "u64"
           }
         ]
@@ -5470,6 +6373,34 @@ export type Pie = {
       }
     },
     {
+      "name": "sellComponentJupiterEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amountSwapped",
+            "type": "u64"
+          },
+          {
+            "name": "amountReceived",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "startRebalancingEvent",
       "type": {
         "kind": "struct",
@@ -5608,6 +6539,28 @@ export type Pie = {
       }
     },
     {
+      "name": "userBalance",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "balances",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "balance"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "userComponent",
       "type": {
         "kind": "struct",
@@ -5679,11 +6632,23 @@ export type Pie = {
             "type": "u64"
           },
           {
+            "name": "basketMint",
+            "type": "pubkey"
+          },
+          {
             "name": "user",
             "type": "pubkey"
           },
           {
             "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "creatorFee",
+            "type": "u64"
+          },
+          {
+            "name": "platformFee",
             "type": "u64"
           }
         ]

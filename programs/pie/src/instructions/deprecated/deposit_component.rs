@@ -1,10 +1,16 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    token::Token, token_interface::TokenAccount
-};
+use anchor_spl::{ token::Token, token_interface::TokenAccount };
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE 
+    constant::USER_FUND,
+    error::PieError,
+    utils::{ calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault },
+    BasketConfig,
+    ProgramState,
+    UserFund,
+    BASKET_CONFIG,
+    NATIVE_MINT,
+    PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -13,10 +19,10 @@ pub struct DepositComponent<'info> {
     pub user: Signer<'info>,
 
     #[account(
-        mut, 
-        seeds = [PROGRAM_STATE], 
+        mut,
+        seeds = [PROGRAM_STATE],
         bump = program_state.bump
-        )]    
+        )]
     pub program_state: Box<Account<'info, ProgramState>>,
 
     #[account(
@@ -28,10 +34,10 @@ pub struct DepositComponent<'info> {
     )]
     pub user_fund: Box<Account<'info, UserFund>>,
 
-    #[account(        
+    #[account(
         mut,
         seeds = [BASKET_CONFIG, &basket_config.id.to_be_bytes()],
-        bump    
+        bump
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
@@ -46,7 +52,7 @@ pub struct DepositComponent<'info> {
         associated_token::mint = user_token_account.mint,
         associated_token::authority = basket_config,
     )]
-    pub vault_token_account:  Box<InterfaceAccount<'info, TokenAccount>>,
+    pub vault_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     // TODO: how should collect fees?
     // #[account(
@@ -62,7 +68,6 @@ pub struct DepositComponent<'info> {
     //     token::mint = NATIVE_MINT,
     // )]
     // pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
-
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
@@ -96,7 +101,7 @@ pub fn deposit_component(ctx: Context<DepositComponent>, amount: u64) -> Result<
     //     platform_fee_amount,
     //     creator_fee_amount,
     // )?;
-    
+
     transfer_from_user_to_pool_vault(
         &ctx.accounts.user_token_account.to_account_info(),
         &ctx.accounts.vault_token_account.to_account_info(),
@@ -106,16 +111,13 @@ pub fn deposit_component(ctx: Context<DepositComponent>, amount: u64) -> Result<
     )?;
 
     user_fund.bump = ctx.bumps.user_fund;
-    user_fund.upsert_component(
-        ctx.accounts.user_token_account.mint,
-        amount
-    )?;
+    user_fund.upsert_component(ctx.accounts.user_token_account.mint, amount)?;
 
     emit!(DepositComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
         mint: ctx.accounts.user_token_account.mint,
-        amount
+        amount,
     });
 
     Ok(())

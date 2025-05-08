@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    token::Token, token_interface::TokenAccount
-};
+use anchor_spl::{token::Token, token_interface::TokenAccount};
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::{calculate_fee_amount, transfer_fees, transfer_from_pool_vault_to_user}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE 
+    constant::USER_FUND,
+    error::PieError,
+    utils::{calculate_fee_amount, transfer_fees, transfer_from_pool_vault_to_user},
+    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -16,9 +17,9 @@ pub struct WithdrawComponent<'info> {
         mut, 
         seeds = [PROGRAM_STATE], 
         bump = program_state.bump
-        )]    
+        )]
     pub program_state: Box<Account<'info, ProgramState>>,
-    
+
     #[account(
         mut,
         seeds = [USER_FUND, &user.key().as_ref(), &basket_config.id.to_be_bytes()],
@@ -44,7 +45,7 @@ pub struct WithdrawComponent<'info> {
         associated_token::mint = user_token_account.mint,
         associated_token::authority = basket_config,
     )]
-    pub vault_token_account:  Box<InterfaceAccount<'info, TokenAccount>>,
+    pub vault_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     // TODO: how should collect fees?
     // #[account(
@@ -60,7 +61,6 @@ pub struct WithdrawComponent<'info> {
     //     token::mint = NATIVE_MINT,
     // )]
     // pub creator_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
-
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
@@ -74,14 +74,17 @@ pub struct WithdrawComponentEvent {
 }
 
 pub fn withdraw_component(ctx: Context<WithdrawComponent>, amount: u64) -> Result<()> {
-    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    require!(
+        !ctx.accounts.basket_config.is_rebalancing,
+        PieError::RebalancingInProgress
+    );
     let user_fund = &mut ctx.accounts.user_fund;
 
     let component = user_fund
-    .components
-    .iter_mut()
-    .find(|a| a.mint == ctx.accounts.user_token_account.mint)
-    .ok_or(PieError::ComponentNotFound)?;
+        .components
+        .iter_mut()
+        .find(|a| a.mint == ctx.accounts.user_token_account.mint)
+        .ok_or(PieError::ComponentNotFound)?;
 
     require!(component.amount >= amount, PieError::InsufficientBalance);
 
@@ -97,11 +100,11 @@ pub fn withdraw_component(ctx: Context<WithdrawComponent>, amount: u64) -> Resul
         &ctx.accounts.basket_config.to_account_info(),
         &ctx.accounts.token_program,
         amount,
-        signer
+        signer,
     )?;
 
     ctx.accounts.user_token_account.reload()?;
-    
+
     // let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(&ctx.accounts.program_state, amount)?;
     //transfer fees for creator and platform fee
     // transfer_fees(
@@ -117,9 +120,14 @@ pub fn withdraw_component(ctx: Context<WithdrawComponent>, amount: u64) -> Resul
     // Update user's component balance
     component.amount = component.amount.checked_sub(amount).unwrap();
     // Remove components with zero amount
-    user_fund.components.retain(|component| component.amount > 0);
+    user_fund
+        .components
+        .retain(|component| component.amount > 0);
     // Close user fund if it is empty
-    user_fund.close_if_empty(user_fund.to_account_info(), ctx.accounts.user.to_account_info())?;
+    user_fund.close_if_empty(
+        user_fund.to_account_info(),
+        ctx.accounts.user.to_account_info(),
+    )?;
 
     emit!(WithdrawComponentEvent {
         basket_id: ctx.accounts.basket_config.id,
