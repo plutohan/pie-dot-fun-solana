@@ -45,7 +45,9 @@ pub struct SellComponentJupiterContext<'info> {
     /// SPL program for input token transfers
     pub input_token_program: Interface<'info, TokenInterface>,
 
-    #[account(mut,
+    /// @TODO: should I use `init_if_needed` here?
+    #[account(
+        mut,
         associated_token::authority = basket_config,
         associated_token::mint = NATIVE_MINT,
     )]

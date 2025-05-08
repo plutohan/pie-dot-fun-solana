@@ -77,15 +77,9 @@ pub struct DepositWsolEvent {
     pub platform_fee: u64,
 }
 
+/// Deposits WSOl into the basket
+/// Before calling buy component, user must deposit WSOl first
 pub fn deposit_wsol(ctx: Context<DepositWsolContext>, amount: u64) -> Result<()> {
-    require!(
-        ctx.accounts
-            .basket_config
-            .components
-            .iter()
-            .any(|c| c.mint == NATIVE_MINT),
-        PieError::InvalidComponent
-    );
     require!(
         !ctx.accounts.basket_config.is_rebalancing,
         PieError::RebalancingInProgress

@@ -84,7 +84,7 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
         }
     }
 
-    require!(mint_amount >= 0, PieError::InvalidAmount);
+    require!(mint_amount > 0, PieError::InvalidAmount);
 
     for token_config in basket_config.components.iter() {
         if let Some(asset) = user_fund.components.iter_mut().find(|a| a.mint == token_config.mint) {

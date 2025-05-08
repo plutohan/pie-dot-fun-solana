@@ -40,6 +40,7 @@ pub struct BuyComponentJupiterContext<'info> {
     )]
     pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
 
+    /// @TODO: should I use `init_if_needed` here?
     #[account(
         mut,
         associated_token::authority = basket_config,
@@ -64,6 +65,8 @@ pub struct BuyComponentJupiterEvent {
     pub amount_received: u64,
 }
 
+/// Buys a component using Jupiter with the user's WSOL 
+/// Before calling buy component, user must deposit WSOl with `deposit_wsol` instruction
 pub fn buy_component_jupiter(
     ctx: Context<BuyComponentJupiterContext>,
     data: Vec<u8>,

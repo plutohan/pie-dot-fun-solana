@@ -43,6 +43,7 @@ pub struct ExecuteRebalancingJupiter<'info> {
     )]
     pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
 
+    /// @TODO: should I use `init_if_needed` here?
     #[account(
         mut,
         associated_token::authority = basket_config,
