@@ -211,8 +211,8 @@ pub fn buy_component(
     )?;
 
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
-        ctx.accounts.program_state.platform_fee_percentage,
-        ctx.accounts.basket_config.creator_fee_percentage,
+        ctx.accounts.program_state.platform_fee_bp,
+        ctx.accounts.basket_config.creator_fee_bp,
         amount_swapped,
     )?;
 

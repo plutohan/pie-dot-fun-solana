@@ -184,8 +184,8 @@ pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
     let amount_received: u64 = balance_after.checked_sub(balance_before).unwrap();
 
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
-        ctx.accounts.program_state.platform_fee_percentage,
-        ctx.accounts.basket_config.creator_fee_percentage,
+        ctx.accounts.program_state.platform_fee_bp,
+        ctx.accounts.basket_config.creator_fee_bp,
         amount_received,
     )?;
 

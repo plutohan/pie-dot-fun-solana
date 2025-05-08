@@ -25,7 +25,7 @@ pub fn initialize(
     initial_admin: Pubkey,
     initial_creator: Pubkey,
     initial_platform_fee_wallet: Pubkey,
-    initial_platform_fee_percentage: u64,
+    initial_platform_fee_bp: u64,
 ) -> Result<()> {
     let program_state = &mut ctx.accounts.program_state;
 
@@ -38,7 +38,7 @@ pub fn initialize(
     program_state.admin = initial_admin;
     program_state.basket_counter = 0;
     program_state.platform_fee_wallet = initial_platform_fee_wallet;
-    program_state.platform_fee_percentage = initial_platform_fee_percentage;
+    program_state.platform_fee_bp = initial_platform_fee_bp;
 
     Ok(())
 }

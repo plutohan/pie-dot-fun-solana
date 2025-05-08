@@ -2765,7 +2765,7 @@ export type Pie = {
           "type": "pubkey"
         },
         {
-          "name": "initialPlatformFeePercentage",
+          "name": "initialPlatformFeeBp",
           "type": "u64"
         }
       ]
@@ -4356,11 +4356,11 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "newCreatorFeePercentage",
+          "name": "newCreatorFeeBp",
           "type": "u64"
         },
         {
-          "name": "newPlatformFeePercentage",
+          "name": "newPlatformFeeBp",
           "type": "u64"
         }
       ]
@@ -5744,7 +5744,7 @@ export type Pie = {
             "type": "bool"
           },
           {
-            "name": "creatorFeePercentage",
+            "name": "creatorFeeBp",
             "type": "u64"
           }
         ]
@@ -5846,7 +5846,7 @@ export type Pie = {
             "type": "bool"
           },
           {
-            "name": "creatorFeePercentage",
+            "name": "creatorFeeBp",
             "type": "u64"
           }
         ]
@@ -5896,7 +5896,7 @@ export type Pie = {
             "type": "bool"
           },
           {
-            "name": "creatorFeePercentage",
+            "name": "creatorFeeBp",
             "type": "u64"
           }
         ]
@@ -6302,11 +6302,11 @@ export type Pie = {
             "type": "u64"
           },
           {
-            "name": "creatorFeePercentage",
+            "name": "creatorFeeBp",
             "type": "u64"
           },
           {
-            "name": "platformFeePercentage",
+            "name": "platformFeeBp",
             "type": "u64"
           },
           {
@@ -6496,11 +6496,11 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
-            "name": "newCreatorFeePercentage",
+            "name": "newCreatorFeeBp",
             "type": "u64"
           },
           {
-            "name": "newPlatformFeePercentage",
+            "name": "newPlatformFeeBp",
             "type": "u64"
           }
         ]

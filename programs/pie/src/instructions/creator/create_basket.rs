@@ -65,7 +65,7 @@ pub struct CreateBasketArgs {
     pub uri: String,
     pub rebalancer: Pubkey,
     pub is_component_fixed: bool,
-    pub creator_fee_percentage: u64,
+    pub creator_fee_bp: u64,
 }
 
 #[event]
@@ -78,7 +78,7 @@ pub struct CreateBasketEvent {
     pub mint: Pubkey,
     pub components: Vec<BasketComponent>,
     pub is_component_fixed: bool,
-    pub creator_fee_percentage: u64,
+    pub creator_fee_bp: u64,
 }
 
 pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) -> Result<()> {
@@ -95,7 +95,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     basket_config.mint = ctx.accounts.basket_mint.key();
     basket_config.components = args.components.clone();
     basket_config.is_component_fixed = args.is_component_fixed;
-    basket_config.creator_fee_percentage = args.creator_fee_percentage;
+    basket_config.creator_fee_bp = args.creator_fee_bp;
     config.basket_counter += 1;
 
     let signer: &[&[&[u8]]] = &[&[
@@ -142,7 +142,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
         mint: basket_config.mint,
         components: basket_config.components.clone(),
         is_component_fixed: basket_config.is_component_fixed,
-        creator_fee_percentage: basket_config.creator_fee_percentage,
+        creator_fee_bp: basket_config.creator_fee_bp,
     });
 
     Ok(())

@@ -24,14 +24,14 @@ pub mod pie {
         initial_admin: Pubkey,
         initial_creator: Pubkey,
         initial_platform_fee_wallet: Pubkey,
-        initial_platform_fee_percentage: u64,
+        initial_platform_fee_bp: u64,
     ) -> Result<()> {
         instructions::initialize(
             ctx,
             initial_admin,
             initial_creator,
             initial_platform_fee_wallet,
-            initial_platform_fee_percentage,
+            initial_platform_fee_bp,
         )?;
         Ok(())
     }
@@ -43,10 +43,10 @@ pub mod pie {
 
     pub fn update_fee(
         ctx: Context<UpdateFeeContext>,
-        new_creator_fee_percentage: u64,
-        new_platform_fee_percentage: u64,
+        new_creator_fee_bp: u64,
+        new_platform_fee_bp: u64,
     ) -> Result<()> {
-        instructions::update_fee(ctx, new_creator_fee_percentage, new_platform_fee_percentage)?;
+        instructions::update_fee(ctx, new_creator_fee_bp, new_platform_fee_bp)?;
         Ok(())
     }
 

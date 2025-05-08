@@ -92,8 +92,8 @@ pub fn withdraw_wsol(ctx: Context<WithdrawWsolContext>) -> Result<()> {
     let amount_before_fee = component.amount;
 
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
-        ctx.accounts.program_state.platform_fee_percentage,
-        ctx.accounts.basket_config.creator_fee_percentage,
+        ctx.accounts.program_state.platform_fee_bp,
+        ctx.accounts.basket_config.creator_fee_bp,
         amount_before_fee,
     )?;
 

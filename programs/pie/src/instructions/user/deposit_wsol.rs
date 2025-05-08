@@ -94,8 +94,8 @@ pub fn deposit_wsol(ctx: Context<DepositWsolContext>, amount: u64) -> Result<()>
     let user_fund = &mut ctx.accounts.user_fund;
 
     let (platform_fee_amount, creator_fee_amount) = calculate_fee_amount(
-        ctx.accounts.program_state.platform_fee_percentage,
-        ctx.accounts.basket_config.creator_fee_percentage,
+        ctx.accounts.program_state.platform_fee_bp,
+        ctx.accounts.basket_config.creator_fee_bp,
         amount,
     )?;
 

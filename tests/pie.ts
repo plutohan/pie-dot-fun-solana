@@ -116,8 +116,8 @@ describe("pie", () => {
       await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
 
       const programState = await pieProgram.state.getProgramState();
-      assert.equal(programState.creatorFeePercentage.toNumber(), 1000);
-      assert.equal(programState.platformFeePercentage.toNumber(), 9000);
+      assert.equal(programState.creatorFeeBp.toNumber(), 1000);
+      assert.equal(programState.platformFeeBp.toNumber(), 9000);
     });
 
     it("should fail if not admin", async () => {
@@ -199,7 +199,7 @@ describe("pie", () => {
         components: basketComponents,
         rebalancer: admin.publicKey,
         isComponentFixed: false,
-        creatorFeePercentage: new BN(100),
+        creatorFeeBp: new BN(100),
       };
       const programState = await pieProgram.state.getProgramState();
       const basketId = programState.basketCounter;
@@ -253,7 +253,7 @@ describe("pie", () => {
         components: basketComponents,
         rebalancer: rebalancer.publicKey,
         isComponentFixed: false,
-        creatorFeePercentage: new BN(100),
+        creatorFeeBp: new BN(100),
       };
 
       const programState = await pieProgram.state.getProgramState();
