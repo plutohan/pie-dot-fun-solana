@@ -17,7 +17,7 @@ pub struct BasketConfig {
     pub is_rebalancing: bool,
     pub components: Vec<BasketComponent>,
     pub is_component_fixed: bool,
-    pub creator_fee_percentage: u64,
+    pub creator_fee_bp: u64,
 }
 
 // @dev: V2
@@ -32,7 +32,7 @@ impl Space for BasketConfig {
         + 4 // vec length
         + (32 + 16) * MAX_COMPONENTS as usize // MAX_COMPONENTS was 30 in V1, now 15
         + 1  // is_component_fixed (bool)
-        + 8  // creator_fee_percentage (u64)
+        + 8  // creator_fee_bp (u64)
         + 100; // buffer for future use
 }
 

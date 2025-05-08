@@ -28,7 +28,7 @@ import {
   showBasketConfigTable,
   showUserFundTable,
   unwrapSolIx,
-  wrapSOLInstruction,
+  wrapSOLIx,
 } from "../sdk/utils/helper";
 import {
   addAddressesToTable,
@@ -44,10 +44,6 @@ describe("pie", () => {
     connection,
     cluster: "devnet",
     jitoRpcUrl: "",
-  });
-
-  beforeEach(async () => {
-    await pieProgram.init();
   });
 
   it("Setup and Initialized if needed", async () => {
@@ -78,7 +74,7 @@ describe("pie", () => {
     //fetch again
     programState = await pieProgram.state.getProgramState();
 
-    if (programState.platformFeePercentage.toNumber() == 0) {
+    if (programState.platformFeeBp.toNumber() == 0) {
       // mint redeem fee 1% and platform fee 0.5%
       const updateFeeTx = await pieProgram.admin.updateFee({
         admin: admin.publicKey,
@@ -159,6 +155,7 @@ describe("pie", () => {
       components: components,
       rebalancer: admin.publicKey,
       isComponentFixed: false,
+      creatorFeeBp: new BN(100),
     };
 
     const programState = await pieProgram.state.getProgramState();
@@ -240,7 +237,7 @@ describe("pie", () => {
       tx.add(nativeMintAtaTx);
     }
 
-    const wrapSolIx = wrapSOLInstruction(admin.publicKey, totalSolTobuy);
+    const wrapSolIx = wrapSOLIx(admin.publicKey, totalSolTobuy);
     tx.add(...wrapSolIx);
 
     await sendAndConfirmTransaction(connection, tx, [admin], {
@@ -248,51 +245,54 @@ describe("pie", () => {
       commitment: "confirmed",
     });
 
-    for (let i = 0; i < basketConfigData.components.length; i++) {
-      let txs = new Transaction();
-      if (i == basketConfigData.components.length - 1) {
-        txs.add(
-          await pieProgram.buy.buyComponent({
-            userSourceOwner: admin.publicKey,
-            basketId,
-            maxAmountIn: 1 * LAMPORTS_PER_SOL,
-            amountOut: (1 + i) * 10 ** 6,
-            ammId: tokensAmm[i].ammId,
-            unwrapSol: true,
-          })
-        );
-      } else {
-        txs.add(
-          await pieProgram.buy.buyComponent({
-            userSourceOwner: admin.publicKey,
-            basketId,
-            maxAmountIn: 1 * LAMPORTS_PER_SOL,
-            amountOut: (1 + i) * 10 ** 6,
-            ammId: tokensAmm[i].ammId,
-            unwrapSol: false,
-          })
-        );
-      }
-      const buyComponentTxResult = await sendAndConfirmTransaction(
-        connection,
-        txs,
-        [admin],
-        {
-          skipPreflight: true,
-          commitment: "confirmed",
-        }
-      );
+    // @TODO: use Jupiter to buy component
 
-      console.log(
-        `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
-      );
-    }
-    const userFundTable = await showUserFundTable(
-      pieProgram,
-      admin.publicKey,
-      basketId
-    );
-    userFundTable.printTable();
+    // for (let i = 0; i < basketConfigData.components.length; i++) {
+    //   let txs = new Transaction();
+
+    // if (i == basketConfigData.components.length - 1) {
+    //   txs.add(
+    //     await pieProgram.user.buyComponent({
+    //       userSourceOwner: admin.publicKey,
+    //       basketId,
+    //       maxAmountIn: 1 * LAMPORTS_PER_SOL,
+    //       amountOut: (1 + i) * 10 ** 6,
+    //       ammId: tokensAmm[i].ammId,
+    //       unwrapSol: true,
+    //     })
+    //   );
+    // } else {
+    //   txs.add(
+    //     await pieProgram.user.buyComponent({
+    //       userSourceOwner: admin.publicKey,
+    //       basketId,
+    //       maxAmountIn: 1 * LAMPORTS_PER_SOL,
+    //       amountOut: (1 + i) * 10 ** 6,
+    //       ammId: tokensAmm[i].ammId,
+    //       unwrapSol: false,
+    //     })
+    //   );
+    // }
+    //   const buyComponentTxResult = await sendAndConfirmTransaction(
+    //     connection,
+    //     txs,
+    //     [admin],
+    //     {
+    //       skipPreflight: true,
+    //       commitment: "confirmed",
+    //     }
+    //   );
+
+    //   console.log(
+    //     `Buy component at tx: https://explorer.solana.com/tx/${buyComponentTxResult}?cluster=devnet`
+    //   );
+    // }
+    // const userFundTable = await showUserFundTable(
+    //   pieProgram,
+    //   admin.publicKey,
+    //   basketId
+    // );
+    // userFundTable.printTable();
   });
 
   it("Mint Basket", async () => {
@@ -308,10 +308,9 @@ describe("pie", () => {
         2
       )
     );
-    const mintBasketTokenTx = await pieProgram.buy.mintBasketToken({
+    const mintBasketTokenTx = await pieProgram.user.mintBasketToken({
       user: admin.publicKey,
       basketId,
-      amount: "1000000",
     });
 
     const mintBasketTokenTxResult = await sendAndConfirmTransaction(
@@ -351,7 +350,7 @@ describe("pie", () => {
   it("Redeem Basket Token", async () => {
     const programState = await pieProgram.state.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
-    const redeemBasketTokenTx = await pieProgram.sell.redeemBasketToken({
+    const redeemBasketTokenTx = await pieProgram.user.redeemBasketToken({
       user: admin.publicKey,
       basketId,
       amount: 1000000,
@@ -386,54 +385,56 @@ describe("pie", () => {
       basketId,
     });
 
-    for (let i = 0; i < basketConfigData.components.length; i++) {
-      let txs = new Transaction();
-      if (i == 0) {
-        txs.add(
-          await pieProgram.sell.sellComponent({
-            user: admin.publicKey,
-            inputMint: basketConfigData.components[i].mint,
-            basketId,
-            amountIn: (1 + i) * 10 ** 6,
-            minimumAmountOut: 0,
-            ammId: tokensAmm[i].ammId,
-            createNativeMintATA: true,
-          })
-        );
-      } else {
-        txs.add(
-          await pieProgram.sell.sellComponent({
-            user: admin.publicKey,
-            inputMint: basketConfigData.components[i].mint,
-            basketId,
-            amountIn: (1 + i) * 10 ** 6,
-            minimumAmountOut: 0,
-            ammId: tokensAmm[i].ammId,
-            createNativeMintATA: true,
-          })
-        );
-      }
-      const sellComponentTxResult = await sendAndConfirmTransaction(
-        connection,
-        txs,
-        [admin],
-        {
-          skipPreflight: true,
-          commitment: "confirmed",
-        }
-      );
+    // @TODO: use Jupiter to sell component
 
-      console.log(
-        `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
-      );
+    // for (let i = 0; i < basketConfigData.components.length; i++) {
+    //   let txs = new Transaction();
+    //   if (i == 0) {
+    //     txs.add(
+    //       await pieProgram.user.sellComponent({
+    //         user: admin.publicKey,
+    //         inputMint: basketConfigData.components[i].mint,
+    //         basketId,
+    //         amountIn: (1 + i) * 10 ** 6,
+    //         minimumAmountOut: 0,
+    //         ammId: tokensAmm[i].ammId,
+    //         createNativeMintATA: true,
+    //       })
+    //     );
+    //   } else {
+    //     txs.add(
+    //       await pieProgram.user.sellComponent({
+    //         user: admin.publicKey,
+    //         inputMint: basketConfigData.components[i].mint,
+    //         basketId,
+    //         amountIn: (1 + i) * 10 ** 6,
+    //         minimumAmountOut: 0,
+    //         ammId: tokensAmm[i].ammId,
+    //         createNativeMintATA: true,
+    //       })
+    //     );
+    //   }
+    //   const sellComponentTxResult = await sendAndConfirmTransaction(
+    //     connection,
+    //     txs,
+    //     [admin],
+    //     {
+    //       skipPreflight: true,
+    //       commitment: "confirmed",
+    //     }
+    //   );
 
-      console.log("User fund after sell component basket: ");
-      const userFundTable = await showUserFundTable(
-        pieProgram,
-        admin.publicKey,
-        basketId
-      );
-      userFundTable?.printTable();
-    }
+    //   console.log(
+    //     `Sell component at tx: https://explorer.solana.com/tx/${sellComponentTxResult}?cluster=devnet`
+    //   );
+
+    //   console.log("User fund after sell component basket: ");
+    //   const userFundTable = await showUserFundTable(
+    //     pieProgram,
+    //     admin.publicKey,
+    //     basketId
+    //   );
+    //   userFundTable?.printTable();
+    // }
   });
 });

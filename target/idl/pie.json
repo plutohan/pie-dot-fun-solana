@@ -2759,7 +2759,7 @@
           "type": "pubkey"
         },
         {
-          "name": "initial_platform_fee_percentage",
+          "name": "initial_platform_fee_bp",
           "type": "u64"
         }
       ]
@@ -4350,11 +4350,11 @@
       ],
       "args": [
         {
-          "name": "new_creator_fee_percentage",
+          "name": "new_creator_fee_bp",
           "type": "u64"
         },
         {
-          "name": "new_platform_fee_percentage",
+          "name": "new_platform_fee_bp",
           "type": "u64"
         }
       ]
@@ -5738,7 +5738,7 @@
             "type": "bool"
           },
           {
-            "name": "creator_fee_percentage",
+            "name": "creator_fee_bp",
             "type": "u64"
           }
         ]
@@ -5840,7 +5840,7 @@
             "type": "bool"
           },
           {
-            "name": "creator_fee_percentage",
+            "name": "creator_fee_bp",
             "type": "u64"
           }
         ]
@@ -5890,7 +5890,7 @@
             "type": "bool"
           },
           {
-            "name": "creator_fee_percentage",
+            "name": "creator_fee_bp",
             "type": "u64"
           }
         ]
@@ -6296,11 +6296,11 @@
             "type": "u64"
           },
           {
-            "name": "creator_fee_percentage",
+            "name": "creator_fee_bp",
             "type": "u64"
           },
           {
-            "name": "platform_fee_percentage",
+            "name": "platform_fee_bp",
             "type": "u64"
           },
           {
@@ -6490,11 +6490,11 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "new_creator_fee_percentage",
+            "name": "new_creator_fee_bp",
             "type": "u64"
           },
           {
-            "name": "new_platform_fee_percentage",
+            "name": "new_platform_fee_bp",
             "type": "u64"
           }
         ]

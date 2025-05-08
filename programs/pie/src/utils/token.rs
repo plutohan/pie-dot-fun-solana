@@ -92,17 +92,17 @@ pub fn transfer_fees<'info>(
 }
 
 pub fn calculate_fee_amount(
-    platform_fee_percentage: u64,
-    creator_fee_percentage: u64,
+    platform_fee_bp: u64,
+    creator_fee_bp: u64,
     amount: u64,
 ) -> Result<(u64, u64)> {
     let platform_fee_amount = amount
-        .checked_mul(platform_fee_percentage)
+        .checked_mul(platform_fee_bp)
         .unwrap()
         .checked_div(BASIS_POINTS)
         .unwrap();
     let creator_fee_amount = amount
-        .checked_mul(creator_fee_percentage)
+        .checked_mul(creator_fee_bp)
         .unwrap()
         .checked_div(BASIS_POINTS)
         .unwrap();
