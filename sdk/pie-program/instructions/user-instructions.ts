@@ -4,6 +4,8 @@ import {
   PublicKey,
   Connection,
   AddressLookupTableAccount,
+  TransactionMessage,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import { ProgramStateManager } from "../state";
 import {
@@ -162,6 +164,7 @@ export class UserInstructions extends ProgramStateManager {
   }): Promise<{
     buyComponentJupiterTx: Transaction;
     addressLookupTableAccounts: AddressLookupTableAccount[];
+    txLength: number;
   }> {
     const tx = new Transaction();
 
@@ -217,9 +220,19 @@ export class UserInstructions extends ProgramStateManager {
 
     tx.add(buyComponentJupiterTx);
 
+    // calculate tx length
+    const message = new TransactionMessage({
+      payerKey: user,
+      recentBlockhash: (await this.connection.getLatestBlockhash()).blockhash,
+      instructions: [buyComponentJupiterTx],
+    }).compileToV0Message(addressLookupTableAccounts);
+    const versionedTx = new VersionedTransaction(message);
+    const serializedTx = versionedTx.serialize();
+
     return {
       buyComponentJupiterTx: tx,
       addressLookupTableAccounts,
+      txLength: serializedTx.length,
     };
   }
 
