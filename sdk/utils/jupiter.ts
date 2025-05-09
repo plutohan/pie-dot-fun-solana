@@ -18,6 +18,8 @@ export async function createJupiterSwapIx({
   fromAccount,
   swapMode,
   maxAccounts,
+  dynamicSlippage,
+  slippageBps,
 }: {
   connection: Connection;
   inputMint: PublicKey;
@@ -26,6 +28,8 @@ export async function createJupiterSwapIx({
   fromAccount: PublicKey;
   swapMode: "ExactIn" | "ExactOut";
   maxAccounts?: number;
+  dynamicSlippage?: boolean;
+  slippageBps?: number;
 }): Promise<{
   swapInstructions: SwapInstructionsResponse;
   addressLookupTableAccounts: AddressLookupTableAccount[];
@@ -42,6 +46,8 @@ export async function createJupiterSwapIx({
       outputMint: outputMint.toBase58(),
       swapMode,
       maxAccounts,
+      dynamicSlippage,
+      slippageBps,
     });
   } catch (error) {
     console.error("Jupiter Quote API Error:", error);

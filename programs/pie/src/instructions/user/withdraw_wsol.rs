@@ -63,7 +63,6 @@ pub struct WithdrawWsolContext<'info> {
     pub creator_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, System>,
 }
 
 #[event]

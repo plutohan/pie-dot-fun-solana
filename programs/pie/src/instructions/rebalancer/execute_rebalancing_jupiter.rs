@@ -6,6 +6,7 @@ use anchor_lang::{
     prelude::*,
     solana_program::{instruction::Instruction, program::invoke_signed},
 };
+use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token_interface::TokenAccount;
 use anchor_spl::token_interface::{Mint, TokenInterface};
 
@@ -31,7 +32,8 @@ pub struct ExecuteRebalancingJupiter<'info> {
     )]
     pub vault_token_source_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(mut,
+    #[account(
+        mut,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_source_mint,
         associated_token::token_program = input_token_program
@@ -44,7 +46,8 @@ pub struct ExecuteRebalancingJupiter<'info> {
     pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
-        mut,
+        init_if_needed,
+        payer = rebalancer,
         associated_token::authority = basket_config,
         associated_token::mint = vault_token_destination_mint,
         associated_token::token_program = output_token_program
@@ -59,6 +62,8 @@ pub struct ExecuteRebalancingJupiter<'info> {
 
     /// CHECK: Jupiter program will be checked in require
     pub jupiter_program: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 pub fn execute_rebalancing_jupiter<'a, 'b, 'c: 'info, 'info>(

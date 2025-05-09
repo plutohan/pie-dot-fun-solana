@@ -1,9 +1,21 @@
 import { BN } from "@coral-xyz/anchor";
-import { Transaction, PublicKey, Connection } from "@solana/web3.js";
+import {
+  Transaction,
+  PublicKey,
+  Connection,
+  AddressLookupTableAccount,
+} from "@solana/web3.js";
 import { ProgramStateManager } from "../state";
-import { isValidTransaction, unwrapSolIx, wrapSOLIx } from "../../utils/helper";
+import {
+  getTokenAccountWithTokenProgram,
+  isValidTransaction,
+  unwrapSolIx,
+  wrapSOLIx,
+} from "../../utils/helper";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import { getOrCreateTokenAccountTx } from "../../utils/helper";
+import { createJupiterSwapIx } from "../../utils/jupiter";
+import { JUPITER_PROGRAM_ID } from "../../constants";
 
 /**
  * Class for handling buy-related instructions
@@ -46,8 +58,9 @@ export class UserInstructions extends ProgramStateManager {
   }: {
     user: PublicKey;
     basketId: BN;
-    amount: string;
+    amount: number;
   }): Promise<Transaction> {
+    const programState = await this.getProgramState();
     const basketConfigPDA = this.basketConfigPDA({ basketId });
     const basketConfig = await this.getBasketConfig({ basketId });
 
@@ -60,7 +73,7 @@ export class UserInstructions extends ProgramStateManager {
       tx.add(createUserWsolAccountTx);
     }
 
-    tx.add(...wrapSOLIx(user, Number(amount)));
+    tx.add(...wrapSOLIx(user, amount));
 
     const {
       tokenAccount: creatorFeeTokenAccount,
@@ -74,6 +87,20 @@ export class UserInstructions extends ProgramStateManager {
 
     if (isValidTransaction(creatorFeeTokenAccountCreationTx)) {
       tx.add(creatorFeeTokenAccountCreationTx);
+    }
+
+    const {
+      tokenAccount: platformFeeTokenAccount,
+      tx: platformFeeTokenAccountCreationTx,
+    } = await getOrCreateTokenAccountTx(
+      this.connection,
+      NATIVE_MINT,
+      user,
+      programState.platformFeeWallet
+    );
+
+    if (isValidTransaction(platformFeeTokenAccountCreationTx)) {
+      tx.add(platformFeeTokenAccountCreationTx);
     }
 
     const { tokenAccount: vaultWsolAccount, tx: createVaultWsolAccountTx } =
@@ -98,12 +125,102 @@ export class UserInstructions extends ProgramStateManager {
         userWsolAccount,
         vaultWsolAccount,
         creatorFeeTokenAccount,
+        platformFeeTokenAccount,
       })
       .transaction();
 
     tx.add(depositWsolTx);
 
     return tx;
+  }
+
+  /**
+   * Buys a component using Jupiter.
+   * @param user - The user account.
+   * @param basketId - The basket ID.
+   * @param amount - The amount of component to buy.
+   * @returns A promise that resolves to a transaction.
+   */
+  async buyComponentJupiter({
+    user,
+    basketId,
+    outputMint,
+    amount,
+    swapMode,
+    maxAccounts,
+    slippageBps,
+    dynamicSlippage,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    outputMint: PublicKey;
+    amount: number;
+    swapMode: "ExactIn" | "ExactOut";
+    maxAccounts?: number;
+    slippageBps?: number;
+    dynamicSlippage?: boolean;
+  }): Promise<{
+    buyComponentJupiterTx: Transaction;
+    addressLookupTableAccounts: AddressLookupTableAccount[];
+  }> {
+    const tx = new Transaction();
+
+    const basketConfigPDA = this.basketConfigPDA({ basketId });
+
+    const { swapInstructions, addressLookupTableAccounts } =
+      await createJupiterSwapIx({
+        connection: this.connection,
+        inputMint: NATIVE_MINT,
+        outputMint,
+        amount,
+        fromAccount: basketConfigPDA,
+        swapMode,
+        maxAccounts,
+        slippageBps,
+        dynamicSlippage,
+      });
+
+    const {
+      tokenAccount: vaultTokenDestination,
+      tx: createVaultTokenDestinationTx,
+      tokenProgram: outputTokenProgram,
+    } = await getOrCreateTokenAccountTx(
+      this.connection,
+      outputMint,
+      user,
+      basketConfigPDA
+    );
+
+    if (isValidTransaction(createVaultTokenDestinationTx)) {
+      tx.add(createVaultTokenDestinationTx);
+    }
+    const buyComponentJupiterTx = await this.program.methods
+      .buyComponentJupiter(
+        Buffer.from(swapInstructions.swapInstruction.data, "base64")
+      )
+      .accountsPartial({
+        user,
+        userFund: this.userFundPDA({ user, basketId }),
+        basketConfig: basketConfigPDA,
+        vaultTokenDestination: vaultTokenDestination,
+        outputTokenProgram,
+        jupiterProgram: new PublicKey(JUPITER_PROGRAM_ID),
+      })
+      .remainingAccounts(
+        swapInstructions.swapInstruction.accounts.map((acc) => ({
+          pubkey: new PublicKey(acc.pubkey),
+          isSigner: false,
+          isWritable: acc.isWritable,
+        }))
+      )
+      .instruction();
+
+    tx.add(buyComponentJupiterTx);
+
+    return {
+      buyComponentJupiterTx: tx,
+      addressLookupTableAccounts,
+    };
   }
 
   /**
@@ -123,6 +240,17 @@ export class UserInstructions extends ProgramStateManager {
     const basketMint = this.basketMintPDA({ basketId });
     const basketConfig = this.basketConfigPDA({ basketId });
     const userFund = this.userFundPDA({ user, basketId });
+
+    const userBalance = await this.getUserBalance({ user });
+
+    if (!userBalance) {
+      tx.add(
+        await this.initializeUserBalance({
+          user,
+        })
+      );
+    }
+
     const { tokenAccount: userBasketTokenAccount, tx: userBasketTokenTx } =
       await getOrCreateTokenAccountTx(this.connection, basketMint, user, user);
     if (isValidTransaction(userBasketTokenTx)) {

@@ -1,8 +1,10 @@
 import { AnchorProvider, BN } from "@coral-xyz/anchor";
 import {
+  AddressLookupTableAccount,
   ComputeBudgetProgram,
   Connection,
   Keypair,
+  LAMPORTS_PER_SOL,
   PublicKey,
   sendAndConfirmTransaction,
   Transaction,
@@ -51,6 +53,17 @@ describe("pie", () => {
   const swapsPerBundle = 2;
   const slippage = 50;
 
+  const sampleTokenMints = [
+    {
+      name: "AI16Z",
+      mint: "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC",
+    },
+    {
+      name: "PENGU",
+      mint: "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
+    },
+  ];
+
   const startPollingJitoBundle = async (bundleId: string) => {
     await new Promise<void>((resolve) => {
       let interval = setInterval(async () => {
@@ -67,7 +80,8 @@ describe("pie", () => {
     });
   };
 
-  it("Setup and Initialized if needed", async () => {
+  // Program is already initialized
+  it.skip("Setup and Initialized if needed", async () => {
     let programState = await pieProgram.state.getProgramState();
 
     const platformFeeWallet = new PublicKey(
@@ -128,110 +142,195 @@ describe("pie", () => {
     }
   });
 
-  // it("Create Basket", async () => {
-  //   const components: BasketComponent[] = tokens.map((token) => ({
-  //     mint: new PublicKey(token.mint),
-  //     quantityInSysDecimal: new BN(1 * 10 ** 6),
-  //   }));
+  it("Create Basket", async () => {
+    const components: BasketComponent[] = sampleTokenMints.map((token) => ({
+      mint: new PublicKey(token.mint),
+      quantityInSysDecimal: new BN(1 * 10 ** 6),
+    }));
 
-  //   // ADD WSOL
-  //   components.push({
-  //     mint: NATIVE_MINT,
-  //     quantityInSysDecimal: new BN(1 * 10 ** 6),
-  //   });
+    const createBasketArgs: CreateBasketArgs = {
+      name: "Test Basket",
+      symbol: "TEST",
+      uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
+      components: components,
+      rebalancer: rebalancer.publicKey,
+      isComponentFixed: false,
+      creatorFeeBp: new BN(100),
+    };
 
-  //   const createBasketArgs: CreateBasketArgs = {
-  //     name: "Basket 3",
-  //     symbol: "B-3",
-  //     uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
-  //     components: components,
-  //     rebalancer: admin.publicKey,
-  //   };
+    const programState = await pieProgram.state.getProgramState();
+    const basketId = programState.basketCounter;
 
-  //   const programState = await pieProgram.state.getProgramState();
-  //   const basketId = programState.basketCounter;
+    console.log("creating basket...");
 
-  //   console.log("creating basket...");
-  //   const createBasketTx = await pieProgram.creator.createBasket({
-  //     creator: admin.publicKey,
-  //     args: createBasketArgs,
-  //     basketId,
-  //   });
+    const createBasketTx = await pieProgram.creator.createBasket({
+      creator: admin.publicKey,
+      args: createBasketArgs,
+      basketId,
+    });
 
-  //   createBasketTx.add(priorityFeeInstruction);
+    const createBasketTxResult = await sendAndConfirmTransaction(
+      connection,
+      createBasketTx,
+      [admin],
+      { skipPreflight: true, commitment: "confirmed" }
+    );
 
-  //   const createBasketTxResult = await sendAndConfirmTransaction(
-  //     connection,
-  //     createBasketTx,
-  //     [admin],
-  //     { skipPreflight: true, commitment: "confirmed" }
-  //   );
+    console.log(
+      `Basket created at tx: ${getExplorerUrl(createBasketTxResult, "mainnet")}`
+    );
 
-  //   console.log(
-  //     `Basket created at tx: ${getExplorerUrl(createBasketTxResult, "mainnet")}`
-  //   );
+    const basket = await pieProgram.state.getBasketConfig({ basketId });
+    assert.equal(basket.components.length, createBasketArgs.components.length);
+    assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
+    assert.equal(basket.id.toString(), basketId.toString());
+    assert.equal(basket.rebalancer.toString(), rebalancer.publicKey.toString());
 
-  //   console.log("adding basket to shared lookup table...");
-  //   await pieProgram.addBaksetToSharedLookupTable({
-  //     basketId,
-  //     admin,
-  //   });
+    const table = new Table({
+      columns: [
+        { name: "mint", alignment: "left", color: "cyan" },
+        { name: "quantity", alignment: "right", color: "green" },
+      ],
+    });
 
-  //   const { tx } = await pieProgram.createBasketVaultAccounts({
-  //     creator: admin.publicKey,
-  //     args: createBasketArgs,
-  //     basketId,
-  //   });
+    for (let i = 0; i < basket.components.length; i++) {
+      let component = basket.components[i];
+      table.addRow({
+        mint: component.mint.toBase58(),
+        quantity: component.quantityInSysDecimal.toString(),
+      });
+    }
+    table.printTable();
+  });
 
-  //   if (isValidTransaction(tx)) {
-  //     console.log("creating vault accounts..");
-  //     tx.add(priorityFeeInstruction);
-  //     const creatingVaultsTxResult = await sendAndConfirmTransaction(
-  //       connection,
-  //       tx,
-  //       [admin],
-  //       {
-  //         skipPreflight: true,
-  //         commitment: "confirmed",
-  //       }
-  //     );
+  it("Buy components and mint basket token", async () => {
+    const programState = await pieProgram.state.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfig = await pieProgram.state.getBasketConfig({
+      basketId,
+    });
 
-  //     console.log(
-  //       `Vaults created at tx: ${getExplorerUrl(
-  //         creatingVaultsTxResult,
-  //         "mainnet"
-  //       )}`
-  //     );
-  //   }
+    const depositAmount = 0.001 * LAMPORTS_PER_SOL;
 
-  //   const basket = await pieProgram.state.getBasketConfig({ basketId });
-  //   assert.equal(basket.components.length, createBasketArgs.components.length);
-  //   assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
-  //   assert.equal(basket.id.toString(), basketId.toString());
-  //   assert.equal(basket.rebalancer.toString(), admin.publicKey.toString());
+    console.log("depositing wsol : ", depositAmount);
 
-  //   const table = new Table({
-  //     columns: [
-  //       { name: "mint", alignment: "left", color: "cyan" },
-  //       { name: "quantity", alignment: "right", color: "green" },
-  //     ],
-  //   });
+    const depositWsolTx = await pieProgram.user.depositWsol({
+      user: admin.publicKey,
+      basketId,
+      amount: depositAmount,
+    });
 
-  //   for (let i = 0; i < basket.components.length; i++) {
-  //     let component = basket.components[i];
-  //     table.addRow({
-  //       mint: component.mint.toBase58(),
-  //       quantity: component.quantityInSysDecimal.toString(),
-  //     });
-  //   }
-  //   table.printTable();
-  // });
+    const depositWsolTxResult = await sendAndConfirmTransaction(
+      connection,
+      depositWsolTx,
+      [admin]
+    );
+
+    console.log(
+      `Wsol deposited at tx: ${getExplorerUrl(depositWsolTxResult, "mainnet")}`
+    );
+
+    const buyComponentJupiterTxs: Transaction[] = [];
+    const combinedAddressLookupTableAccounts: AddressLookupTableAccount[] = [];
+
+    for (const component of basketConfig.components) {
+      console.log("fetching quote for ", component.mint.toBase58());
+      const { buyComponentJupiterTx, addressLookupTableAccounts } =
+        await pieProgram.user.buyComponentJupiter({
+          user: admin.publicKey,
+          basketId,
+          outputMint: component.mint,
+          amount: depositAmount / basketConfig.components.length,
+          swapMode: "ExactIn",
+          maxAccounts: 20,
+        });
+
+      buyComponentJupiterTxs.push(buyComponentJupiterTx);
+      combinedAddressLookupTableAccounts.push(...addressLookupTableAccounts);
+    }
+
+    const mintBasketTx = await pieProgram.user.mintBasketToken({
+      user: admin.publicKey,
+      basketId,
+    });
+
+    console.log("simulating...");
+    const recentBlockhash = (await connection.getLatestBlockhash("confirmed"))
+      .blockhash;
+
+    const simulateMessage = new TransactionMessage({
+      recentBlockhash,
+      payerKey: admin.publicKey,
+      instructions: [
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: 100_0000,
+        }),
+        ...buyComponentJupiterTxs.flatMap((tx) => tx.instructions),
+        ...mintBasketTx.instructions,
+      ],
+    }).compileToV0Message(combinedAddressLookupTableAccounts);
+
+    const simulateTx = new VersionedTransaction(simulateMessage);
+
+    const simulation = await connection.simulateTransaction(simulateTx, {
+      commitment: "confirmed",
+      replaceRecentBlockhash: true,
+      sigVerify: false,
+    });
+
+    console.log(simulation.value.logs, "simulation.value.logs");
+
+    if (simulation.value.err) {
+      console.log(simulation.value.err, "simulation.value.err");
+      throw new Error("simulation failed");
+    }
+
+    const cuIx = ComputeBudgetProgram.setComputeUnitLimit({
+      units: simulation.value.unitsConsumed + 100_000,
+    });
+
+    const message = new TransactionMessage({
+      payerKey: admin.publicKey,
+      recentBlockhash,
+      instructions: [
+        cuIx,
+        ...buyComponentJupiterTxs.flatMap((tx) => tx.instructions),
+        ...mintBasketTx.instructions,
+      ],
+    }).compileToV0Message(combinedAddressLookupTableAccounts);
+
+    const tx = new VersionedTransaction(message);
+    tx.sign([admin]);
+
+    const signature = await connection.sendTransaction(tx, {
+      skipPreflight: true,
+    });
+
+    // Wait for transaction confirmation before proceeding to the next component
+    await connection.confirmTransaction(signature, "confirmed");
+
+    console.log(
+      `Bought components and minted basket token at tx: ${getExplorerUrl(
+        signature,
+        "mainnet"
+      )}`
+    );
+
+    const userBalance = await pieProgram.state.getUserBalance({
+      user: admin.publicKey,
+    });
+
+    const userFund = await pieProgram.state.getUserFund({
+      user: admin.publicKey,
+      basketId,
+    });
+
+    console.log(JSON.stringify({ userBalance, userFund }));
+  });
 
   it("Rebalance basket using Jupiter", async () => {
-    const basketId = await getBaksetIdFromBasketMint(
-      new PublicKey("Awx3hshHvVDDrrcvxfyWEHZq7kC6SEXUrLqNdEGWDoiC"),
-      pieProgram
-    );
+    const programState = await pieProgram.state.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
 
     console.log(`basket ${basketId.toString()} data before:`);
     let basketMintTable = await showBasketConfigTable(
@@ -252,11 +351,12 @@ describe("pie", () => {
       addressLookupTableAccounts,
     } = await pieProgram.rebalancer.executeRebalancingJupiterIx({
       basketId,
-      inputMint: new PublicKey("9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump"),
-      outputMint: new PublicKey("HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"),
-      amount: 100000,
+      inputMint: new PublicKey("HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"),
+      outputMint: new PublicKey("2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv"),
+      amount: 10000000,
       swapMode: "ExactIn",
       rebalancer: rebalancer.publicKey,
+      maxAccounts: 50, // have to limit the number of accounts
     });
 
     const stopRebalanceTx = await pieProgram.rebalancer.stopRebalancing({
@@ -286,6 +386,11 @@ describe("pie", () => {
     });
 
     console.log(simulation.value.logs, "simulation.value.logs");
+
+    if (simulation.value.err) {
+      console.log(simulation.value.err, "simulation.value.err");
+      throw new Error("simulation failed");
+    }
 
     // Build final transaction
     const cuIx = ComputeBudgetProgram.setComputeUnitLimit({
