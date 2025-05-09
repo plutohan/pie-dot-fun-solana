@@ -35,6 +35,7 @@ pub struct DepositWsolContext<'info> {
         bump    
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
+
     #[account(
         mut,
         token::mint = NATIVE_MINT,
@@ -51,15 +52,15 @@ pub struct DepositWsolContext<'info> {
 
     #[account(
         mut,
-        token::authority = program_state.platform_fee_wallet,
-        token::mint = NATIVE_MINT,
+        associated_token::authority = program_state.platform_fee_wallet,
+        associated_token::mint = NATIVE_MINT,
     )]
     pub platform_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
-        token::authority = basket_config.creator,
-        token::mint = NATIVE_MINT,
+        associated_token::authority = basket_config.creator,
+        associated_token::mint = NATIVE_MINT,
     )]
     pub creator_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 

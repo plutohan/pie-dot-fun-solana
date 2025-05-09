@@ -8,7 +8,9 @@ use anchor_lang::{
     prelude::*,
     solana_program::{instruction::Instruction, program::invoke_signed},
 };
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::{
+    token_interface::{Mint, TokenAccount, TokenInterface}
+};
 
 #[derive(Accounts)]
 pub struct BuyComponentJupiterContext<'info> {
@@ -29,22 +31,17 @@ pub struct BuyComponentJupiterContext<'info> {
     )]
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
-    #[account(mut,
+    #[account(
+        mut,
         associated_token::authority = basket_config,
         associated_token::mint = NATIVE_MINT,
     )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        address = vault_token_destination.mint
-    )]
-    pub vault_token_destination_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// @TODO: should I use `init_if_needed` here?
-    #[account(
         mut,
         associated_token::authority = basket_config,
-        associated_token::mint = vault_token_destination_mint,
+        associated_token::mint = vault_token_destination.mint,
         associated_token::token_program = output_token_program
     )]
     pub vault_token_destination: Box<InterfaceAccount<'info, TokenAccount>>,
@@ -80,7 +77,7 @@ pub fn buy_component_jupiter(
             .basket_config
             .components
             .iter()
-            .any(|c| c.mint == ctx.accounts.vault_token_destination_mint.key()),
+            .any(|c| c.mint == ctx.accounts.vault_token_destination.mint.key()),
         PieError::InvalidComponent
     );
     require!(

@@ -30,14 +30,9 @@ pub struct SellComponentJupiterContext<'info> {
     pub basket_config: Box<Account<'info, BasketConfig>>,
 
     #[account(
-        address = vault_token_source.mint
-    )]
-    pub vault_token_source_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    #[account(
         mut,
         associated_token::authority = basket_config,
-        associated_token::mint = vault_token_source_mint,
+        associated_token::mint = vault_token_source.mint,
         associated_token::token_program = input_token_program
     )]
     pub vault_token_source: Box<InterfaceAccount<'info, TokenAccount>>,
@@ -45,7 +40,7 @@ pub struct SellComponentJupiterContext<'info> {
     /// SPL program for input token transfers
     pub input_token_program: Interface<'info, TokenInterface>,
 
-    /// @TODO: should I use `init_if_needed` here?
+    // Expected to be initialized during `deposit_wsol`
     #[account(
         mut,
         associated_token::authority = basket_config,
@@ -79,7 +74,7 @@ pub fn sell_component_jupiter(
             .basket_config
             .components
             .iter()
-            .any(|c| c.mint == ctx.accounts.vault_token_source_mint.key()),
+            .any(|c| c.mint == ctx.accounts.vault_token_source.mint.key()),
         PieError::InvalidComponent
     );
     require!(
@@ -144,7 +139,7 @@ pub fn sell_component_jupiter(
 
     // Remove input token from user fund
     // It will throw error if amount_swapped is greater than the balance of the user fund
-    user_fund.remove_component(ctx.accounts.vault_token_source_mint.key(), amount_swapped)?;
+    user_fund.remove_component(ctx.accounts.vault_token_source.mint.key(), amount_swapped)?;
 
     // Add output token to user fund
     user_fund.upsert_component(NATIVE_MINT, amount_received)?;
@@ -152,7 +147,7 @@ pub fn sell_component_jupiter(
     emit!(SellComponentJupiterEvent {
         basket_id: ctx.accounts.basket_config.id,
         user: ctx.accounts.user.key(),
-        mint: ctx.accounts.vault_token_source_mint.key(),
+        mint: ctx.accounts.vault_token_source.mint.key(),
         amount_swapped,
         amount_received,
     });
