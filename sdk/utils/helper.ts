@@ -667,7 +667,7 @@ export async function getBaksetIdFromBasketMint(
   const programState = await pieProgram.state.getProgramState();
   const basketId = programState.basketCounter;
 
-  for (let i = 0; i < programState.basketCounter.toNumber(); i++) {
+  for (let i = 0; i < programState.basketCounter.toNumber() + 1; i++) {
     const basketConfig = await pieProgram.state.getBasketConfig({
       basketId: new BN(i),
     });
@@ -676,6 +676,7 @@ export async function getBaksetIdFromBasketMint(
       continue;
     }
 
+    console.log(i, basketConfig.mint.toBase58(), mint.toBase58());
     if (basketConfig.mint.equals(mint)) {
       return new BN(i);
     }

@@ -89,14 +89,18 @@ export class RebalancerInstructions extends ProgramStateManager {
     swapMode,
     maxAccounts,
     rebalancer,
+    slippageBps,
+    dynamicSlippage,
   }: {
     basketId: BN;
     inputMint: PublicKey;
     outputMint: PublicKey;
     amount: number;
     swapMode: "ExactIn" | "ExactOut";
-    maxAccounts?: number;
     rebalancer: PublicKey;
+    maxAccounts?: number;
+    slippageBps?: number;
+    dynamicSlippage?: boolean;
   }): Promise<{
     executeRebalancingJupiterIx: TransactionInstruction;
     swapInstructions: SwapInstructionsResponse;
@@ -113,6 +117,8 @@ export class RebalancerInstructions extends ProgramStateManager {
         fromAccount: basketConfig,
         swapMode,
         maxAccounts,
+        slippageBps,
+        dynamicSlippage,
       });
 
     const { tokenAccount: vaultTokenSource, tokenProgram: inputTokenProgram } =

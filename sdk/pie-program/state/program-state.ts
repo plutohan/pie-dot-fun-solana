@@ -150,6 +150,7 @@ export class ProgramStateManager {
     try {
       return await this.accounts.basketConfig.fetch(basketConfigPDA);
     } catch (error) {
+      console.log({ error });
       return null;
     }
   }
