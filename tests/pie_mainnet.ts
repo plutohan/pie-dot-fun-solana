@@ -328,7 +328,7 @@ describe("pie", () => {
     console.log(JSON.stringify({ userBalance, userFund }));
   });
 
-  it("Rebalance basket using Jupiter", async () => {
+  it("Rebalance basket using executeRebalancingJupiterIx", async () => {
     const programState = await pieProgram.state.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
 
@@ -351,12 +351,12 @@ describe("pie", () => {
       addressLookupTableAccounts,
     } = await pieProgram.rebalancer.executeRebalancingJupiterIx({
       basketId,
-      inputMint: new PublicKey("HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"),
-      outputMint: new PublicKey("2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv"),
-      amount: 10000000,
+      inputMint: new PublicKey("2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv"),
+      outputMint: new PublicKey("HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"),
+      amount: 1000000,
       swapMode: "ExactIn",
       rebalancer: rebalancer.publicKey,
-      maxAccounts: 50, // have to limit the number of accounts
+      maxAccounts: 45, // have to limit the number of accounts
     });
 
     const stopRebalanceTx = await pieProgram.rebalancer.stopRebalancing({
@@ -434,6 +434,104 @@ describe("pie", () => {
     basketMintTable.printTable();
   });
 
+  it("Rebalance basket using executeRebalancingJupiterTx", async () => {
+    const programState = await pieProgram.state.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfig = await pieProgram.state.getBasketConfig({
+      basketId,
+    });
+
+    console.log(`basket ${basketId.toString()} data before:`);
+    let basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
+      basketId
+    );
+    basketMintTable.printTable();
+
+    if (!basketConfig.isRebalancing) {
+      console.log("starting rebalancing...");
+      const startRebalanceTx = await pieProgram.rebalancer.startRebalancing({
+        rebalancer: rebalancer.publicKey,
+        basketId,
+      });
+
+      const startRebalanceTxResult = await sendAndConfirmTransaction(
+        connection,
+        startRebalanceTx,
+        [rebalancer]
+      );
+
+      console.log(
+        `Start rebalancing at tx: ${getExplorerUrl(
+          startRebalanceTxResult,
+          "mainnet"
+        )}`
+      );
+    }
+
+    const executeRebalancingJupiterTx =
+      await pieProgram.rebalancer.executeRebalancingJupiterTx({
+        connection,
+        basketId,
+        inputMint: new PublicKey(
+          "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv"
+        ),
+        outputMint: new PublicKey(
+          "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"
+        ),
+        amount: 1000000,
+        swapMode: "ExactIn",
+        rebalancer: rebalancer.publicKey,
+        maxAccounts: 45, // have to limit the number of accounts
+        slippageBps: 50,
+      });
+
+    executeRebalancingJupiterTx.sign([rebalancer]);
+
+    const executeRebalancingJupiterTxResult = await connection.sendTransaction(
+      executeRebalancingJupiterTx,
+      { skipPreflight: true }
+    );
+
+    await connection.confirmTransaction(
+      executeRebalancingJupiterTxResult,
+      "confirmed"
+    );
+
+    console.log(
+      `Execute rebalancing at tx: ${getExplorerUrl(
+        executeRebalancingJupiterTxResult,
+        "mainnet"
+      )}`
+    );
+
+    const stopRebalanceTx = await pieProgram.rebalancer.stopRebalancing({
+      rebalancer: rebalancer.publicKey,
+      basketId,
+    });
+
+    const stopRebalanceTxResult = await sendAndConfirmTransaction(
+      connection,
+      stopRebalanceTx,
+      [rebalancer]
+    );
+
+    console.log(
+      `Stop rebalancing at tx: ${getExplorerUrl(
+        stopRebalanceTxResult,
+        "mainnet"
+      )}`
+    );
+
+    console.log(`basket ${basketId.toString()} data after:`);
+    basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
+      basketId
+    );
+    basketMintTable.printTable();
+  });
   // it("Buy components and mint basket token using Jito bundle", async () => {
   //   const basketId = new BN(3);
   //   const basketConfigData = await pieProgram.state.getBasketConfig({

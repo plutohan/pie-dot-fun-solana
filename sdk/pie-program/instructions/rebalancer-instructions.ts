@@ -191,6 +191,8 @@ export class RebalancerInstructions extends ProgramStateManager {
     amount,
     swapMode,
     maxAccounts,
+    slippageBps,
+    dynamicSlippage,
   }: {
     connection: Connection;
     rebalancer: PublicKey;
@@ -200,55 +202,33 @@ export class RebalancerInstructions extends ProgramStateManager {
     amount: number;
     swapMode: "ExactIn" | "ExactOut";
     maxAccounts?: number;
+    slippageBps?: number;
+    dynamicSlippage?: boolean;
   }): Promise<VersionedTransaction> {
-    const {
-      executeRebalancingJupiterIx,
-      swapInstructions,
-      addressLookupTableAccounts,
-    } = await this.executeRebalancingJupiterIx({
-      basketId,
-      inputMint,
-      outputMint,
-      amount,
-      swapMode,
-      maxAccounts,
-      rebalancer,
-    });
+    const { executeRebalancingJupiterIx, addressLookupTableAccounts } =
+      await this.executeRebalancingJupiterIx({
+        basketId,
+        inputMint,
+        outputMint,
+        amount,
+        swapMode,
+        maxAccounts,
+        rebalancer,
+        slippageBps,
+        dynamicSlippage,
+      });
 
     const recentBlockhash = (await connection.getLatestBlockhash("confirmed"))
       .blockhash;
-
-    const setupInstructions = swapInstructions.setupInstructions.map((ix) => ({
-      programId: new PublicKey(ix.programId),
-      keys: ix.accounts.map((acc) => ({
-        pubkey: new PublicKey(acc.pubkey),
-        isSigner: acc.isSigner,
-        isWritable: acc.isWritable,
-      })),
-      data: Buffer.from(ix.data, "base64"),
-    }));
-
-    const cleanupInstruction = swapInstructions.cleanupInstruction
-      ? {
-          programId: new PublicKey(
-            swapInstructions.cleanupInstruction.programId
-          ),
-          keys: swapInstructions.cleanupInstruction.accounts.map((acc) => ({
-            pubkey: new PublicKey(acc.pubkey),
-            isSigner: acc.isSigner,
-            isWritable: acc.isWritable,
-          })),
-          data: Buffer.from(swapInstructions.cleanupInstruction.data, "base64"),
-        }
-      : null;
 
     const simulateMessage = new TransactionMessage({
       recentBlockhash,
       payerKey: rebalancer,
       instructions: [
-        ...setupInstructions,
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: 1_000_000,
+        }),
         executeRebalancingJupiterIx,
-        ...(cleanupInstruction ? [cleanupInstruction] : []),
       ],
     }).compileToV0Message(addressLookupTableAccounts);
 
@@ -262,6 +242,11 @@ export class RebalancerInstructions extends ProgramStateManager {
 
     console.log(simulation.value.logs, "simulation.value.logs");
 
+    if (simulation.value.err) {
+      console.log(simulation.value.err, "simulation.value.err");
+      throw new Error("simulation failed");
+    }
+
     // Build final transaction
     const cuIx = ComputeBudgetProgram.setComputeUnitLimit({
       units: simulation.value.unitsConsumed + 100_000,
@@ -270,12 +255,7 @@ export class RebalancerInstructions extends ProgramStateManager {
     const message = new TransactionMessage({
       payerKey: rebalancer,
       recentBlockhash,
-      instructions: [
-        cuIx,
-        ...setupInstructions,
-        executeRebalancingJupiterIx,
-        ...(cleanupInstruction ? [cleanupInstruction] : []),
-      ],
+      instructions: [cuIx, executeRebalancingJupiterIx],
     }).compileToV0Message(addressLookupTableAccounts);
 
     const tx = new VersionedTransaction(message);
