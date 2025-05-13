@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_lang::system_program;
 use anchor_spl::metadata::mpl_token_metadata::types::DataV2;
 use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3, Metadata};
 use anchor_spl::token::{Mint, Token};
@@ -7,15 +6,12 @@ use anchor_spl::token::{Mint, Token};
 use std::collections::HashSet;
 
 use crate::{
-    constant::{BASIS_POINTS, BASKET_CONFIG, PROGRAM_STATE},
+    constant::{BASKET_CONFIG, PROGRAM_STATE},
     error::PieError,
     states::RebalanceType,
     BasketComponent, BasketConfig, ProgramState,
 };
 use crate::{BASKET_DECIMALS, BASKET_MINT};
-
-// Fee in lamports for creating a basket
-const CREATE_BASKET_FEE_LAMPORTS: u64 = 10_000_000; // 0.01 SOL
 
 #[derive(Accounts)]
 #[instruction(args: CreateBasketArgs)]
