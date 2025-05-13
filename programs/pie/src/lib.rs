@@ -58,6 +58,11 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn migrate_basket(ctx: Context<MigrateBasketContext>) -> Result<()> {
+        instructions::migrate_basket(ctx)?;
+        Ok(())
+    }
+
     ///////////////////////////////
     //          Creator          //
     ///////////////////////////////
