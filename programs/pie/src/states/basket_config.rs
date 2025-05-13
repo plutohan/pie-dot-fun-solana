@@ -7,6 +7,12 @@ pub struct BasketComponent {
     pub quantity_in_sys_decimal: u128,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum RebalanceType {
+    Dynamic,  // Components can be added/removed
+    Fixed,    // Components are fixed but quantities can be adjusted
+    Disabled, // Rebalancing is completely disabled
+}
 #[account]
 pub struct BasketConfig {
     pub bump: u8,
@@ -14,10 +20,12 @@ pub struct BasketConfig {
     pub creator: Pubkey,
     pub rebalancer: Pubkey,
     pub mint: Pubkey,
-    pub is_rebalancing: bool,
+    pub state: BasketState,
     pub components: Vec<BasketComponent>,
-    pub is_component_fixed: bool,
+    pub rebalance_type: RebalanceType,
     pub creator_fee_bp: u64,
+    pub version: u8,
+    pub reserved: [u64; 10],
 }
 
 // @dev: V2
@@ -31,9 +39,10 @@ impl Space for BasketConfig {
         + 1  // is_rebalancing (bool)
         + 4 // vec length
         + (32 + 16) * MAX_COMPONENTS as usize // MAX_COMPONENTS was 30 in V1, now 15
-        + 1  // is_component_fixed (bool)
+        + 1  // rebalance_type (RebalanceType)
         + 8  // creator_fee_bp (u64)
-        + 100; // buffer for future use
+        + 1  // version (u8)
+        + 8 * 10; // reserved
 }
 
 impl BasketConfig {
@@ -56,7 +65,7 @@ impl BasketConfig {
         } else {
             // validate if the basket allow component change
             require!(
-                !self.is_component_fixed,
+                self.rebalance_type != RebalanceType::Fixed,
                 PieError::ComponentChangeNotAllowedBasket
             );
             // validate if new component exceed the max components limit
@@ -76,7 +85,7 @@ impl BasketConfig {
     /// Removes a component with the given mint.
     pub fn remove_component(&mut self, mint: Pubkey) {
         // if the basket is component fixed, instead of removing the component, we set the quantity to 0
-        if self.is_component_fixed {
+        if self.rebalance_type == RebalanceType::Fixed {
             if let Some(component) = self.find_component_mut(mint) {
                 component.quantity_in_sys_decimal = 0;
             }

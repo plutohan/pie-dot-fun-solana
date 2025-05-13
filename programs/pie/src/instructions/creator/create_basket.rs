@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use crate::{
     constant::{BASKET_CONFIG, PROGRAM_STATE},
     error::PieError,
+    states::RebalanceType,
     BasketComponent, BasketConfig, ProgramState,
 };
 use crate::{BASKET_DECIMALS, BASKET_MINT};
@@ -64,7 +65,7 @@ pub struct CreateBasketArgs {
     pub symbol: String,
     pub uri: String,
     pub rebalancer: Pubkey,
-    pub is_component_fixed: bool,
+    pub rebalance_type: RebalanceType,
     pub creator_fee_bp: u64,
 }
 
@@ -77,7 +78,7 @@ pub struct CreateBasketEvent {
     pub creator: Pubkey,
     pub mint: Pubkey,
     pub components: Vec<BasketComponent>,
-    pub is_component_fixed: bool,
+    pub rebalance_type: RebalanceType,
     pub creator_fee_bp: u64,
 }
 
@@ -94,7 +95,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     basket_config.id = config.basket_counter;
     basket_config.mint = ctx.accounts.basket_mint.key();
     basket_config.components = args.components.clone();
-    basket_config.is_component_fixed = args.is_component_fixed;
+    basket_config.rebalance_type = args.rebalance_type;
     basket_config.creator_fee_bp = args.creator_fee_bp;
     config.basket_counter += 1;
 
@@ -141,7 +142,7 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
         creator: basket_config.creator,
         mint: basket_config.mint,
         components: basket_config.components.clone(),
-        is_component_fixed: basket_config.is_component_fixed,
+        rebalance_type: basket_config.rebalance_type,
         creator_fee_bp: basket_config.creator_fee_bp,
     });
 
