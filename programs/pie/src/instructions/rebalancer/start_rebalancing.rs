@@ -26,7 +26,7 @@ pub struct StartRebalancing<'info> {
 pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
     let basket_config = &mut ctx.accounts.basket_config;
     require!(
-        basket_config.state == BasketState::Default,
+        basket_config.state == BasketState::Active,
         PieError::OnlyDefaultState
     );
 

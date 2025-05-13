@@ -16,9 +16,9 @@ pub enum RebalanceType {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BasketState {
-    Default,
-    Rebalancing,
-    Disabled, // When disabled, only redeem and sell are allowed
+    Active,      // All actions are allowed
+    Rebalancing, // Only sell is allowed
+    Inactive,    // Redeem and sell are allowed
 }
 
 #[account]

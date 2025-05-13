@@ -31,7 +31,7 @@ pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
         PieError::NotInRebalancing
     );
 
-    basket_config.state = BasketState::Default;
+    basket_config.state = BasketState::Active;
 
     emit!(StopRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,

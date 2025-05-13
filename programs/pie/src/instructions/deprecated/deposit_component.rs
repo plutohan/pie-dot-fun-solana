@@ -86,7 +86,7 @@ pub fn deposit_component(ctx: Context<DepositComponent>, amount: u64) -> Result<
         PieError::InvalidComponent
     );
     require!(
-        ctx.accounts.basket_config.state == BasketState::Default,
+        ctx.accounts.basket_config.state == BasketState::Active,
         PieError::OnlyDefaultState
     );
     let user_fund = &mut ctx.accounts.user_fund;

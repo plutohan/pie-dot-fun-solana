@@ -7,5 +7,5 @@ pub use update_rebalancer::*;
 pub mod transfer_basket;
 pub use transfer_basket::*;
 
-pub mod disable_basket;
-pub use disable_basket::*;
+pub mod inactivate_basket;
+pub use inactivate_basket::*;

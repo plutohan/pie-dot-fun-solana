@@ -66,7 +66,7 @@ pub fn buy_component_jupiter(
     data: Vec<u8>,
 ) -> Result<()> {
     require!(
-        ctx.accounts.basket_config.state == BasketState::Default,
+        ctx.accounts.basket_config.state == BasketState::Active,
         PieError::OnlyDefaultState
     );
     require!(

@@ -49,7 +49,7 @@ pub fn migrate_basket(ctx: Context<MigrateBasketContext>) -> Result<()> {
         creator: old.creator,
         rebalancer: old.rebalancer,
         mint: old.mint,
-        state: BasketState::Default,
+        state: BasketState::Active,
         rebalance_type: RebalanceType::Dynamic,
         components: old.components,
         creator_fee_bp: 50,
@@ -143,7 +143,7 @@ mod tests {
             creator: old.creator,
             rebalancer: old.rebalancer,
             mint: old.mint,
-            state: BasketState::Default,
+            state: BasketState::Active,
             rebalance_type: RebalanceType::Dynamic,
             components: old.components,
             creator_fee_bp: 50,
@@ -159,7 +159,7 @@ mod tests {
         assert_eq!(new.creator, old.creator);
         assert_eq!(new.rebalancer, old.rebalancer);
         assert_eq!(new.mint, old.mint);
-        assert_eq!(new.state, BasketState::Default);
+        assert_eq!(new.state, BasketState::Active);
         assert_eq!(new.version, 2);
         assert_eq!(new.creator_fee_bp, 50);
     }

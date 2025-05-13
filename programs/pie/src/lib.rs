@@ -76,8 +76,8 @@ pub mod pie {
         Ok(())
     }
 
-    pub fn disable_basket(ctx: Context<DisableBasketContext>) -> Result<()> {
-        instructions::disable_basket(ctx)?;
+    pub fn inactivate_basket(ctx: Context<InactivateBasketContext>) -> Result<()> {
+        instructions::inactivate_basket(ctx)?;
         Ok(())
     }
 

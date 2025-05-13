@@ -1910,57 +1910,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "disableBasket",
-      "discriminator": [
-        10,
-        113,
-        244,
-        218,
-        148,
-        145,
-        16,
-        243
-      ],
-      "accounts": [
-        {
-          "name": "currentCreator",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "basketConfig",
-          "writable": true
-        },
-        {
-          "name": "programState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "executeRebalancing",
       "discriminator": [
         98,
@@ -3000,6 +2949,57 @@ export type Pie = {
           "type": "bytes"
         }
       ]
+    },
+    {
+      "name": "inactivateBasket",
+      "discriminator": [
+        85,
+        179,
+        134,
+        148,
+        161,
+        7,
+        17,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
     },
     {
       "name": "initialize",
@@ -5616,19 +5616,6 @@ export type Pie = {
       ]
     },
     {
-      "name": "disableBasketEvent",
-      "discriminator": [
-        230,
-        58,
-        136,
-        112,
-        100,
-        26,
-        20,
-        17
-      ]
-    },
-    {
       "name": "executeRebalancingEvent",
       "discriminator": [
         140,
@@ -5639,6 +5626,19 @@ export type Pie = {
         196,
         44,
         246
+      ]
+    },
+    {
+      "name": "inactivateBasketEvent",
+      "discriminator": [
+        92,
+        132,
+        132,
+        53,
+        162,
+        32,
+        88,
+        138
       ]
     },
     {
@@ -6148,13 +6148,13 @@ export type Pie = {
         "kind": "enum",
         "variants": [
           {
-            "name": "default"
+            "name": "active"
           },
           {
             "name": "rebalancing"
           },
           {
-            "name": "disabled"
+            "name": "inactive"
           }
         ]
       }
@@ -6376,22 +6376,6 @@ export type Pie = {
       }
     },
     {
-      "name": "disableBasketEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basketId",
-            "type": "u64"
-          },
-          {
-            "name": "basketMint",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "executeRebalancingEvent",
       "type": {
         "kind": "struct",
@@ -6431,6 +6415,22 @@ export type Pie = {
           {
             "name": "finalAvailableDestinationBalance",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "inactivateBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
           }
         ]
       }

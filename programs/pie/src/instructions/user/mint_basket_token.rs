@@ -69,7 +69,7 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
     let user_balance = &mut ctx.accounts.user_balance;
 
     require!(
-        basket_config.state == BasketState::Default,
+        basket_config.state == BasketState::Active,
         PieError::OnlyDefaultState
     );
 

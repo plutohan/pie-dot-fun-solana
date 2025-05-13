@@ -117,7 +117,7 @@ pub fn buy_component_cpmm(
 ) -> Result<()> {
     require!(max_amount_in > 0, PieError::InvalidAmount);
     require!(
-        ctx.accounts.basket_config.state == BasketState::Default,
+        ctx.accounts.basket_config.state == BasketState::Active,
         PieError::OnlyDefaultState
     );
     require!(

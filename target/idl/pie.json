@@ -1904,57 +1904,6 @@
       ]
     },
     {
-      "name": "disable_basket",
-      "discriminator": [
-        10,
-        113,
-        244,
-        218,
-        148,
-        145,
-        16,
-        243
-      ],
-      "accounts": [
-        {
-          "name": "current_creator",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "basket_config",
-          "writable": true
-        },
-        {
-          "name": "program_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  103,
-                  114,
-                  97,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              }
-            ]
-          }
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "execute_rebalancing",
       "discriminator": [
         98,
@@ -2994,6 +2943,57 @@
           "type": "bytes"
         }
       ]
+    },
+    {
+      "name": "inactivate_basket",
+      "discriminator": [
+        85,
+        179,
+        134,
+        148,
+        161,
+        7,
+        17,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basket_config",
+          "writable": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
     },
     {
       "name": "initialize",
@@ -5610,19 +5610,6 @@
       ]
     },
     {
-      "name": "DisableBasketEvent",
-      "discriminator": [
-        230,
-        58,
-        136,
-        112,
-        100,
-        26,
-        20,
-        17
-      ]
-    },
-    {
       "name": "ExecuteRebalancingEvent",
       "discriminator": [
         140,
@@ -5633,6 +5620,19 @@
         196,
         44,
         246
+      ]
+    },
+    {
+      "name": "InactivateBasketEvent",
+      "discriminator": [
+        92,
+        132,
+        132,
+        53,
+        162,
+        32,
+        88,
+        138
       ]
     },
     {
@@ -6142,13 +6142,13 @@
         "kind": "enum",
         "variants": [
           {
-            "name": "Default"
+            "name": "Active"
           },
           {
             "name": "Rebalancing"
           },
           {
-            "name": "Disabled"
+            "name": "Inactive"
           }
         ]
       }
@@ -6370,22 +6370,6 @@
       }
     },
     {
-      "name": "DisableBasketEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "basket_id",
-            "type": "u64"
-          },
-          {
-            "name": "basket_mint",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "ExecuteRebalancingEvent",
       "type": {
         "kind": "struct",
@@ -6425,6 +6409,22 @@
           {
             "name": "final_available_destination_balance",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InactivateBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basket_id",
+            "type": "u64"
+          },
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
           }
         ]
       }

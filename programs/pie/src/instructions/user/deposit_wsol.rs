@@ -79,7 +79,7 @@ pub struct DepositWsolEvent {
 /// Before calling buy component, user must deposit WSOl first
 pub fn deposit_wsol(ctx: Context<DepositWsolContext>, amount: u64) -> Result<()> {
     require!(
-        ctx.accounts.basket_config.state == BasketState::Default,
+        ctx.accounts.basket_config.state == BasketState::Active,
         PieError::OnlyDefaultState
     );
 

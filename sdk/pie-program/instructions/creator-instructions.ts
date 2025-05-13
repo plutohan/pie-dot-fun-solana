@@ -78,4 +78,23 @@ export class CreatorInstructions extends ProgramStateManager {
       })
       .transaction();
   }
+
+  /**
+   * Inactivate a basket
+   */
+  async inactivateBasket({
+    creator,
+    basketId,
+  }: {
+    creator: PublicKey;
+    basketId: BN;
+  }): Promise<Transaction> {
+    return await this.program.methods
+      .inactivateBasket()
+      .accountsPartial({
+        creator,
+        basketConfig: this.basketConfigPDA({ basketId }),
+      })
+      .transaction();
+  }
 }
