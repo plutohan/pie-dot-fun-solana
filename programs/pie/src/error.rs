@@ -26,6 +26,9 @@ pub enum PieError {
     #[msg("Invalid Amount")]
     InvalidAmount,
 
+    #[msg("Invalid Basket Id")]
+    InvalidBasketId,
+
     #[msg("Component not found")]
     ComponentNotFound,
 

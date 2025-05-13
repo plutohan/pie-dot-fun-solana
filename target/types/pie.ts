@@ -5854,91 +5854,96 @@ export type Pie = {
     },
     {
       "code": 6008,
+      "name": "invalidBasketId",
+      "msg": "Invalid Basket Id"
+    },
+    {
+      "code": 6009,
       "name": "componentNotFound",
       "msg": "Component not found"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "notInRebalancing",
       "msg": "Not in rebalancing"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "alreadyRebalancing",
       "msg": "Already rebalancing"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "conversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "invalidBasketMint",
       "msg": "Invalid basket mint"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "duplicateComponent",
       "msg": "Duplicate component"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "invalidMint",
       "msg": "Invalid mint"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "invalidComponentQuantity",
       "msg": "Invalid component quantity"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "invalidQuantity",
       "msg": "Invalid quantity"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "rebalancingInProgress",
       "msg": "Rebalancing in process"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "onlyDefaultState",
       "msg": "Only default state"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "invalidComponent",
       "msg": "Invalid component"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "maxWhitelistedCreatorsExceeded",
       "msg": "Max whitelisted creators exceeded"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "invalidTokenProgram",
       "msg": "Invalid token program"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "invalidJupiterProgram",
       "msg": "Invalid Jupiter program"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "invalidSwapResult",
       "msg": "Invalid swap result"
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "rebalanceNotAllowedBasket",
       "msg": "Rebalance not allowed basket"
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "componentChangeNotAllowedBasket",
       "msg": "Component change not allowed basket"
     }

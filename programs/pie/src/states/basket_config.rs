@@ -14,7 +14,7 @@ pub enum RebalanceType {
     Disabled, // Rebalancing is completely disabled
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BasketState {
     Default,
     Rebalancing,
