@@ -1,4 +1,3 @@
-use crate::MAX_WHITELISTED_CREATORS;
 use anchor_lang::prelude::*;
 
 #[account]
@@ -7,7 +6,7 @@ pub struct ProgramState {
     pub admin: Pubkey,
     pub platform_fee_wallet: Pubkey,
     pub basket_counter: u64,
-    pub creator_fee_bp: u64,
+    pub basket_creation_fee: u64,
     pub platform_fee_bp: u64,
     pub is_initialized: bool,
 }
@@ -17,8 +16,8 @@ impl Space for ProgramState {
         + 1   // bump (u8)
         + 32  // admin (Pubkey)
         + 32  // platform_fee_wallet (Pubkey)
-        + 8   // basket_counter (u64)
-        + 8   // creator_fee_bp (u64) // deprecated (use the one in basket config)
+        + 8   // basketcounter (u64)
+        + 8   // basket_creation_fee (in lamports)
         + 8   // platform_fee_bp (u64)
         + 1; // is_initialized (bool)
 }

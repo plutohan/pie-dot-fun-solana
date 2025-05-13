@@ -17,26 +17,22 @@ pub struct UpdateFeeContext<'info> {
 
 #[event]
 pub struct UpdateFeeEvent {
-    pub new_creator_fee_bp: u64,
+    pub new_basket_creation_fee: u64,
     pub new_platform_fee_bp: u64,
 }
 
 pub fn update_fee(
     ctx: Context<UpdateFeeContext>,
-    new_creator_fee_bp: u64,
+    new_basket_creation_fee: u64,
     new_platform_fee_bp: u64,
 ) -> Result<()> {
     let program_state = &mut ctx.accounts.program_state;
 
-    require!(
-        new_creator_fee_bp.checked_add(new_platform_fee_bp).unwrap() <= BASIS_POINTS,
-        PieError::InvalidFee
-    );
-    program_state.creator_fee_bp = new_creator_fee_bp;
+    require!(new_platform_fee_bp <= BASIS_POINTS, PieError::InvalidFee);
     program_state.platform_fee_bp = new_platform_fee_bp;
 
     emit!(UpdateFeeEvent {
-        new_creator_fee_bp,
+        new_basket_creation_fee,
         new_platform_fee_bp,
     });
 

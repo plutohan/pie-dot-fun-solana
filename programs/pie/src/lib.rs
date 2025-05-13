@@ -43,10 +43,10 @@ pub mod pie {
 
     pub fn update_fee(
         ctx: Context<UpdateFeeContext>,
-        new_creator_fee_bp: u64,
+        new_basket_creation_fee: u64,
         new_platform_fee_bp: u64,
     ) -> Result<()> {
-        instructions::update_fee(ctx, new_creator_fee_bp, new_platform_fee_bp)?;
+        instructions::update_fee(ctx, new_basket_creation_fee, new_platform_fee_bp)?;
         Ok(())
     }
 

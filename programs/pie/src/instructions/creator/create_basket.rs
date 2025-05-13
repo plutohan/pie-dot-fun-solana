@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::system_program;
 use anchor_spl::metadata::mpl_token_metadata::types::DataV2;
 use anchor_spl::metadata::{create_metadata_accounts_v3, CreateMetadataAccountsV3, Metadata};
 use anchor_spl::token::{Mint, Token};
@@ -6,12 +7,15 @@ use anchor_spl::token::{Mint, Token};
 use std::collections::HashSet;
 
 use crate::{
-    constant::{BASKET_CONFIG, PROGRAM_STATE},
+    constant::{BASIS_POINTS, BASKET_CONFIG, PROGRAM_STATE},
     error::PieError,
     states::RebalanceType,
     BasketComponent, BasketConfig, ProgramState,
 };
 use crate::{BASKET_DECIMALS, BASKET_MINT};
+
+// Fee in lamports for creating a basket
+const CREATE_BASKET_FEE_LAMPORTS: u64 = 10_000_000; // 0.01 SOL
 
 #[derive(Accounts)]
 #[instruction(args: CreateBasketArgs)]
@@ -43,6 +47,10 @@ pub struct CreateBasketContext<'info> {
         mint::authority = basket_config,
     )]
     pub basket_mint: Account<'info, Mint>,
+
+    /// CHECK: Platform fee wallet that receives the creation fee
+    #[account(address = program_state.platform_fee_wallet)]
+    pub platform_fee_wallet: AccountInfo<'info>,
 
     /// Metadata account to store Metaplex metadata
     /// CHECK: Safety check performed inside function body
@@ -87,17 +95,17 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     validate_components(&args.components)?;
 
     let basket_config = &mut ctx.accounts.basket_config;
-    let config = &mut ctx.accounts.program_state;
+    let program_state = &mut ctx.accounts.program_state;
 
     basket_config.bump = ctx.bumps.basket_config;
     basket_config.creator = ctx.accounts.creator.key();
     basket_config.rebalancer = args.rebalancer;
-    basket_config.id = config.basket_counter;
+    basket_config.id = program_state.basket_counter;
     basket_config.mint = ctx.accounts.basket_mint.key();
     basket_config.components = args.components.clone();
     basket_config.rebalance_type = args.rebalance_type;
     basket_config.creator_fee_bp = args.creator_fee_bp;
-    config.basket_counter += 1;
+    program_state.basket_counter += 1;
 
     let signer: &[&[&[u8]]] = &[&[
         BASKET_CONFIG,
@@ -133,6 +141,25 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
         true,
         None,
     )?;
+
+    // Transfer the basket creation fee to the platform fee wallet
+    if program_state.basket_creation_fee > 0 {
+        anchor_lang::system_program::transfer(
+            CpiContext::new(
+                ctx.accounts.system_program.to_account_info(),
+                anchor_lang::system_program::Transfer {
+                    from: ctx.accounts.creator.to_account_info(),
+                    to: ctx.accounts.platform_fee_wallet.to_account_info(),
+                },
+            ),
+            program_state.basket_creation_fee,
+        )?;
+
+        msg!(
+            "Transferred {} lamports to platform fee wallet",
+            program_state.basket_creation_fee
+        );
+    }
 
     emit!(CreateBasketEvent {
         basket_id: basket_config.id,
