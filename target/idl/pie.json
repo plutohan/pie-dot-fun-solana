@@ -1150,6 +1150,9 @@
           }
         },
         {
+          "name": "platform_fee_wallet"
+        },
+        {
           "name": "metadata_account",
           "docs": [
             "Metadata account to store Metaplex metadata"
@@ -3047,15 +3050,15 @@
           "type": "pubkey"
         },
         {
-          "name": "initial_creator",
-          "type": "pubkey"
-        },
-        {
           "name": "initial_platform_fee_wallet",
           "type": "pubkey"
         },
         {
           "name": "initial_platform_fee_bp",
+          "type": "u64"
+        },
+        {
+          "name": "initial_basket_creation_fee",
           "type": "u64"
         }
       ]
@@ -4694,7 +4697,7 @@
       ],
       "args": [
         {
-          "name": "new_creator_fee_bp",
+          "name": "new_basket_creation_fee",
           "type": "u64"
         },
         {
@@ -6721,7 +6724,7 @@
             "type": "u64"
           },
           {
-            "name": "creator_fee_bp",
+            "name": "basket_creation_fee",
             "type": "u64"
           },
           {
@@ -6932,7 +6935,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "new_creator_fee_bp",
+            "name": "new_basket_creation_fee",
             "type": "u64"
           },
           {

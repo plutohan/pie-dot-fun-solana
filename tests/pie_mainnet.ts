@@ -54,6 +54,7 @@ describe("pie", () => {
   });
   const swapsPerBundle = 2;
   const slippage = 50;
+  const basketCreationFee = 0.01 * LAMPORTS_PER_SOL;
 
   const sampleTokenMints = [
     {
@@ -102,9 +103,9 @@ describe("pie", () => {
       const initializeTx = await pieProgram.admin.initialize({
         initializer: admin.publicKey,
         admin: newAdmin,
-        creator: newCreator,
         platformFeeWallet,
-        platformFeePercentage: new BN(100),
+        platformFeePercentage: new BN(50),
+        basketCreationFee: new BN(basketCreationFee),
       });
 
       initializeTx.add(priorityFeeInstruction);
@@ -141,6 +142,56 @@ describe("pie", () => {
       console.log(
         `Program initialized at tx: https://solscan.io/tx/${initializeTxResult}`
       );
+    }
+
+    if (!programState.basketCreationFee) {
+      console.log("Start migration...");
+
+      console.log("updating basket creation fee...");
+      const updateFeeTx = await pieProgram.admin.updateFee({
+        admin: newAdmin,
+        newBasketCreationFee: basketCreationFee,
+        newPlatformFeeBp: 50,
+      });
+
+      const updateFeeTxResult = await sendAndConfirmTransaction(
+        connection,
+        updateFeeTx,
+        [admin]
+      );
+
+      console.log(
+        `Basket creation fee updated at tx: ${getExplorerUrl(
+          updateFeeTxResult,
+          "mainnet"
+        )}`
+      );
+
+      console.log("Migrating basket config...");
+      for (let i = 0; i < programState.basketCounter.toNumber(); i++) {
+        const basketId = new BN(i);
+
+        console.log(`Migrating basket ${basketId.toString()}...`);
+        const migrateTx = await pieProgram.admin.migrateBasket({
+          admin: newAdmin,
+          basketId,
+        });
+
+        const migrateTxResult = await sendAndConfirmTransaction(
+          connection,
+          migrateTx,
+          [admin]
+        );
+
+        console.log(
+          `Basket ${basketId.toString()} migrated at tx: ${getExplorerUrl(
+            migrateTxResult,
+            "mainnet"
+          )}`
+        );
+      }
+
+      console.log("Migrating basket config completed");
     }
   });
 

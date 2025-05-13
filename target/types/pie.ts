@@ -1156,6 +1156,9 @@ export type Pie = {
           }
         },
         {
+          "name": "platformFeeWallet"
+        },
+        {
           "name": "metadataAccount",
           "docs": [
             "Metadata account to store Metaplex metadata"
@@ -3053,15 +3056,15 @@ export type Pie = {
           "type": "pubkey"
         },
         {
-          "name": "initialCreator",
-          "type": "pubkey"
-        },
-        {
           "name": "initialPlatformFeeWallet",
           "type": "pubkey"
         },
         {
           "name": "initialPlatformFeeBp",
+          "type": "u64"
+        },
+        {
+          "name": "initialBasketCreationFee",
           "type": "u64"
         }
       ]
@@ -4700,7 +4703,7 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "newCreatorFeeBp",
+          "name": "newBasketCreationFee",
           "type": "u64"
         },
         {
@@ -6727,7 +6730,7 @@ export type Pie = {
             "type": "u64"
           },
           {
-            "name": "creatorFeeBp",
+            "name": "basketCreationFee",
             "type": "u64"
           },
           {
@@ -6938,7 +6941,7 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
-            "name": "newCreatorFeeBp",
+            "name": "newBasketCreationFee",
             "type": "u64"
           },
           {

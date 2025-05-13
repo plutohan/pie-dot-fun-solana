@@ -23,9 +23,9 @@ pub struct Initialize<'info> {
 pub fn initialize(
     ctx: Context<Initialize>,
     initial_admin: Pubkey,
-    initial_creator: Pubkey,
     initial_platform_fee_wallet: Pubkey,
     initial_platform_fee_bp: u64,
+    initial_basket_creation_fee: u64,
 ) -> Result<()> {
     let program_state = &mut ctx.accounts.program_state;
 
@@ -39,6 +39,6 @@ pub fn initialize(
     program_state.basket_counter = 0;
     program_state.platform_fee_wallet = initial_platform_fee_wallet;
     program_state.platform_fee_bp = initial_platform_fee_bp;
-
+    program_state.basket_creation_fee = initial_basket_creation_fee;
     Ok(())
 }
