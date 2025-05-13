@@ -84,8 +84,10 @@ describe("pie", () => {
   };
 
   // Program is already initialized
-  it.skip("Setup and Initialized if needed", async () => {
+  it("Setup and Initialized if needed", async () => {
     let programState = await pieProgram.state.getProgramState();
+
+    console.log(JSON.stringify(programState, null, 2));
 
     const platformFeeWallet = new PublicKey(
       "DU2tpPP3yHY811yLrDATdyCjMu51bp3jz1fpEbpf5Crq"
@@ -144,12 +146,12 @@ describe("pie", () => {
       );
     }
 
-    if (!programState.basketCreationFee) {
+    if (programState.basketCreationFee.lt(new BN(basketCreationFee))) {
       console.log("Start migration...");
 
       console.log("updating basket creation fee...");
       const updateFeeTx = await pieProgram.admin.updateFee({
-        admin: newAdmin,
+        admin: admin.publicKey,
         newBasketCreationFee: basketCreationFee,
         newPlatformFeeBp: 50,
       });
@@ -167,28 +169,57 @@ describe("pie", () => {
         )}`
       );
 
-      console.log("Migrating basket config...");
+      console.log("Migrating Baskets to V2...");
       for (let i = 0; i < programState.basketCounter.toNumber(); i++) {
         const basketId = new BN(i);
 
-        console.log(`Migrating basket ${basketId.toString()}...`);
-        const migrateTx = await pieProgram.admin.migrateBasket({
-          admin: newAdmin,
+        const basketConfigBefore = await pieProgram.state.getBasketConfig({
           basketId,
         });
 
-        const migrateTxResult = await sendAndConfirmTransaction(
-          connection,
-          migrateTx,
-          [admin]
-        );
+        if (!basketConfigBefore || basketConfigBefore.version == 0) {
+          console.log(`Migrating basket ${basketId.toString()}...`);
 
-        console.log(
-          `Basket ${basketId.toString()} migrated at tx: ${getExplorerUrl(
-            migrateTxResult,
-            "mainnet"
-          )}`
-        );
+          console.log(
+            `Basket ${basketId.toString()} before migration: ${JSON.stringify(
+              basketConfigBefore,
+              null,
+              2
+            )}`
+          );
+
+          const migrateTx = await pieProgram.admin.migrateBasket({
+            admin: newAdmin,
+            basketId,
+          });
+
+          const migrateTxResult = await sendAndConfirmTransaction(
+            connection,
+            migrateTx,
+            [admin]
+          );
+
+          console.log(
+            `Basket ${basketId.toString()} migrated at tx: ${getExplorerUrl(
+              migrateTxResult,
+              "mainnet"
+            )}`
+          );
+
+          const basketConfigAfter = await pieProgram.state.getBasketConfig({
+            basketId,
+          });
+
+          console.log(
+            `Basket ${basketId.toString()} after migration: ${JSON.stringify(
+              basketConfigAfter,
+              null,
+              2
+            )}`
+          );
+        } else {
+          console.log(`Basket ${basketId.toString()} already migrated`);
+        }
       }
 
       console.log("Migrating basket config completed");
