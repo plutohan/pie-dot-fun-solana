@@ -115,4 +115,27 @@ export class AdminInstructions extends ProgramStateManager {
       .accountsPartial({ admin, programState: this.programStatePDA() })
       .transaction();
   }
+
+  /**
+   * Migrates a basket to a new version.
+   * @param admin - The admin account.
+   * @param basketId - The basket ID to migrate.
+   * @returns A promise that resolves to a transaction.
+   */
+  async migrateBasket({
+    admin,
+    basketId,
+  }: {
+    admin: PublicKey;
+    basketId: BN;
+  }): Promise<Transaction> {
+    return await this.program.methods
+      .migrateBasket()
+      .accountsPartial({
+        admin,
+        programState: this.programStatePDA(),
+        basketConfig: this.basketConfigPDA({ basketId }),
+      })
+      .transaction();
+  }
 }

@@ -1901,6 +1901,57 @@
       ]
     },
     {
+      "name": "disable_basket",
+      "discriminator": [
+        10,
+        113,
+        244,
+        218,
+        148,
+        145,
+        16,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "current_creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basket_config",
+          "writable": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "execute_rebalancing",
       "discriminator": [
         98,
@@ -3055,6 +3106,61 @@
               }
             ]
           }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "migrate_basket",
+      "discriminator": [
+        175,
+        192,
+        1,
+        69,
+        202,
+        121,
+        115,
+        124
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "basket_config",
+          "writable": true
         },
         {
           "name": "system_program",
@@ -4476,10 +4582,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -5505,6 +5607,19 @@
       ]
     },
     {
+      "name": "DisableBasketEvent",
+      "discriminator": [
+        230,
+        58,
+        136,
+        112,
+        100,
+        26,
+        20,
+        17
+      ]
+    },
+    {
       "name": "ExecuteRebalancingEvent",
       "discriminator": [
         140,
@@ -5780,23 +5895,23 @@
     },
     {
       "code": 6018,
+      "name": "OnlyDefaultState",
+      "msg": "Only default state"
+    },
+    {
+      "code": 6019,
       "name": "InvalidComponent",
       "msg": "Invalid component"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "MaxWhitelistedCreatorsExceeded",
       "msg": "Max whitelisted creators exceeded"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "InvalidTokenProgram",
       "msg": "Invalid token program"
-    },
-    {
-      "code": 6021,
-      "name": "ComponentChangeNotAllowedBasket",
-      "msg": "Component change not allowed basket"
     },
     {
       "code": 6022,
@@ -5807,6 +5922,16 @@
       "code": 6023,
       "name": "InvalidSwapResult",
       "msg": "Invalid swap result"
+    },
+    {
+      "code": 6024,
+      "name": "RebalanceNotAllowedBasket",
+      "msg": "Rebalance not allowed basket"
+    },
+    {
+      "code": 6025,
+      "name": "ComponentChangeNotAllowedBasket",
+      "msg": "Component change not allowed basket"
     }
   ],
   "types": [
@@ -5958,8 +6083,12 @@
             "type": "pubkey"
           },
           {
-            "name": "is_rebalancing",
-            "type": "bool"
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "BasketState"
+              }
+            }
           },
           {
             "name": "components",
@@ -5972,12 +6101,46 @@
             }
           },
           {
-            "name": "is_component_fixed",
-            "type": "bool"
+            "name": "rebalance_type",
+            "type": {
+              "defined": {
+                "name": "RebalanceType"
+              }
+            }
           },
           {
             "name": "creator_fee_bp",
             "type": "u64"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u64",
+                10
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "BasketState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Default"
+          },
+          {
+            "name": "Rebalancing"
+          },
+          {
+            "name": "Disabled"
           }
         ]
       }
@@ -6074,8 +6237,12 @@
             "type": "pubkey"
           },
           {
-            "name": "is_component_fixed",
-            "type": "bool"
+            "name": "rebalance_type",
+            "type": {
+              "defined": {
+                "name": "RebalanceType"
+              }
+            }
           },
           {
             "name": "creator_fee_bp",
@@ -6124,8 +6291,12 @@
             }
           },
           {
-            "name": "is_component_fixed",
-            "type": "bool"
+            "name": "rebalance_type",
+            "type": {
+              "defined": {
+                "name": "RebalanceType"
+              }
+            }
           },
           {
             "name": "creator_fee_bp",
@@ -6186,6 +6357,22 @@
           {
             "name": "platform_fee",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DisableBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basket_id",
+            "type": "u64"
+          },
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
           }
         ]
       }
@@ -6544,6 +6731,23 @@
           {
             "name": "is_initialized",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Dynamic"
+          },
+          {
+            "name": "Fixed"
+          },
+          {
+            "name": "Disabled"
           }
         ]
       }

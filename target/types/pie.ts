@@ -1907,6 +1907,57 @@ export type Pie = {
       ]
     },
     {
+      "name": "disableBasket",
+      "discriminator": [
+        10,
+        113,
+        244,
+        218,
+        148,
+        145,
+        16,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "currentCreator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "executeRebalancing",
       "discriminator": [
         98,
@@ -3061,6 +3112,61 @@ export type Pie = {
               }
             ]
           }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "migrateBasket",
+      "discriminator": [
+        175,
+        192,
+        1,
+        69,
+        202,
+        121,
+        115,
+        124
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
         },
         {
           "name": "systemProgram",
@@ -4482,10 +4588,6 @@ export type Pie = {
               }
             ]
           }
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -5511,6 +5613,19 @@ export type Pie = {
       ]
     },
     {
+      "name": "disableBasketEvent",
+      "discriminator": [
+        230,
+        58,
+        136,
+        112,
+        100,
+        26,
+        20,
+        17
+      ]
+    },
+    {
       "name": "executeRebalancingEvent",
       "discriminator": [
         140,
@@ -5786,23 +5901,23 @@ export type Pie = {
     },
     {
       "code": 6018,
+      "name": "onlyDefaultState",
+      "msg": "Only default state"
+    },
+    {
+      "code": 6019,
       "name": "invalidComponent",
       "msg": "Invalid component"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "maxWhitelistedCreatorsExceeded",
       "msg": "Max whitelisted creators exceeded"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "invalidTokenProgram",
       "msg": "Invalid token program"
-    },
-    {
-      "code": 6021,
-      "name": "componentChangeNotAllowedBasket",
-      "msg": "Component change not allowed basket"
     },
     {
       "code": 6022,
@@ -5813,6 +5928,16 @@ export type Pie = {
       "code": 6023,
       "name": "invalidSwapResult",
       "msg": "Invalid swap result"
+    },
+    {
+      "code": 6024,
+      "name": "rebalanceNotAllowedBasket",
+      "msg": "Rebalance not allowed basket"
+    },
+    {
+      "code": 6025,
+      "name": "componentChangeNotAllowedBasket",
+      "msg": "Component change not allowed basket"
     }
   ],
   "types": [
@@ -5964,8 +6089,12 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "isRebalancing",
-            "type": "bool"
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "basketState"
+              }
+            }
           },
           {
             "name": "components",
@@ -5978,12 +6107,46 @@ export type Pie = {
             }
           },
           {
-            "name": "isComponentFixed",
-            "type": "bool"
+            "name": "rebalanceType",
+            "type": {
+              "defined": {
+                "name": "rebalanceType"
+              }
+            }
           },
           {
             "name": "creatorFeeBp",
             "type": "u64"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u64",
+                10
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "basketState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "default"
+          },
+          {
+            "name": "rebalancing"
+          },
+          {
+            "name": "disabled"
           }
         ]
       }
@@ -6080,8 +6243,12 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "isComponentFixed",
-            "type": "bool"
+            "name": "rebalanceType",
+            "type": {
+              "defined": {
+                "name": "rebalanceType"
+              }
+            }
           },
           {
             "name": "creatorFeeBp",
@@ -6130,8 +6297,12 @@ export type Pie = {
             }
           },
           {
-            "name": "isComponentFixed",
-            "type": "bool"
+            "name": "rebalanceType",
+            "type": {
+              "defined": {
+                "name": "rebalanceType"
+              }
+            }
           },
           {
             "name": "creatorFeeBp",
@@ -6192,6 +6363,22 @@ export type Pie = {
           {
             "name": "platformFee",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "disableBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
           }
         ]
       }
@@ -6550,6 +6737,23 @@ export type Pie = {
           {
             "name": "isInitialized",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rebalanceType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "dynamic"
+          },
+          {
+            "name": "fixed"
+          },
+          {
+            "name": "disabled"
           }
         ]
       }

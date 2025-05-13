@@ -13,6 +13,10 @@ export type UserBalance = IdlAccounts<Pie>["userBalance"];
 export type BasketComponent = IdlTypes<Pie>["basketComponent"];
 export type CreateBasketArgs = IdlTypes<Pie>["createBasketArgs"];
 
+// Enum Types
+export type BasketState = IdlTypes<Pie>["basketState"];
+export type RebalanceType = IdlTypes<Pie>["rebalanceType"];
+
 // Event Types
 export type CreateBasketEvent = IdlEvents<Pie>["createBasketEvent"];
 export type UpdateRebalancerEvent = IdlEvents<Pie>["updateRebalancerEvent"];

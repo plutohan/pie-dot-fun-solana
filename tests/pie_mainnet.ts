@@ -18,6 +18,8 @@ import {
   BasketComponent,
   CreateBasketArgs,
   PieProgram,
+  BasketState,
+  RebalanceType,
 } from "../sdk/pie-program";
 import { tokens } from "./fixtures/mainnet/token_test";
 import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
@@ -154,7 +156,7 @@ describe("pie", () => {
       uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
       components: components,
       rebalancer: rebalancer.publicKey,
-      isComponentFixed: false,
+      rebalanceType: { dynamic: {} },
       creatorFeeBp: new BN(100),
     };
 
@@ -449,7 +451,7 @@ describe("pie", () => {
     );
     basketMintTable.printTable();
 
-    if (!basketConfig.isRebalancing) {
+    if (!("rebalancing" in basketConfig.state)) {
       console.log("starting rebalancing...");
       const startRebalanceTx = await pieProgram.rebalancer.startRebalancing({
         rebalancer: rebalancer.publicKey,
@@ -565,8 +567,7 @@ describe("pie", () => {
 
   //   if (highestPriceImpactPct > slippage) {
   //     console.log(
-  //       `warning: highest price impact (${highestPriceImpactPct}) is greater than slippage (${slippage})`
-  //     );
+  //       `warning: highest price impact (${highestPriceImpactPct}) is greater than slippage (${slippage})`  //     );
   //   }
 
   //   console.log("creating bundle...");
