@@ -12,3 +12,5 @@ target/*
 !target/deploy/*.json
 !target/types/
 test-ledger
+
+.vscode

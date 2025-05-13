@@ -26,7 +26,7 @@ import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
 import { Table } from "console-table-printer";
 import { getMint, NATIVE_MINT } from "@solana/spl-token";
 import {
-  getBaksetIdFromBasketMint,
+  getBasketIdFromBasketMint,
   getExplorerUrl,
   getOrCreateNativeMintATA,
   getTokenBalance,

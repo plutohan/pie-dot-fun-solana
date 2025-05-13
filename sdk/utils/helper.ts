@@ -660,7 +660,7 @@ export async function getAllTokenAccountWithBalance({
   }));
 }
 
-export async function getBaksetIdFromBasketMint(
+export async function getBasketIdFromBasketMint(
   mint: PublicKey,
   pieProgram: PieProgram
 ) {
