@@ -76,6 +76,11 @@ pub mod pie {
         Ok(())
     }
 
+    pub fn disable_basket(ctx: Context<DisableBasketContext>) -> Result<()> {
+        instructions::disable_basket(ctx)?;
+        Ok(())
+    }
+
     pub fn update_rebalancer(
         ctx: Context<UpdateRebalancerContext>,
         new_rebalancer: Pubkey,

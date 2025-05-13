@@ -1,10 +1,9 @@
 use anchor_lang::prelude::*;
 
-use crate::{error::PieError, BasketConfig, ProgramState, PROGRAM_STATE};
+use crate::{error::PieError, states::BasketState, BasketConfig, ProgramState, PROGRAM_STATE};
 
 #[derive(Accounts)]
-#[instruction(new_creator: Pubkey)]
-pub struct TransferBasketContext<'info> {
+pub struct DisableBasketContext<'info> {
     #[account(mut)]
     pub current_creator: Signer<'info>,
     #[account(
@@ -22,23 +21,18 @@ pub struct TransferBasketContext<'info> {
 }
 
 #[event]
-pub struct TransferBasketEvent {
+pub struct DisableBasketEvent {
     pub basket_id: u64,
     pub basket_mint: Pubkey,
-    pub old_creator: Pubkey,
-    pub new_creator: Pubkey,
 }
 
-pub fn transfer_basket(ctx: Context<TransferBasketContext>, new_creator: Pubkey) -> Result<()> {
+pub fn disable_basket(ctx: Context<DisableBasketContext>) -> Result<()> {
     let basket_config = &mut ctx.accounts.basket_config;
-    let old_creator = basket_config.creator;
-    basket_config.creator = new_creator;
+    basket_config.state = BasketState::Disabled;
 
-    emit!(TransferBasketEvent {
+    emit!(DisableBasketEvent {
         basket_id: basket_config.id,
         basket_mint: basket_config.mint,
-        old_creator,
-        new_creator,
     });
 
     Ok(())
