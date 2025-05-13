@@ -189,7 +189,7 @@ describe("pie", () => {
           );
 
           const migrateTx = await pieProgram.admin.migrateBasket({
-            admin: newAdmin,
+            admin: admin.publicKey,
             basketId,
           });
 
