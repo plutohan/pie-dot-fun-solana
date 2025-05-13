@@ -1,8 +1,5 @@
 use crate::{
-    constant::{JUPITER_PROGRAM_ID, USER_FUND},
-    error::PieError,
-    utils::calculate_amounts_swapped_and_received,
-    BasketConfig, UserFund, BASKET_CONFIG, NATIVE_MINT,
+    constant::{JUPITER_PROGRAM_ID, USER_FUND}, error::PieError, states::BasketState, utils::calculate_amounts_swapped_and_received, BasketConfig, UserFund, BASKET_CONFIG, NATIVE_MINT
 };
 use anchor_lang::{
     prelude::*,
@@ -69,8 +66,8 @@ pub fn buy_component_jupiter(
     data: Vec<u8>,
 ) -> Result<()> {
     require!(
-        !ctx.accounts.basket_config.is_rebalancing,
-        PieError::RebalancingInProgress
+        ctx.accounts.basket_config.state == BasketState::Active,
+        PieError::OnlyDefaultState
     );
     require!(
         ctx.accounts

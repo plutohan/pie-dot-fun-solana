@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{error::PieError, BasketComponent, BasketConfig, BASKET_CONFIG};
+use crate::{error::PieError, states::BasketState, BasketComponent, BasketConfig, BASKET_CONFIG};
 
 #[event]
 pub struct StopRebalancingEvent {
@@ -26,9 +26,12 @@ pub struct StopRebalancing<'info> {
 
 pub fn stop_rebalancing(ctx: Context<StopRebalancing>) -> Result<()> {
     let basket_config = &mut ctx.accounts.basket_config;
-    require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
+    require!(
+        basket_config.state == BasketState::Rebalancing,
+        PieError::NotInRebalancing
+    );
 
-    basket_config.is_rebalancing = false;
+    basket_config.state = BasketState::Active;
 
     emit!(StopRebalancingEvent {
         basket_id: ctx.accounts.basket_config.id,

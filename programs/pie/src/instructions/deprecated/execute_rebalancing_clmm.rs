@@ -5,6 +5,7 @@ use anchor_spl::token_interface::{Mint, Token2022, TokenAccount, TokenInterface}
 
 use raydium_clmm_cpi::{cpi, program::RaydiumClmm};
 
+use crate::states::BasketState;
 use crate::utils::Rebalance;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use crate::{ExecuteRebalancingEvent, ProgramState, PROGRAM_STATE};
@@ -125,7 +126,11 @@ pub fn execute_rebalancing_clmm<'a, 'b, 'c: 'info, 'info>(
         PieError::InvalidTokenProgram
     );
 
-    require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
+    require!(
+        basket_config.state == BasketState::Rebalancing,
+        PieError::NotInRebalancing
+    );
+
     let basket_total_supply = ctx.accounts.basket_mint.supply;
 
     let signer: &[&[&[u8]]] = &[&[

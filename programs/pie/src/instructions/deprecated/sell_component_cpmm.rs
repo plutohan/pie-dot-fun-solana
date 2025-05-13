@@ -13,6 +13,7 @@ use raydium_cpmm_cpi::{
 use crate::{
     constant::USER_FUND,
     error::PieError,
+    states::BasketState,
     utils::{calculate_fee_amount, transfer_fees},
     BasketConfig, ProgramState, SellComponentEvent, UserFund, BASKET_CONFIG, NATIVE_MINT,
 };
@@ -125,7 +126,7 @@ pub fn sell_component_cpmm(
 ) -> Result<()> {
     require!(amount_in > 0, PieError::InvalidAmount);
     require!(
-        !ctx.accounts.basket_config.is_rebalancing,
+        ctx.accounts.basket_config.state != BasketState::Rebalancing,
         PieError::RebalancingInProgress
     );
 

@@ -22,16 +22,16 @@ pub mod pie {
     pub fn initialize(
         ctx: Context<Initialize>,
         initial_admin: Pubkey,
-        initial_creator: Pubkey,
         initial_platform_fee_wallet: Pubkey,
         initial_platform_fee_bp: u64,
+        initial_basket_creation_fee: u64,
     ) -> Result<()> {
         instructions::initialize(
             ctx,
             initial_admin,
-            initial_creator,
             initial_platform_fee_wallet,
             initial_platform_fee_bp,
+            initial_basket_creation_fee,
         )?;
         Ok(())
     }
@@ -43,10 +43,10 @@ pub mod pie {
 
     pub fn update_fee(
         ctx: Context<UpdateFeeContext>,
-        new_creator_fee_bp: u64,
+        new_basket_creation_fee: u64,
         new_platform_fee_bp: u64,
     ) -> Result<()> {
-        instructions::update_fee(ctx, new_creator_fee_bp, new_platform_fee_bp)?;
+        instructions::update_fee(ctx, new_basket_creation_fee, new_platform_fee_bp)?;
         Ok(())
     }
 
@@ -55,6 +55,11 @@ pub mod pie {
         new_platform_fee_wallet: Pubkey,
     ) -> Result<()> {
         instructions::update_platform_fee_wallet(ctx, new_platform_fee_wallet)?;
+        Ok(())
+    }
+
+    pub fn migrate_basket(ctx: Context<MigrateBasketContext>) -> Result<()> {
+        instructions::migrate_basket(ctx)?;
         Ok(())
     }
 
@@ -68,6 +73,11 @@ pub mod pie {
 
     pub fn transfer_basket(ctx: Context<TransferBasketContext>, new_creator: Pubkey) -> Result<()> {
         instructions::transfer_basket(ctx, new_creator)?;
+        Ok(())
+    }
+
+    pub fn inactivate_basket(ctx: Context<InactivateBasketContext>) -> Result<()> {
+        instructions::inactivate_basket(ctx)?;
         Ok(())
     }
 

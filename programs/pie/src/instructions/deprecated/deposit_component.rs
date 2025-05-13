@@ -1,16 +1,12 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{ token::Token, token_interface::TokenAccount };
+use anchor_spl::{token::Token, token_interface::TokenAccount};
 
 use crate::{
     constant::USER_FUND,
     error::PieError,
-    utils::{ calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault },
-    BasketConfig,
-    ProgramState,
-    UserFund,
-    BASKET_CONFIG,
-    NATIVE_MINT,
-    PROGRAM_STATE,
+    states::BasketState,
+    utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault},
+    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -82,12 +78,17 @@ pub struct DepositComponentEvent {
 
 pub fn deposit_component(ctx: Context<DepositComponent>, amount: u64) -> Result<()> {
     require!(
-        ctx.accounts.basket_config.components
+        ctx.accounts
+            .basket_config
+            .components
             .iter()
             .any(|c| c.mint == ctx.accounts.user_token_account.mint),
         PieError::InvalidComponent
     );
-    require!(!ctx.accounts.basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    require!(
+        ctx.accounts.basket_config.state == BasketState::Active,
+        PieError::OnlyDefaultState
+    );
     let user_fund = &mut ctx.accounts.user_fund;
 
     // TODO: how should collect fees?
@@ -107,7 +108,7 @@ pub fn deposit_component(ctx: Context<DepositComponent>, amount: u64) -> Result<
         &ctx.accounts.vault_token_account.to_account_info(),
         &ctx.accounts.user.to_account_info(),
         &ctx.accounts.token_program,
-        amount
+        amount,
     )?;
 
     user_fund.bump = ctx.bumps.user_fund;

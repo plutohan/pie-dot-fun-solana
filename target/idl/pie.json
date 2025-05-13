@@ -1150,6 +1150,9 @@
           }
         },
         {
+          "name": "platform_fee_wallet"
+        },
+        {
           "name": "metadata_account",
           "docs": [
             "Metadata account to store Metaplex metadata"
@@ -2942,6 +2945,57 @@
       ]
     },
     {
+      "name": "inactivate_basket",
+      "discriminator": [
+        85,
+        179,
+        134,
+        148,
+        161,
+        7,
+        17,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basket_config",
+          "writable": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -2996,15 +3050,15 @@
           "type": "pubkey"
         },
         {
-          "name": "initial_creator",
-          "type": "pubkey"
-        },
-        {
           "name": "initial_platform_fee_wallet",
           "type": "pubkey"
         },
         {
           "name": "initial_platform_fee_bp",
+          "type": "u64"
+        },
+        {
+          "name": "initial_basket_creation_fee",
           "type": "u64"
         }
       ]
@@ -3055,6 +3109,61 @@
               }
             ]
           }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "migrate_basket",
+      "discriminator": [
+        175,
+        192,
+        1,
+        69,
+        202,
+        121,
+        115,
+        124
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "basket_config",
+          "writable": true
         },
         {
           "name": "system_program",
@@ -4476,10 +4585,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -4592,7 +4697,7 @@
       ],
       "args": [
         {
-          "name": "new_creator_fee_bp",
+          "name": "new_basket_creation_fee",
           "type": "u64"
         },
         {
@@ -5518,6 +5623,19 @@
       ]
     },
     {
+      "name": "InactivateBasketEvent",
+      "discriminator": [
+        92,
+        132,
+        132,
+        53,
+        162,
+        32,
+        88,
+        138
+      ]
+    },
+    {
       "name": "MintBasketTokenEvent",
       "discriminator": [
         169,
@@ -5730,83 +5848,98 @@
     },
     {
       "code": 6008,
+      "name": "InvalidBasketId",
+      "msg": "Invalid Basket Id"
+    },
+    {
+      "code": 6009,
       "name": "ComponentNotFound",
       "msg": "Component not found"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "NotInRebalancing",
       "msg": "Not in rebalancing"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "AlreadyRebalancing",
       "msg": "Already rebalancing"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "ConversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "InvalidBasketMint",
       "msg": "Invalid basket mint"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "DuplicateComponent",
       "msg": "Duplicate component"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "InvalidMint",
       "msg": "Invalid mint"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "InvalidComponentQuantity",
       "msg": "Invalid component quantity"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "InvalidQuantity",
       "msg": "Invalid quantity"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "RebalancingInProgress",
       "msg": "Rebalancing in process"
     },
     {
-      "code": 6018,
+      "code": 6019,
+      "name": "OnlyDefaultState",
+      "msg": "Only default state"
+    },
+    {
+      "code": 6020,
       "name": "InvalidComponent",
       "msg": "Invalid component"
     },
     {
-      "code": 6019,
+      "code": 6021,
       "name": "MaxWhitelistedCreatorsExceeded",
       "msg": "Max whitelisted creators exceeded"
     },
     {
-      "code": 6020,
+      "code": 6022,
       "name": "InvalidTokenProgram",
       "msg": "Invalid token program"
     },
     {
-      "code": 6021,
-      "name": "ComponentChangeNotAllowedBasket",
-      "msg": "Component change not allowed basket"
-    },
-    {
-      "code": 6022,
+      "code": 6023,
       "name": "InvalidJupiterProgram",
       "msg": "Invalid Jupiter program"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "InvalidSwapResult",
       "msg": "Invalid swap result"
+    },
+    {
+      "code": 6025,
+      "name": "RebalanceNotAllowedBasket",
+      "msg": "Rebalance not allowed basket"
+    },
+    {
+      "code": 6026,
+      "name": "ComponentChangeNotAllowedBasket",
+      "msg": "Component change not allowed basket"
     }
   ],
   "types": [
@@ -5946,6 +6079,14 @@
             "type": "u64"
           },
           {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
             "name": "creator",
             "type": "pubkey"
           },
@@ -5954,12 +6095,24 @@
             "type": "pubkey"
           },
           {
-            "name": "mint",
-            "type": "pubkey"
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "BasketState"
+              }
+            }
           },
           {
-            "name": "is_rebalancing",
-            "type": "bool"
+            "name": "rebalance_type",
+            "type": {
+              "defined": {
+                "name": "RebalanceType"
+              }
+            }
+          },
+          {
+            "name": "creator_fee_bp",
+            "type": "u64"
           },
           {
             "name": "components",
@@ -5972,12 +6125,30 @@
             }
           },
           {
-            "name": "is_component_fixed",
-            "type": "bool"
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u64",
+                10
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "BasketState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
           },
           {
-            "name": "creator_fee_bp",
-            "type": "u64"
+            "name": "Rebalancing"
+          },
+          {
+            "name": "Inactive"
           }
         ]
       }
@@ -6074,8 +6245,12 @@
             "type": "pubkey"
           },
           {
-            "name": "is_component_fixed",
-            "type": "bool"
+            "name": "rebalance_type",
+            "type": {
+              "defined": {
+                "name": "RebalanceType"
+              }
+            }
           },
           {
             "name": "creator_fee_bp",
@@ -6124,8 +6299,12 @@
             }
           },
           {
-            "name": "is_component_fixed",
-            "type": "bool"
+            "name": "rebalance_type",
+            "type": {
+              "defined": {
+                "name": "RebalanceType"
+              }
+            }
           },
           {
             "name": "creator_fee_bp",
@@ -6230,6 +6409,22 @@
           {
             "name": "final_available_destination_balance",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InactivateBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basket_id",
+            "type": "u64"
+          },
+          {
+            "name": "basket_mint",
+            "type": "pubkey"
           }
         ]
       }
@@ -6534,7 +6729,7 @@
             "type": "u64"
           },
           {
-            "name": "creator_fee_bp",
+            "name": "basket_creation_fee",
             "type": "u64"
           },
           {
@@ -6544,6 +6739,23 @@
           {
             "name": "is_initialized",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Dynamic"
+          },
+          {
+            "name": "Fixed"
+          },
+          {
+            "name": "Disabled"
           }
         ]
       }
@@ -6728,7 +6940,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "new_creator_fee_bp",
+            "name": "new_basket_creation_fee",
             "type": "u64"
           },
           {

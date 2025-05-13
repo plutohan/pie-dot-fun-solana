@@ -1,6 +1,7 @@
 use crate::{
     constant::USER_FUND,
     error::PieError,
+    states::BasketState,
     utils::{calculate_fee_amount, transfer_fees},
     BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
 };
@@ -126,7 +127,7 @@ pub fn sell_component(
 ) -> Result<()> {
     require!(amount_in > 0, PieError::InvalidAmount);
     require!(
-        !ctx.accounts.basket_config.is_rebalancing,
+        ctx.accounts.basket_config.state != BasketState::Rebalancing,
         PieError::RebalancingInProgress
     );
 

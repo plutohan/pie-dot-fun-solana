@@ -18,6 +18,8 @@ import {
   BasketComponent,
   CreateBasketArgs,
   PieProgram,
+  BasketState,
+  RebalanceType,
 } from "../sdk/pie-program";
 import { tokens } from "./fixtures/mainnet/token_test";
 import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
@@ -52,6 +54,7 @@ describe("pie", () => {
   });
   const swapsPerBundle = 2;
   const slippage = 50;
+  const basketCreationFee = 0.01 * LAMPORTS_PER_SOL;
 
   const sampleTokenMints = [
     {
@@ -81,8 +84,10 @@ describe("pie", () => {
   };
 
   // Program is already initialized
-  it.skip("Setup and Initialized if needed", async () => {
+  it("Setup and Initialized if needed", async () => {
     let programState = await pieProgram.state.getProgramState();
+
+    console.log(JSON.stringify(programState, null, 2));
 
     const platformFeeWallet = new PublicKey(
       "DU2tpPP3yHY811yLrDATdyCjMu51bp3jz1fpEbpf5Crq"
@@ -100,9 +105,9 @@ describe("pie", () => {
       const initializeTx = await pieProgram.admin.initialize({
         initializer: admin.publicKey,
         admin: newAdmin,
-        creator: newCreator,
         platformFeeWallet,
-        platformFeePercentage: new BN(100),
+        platformFeePercentage: new BN(50),
+        basketCreationFee: new BN(basketCreationFee),
       });
 
       initializeTx.add(priorityFeeInstruction);
@@ -140,6 +145,85 @@ describe("pie", () => {
         `Program initialized at tx: https://solscan.io/tx/${initializeTxResult}`
       );
     }
+
+    if (programState.basketCreationFee.lt(new BN(basketCreationFee))) {
+      console.log("Start migration...");
+
+      console.log("updating basket creation fee...");
+      const updateFeeTx = await pieProgram.admin.updateFee({
+        admin: admin.publicKey,
+        newBasketCreationFee: basketCreationFee,
+        newPlatformFeeBp: 50,
+      });
+
+      const updateFeeTxResult = await sendAndConfirmTransaction(
+        connection,
+        updateFeeTx,
+        [admin]
+      );
+
+      console.log(
+        `Basket creation fee updated at tx: ${getExplorerUrl(
+          updateFeeTxResult,
+          "mainnet"
+        )}`
+      );
+
+      console.log("Migrating Baskets to V2...");
+      for (let i = 0; i < programState.basketCounter.toNumber(); i++) {
+        const basketId = new BN(i);
+
+        const basketConfigBefore = await pieProgram.state.getBasketConfig({
+          basketId,
+        });
+
+        if (!basketConfigBefore || basketConfigBefore.version != 2) {
+          console.log(`Migrating basket ${basketId.toString()}...`);
+
+          console.log(
+            `Basket ${basketId.toString()} before migration: ${JSON.stringify(
+              basketConfigBefore,
+              null,
+              2
+            )}`
+          );
+
+          const migrateTx = await pieProgram.admin.migrateBasket({
+            admin: newAdmin,
+            basketId,
+          });
+
+          const migrateTxResult = await sendAndConfirmTransaction(
+            connection,
+            migrateTx,
+            [admin]
+          );
+
+          console.log(
+            `Basket ${basketId.toString()} migrated at tx: ${getExplorerUrl(
+              migrateTxResult,
+              "mainnet"
+            )}`
+          );
+
+          const basketConfigAfter = await pieProgram.state.getBasketConfig({
+            basketId,
+          });
+
+          console.log(
+            `Basket ${basketId.toString()} after migration: ${JSON.stringify(
+              basketConfigAfter,
+              null,
+              2
+            )}`
+          );
+        } else {
+          console.log(`Basket ${basketId.toString()} already migrated`);
+        }
+      }
+
+      console.log("Migrating basket config completed");
+    }
   });
 
   it("Create Basket", async () => {
@@ -154,7 +238,7 @@ describe("pie", () => {
       uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
       components: components,
       rebalancer: rebalancer.publicKey,
-      isComponentFixed: false,
+      rebalanceType: { dynamic: {} },
       creatorFeeBp: new BN(100),
     };
 
@@ -449,7 +533,7 @@ describe("pie", () => {
     );
     basketMintTable.printTable();
 
-    if (!basketConfig.isRebalancing) {
+    if (!("rebalancing" in basketConfig.state)) {
       console.log("starting rebalancing...");
       const startRebalanceTx = await pieProgram.rebalancer.startRebalancing({
         rebalancer: rebalancer.publicKey,
@@ -565,8 +649,7 @@ describe("pie", () => {
 
   //   if (highestPriceImpactPct > slippage) {
   //     console.log(
-  //       `warning: highest price impact (${highestPriceImpactPct}) is greater than slippage (${slippage})`
-  //     );
+  //       `warning: highest price impact (${highestPriceImpactPct}) is greater than slippage (${slippage})`  //     );
   //   }
 
   //   console.log("creating bundle...");

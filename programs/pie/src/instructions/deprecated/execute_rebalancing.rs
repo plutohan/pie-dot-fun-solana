@@ -1,3 +1,4 @@
+use crate::states::BasketState;
 use crate::utils::Rebalance;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use anchor_lang::{prelude::*, solana_program};
@@ -111,7 +112,7 @@ pub fn execute_rebalancing<'a, 'b, 'c: 'info, 'info>(
     amount_out: u64,
 ) -> Result<()> {
     require!(
-        ctx.accounts.basket_config.is_rebalancing,
+        ctx.accounts.basket_config.state == BasketState::Rebalancing,
         PieError::NotInRebalancing
     );
 

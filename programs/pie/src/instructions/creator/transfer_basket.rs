@@ -9,7 +9,7 @@ pub struct TransferBasketContext<'info> {
     pub current_creator: Signer<'info>,
     #[account(
         mut,
-        constraint = basket_config.creator == current_creator.key()
+        constraint = basket_config.creator == current_creator.key() @ PieError::Unauthorized
     )]
     pub basket_config: Account<'info, BasketConfig>,
 
@@ -19,8 +19,6 @@ pub struct TransferBasketContext<'info> {
         bump = program_state.bump
     )]
     pub program_state: Account<'info, ProgramState>,
-
-    pub system_program: Program<'info, System>,
 }
 
 #[event]

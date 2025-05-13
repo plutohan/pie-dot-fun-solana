@@ -5,8 +5,8 @@ use anchor_spl::{
 };
 
 use crate::{
-    constant::USER_FUND, error::PieError, utils::Calculator, BasketConfig, ProgramState, UserFund,
-    PROGRAM_STATE,
+    constant::USER_FUND, error::PieError, states::BasketState, utils::Calculator, BasketConfig,
+    ProgramState, UserFund, PROGRAM_STATE,
 };
 
 #[derive(Accounts)]
@@ -68,7 +68,7 @@ pub fn redeem_basket_token(ctx: Context<RedeemBasketTokenContext>, amount: u64) 
     user_fund.bump = ctx.bumps.user_fund;
     let basket_config = &mut ctx.accounts.basket_config;
     require!(
-        !basket_config.is_rebalancing,
+        basket_config.state != BasketState::Rebalancing,
         PieError::RebalancingInProgress
     );
 

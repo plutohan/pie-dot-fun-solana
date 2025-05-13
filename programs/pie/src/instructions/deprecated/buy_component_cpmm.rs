@@ -11,11 +11,7 @@ use raydium_cpmm_cpi::{
 };
 
 use crate::{
-    constant::USER_FUND,
-    error::PieError,
-    utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees},
-    BasketConfig, BuyComponentEvent, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT,
-    PROGRAM_STATE,
+    constant::USER_FUND, error::PieError, states::BasketState, utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees}, BasketConfig, BuyComponentEvent, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE
 };
 
 #[derive(Accounts)]
@@ -121,8 +117,8 @@ pub fn buy_component_cpmm(
 ) -> Result<()> {
     require!(max_amount_in > 0, PieError::InvalidAmount);
     require!(
-        !ctx.accounts.basket_config.is_rebalancing,
-        PieError::RebalancingInProgress
+        ctx.accounts.basket_config.state == BasketState::Active,
+        PieError::OnlyDefaultState
     );
     require!(
         ctx.accounts

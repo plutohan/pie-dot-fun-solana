@@ -5,6 +5,7 @@ use anchor_spl::token_interface::{Mint, Token2022, TokenAccount, TokenInterface}
 
 use raydium_clmm_cpi::{cpi, program::RaydiumClmm};
 
+use crate::states::BasketState;
 use crate::utils::transfer_fees;
 use crate::{
     constant::USER_FUND, error::PieError, utils::calculate_fee_amount, BasketConfig, ProgramState,
@@ -120,7 +121,7 @@ pub fn sell_component_clmm<'a, 'b, 'c: 'info, 'info>(
 ) -> Result<()> {
     require!(amount > 0, PieError::InvalidAmount);
     require!(
-        !ctx.accounts.basket_config.is_rebalancing,
+        ctx.accounts.basket_config.state != BasketState::Rebalancing,
         PieError::RebalancingInProgress
     );
     // check if the input token program is valid

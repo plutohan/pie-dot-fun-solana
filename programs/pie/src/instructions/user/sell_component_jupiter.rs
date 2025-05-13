@@ -66,10 +66,6 @@ pub fn sell_component_jupiter(
     data: Vec<u8>,
 ) -> Result<()> {
     require!(
-        !ctx.accounts.basket_config.is_rebalancing,
-        PieError::RebalancingInProgress
-    );
-    require!(
         ctx.accounts
             .basket_config
             .components

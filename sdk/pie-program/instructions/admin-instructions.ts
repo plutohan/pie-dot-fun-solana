@@ -23,18 +23,23 @@ export class AdminInstructions extends ProgramStateManager {
   async initialize({
     initializer,
     admin,
-    creator,
     platformFeeWallet,
     platformFeePercentage,
+    basketCreationFee,
   }: {
     initializer: PublicKey;
     admin: PublicKey;
-    creator: PublicKey;
     platformFeeWallet: PublicKey;
     platformFeePercentage: BN;
+    basketCreationFee: BN;
   }): Promise<Transaction> {
     const tx = await this.program.methods
-      .initialize(admin, creator, platformFeeWallet, platformFeePercentage)
+      .initialize(
+        admin,
+        platformFeeWallet,
+        platformFeePercentage,
+        basketCreationFee
+      )
       .accounts({ initializer })
       .transaction();
 
@@ -72,24 +77,21 @@ export class AdminInstructions extends ProgramStateManager {
   /**
    * Updates the fee. 10000 = 100% => 1000 = 1%
    * @param admin - The admin account.
-   * @param newCreatorFeePercentage - The new creator fee percentage.
-   * @param newPlatformFeePercentage - The new platform fee percentage.
+   * @param newBasketCreationFee - The new basket creation fee in lamports.
+   * @param newPlatformFeeBp - The new platform fee in basis points.
    * @returns A promise that resolves to a transaction.
    */
   async updateFee({
     admin,
-    newCreatorFeePercentage,
-    newPlatformFeePercentage,
+    newBasketCreationFee,
+    newPlatformFeeBp,
   }: {
     admin: PublicKey;
-    newCreatorFeePercentage: number;
-    newPlatformFeePercentage: number;
+    newBasketCreationFee: number;
+    newPlatformFeeBp: number;
   }): Promise<Transaction> {
     return await this.program.methods
-      .updateFee(
-        new BN(newCreatorFeePercentage),
-        new BN(newPlatformFeePercentage)
-      )
+      .updateFee(new BN(newBasketCreationFee), new BN(newPlatformFeeBp))
       .accountsPartial({
         admin,
         programState: this.programStatePDA(),
@@ -113,6 +115,29 @@ export class AdminInstructions extends ProgramStateManager {
     return await this.program.methods
       .updatePlatformFeeWallet(newPlatformFeeWallet)
       .accountsPartial({ admin, programState: this.programStatePDA() })
+      .transaction();
+  }
+
+  /**
+   * Migrates a basket to a new version.
+   * @param admin - The admin account.
+   * @param basketId - The basket ID to migrate.
+   * @returns A promise that resolves to a transaction.
+   */
+  async migrateBasket({
+    admin,
+    basketId,
+  }: {
+    admin: PublicKey;
+    basketId: BN;
+  }): Promise<Transaction> {
+    return this.program.methods
+      .migrateBasket()
+      .accountsPartial({
+        admin,
+        programState: this.programStatePDA(),
+        basketConfig: this.basketConfigPDA({ basketId }),
+      })
       .transaction();
   }
 }

@@ -1156,6 +1156,9 @@ export type Pie = {
           }
         },
         {
+          "name": "platformFeeWallet"
+        },
+        {
           "name": "metadataAccount",
           "docs": [
             "Metadata account to store Metaplex metadata"
@@ -2948,6 +2951,57 @@ export type Pie = {
       ]
     },
     {
+      "name": "inactivateBasket",
+      "discriminator": [
+        85,
+        179,
+        134,
+        148,
+        161,
+        7,
+        17,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -3002,15 +3056,15 @@ export type Pie = {
           "type": "pubkey"
         },
         {
-          "name": "initialCreator",
-          "type": "pubkey"
-        },
-        {
           "name": "initialPlatformFeeWallet",
           "type": "pubkey"
         },
         {
           "name": "initialPlatformFeeBp",
+          "type": "u64"
+        },
+        {
+          "name": "initialBasketCreationFee",
           "type": "u64"
         }
       ]
@@ -3061,6 +3115,61 @@ export type Pie = {
               }
             ]
           }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "migrateBasket",
+      "discriminator": [
+        175,
+        192,
+        1,
+        69,
+        202,
+        121,
+        115,
+        124
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "programState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "basketConfig",
+          "writable": true
         },
         {
           "name": "systemProgram",
@@ -4482,10 +4591,6 @@ export type Pie = {
               }
             ]
           }
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -4598,7 +4703,7 @@ export type Pie = {
       ],
       "args": [
         {
-          "name": "newCreatorFeeBp",
+          "name": "newBasketCreationFee",
           "type": "u64"
         },
         {
@@ -5524,6 +5629,19 @@ export type Pie = {
       ]
     },
     {
+      "name": "inactivateBasketEvent",
+      "discriminator": [
+        92,
+        132,
+        132,
+        53,
+        162,
+        32,
+        88,
+        138
+      ]
+    },
+    {
       "name": "mintBasketTokenEvent",
       "discriminator": [
         169,
@@ -5736,83 +5854,98 @@ export type Pie = {
     },
     {
       "code": 6008,
+      "name": "invalidBasketId",
+      "msg": "Invalid Basket Id"
+    },
+    {
+      "code": 6009,
       "name": "componentNotFound",
       "msg": "Component not found"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "notInRebalancing",
       "msg": "Not in rebalancing"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "alreadyRebalancing",
       "msg": "Already rebalancing"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "conversionFailure",
       "msg": "Conversion to u64 failed with an overflow or underflow"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "invalidBasketMint",
       "msg": "Invalid basket mint"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "duplicateComponent",
       "msg": "Duplicate component"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "invalidMint",
       "msg": "Invalid mint"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "invalidComponentQuantity",
       "msg": "Invalid component quantity"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "invalidQuantity",
       "msg": "Invalid quantity"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "rebalancingInProgress",
       "msg": "Rebalancing in process"
     },
     {
-      "code": 6018,
+      "code": 6019,
+      "name": "onlyDefaultState",
+      "msg": "Only default state"
+    },
+    {
+      "code": 6020,
       "name": "invalidComponent",
       "msg": "Invalid component"
     },
     {
-      "code": 6019,
+      "code": 6021,
       "name": "maxWhitelistedCreatorsExceeded",
       "msg": "Max whitelisted creators exceeded"
     },
     {
-      "code": 6020,
+      "code": 6022,
       "name": "invalidTokenProgram",
       "msg": "Invalid token program"
     },
     {
-      "code": 6021,
-      "name": "componentChangeNotAllowedBasket",
-      "msg": "Component change not allowed basket"
-    },
-    {
-      "code": 6022,
+      "code": 6023,
       "name": "invalidJupiterProgram",
       "msg": "Invalid Jupiter program"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "invalidSwapResult",
       "msg": "Invalid swap result"
+    },
+    {
+      "code": 6025,
+      "name": "rebalanceNotAllowedBasket",
+      "msg": "Rebalance not allowed basket"
+    },
+    {
+      "code": 6026,
+      "name": "componentChangeNotAllowedBasket",
+      "msg": "Component change not allowed basket"
     }
   ],
   "types": [
@@ -5952,6 +6085,14 @@ export type Pie = {
             "type": "u64"
           },
           {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
             "name": "creator",
             "type": "pubkey"
           },
@@ -5960,12 +6101,24 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "mint",
-            "type": "pubkey"
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "basketState"
+              }
+            }
           },
           {
-            "name": "isRebalancing",
-            "type": "bool"
+            "name": "rebalanceType",
+            "type": {
+              "defined": {
+                "name": "rebalanceType"
+              }
+            }
+          },
+          {
+            "name": "creatorFeeBp",
+            "type": "u64"
           },
           {
             "name": "components",
@@ -5978,12 +6131,30 @@ export type Pie = {
             }
           },
           {
-            "name": "isComponentFixed",
-            "type": "bool"
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u64",
+                10
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "basketState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "active"
           },
           {
-            "name": "creatorFeeBp",
-            "type": "u64"
+            "name": "rebalancing"
+          },
+          {
+            "name": "inactive"
           }
         ]
       }
@@ -6080,8 +6251,12 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "isComponentFixed",
-            "type": "bool"
+            "name": "rebalanceType",
+            "type": {
+              "defined": {
+                "name": "rebalanceType"
+              }
+            }
           },
           {
             "name": "creatorFeeBp",
@@ -6130,8 +6305,12 @@ export type Pie = {
             }
           },
           {
-            "name": "isComponentFixed",
-            "type": "bool"
+            "name": "rebalanceType",
+            "type": {
+              "defined": {
+                "name": "rebalanceType"
+              }
+            }
           },
           {
             "name": "creatorFeeBp",
@@ -6236,6 +6415,22 @@ export type Pie = {
           {
             "name": "finalAvailableDestinationBalance",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "inactivateBasketEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "basketId",
+            "type": "u64"
+          },
+          {
+            "name": "basketMint",
+            "type": "pubkey"
           }
         ]
       }
@@ -6540,7 +6735,7 @@ export type Pie = {
             "type": "u64"
           },
           {
-            "name": "creatorFeeBp",
+            "name": "basketCreationFee",
             "type": "u64"
           },
           {
@@ -6550,6 +6745,23 @@ export type Pie = {
           {
             "name": "isInitialized",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rebalanceType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "dynamic"
+          },
+          {
+            "name": "fixed"
+          },
+          {
+            "name": "disabled"
           }
         ]
       }
@@ -6734,7 +6946,7 @@ export type Pie = {
         "kind": "struct",
         "fields": [
           {
-            "name": "newCreatorFeeBp",
+            "name": "newBasketCreationFee",
             "type": "u64"
           },
           {

@@ -7,9 +7,9 @@ use raydium_cpmm_cpi::{
     states::{AmmConfig, ObservationState, PoolState},
 };
 
-use crate::utils::Rebalance;
 use crate::ExecuteRebalancingEvent;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
+use crate::{states::BasketState, utils::Rebalance};
 
 #[derive(Accounts)]
 pub struct ExecuteRebalancingCpmm<'info> {
@@ -100,7 +100,10 @@ pub fn execute_rebalancing_cpmm<'a, 'b, 'c: 'info, 'info>(
     amount_out: u64,
 ) -> Result<()> {
     let basket_config = &mut ctx.accounts.basket_config;
-    require!(basket_config.is_rebalancing, PieError::NotInRebalancing);
+    require!(
+        basket_config.state == BasketState::Rebalancing,
+        PieError::NotInRebalancing
+    );
     let basket_total_supply = ctx.accounts.basket_mint.supply;
 
     let signer: &[&[&[u8]]] = &[&[
