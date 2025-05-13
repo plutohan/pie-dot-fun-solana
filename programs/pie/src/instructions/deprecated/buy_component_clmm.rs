@@ -1,11 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constant::USER_FUND,
-    error::PieError,
-    utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees},
-    BasketConfig, BuyComponentEvent, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT,
-    PROGRAM_STATE,
+    constant::USER_FUND, error::PieError, states::BasketState, utils::{calculate_amounts_swapped_and_received, calculate_fee_amount, transfer_fees}, BasketConfig, BuyComponentEvent, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE
 };
 use anchor_spl::memo::Memo;
 use anchor_spl::token::Token;
@@ -122,8 +118,8 @@ pub fn buy_component_clmm<'a, 'b, 'c: 'info, 'info>(
 ) -> Result<()> {
     require!(amount > 0, PieError::InvalidAmount);
     require!(
-        !ctx.accounts.basket_config.is_rebalancing,
-        PieError::RebalancingInProgress
+        ctx.accounts.basket_config.state == BasketState::Default,
+        PieError::OnlyDefaultState
     );
     require!(
         ctx.accounts

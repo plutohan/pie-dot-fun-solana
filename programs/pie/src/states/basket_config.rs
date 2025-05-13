@@ -13,6 +13,14 @@ pub enum RebalanceType {
     Fixed,    // Components are fixed but quantities can be adjusted
     Disabled, // Rebalancing is completely disabled
 }
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum BasketState {
+    Default,
+    Rebalancing,
+    Disabled, // When disabled, only redeem and sell are allowed
+}
+
 #[account]
 pub struct BasketConfig {
     pub bump: u8,
@@ -36,7 +44,7 @@ impl Space for BasketConfig {
         + 32 // creator
         + 32 // rebalancer
         + 32 // mint
-        + 1  // is_rebalancing (bool)
+        + 1  // state (BasketState)
         + 4 // vec length
         + (32 + 16) * MAX_COMPONENTS as usize // MAX_COMPONENTS was 30 in V1, now 15
         + 1  // rebalance_type (RebalanceType)

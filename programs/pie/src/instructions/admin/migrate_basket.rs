@@ -1,7 +1,10 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constant::PROGRAM_STATE, error::PieError, states::RebalanceType, BasketConfig, ProgramState,
+    constant::PROGRAM_STATE,
+    error::PieError,
+    states::{BasketState, RebalanceType},
+    BasketConfig, ProgramState,
 };
 
 #[derive(Accounts)]
@@ -28,6 +31,7 @@ pub fn migrate_basket(ctx: Context<MigrateBasketContext>) -> Result<()> {
 
     // @TODO: Set the correct number for Production
     if basket.id < 27 {
+        basket.state = BasketState::Default;
         basket.rebalance_type = RebalanceType::Dynamic;
         basket.creator_fee_bp = 50;
         basket.version = 2;

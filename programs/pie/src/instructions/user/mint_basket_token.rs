@@ -4,7 +4,7 @@ use anchor_spl::{ token::{ mint_to, MintTo, Token, TokenAccount }, token_interfa
 use crate::{
     constant::{ USER_BALANCE, USER_FUND },
     error::PieError,
-    states::UserBalance,
+    states::{BasketState, UserBalance},
     utils::Calculator,
     BasketConfig,
     UserFund,
@@ -68,7 +68,10 @@ pub fn mint_basket_token(ctx: Context<MintBasketTokenContext>) -> Result<()> {
     let basket_config = &mut ctx.accounts.basket_config;
     let user_balance = &mut ctx.accounts.user_balance;
 
-    require!(!basket_config.is_rebalancing, PieError::RebalancingInProgress);
+    require!(
+        basket_config.state == BasketState::Default,
+        PieError::OnlyDefaultState
+    );
 
     let mut mint_amount = u64::MAX;
 

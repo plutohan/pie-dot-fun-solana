@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::clock::Clock};
 
-use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
+use crate::{error::PieError, states::BasketState, BasketConfig, BASKET_CONFIG};
 
 #[event]
 pub struct StartRebalancingEvent {
@@ -25,9 +25,12 @@ pub struct StartRebalancing<'info> {
 
 pub fn start_rebalancing(ctx: Context<StartRebalancing>) -> Result<()> {
     let basket_config = &mut ctx.accounts.basket_config;
-    require!(!basket_config.is_rebalancing, PieError::AlreadyRebalancing);
+    require!(
+        basket_config.state == BasketState::Default,
+        PieError::OnlyDefaultState
+    );
 
-    basket_config.is_rebalancing = true;
+    basket_config.state = BasketState::Rebalancing;
 
     let clock = Clock::get()?;
 

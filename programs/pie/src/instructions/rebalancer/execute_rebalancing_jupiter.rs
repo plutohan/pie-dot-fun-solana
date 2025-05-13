@@ -1,6 +1,6 @@
 use crate::constant::JUPITER_PROGRAM_ID;
 use crate::instructions::ExecuteRebalancingEvent;
-use crate::states::RebalanceType;
+use crate::states::{BasketState, RebalanceType};
 use crate::utils::Rebalance;
 use crate::{error::PieError, BasketConfig, BASKET_CONFIG};
 use anchor_lang::{
@@ -72,9 +72,10 @@ pub fn execute_rebalancing_jupiter<'a, 'b, 'c: 'info, 'info>(
     data: Vec<u8>,
 ) -> Result<()> {
     require!(
-        ctx.accounts.basket_config.is_rebalancing,
+        ctx.accounts.basket_config.state == BasketState::Rebalancing,
         PieError::NotInRebalancing
     );
+
     require!(
         ctx.accounts.jupiter_program.key() == JUPITER_PROGRAM_ID,
         PieError::InvalidJupiterProgram

@@ -2,10 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{token::Token, token_interface::TokenAccount};
 
 use crate::{
-    constant::USER_FUND,
-    error::PieError,
-    utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault},
-    BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE,
+    constant::USER_FUND, error::PieError, states::BasketState, utils::{calculate_fee_amount, transfer_fees, transfer_from_user_to_pool_vault}, BasketConfig, ProgramState, UserFund, BASKET_CONFIG, NATIVE_MINT, PROGRAM_STATE
 };
 
 #[derive(Accounts)]
@@ -82,8 +79,8 @@ pub struct DepositWsolEvent {
 /// Before calling buy component, user must deposit WSOl first
 pub fn deposit_wsol(ctx: Context<DepositWsolContext>, amount: u64) -> Result<()> {
     require!(
-        !ctx.accounts.basket_config.is_rebalancing,
-        PieError::RebalancingInProgress
+        ctx.accounts.basket_config.state == BasketState::Default,
+        PieError::OnlyDefaultState
     );
 
     let user_fund = &mut ctx.accounts.user_fund;

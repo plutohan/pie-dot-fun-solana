@@ -56,6 +56,9 @@ pub enum PieError {
     #[msg("Rebalancing in process")]
     RebalancingInProgress,
 
+    #[msg("Only default state")]
+    OnlyDefaultState,
+
     #[msg("Invalid component")]
     InvalidComponent,
 
@@ -65,12 +68,15 @@ pub enum PieError {
     #[msg("Invalid token program")]
     InvalidTokenProgram,
 
-    #[msg("Component change not allowed basket")]
-    ComponentChangeNotAllowedBasket,
-
     #[msg("Invalid Jupiter program")]
     InvalidJupiterProgram,
 
     #[msg("Invalid swap result")]
     InvalidSwapResult,
+
+    #[msg("Rebalance not allowed basket")]
+    RebalanceNotAllowedBasket,
+
+    #[msg("Component change not allowed basket")]
+    ComponentChangeNotAllowedBasket,
 }

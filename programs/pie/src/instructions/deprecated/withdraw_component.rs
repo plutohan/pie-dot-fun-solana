@@ -74,10 +74,6 @@ pub struct WithdrawComponentEvent {
 }
 
 pub fn withdraw_component(ctx: Context<WithdrawComponent>, amount: u64) -> Result<()> {
-    require!(
-        !ctx.accounts.basket_config.is_rebalancing,
-        PieError::RebalancingInProgress
-    );
     let user_fund = &mut ctx.accounts.user_fund;
 
     let component = user_fund
