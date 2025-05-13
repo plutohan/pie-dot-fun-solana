@@ -5,6 +5,7 @@ use anchor_spl::token::{Mint, Token};
 
 use std::collections::HashSet;
 
+use crate::states::BasketState;
 use crate::{
     constant::{BASKET_CONFIG, PROGRAM_STATE},
     error::PieError,
@@ -94,13 +95,15 @@ pub fn create_basket(ctx: Context<CreateBasketContext>, args: CreateBasketArgs) 
     let program_state = &mut ctx.accounts.program_state;
 
     basket_config.bump = ctx.bumps.basket_config;
+    basket_config.id = program_state.basket_counter;
+    basket_config.version = 2;
+    basket_config.mint = ctx.accounts.basket_mint.key();
     basket_config.creator = ctx.accounts.creator.key();
     basket_config.rebalancer = args.rebalancer;
-    basket_config.id = program_state.basket_counter;
-    basket_config.mint = ctx.accounts.basket_mint.key();
-    basket_config.components = args.components.clone();
+    basket_config.state = BasketState::Active;
     basket_config.rebalance_type = args.rebalance_type;
     basket_config.creator_fee_bp = args.creator_fee_bp;
+    basket_config.components = args.components.clone();
     program_state.basket_counter += 1;
 
     let signer: &[&[&[u8]]] = &[&[

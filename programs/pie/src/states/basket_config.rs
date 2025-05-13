@@ -22,34 +22,34 @@ pub enum BasketState {
 }
 
 #[account]
+// @dev: V2
 pub struct BasketConfig {
     pub bump: u8,
     pub id: u64,
+    pub version: u8,
+    pub mint: Pubkey,
     pub creator: Pubkey,
     pub rebalancer: Pubkey,
-    pub mint: Pubkey,
     pub state: BasketState,
-    pub components: Vec<BasketComponent>,
     pub rebalance_type: RebalanceType,
     pub creator_fee_bp: u64,
-    pub version: u8,
+    pub components: Vec<BasketComponent>,
     pub reserved: [u64; 10],
 }
 
-// @dev: V2
 impl Space for BasketConfig {
     const INIT_SPACE: usize = 8 // Account discriminator added by Anchor for each account
         + 1 // bump
         + 8 // id
+        + 1  // version (u8)
+        + 32 // mint
         + 32 // creator
         + 32 // rebalancer
-        + 32 // mint
         + 1  // state (BasketState)
-        + 4 // vec length
-        + (32 + 16) * MAX_COMPONENTS as usize // MAX_COMPONENTS was 30 in V1, now 15
         + 1  // rebalance_type (RebalanceType)
         + 8  // creator_fee_bp (u64)
-        + 1  // version (u8)
+        + 4 // vec length
+        + (32 + 16) * MAX_COMPONENTS as usize // MAX_COMPONENTS was 30 in V1, now 15
         + 8 * 10; // reserved
 }
 

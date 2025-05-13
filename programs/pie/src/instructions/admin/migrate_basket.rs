@@ -46,14 +46,14 @@ pub fn migrate_basket(ctx: Context<MigrateBasketContext>) -> Result<()> {
     let mut upgraded = BasketConfig {
         bump: old.bump,
         id: old.id,
+        version: 2,
+        mint: old.mint,
         creator: old.creator,
         rebalancer: old.rebalancer,
-        mint: old.mint,
         state: BasketState::Active,
         rebalance_type: RebalanceType::Dynamic,
-        components: old.components,
         creator_fee_bp: 50,
-        version: 2,
+        components: old.components,
         reserved: [0; 10],
     };
 
@@ -139,6 +139,7 @@ mod tests {
 
         let mut upgraded = BasketConfig {
             bump: old.bump,
+            version: 2,
             id: old.id,
             creator: old.creator,
             rebalancer: old.rebalancer,
@@ -147,7 +148,6 @@ mod tests {
             rebalance_type: RebalanceType::Dynamic,
             components: old.components,
             creator_fee_bp: 50,
-            version: 2,
             reserved: [0; 10],
         };
 

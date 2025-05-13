@@ -177,7 +177,7 @@ describe("pie", () => {
           basketId,
         });
 
-        if (!basketConfigBefore || basketConfigBefore.version == 0) {
+        if (!basketConfigBefore || basketConfigBefore.version != 2) {
           console.log(`Migrating basket ${basketId.toString()}...`);
 
           console.log(

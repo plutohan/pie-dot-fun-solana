@@ -6079,6 +6079,14 @@
             "type": "u64"
           },
           {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
             "name": "creator",
             "type": "pubkey"
           },
@@ -6087,24 +6095,10 @@
             "type": "pubkey"
           },
           {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
             "name": "state",
             "type": {
               "defined": {
                 "name": "BasketState"
-              }
-            }
-          },
-          {
-            "name": "components",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "BasketComponent"
-                }
               }
             }
           },
@@ -6121,8 +6115,14 @@
             "type": "u64"
           },
           {
-            "name": "version",
-            "type": "u8"
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "BasketComponent"
+                }
+              }
+            }
           },
           {
             "name": "reserved",

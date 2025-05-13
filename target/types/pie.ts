@@ -6085,6 +6085,14 @@ export type Pie = {
             "type": "u64"
           },
           {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
             "name": "creator",
             "type": "pubkey"
           },
@@ -6093,24 +6101,10 @@ export type Pie = {
             "type": "pubkey"
           },
           {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
             "name": "state",
             "type": {
               "defined": {
                 "name": "basketState"
-              }
-            }
-          },
-          {
-            "name": "components",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "basketComponent"
-                }
               }
             }
           },
@@ -6127,8 +6121,14 @@ export type Pie = {
             "type": "u64"
           },
           {
-            "name": "version",
-            "type": "u8"
+            "name": "components",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "basketComponent"
+                }
+              }
+            }
           },
           {
             "name": "reserved",
