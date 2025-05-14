@@ -18,6 +18,7 @@ exports.BN = void 0;
 __exportStar(require("./pie-program"), exports);
 __exportStar(require("./jito"), exports);
 __exportStar(require("./constants"), exports);
+__exportStar(require("./utils"), exports);
 var anchor_1 = require("@coral-xyz/anchor");
 Object.defineProperty(exports, "BN", { enumerable: true, get: function () { return anchor_1.BN; } });
 //# sourceMappingURL=index.js.map
