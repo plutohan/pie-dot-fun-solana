@@ -17,13 +17,21 @@ import {
 } from "../../utils/helper";
 import { getOrCreateTokenAccountTx } from "../../utils/helper";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { BASIS_POINTS, SYS_DECIMALS } from "../../constants";
+import {
+  BASIS_POINTS,
+  PIE_DOT_FUN_API_URL,
+  SYS_DECIMALS,
+} from "../../constants";
 
 /**
  * Class for handling creator-related instructions
  */
 export class CreatorInstructions extends ProgramStateManager {
-  constructor(readonly connection: Connection, readonly programId: PublicKey) {
+  constructor(
+    readonly connection: Connection,
+    readonly programId: PublicKey,
+    readonly pieDotFunApiUrl: string
+  ) {
     super(programId, connection);
   }
 
@@ -106,6 +114,7 @@ export class CreatorInstructions extends ProgramStateManager {
         return getTokenPriceAndDecimals({
           mint: weight.mint,
           connection: this.connection,
+          pieDotFunApiUrl: this.pieDotFunApiUrl,
         });
       })
     );

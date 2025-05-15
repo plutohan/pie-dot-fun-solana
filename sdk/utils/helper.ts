@@ -689,10 +689,12 @@ export async function getTokenPriceAndDecimals({
   mint,
   connection,
   currency = "CURRENCY_SOL",
+  pieDotFunApiUrl,
 }: {
   mint: PublicKey;
   connection: Connection;
   currency?: "CURRENCY_SOL" | "CURRENCY_USDC";
+  pieDotFunApiUrl: string;
 }): Promise<{
   price: {
     currency: string;
@@ -705,7 +707,7 @@ export async function getTokenPriceAndDecimals({
     const [token, market] = await Promise.all([
       connection.getParsedAccountInfo(mint),
       axios.get(
-        `https://api.pie.fun/v1/fungibleTokens/SOLANA/${mint.toBase58()}/market?currency=${currency}`
+        `${pieDotFunApiUrl}/v1/fungibleTokens/SOLANA/${mint.toBase58()}/market?currency=${currency}`
       ),
     ]);
 

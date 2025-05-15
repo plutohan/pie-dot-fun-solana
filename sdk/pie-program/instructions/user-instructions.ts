@@ -10,6 +10,7 @@ import {
 import { ProgramStateManager } from "../state";
 import {
   getTokenAccountWithTokenProgram,
+  getTokenPriceAndDecimals,
   isValidTransaction,
   unwrapSolIx,
   wrapSOLIx,
@@ -23,7 +24,11 @@ import { JUPITER_PROGRAM_ID } from "../../constants";
  * Class for handling buy-related instructions
  */
 export class UserInstructions extends ProgramStateManager {
-  constructor(readonly connection: Connection, readonly programId: PublicKey) {
+  constructor(
+    readonly connection: Connection,
+    readonly programId: PublicKey,
+    readonly pieDotFunApiUrl: string
+  ) {
     super(programId, connection);
   }
 
@@ -38,6 +43,11 @@ export class UserInstructions extends ProgramStateManager {
     user: PublicKey;
   }): Promise<Transaction> {
     const tx = new Transaction();
+
+    if (await this.getUserBalance({ user })) {
+      return tx;
+    }
+
     const initializeUserBalanceTx = await this.program.methods
       .initializeUserBalance()
       .accountsPartial({ user })
@@ -281,6 +291,38 @@ export class UserInstructions extends ProgramStateManager {
       .transaction();
     tx.add(mintBasketTokenTx);
     return tx;
+  }
+
+  /**
+   * Buys a basket
+   *
+   *
+   */
+  async buyBasket({
+    user,
+    basketId,
+    amountInLamports,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amountInLamports: number;
+  }): Promise<Transaction[]> {
+    const txs: Transaction[] = [];
+    const basketConfig = await this.getBasketConfig({ basketId });
+
+    const tx = new Transaction();
+
+    const tokenPriceAndDecimals = await Promise.all(
+      basketConfig.components.map((component) =>
+        getTokenPriceAndDecimals({
+          mint: component.mint,
+          connection: this.connection,
+          pieDotFunApiUrl: this.pieDotFunApiUrl,
+        })
+      )
+    );
+
+    return txs;
   }
 
   /**

@@ -10,6 +10,7 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { EventHandler } from "./events";
 import * as PieIDL from "../../target/idl/pie.json";
 import type { Pie } from "../../target/types/pie";
+import { PIE_DOT_FUN_API_URL } from "../constants";
 
 /**
  * Configuration options for initializing the PieProgram
@@ -21,6 +22,7 @@ export interface PieProgramConfig {
   programId?: string;
   sharedLookupTable?: string;
   commitment?: Commitment;
+  pieDotFunApiUrl?: string;
 }
 
 /**
@@ -60,6 +62,8 @@ export class PieProgram {
   public readonly creator: CreatorInstructions;
   public readonly rebalancer: RebalancerInstructions;
   public readonly state: ProgramStateManager;
+  public readonly pieDotFunApiUrl: string;
+
   /**
    * Creates a new instance of PieProgram
    * @param config Configuration options for the program
@@ -71,6 +75,7 @@ export class PieProgram {
       jitoRpcUrl,
       programId = PieIDL.address,
       commitment = "confirmed",
+      pieDotFunApiUrl = PIE_DOT_FUN_API_URL,
     } = config;
 
     this.programId = new PublicKey(programId);
@@ -83,11 +88,14 @@ export class PieProgram {
     this.program = this._programStateManager.program;
     this.eventParser = new EventParser(this.programId, this.program.coder);
 
-    // Initialize instructions with null raydium - will be set in init()
     this._instructions = {
       admin: new AdminInstructions(connection, this.programId),
-      user: new UserInstructions(connection, this.programId),
-      creator: new CreatorInstructions(connection, this.programId),
+      user: new UserInstructions(connection, this.programId, pieDotFunApiUrl),
+      creator: new CreatorInstructions(
+        connection,
+        this.programId,
+        pieDotFunApiUrl
+      ),
       rebalancer: new RebalancerInstructions(connection, this.programId),
     };
 
