@@ -25,11 +25,17 @@ import {
 import { tokens } from "./fixtures/mainnet/token_test";
 import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
 import { Table } from "console-table-printer";
-import { getMint, NATIVE_MINT } from "@solana/spl-token";
+import {
+  getAssociatedTokenAddress,
+  getMint,
+  NATIVE_MINT,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import {
   getBasketIdFromBasketMint,
   getExplorerUrl,
   getOrCreateNativeMintATA,
+  getOrCreateTokenAccountTx,
   getTokenBalance,
   getTokenListFromSolanaClient,
   isValidTransaction,
@@ -37,6 +43,12 @@ import {
   simulateTransaction,
 } from "../sdk/utils/helper";
 import { QUICKNODE_RPC_URL } from "./constants";
+import {
+  addAddressesToTable,
+  createLookupTable,
+  getAddressLookupTableAccounts,
+} from "../sdk/utils/lookupTable";
+import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(qaAdmin));
@@ -89,7 +101,6 @@ describe("pie", () => {
     let programState = await pieProgram.state.getProgramState();
 
     console.log(JSON.stringify(programState, null, 2));
-    return;
 
     const platformFeeWallet = new PublicKey(
       "DU2tpPP3yHY811yLrDATdyCjMu51bp3jz1fpEbpf5Crq"
@@ -346,7 +357,7 @@ describe("pie", () => {
     table.printTable();
   });
 
-  it("Buy components and mint basket token", async () => {
+  it.skip("Buy components and mint basket token", async () => {
     const programState = await pieProgram.state.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));
     const basketConfig = await pieProgram.state.getBasketConfig({
@@ -458,6 +469,119 @@ describe("pie", () => {
         "mainnet"
       )}`
     );
+
+    const userBalance = await pieProgram.state.getUserBalance({
+      user: admin.publicKey,
+    });
+
+    const userFund = await pieProgram.state.getUserFund({
+      user: admin.publicKey,
+      basketId,
+    });
+
+    console.log(JSON.stringify({ userBalance, userFund }));
+  });
+
+  it("Buy components and mint basket token using SDK", async () => {
+    const programState = await pieProgram.state.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfig = await pieProgram.state.getBasketConfig({
+      basketId,
+    });
+    const basketConfigPDA = pieProgram.state.basketConfigPDA({ basketId });
+
+    const init = await pieProgram.user.initializeUserBalance({
+      user: admin.publicKey,
+    });
+
+    // @TODO: apply default LUT
+
+    // const lut = await createLookupTable(connection, admin);
+    // console.log(lut, "lut");
+
+    // const vaultWsolAccount = await getAssociatedTokenAddress(
+    //   NATIVE_MINT,
+    //   basketConfigPDA,
+    //   true
+    // );
+
+    // const addresses: PublicKey[] = [
+    //   new PublicKey(pieProgram.state.programStatePDA()),
+    //   new PublicKey(basketConfigPDA),
+    //   new PublicKey(pieProgram.state.basketMintPDA({ basketId })),
+    //   new PublicKey(vaultWsolAccount),
+    //   new PublicKey(programState.platformFeeWallet),
+    //   new PublicKey(basketConfig.creator),
+    //   new PublicKey(TOKEN_PROGRAM_ID),
+    //   SYSTEM_PROGRAM_ID,
+    // ];
+
+    // const addressLookupTableAccounts = await getAddressLookupTableAccounts(
+    //   connection,
+    //   [new PublicKey("4PNbj8brsGFG94rzPZBevKJw6Vfqigc4kChNqH7zc7UP")]
+    // );
+
+    if (init.instructions.length > 0) {
+      console.log("initializing user balance...");
+      const signature = await sendAndConfirmTransaction(connection, init, [
+        admin,
+      ]);
+      console.log(
+        `User balance initialized at tx: ${getExplorerUrl(
+          signature,
+          "mainnet"
+        )}`
+      );
+    }
+
+    console.log(JSON.stringify(basketConfig, null, 2));
+
+    const amount = 0.001 * LAMPORTS_PER_SOL;
+
+    const serializedTxs = await pieProgram.user.buyBasketJitoTxs({
+      user: admin.publicKey,
+      basketId,
+      amountInLamports: amount,
+      dynamicSlippage: true,
+    });
+
+    const serializedSignedTxs: string[] = [];
+
+    for (const serializedTx of serializedTxs) {
+      const signedTx = pieProgram.jito.signSerializedTransaction(
+        serializedTx,
+        admin
+      );
+      serializedSignedTxs.push(signedTx);
+    }
+
+    console.log("start simulating bundle...");
+    const bundleSimluationResult = await pieProgram.jito.simulateBundle({
+      encodedTransactions: serializedSignedTxs,
+    });
+
+    console.log(
+      `bundle simulation result: ${JSON.stringify(
+        bundleSimluationResult.value
+      )}`
+    );
+
+    if (bundleSimluationResult.value.summary !== "succeeded") {
+      for (const serializedSignedTx of serializedSignedTxs) {
+        await simulateTransaction(connection, serializedSignedTx);
+      }
+      throw new Error("bundle simulation failed");
+    }
+    console.log("start sending bundles..!!");
+    const bundleId = await pieProgram.jito.sendBundle(serializedSignedTxs);
+    await startPollingJitoBundle(bundleId);
+    console.log(`basket ${basketId.toString()} data:`);
+    const basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
+      basketId
+    );
+    basketMintTable.printTable();
 
     const userBalance = await pieProgram.state.getUserBalance({
       user: admin.publicKey,

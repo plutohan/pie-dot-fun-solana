@@ -6,6 +6,8 @@ import {
   AddressLookupTableAccount,
   TransactionMessage,
   VersionedTransaction,
+  ComputeBudgetProgram,
+  LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { ProgramStateManager } from "../state";
 import {
@@ -17,6 +19,7 @@ import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import { getOrCreateTokenAccountTx } from "../../utils/helper";
 import { createJupiterSwapIx } from "../../utils/jupiter";
 import { JUPITER_PROGRAM_ID } from "../../constants";
+import { Jito } from "../../jito";
 
 /**
  * Class for handling buy-related instructions
@@ -25,7 +28,8 @@ export class UserInstructions extends ProgramStateManager {
   constructor(
     readonly connection: Connection,
     readonly programId: PublicKey,
-    readonly pieDotFunApiUrl: string
+    readonly pieDotFunApiUrl: string,
+    readonly jito: Jito
   ) {
     super(programId, connection);
   }
@@ -84,34 +88,6 @@ export class UserInstructions extends ProgramStateManager {
     }
 
     tx.add(...wrapSOLIx(user, amount));
-
-    const {
-      tokenAccount: creatorFeeTokenAccount,
-      tx: creatorFeeTokenAccountCreationTx,
-    } = await getOrCreateTokenAccountTx(
-      this.connection,
-      NATIVE_MINT,
-      user,
-      basketConfig.creator
-    );
-
-    if (isValidTransaction(creatorFeeTokenAccountCreationTx)) {
-      tx.add(creatorFeeTokenAccountCreationTx);
-    }
-
-    const {
-      tokenAccount: platformFeeTokenAccount,
-      tx: platformFeeTokenAccountCreationTx,
-    } = await getOrCreateTokenAccountTx(
-      this.connection,
-      NATIVE_MINT,
-      user,
-      programState.platformFeeWallet
-    );
-
-    if (isValidTransaction(platformFeeTokenAccountCreationTx)) {
-      tx.add(platformFeeTokenAccountCreationTx);
-    }
 
     const { tokenAccount: vaultWsolAccount, tx: createVaultWsolAccountTx } =
       await getOrCreateTokenAccountTx(
@@ -289,6 +265,160 @@ export class UserInstructions extends ProgramStateManager {
       .transaction();
     tx.add(mintBasketTokenTx);
     return tx;
+  }
+
+  /**
+   * Buys a basket
+   *
+   *
+   */
+  async buyBasketJitoTxs({
+    user,
+    basketId,
+    amountInLamports,
+    slippageBps,
+    dynamicSlippage,
+    maxAccounts = 20,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amountInLamports: number;
+    slippageBps?: number;
+    dynamicSlippage?: boolean;
+    maxAccounts?: number;
+  }): Promise<string[]> {
+    const basketConfig = await this.getBasketConfig({ basketId });
+
+    const tokenPriceAndDecimals = await Promise.all(
+      basketConfig.components.map((component) =>
+        getTokenPriceAndDecimals({
+          mint: component.mint,
+          connection: this.connection,
+          pieDotFunApiUrl: this.pieDotFunApiUrl,
+        })
+      )
+    );
+
+    const tokenWeights = basketConfig.components.map((component, index) => {
+      return component.quantityInSysDecimal
+        .mul(new BN(tokenPriceAndDecimals[index].price.rawAmount))
+        .div(new BN(10 ** tokenPriceAndDecimals[index].decimals));
+    });
+
+    const totalWeight = tokenWeights.reduce(
+      (acc, curr) => acc.add(new BN(curr)),
+      new BN(0)
+    );
+
+    const inputAmounts = tokenWeights.map((weight) =>
+      weight.mul(new BN(amountInLamports)).div(totalWeight)
+    );
+
+    // @TODO handle when WSOL is in the components
+    const jupiterSwapTxs = await Promise.all(
+      basketConfig.components.map((component, index) =>
+        this.buyComponentJupiter({
+          user,
+          basketId,
+          outputMint: component.mint,
+          amount: inputAmounts[index].toNumber(),
+          swapMode: "ExactIn",
+          maxAccounts,
+          dynamicSlippage,
+          slippageBps,
+        })
+      )
+    );
+
+    const jupiterSwapTxsOrdered = jupiterSwapTxs.sort(
+      (a, b) => a.txLength - b.txLength
+    );
+
+    const recentBlockhash = (await this.connection.getLatestBlockhash())
+      .blockhash;
+
+    const serializedTxs: string[] = [];
+
+    // 1. initialize user balance
+    // 2. deposit wsol
+    // 3. buy components
+    // 4. mint basket token
+    while (jupiterSwapTxsOrdered.length > 0) {
+      console.log("building tx..");
+      const tx = new Transaction();
+      const lookupTableAccounts = [];
+      // @TODO: optimize
+      tx.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: 1_000_000,
+        })
+      );
+      // tx.add(
+      //   ComputeBudgetProgram.setComputeUnitPrice({
+      //     microLamports: 10000,
+      //   })
+      // );
+      let swap1;
+      let swap2;
+      if (serializedTxs.length === 0) {
+        tx.add(
+          await this.depositWsol({
+            user,
+            basketId,
+            amount: amountInLamports,
+          })
+        );
+        // @TODO: optimize with LUT
+        swap1 = jupiterSwapTxsOrdered.shift();
+      } else {
+        swap1 = jupiterSwapTxsOrdered.shift();
+        swap2 = jupiterSwapTxsOrdered.pop();
+      }
+
+      if (swap1) {
+        tx.add(swap1.buyComponentJupiterTx);
+        lookupTableAccounts.push(...swap1.addressLookupTableAccounts);
+      }
+      if (swap2) {
+        tx.add(swap2.buyComponentJupiterTx);
+        lookupTableAccounts.push(...swap2.addressLookupTableAccounts);
+      }
+
+      if (jupiterSwapTxsOrdered.length > 0) {
+        const serializedTx = await this.jito.serializeJitoTransaction({
+          recentBlockhash,
+          signer: user,
+          transaction: tx,
+          lookupTables: lookupTableAccounts,
+        });
+        serializedTxs.push(serializedTx);
+      } else {
+        // the last tx
+        tx.add(
+          await this.mintBasketToken({
+            user,
+            basketId,
+          })
+        );
+        const jitoTipAccounts = await this.jito.getTipAccounts();
+        const jitoTipAccount = jitoTipAccounts[0];
+        const jitoTipAmount = await this.jito.getTipInformation();
+        console.log({ jitoTipAccount, jitoTipAmount });
+        const serializedTx = await this.jito.serializeJitoTransaction({
+          recentBlockhash,
+          signer: user,
+          transaction: tx,
+          lookupTables: lookupTableAccounts,
+          jitoTipAccount: new PublicKey(jitoTipAccount),
+          amountInLamports: Math.floor(
+            jitoTipAmount.landed_tips_50th_percentile * LAMPORTS_PER_SOL
+          ),
+        });
+        serializedTxs.push(serializedTx);
+      }
+    }
+
+    return serializedTxs;
   }
 
   /**
