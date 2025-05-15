@@ -1156,7 +1156,8 @@ export type Pie = {
           }
         },
         {
-          "name": "platformFeeWallet"
+          "name": "platformFeeWallet",
+          "writable": true
         },
         {
           "name": "metadataAccount",

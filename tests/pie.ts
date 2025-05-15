@@ -34,6 +34,13 @@ describe("pie", () => {
   const newCreator = Keypair.generate();
   const platformFeeWallet = Keypair.generate();
 
+  console.log("admin :", admin.publicKey.toBase58());
+  console.log("newAdmin :", newAdmin.publicKey.toBase58());
+  console.log("rebalancer :", rebalancer.publicKey.toBase58());
+  console.log("creator :", creator.publicKey.toBase58());
+  console.log("newCreator :", newCreator.publicKey.toBase58());
+  console.log("platformFeeWallet :", platformFeeWallet.publicKey.toBase58());
+
   const basketCreationFee = 10000;
 
   const pieProgram = new PieProgram({
@@ -191,9 +198,13 @@ describe("pie", () => {
 
   describe("create_basket", () => {
     it("should create a basket with metadata", async () => {
+      const platformFeeWalletBalanceBefore = await connection.getBalance(
+        platformFeeWallet.publicKey
+      );
+
       const basketComponents = await createBasketComponents(
         connection,
-        admin,
+        creator,
         [1, 2, 3]
       );
 
@@ -231,17 +242,20 @@ describe("pie", () => {
       );
       assert.equal(basketConfigData.mint.toBase58(), basketMint.toBase58());
       assert.equal(basketConfigData.components.length, 3);
-      assert.equal(basketConfigData.rebalanceType, { dynamic: {} });
+      assert.deepEqual(basketConfigData.rebalanceType, { dynamic: {} });
 
       const mintData = await getMint(connection, basketMint);
       assert.equal(mintData.supply.toString(), "0");
       assert.equal(mintData.decimals, 6);
       assert.equal(mintData.mintAuthority?.toBase58(), basketConfig.toBase58());
 
-      const platformFeeWalletBalance = await connection.getBalance(
+      const platformFeeWalletBalanceAfter = await connection.getBalance(
         platformFeeWallet.publicKey
       );
-      assert.equal(platformFeeWalletBalance, basketCreationFee);
+      assert.equal(
+        platformFeeWalletBalanceAfter,
+        platformFeeWalletBalanceBefore + basketCreationFee
+      );
     });
   });
 

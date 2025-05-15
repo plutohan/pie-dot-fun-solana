@@ -1150,7 +1150,8 @@
           }
         },
         {
-          "name": "platform_fee_wallet"
+          "name": "platform_fee_wallet",
+          "writable": true
         },
         {
           "name": "metadata_account",
