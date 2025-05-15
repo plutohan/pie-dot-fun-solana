@@ -8,7 +8,8 @@ import { CreateBasketArgs, CreateBasketWithTokenWeightsArgs } from "../types";
 export declare class CreatorInstructions extends ProgramStateManager {
     readonly connection: Connection;
     readonly programId: PublicKey;
-    constructor(connection: Connection, programId: PublicKey);
+    readonly pieDotFunApiUrl: string;
+    constructor(connection: Connection, programId: PublicKey, pieDotFunApiUrl: string);
     /**
      * Creates a basket.
      * @param creator - The creator account.

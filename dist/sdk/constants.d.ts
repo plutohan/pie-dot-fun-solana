@@ -4,4 +4,5 @@ export declare const BASIS_POINTS = 10000;
 export declare const SYS_DECIMALS: number;
 export declare const JITO_TIP_AMOUNT = 1000000;
 export declare const JUPITER_PROGRAM_ID = "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4";
+export declare const PIE_DOT_FUN_API_URL = "https://api.pie.fun";
 //# sourceMappingURL=constants.d.ts.map

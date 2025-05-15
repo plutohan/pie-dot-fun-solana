@@ -1,13 +1,16 @@
 import { BN } from "@coral-xyz/anchor";
 import { Transaction, PublicKey, Connection, AddressLookupTableAccount } from "@solana/web3.js";
 import { ProgramStateManager } from "../state";
+import { Jito } from "../../jito";
 /**
  * Class for handling buy-related instructions
  */
 export declare class UserInstructions extends ProgramStateManager {
     readonly connection: Connection;
     readonly programId: PublicKey;
-    constructor(connection: Connection, programId: PublicKey);
+    readonly pieDotFunApiUrl: string;
+    readonly jito: Jito;
+    constructor(connection: Connection, programId: PublicKey, pieDotFunApiUrl: string, jito: Jito);
     /**
      * Initializes the user balance.
      * @param user - The user account.
@@ -59,6 +62,19 @@ export declare class UserInstructions extends ProgramStateManager {
         user: PublicKey;
         basketId: BN;
     }): Promise<Transaction>;
+    /**
+     * Buys a basket
+     *
+     *
+     */
+    buyBasketJitoTxs({ user, basketId, amountInLamports, slippageBps, dynamicSlippage, maxAccounts, }: {
+        user: PublicKey;
+        basketId: BN;
+        amountInLamports: number;
+        slippageBps?: number;
+        dynamicSlippage?: boolean;
+        maxAccounts?: number;
+    }): Promise<string[]>;
     /**
      * Withdraws a WSOL from the basket.
      * @param user - The user account.

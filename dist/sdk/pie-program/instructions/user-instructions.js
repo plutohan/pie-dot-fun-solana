@@ -13,10 +13,12 @@ const constants_1 = require("../../constants");
  * Class for handling buy-related instructions
  */
 class UserInstructions extends state_1.ProgramStateManager {
-    constructor(connection, programId) {
+    constructor(connection, programId, pieDotFunApiUrl, jito) {
         super(programId, connection);
         this.connection = connection;
         this.programId = programId;
+        this.pieDotFunApiUrl = pieDotFunApiUrl;
+        this.jito = jito;
     }
     /**
      * Initializes the user balance.
@@ -25,6 +27,9 @@ class UserInstructions extends state_1.ProgramStateManager {
      */
     async initializeUserBalance({ user, }) {
         const tx = new web3_js_1.Transaction();
+        if (await this.getUserBalance({ user })) {
+            return tx;
+        }
         const initializeUserBalanceTx = await this.program.methods
             .initializeUserBalance()
             .accountsPartial({ user })
@@ -49,14 +54,6 @@ class UserInstructions extends state_1.ProgramStateManager {
             tx.add(createUserWsolAccountTx);
         }
         tx.add(...(0, helper_1.wrapSOLIx)(user, amount));
-        const { tokenAccount: creatorFeeTokenAccount, tx: creatorFeeTokenAccountCreationTx, } = await (0, helper_2.getOrCreateTokenAccountTx)(this.connection, spl_token_1.NATIVE_MINT, user, basketConfig.creator);
-        if ((0, helper_1.isValidTransaction)(creatorFeeTokenAccountCreationTx)) {
-            tx.add(creatorFeeTokenAccountCreationTx);
-        }
-        const { tokenAccount: platformFeeTokenAccount, tx: platformFeeTokenAccountCreationTx, } = await (0, helper_2.getOrCreateTokenAccountTx)(this.connection, spl_token_1.NATIVE_MINT, user, programState.platformFeeWallet);
-        if ((0, helper_1.isValidTransaction)(platformFeeTokenAccountCreationTx)) {
-            tx.add(platformFeeTokenAccountCreationTx);
-        }
         const { tokenAccount: vaultWsolAccount, tx: createVaultWsolAccountTx } = await (0, helper_2.getOrCreateTokenAccountTx)(this.connection, spl_token_1.NATIVE_MINT, user, basketConfigPDA);
         if ((0, helper_1.isValidTransaction)(createVaultWsolAccountTx)) {
             tx.add(createVaultWsolAccountTx);
@@ -70,8 +67,8 @@ class UserInstructions extends state_1.ProgramStateManager {
             basketConfig: basketConfigPDA,
             userWsolAccount,
             vaultWsolAccount,
-            creatorFeeTokenAccount,
-            platformFeeTokenAccount,
+            creatorFeeWallet: basketConfig.creator,
+            platformFeeWallet: programState.platformFeeWallet,
         })
             .transaction();
         tx.add(depositWsolTx);
@@ -168,6 +165,112 @@ class UserInstructions extends state_1.ProgramStateManager {
         return tx;
     }
     /**
+     * Buys a basket
+     *
+     *
+     */
+    async buyBasketJitoTxs({ user, basketId, amountInLamports, slippageBps, dynamicSlippage, maxAccounts = 20, }) {
+        const basketConfig = await this.getBasketConfig({ basketId });
+        const tokenPriceAndDecimals = await Promise.all(basketConfig.components.map((component) => (0, helper_1.getTokenPriceAndDecimals)({
+            mint: component.mint,
+            connection: this.connection,
+            pieDotFunApiUrl: this.pieDotFunApiUrl,
+        })));
+        const tokenWeights = basketConfig.components.map((component, index) => {
+            return component.quantityInSysDecimal
+                .mul(new anchor_1.BN(tokenPriceAndDecimals[index].price.rawAmount))
+                .div(new anchor_1.BN(10 ** tokenPriceAndDecimals[index].decimals));
+        });
+        const totalWeight = tokenWeights.reduce((acc, curr) => acc.add(new anchor_1.BN(curr)), new anchor_1.BN(0));
+        const inputAmounts = tokenWeights.map((weight) => weight.mul(new anchor_1.BN(amountInLamports)).div(totalWeight));
+        // @TODO handle when WSOL is in the components
+        const jupiterSwapTxs = await Promise.all(basketConfig.components.map((component, index) => this.buyComponentJupiter({
+            user,
+            basketId,
+            outputMint: component.mint,
+            amount: inputAmounts[index].toNumber(),
+            swapMode: "ExactIn",
+            maxAccounts,
+            dynamicSlippage,
+            slippageBps,
+        })));
+        const jupiterSwapTxsOrdered = jupiterSwapTxs.sort((a, b) => a.txLength - b.txLength);
+        const recentBlockhash = (await this.connection.getLatestBlockhash())
+            .blockhash;
+        const serializedTxs = [];
+        // 1. initialize user balance
+        // 2. deposit wsol
+        // 3. buy components
+        // 4. mint basket token
+        while (jupiterSwapTxsOrdered.length > 0) {
+            console.log("building tx..");
+            const tx = new web3_js_1.Transaction();
+            const lookupTableAccounts = [];
+            // @TODO: optimize
+            tx.add(web3_js_1.ComputeBudgetProgram.setComputeUnitLimit({
+                units: 1000000,
+            }));
+            // tx.add(
+            //   ComputeBudgetProgram.setComputeUnitPrice({
+            //     microLamports: 10000,
+            //   })
+            // );
+            let swap1;
+            let swap2;
+            if (serializedTxs.length === 0) {
+                tx.add(await this.depositWsol({
+                    user,
+                    basketId,
+                    amount: amountInLamports,
+                }));
+                // @TODO: optimize with LUT
+                swap1 = jupiterSwapTxsOrdered.shift();
+            }
+            else {
+                swap1 = jupiterSwapTxsOrdered.shift();
+                swap2 = jupiterSwapTxsOrdered.pop();
+            }
+            if (swap1) {
+                tx.add(swap1.buyComponentJupiterTx);
+                lookupTableAccounts.push(...swap1.addressLookupTableAccounts);
+            }
+            if (swap2) {
+                tx.add(swap2.buyComponentJupiterTx);
+                lookupTableAccounts.push(...swap2.addressLookupTableAccounts);
+            }
+            if (jupiterSwapTxsOrdered.length > 0) {
+                const serializedTx = await this.jito.serializeJitoTransaction({
+                    recentBlockhash,
+                    signer: user,
+                    transaction: tx,
+                    lookupTables: lookupTableAccounts,
+                });
+                serializedTxs.push(serializedTx);
+            }
+            else {
+                // the last tx
+                tx.add(await this.mintBasketToken({
+                    user,
+                    basketId,
+                }));
+                const jitoTipAccounts = await this.jito.getTipAccounts();
+                const jitoTipAccount = jitoTipAccounts[0];
+                const jitoTipAmount = await this.jito.getTipInformation();
+                console.log({ jitoTipAccount, jitoTipAmount });
+                const serializedTx = await this.jito.serializeJitoTransaction({
+                    recentBlockhash,
+                    signer: user,
+                    transaction: tx,
+                    lookupTables: lookupTableAccounts,
+                    jitoTipAccount: new web3_js_1.PublicKey(jitoTipAccount),
+                    amountInLamports: Math.floor(jitoTipAmount.landed_tips_50th_percentile * web3_js_1.LAMPORTS_PER_SOL),
+                });
+                serializedTxs.push(serializedTx);
+            }
+        }
+        return serializedTxs;
+    }
+    /**
      * Withdraws a WSOL from the basket.
      * @param user - The user account.
      * @param basketId - The basket ID.
@@ -176,6 +279,7 @@ class UserInstructions extends state_1.ProgramStateManager {
     async withdrawWsol({ user, basketId, }) {
         const basketConfigPDA = this.basketConfigPDA({ basketId });
         const basketConfig = await this.getBasketConfig({ basketId });
+        const programState = await this.getProgramState();
         const tx = new web3_js_1.Transaction();
         const { tokenAccount: userWsolAccount, tx: createUserWsolAccountTx } = await (0, helper_2.getOrCreateTokenAccountTx)(this.connection, spl_token_1.NATIVE_MINT, user, user);
         if ((0, helper_1.isValidTransaction)(createUserWsolAccountTx)) {
@@ -193,12 +297,11 @@ class UserInstructions extends state_1.ProgramStateManager {
             userFund: this.userFundPDA({ user, basketId }),
             basketConfig: basketConfigPDA,
             userWsolAccount,
-            platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-            creatorFeeTokenAccount,
+            platformFeeWallet: programState.platformFeeWallet,
+            creatorFeeWallet: basketConfig.creator,
         })
             .transaction();
         tx.add(withdrawWsolTx);
-        tx.add((0, helper_1.unwrapSolIx)(userWsolAccount, user, user));
         return tx;
     }
     /**

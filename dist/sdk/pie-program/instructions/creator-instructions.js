@@ -12,10 +12,11 @@ const constants_1 = require("../../constants");
  * Class for handling creator-related instructions
  */
 class CreatorInstructions extends state_1.ProgramStateManager {
-    constructor(connection, programId) {
+    constructor(connection, programId, pieDotFunApiUrl) {
         super(programId, connection);
         this.connection = connection;
         this.programId = programId;
+        this.pieDotFunApiUrl = pieDotFunApiUrl;
     }
     /**
      * Creates a basket.
@@ -62,6 +63,7 @@ class CreatorInstructions extends state_1.ProgramStateManager {
             return (0, helper_1.getTokenPriceAndDecimals)({
                 mint: weight.mint,
                 connection: this.connection,
+                pieDotFunApiUrl: this.pieDotFunApiUrl,
             });
         }));
         const components = [];
