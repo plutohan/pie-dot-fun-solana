@@ -34,6 +34,8 @@ describe("pie", () => {
   const newCreator = Keypair.generate();
   const platformFeeWallet = Keypair.generate();
 
+  const basketCreationFee = 10000;
+
   const pieProgram = new PieProgram({
     connection,
     cluster: "devnet",
@@ -55,9 +57,9 @@ describe("pie", () => {
     const initTx = await pieProgram.admin.initialize({
       initializer: admin.publicKey,
       admin: admin.publicKey,
-      creator: creator.publicKey,
-      platformFeeWallet: admin.publicKey,
-      platformFeePercentage: new BN(100),
+      platformFeeWallet: platformFeeWallet.publicKey,
+      platformFeePercentage: new BN(50),
+      basketCreationFee: new BN(0),
     });
 
     await sendAndConfirmTransaction(connection, initTx, [admin]);
@@ -110,13 +112,16 @@ describe("pie", () => {
     it("should update fee", async () => {
       const updateFeeTx = await pieProgram.admin.updateFee({
         admin: admin.publicKey,
-        newCreatorFeePercentage: 1000,
-        newPlatformFeePercentage: 9000,
+        newBasketCreationFee: basketCreationFee,
+        newPlatformFeeBp: 9000,
       });
       await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
 
       const programState = await pieProgram.state.getProgramState();
-      assert.equal(programState.creatorFeeBp.toNumber(), 1000);
+      assert.equal(
+        programState.basketCreationFee.toNumber(),
+        basketCreationFee
+      );
       assert.equal(programState.platformFeeBp.toNumber(), 9000);
     });
 
@@ -124,8 +129,8 @@ describe("pie", () => {
       try {
         const updateFeeTx = await pieProgram.admin.updateFee({
           admin: newAdmin.publicKey,
-          newCreatorFeePercentage: 1000,
-          newPlatformFeePercentage: 1000,
+          newBasketCreationFee: 10000,
+          newPlatformFeeBp: 9000,
         });
         await sendAndConfirmTransaction(connection, updateFeeTx, [newAdmin]);
         assert.fail("Transaction should have failed");
@@ -138,8 +143,8 @@ describe("pie", () => {
       try {
         const updateFeeTx = await pieProgram.admin.updateFee({
           admin: admin.publicKey,
-          newCreatorFeePercentage: (1000 * 10 ** 10) ^ 4,
-          newPlatformFeePercentage: 1000,
+          newBasketCreationFee: 10000,
+          newPlatformFeeBp: 1000,
         });
         await sendAndConfirmTransaction(connection, updateFeeTx, [admin]);
         assert.fail("Transaction should have failed");
@@ -197,9 +202,9 @@ describe("pie", () => {
         symbol: "BNS",
         uri: "test",
         components: basketComponents,
-        rebalancer: admin.publicKey,
-        isComponentFixed: false,
-        creatorFeeBp: new BN(100),
+        rebalancer: creator.publicKey,
+        creatorFeeBp: new BN(50),
+        rebalanceType: { dynamic: {} },
       };
       const programState = await pieProgram.state.getProgramState();
       const basketId = programState.basketCounter;
@@ -226,12 +231,17 @@ describe("pie", () => {
       );
       assert.equal(basketConfigData.mint.toBase58(), basketMint.toBase58());
       assert.equal(basketConfigData.components.length, 3);
-      assert.equal(basketConfigData.isComponentFixed, false);
+      assert.equal(basketConfigData.rebalanceType, { dynamic: {} });
 
       const mintData = await getMint(connection, basketMint);
       assert.equal(mintData.supply.toString(), "0");
       assert.equal(mintData.decimals, 6);
       assert.equal(mintData.mintAuthority?.toBase58(), basketConfig.toBase58());
+
+      const platformFeeWalletBalance = await connection.getBalance(
+        platformFeeWallet.publicKey
+      );
+      assert.equal(platformFeeWalletBalance, basketCreationFee);
     });
   });
 
@@ -252,8 +262,8 @@ describe("pie", () => {
         uri: "test",
         components: basketComponents,
         rebalancer: rebalancer.publicKey,
-        isComponentFixed: false,
-        creatorFeeBp: new BN(100),
+        creatorFeeBp: new BN(50),
+        rebalanceType: { dynamic: {} },
       };
 
       const programState = await pieProgram.state.getProgramState();

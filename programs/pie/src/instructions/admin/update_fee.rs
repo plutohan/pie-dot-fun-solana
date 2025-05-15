@@ -30,6 +30,7 @@ pub fn update_fee(
 
     require!(new_platform_fee_bp <= BASIS_POINTS, PieError::InvalidFee);
     program_state.platform_fee_bp = new_platform_fee_bp;
+    program_state.basket_creation_fee = new_basket_creation_fee;
 
     emit!(UpdateFeeEvent {
         new_basket_creation_fee,

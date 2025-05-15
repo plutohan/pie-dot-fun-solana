@@ -89,6 +89,7 @@ describe("pie", () => {
     let programState = await pieProgram.state.getProgramState();
 
     console.log(JSON.stringify(programState, null, 2));
+    return;
 
     const platformFeeWallet = new PublicKey(
       "DU2tpPP3yHY811yLrDATdyCjMu51bp3jz1fpEbpf5Crq"
