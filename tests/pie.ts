@@ -16,6 +16,7 @@ import {
 } from "@solana/spl-token";
 import { METADATA_PROGRAM_ID } from "@raydium-io/raydium-sdk-v2";
 import { BN } from "@coral-xyz/anchor";
+import { BASIS_POINTS } from "../sdk";
 
 function sleep(s: number) {
   return new Promise((resolve) => setTimeout(resolve, s * 1000));
@@ -309,6 +310,132 @@ describe("pie", () => {
           componentAmounts[i]
         );
       }
+    });
+
+    it("should deposit and withdraw wsol", async () => {
+      const depositAmount = 1000000;
+
+      const programState = await pieProgram.state.getProgramState();
+      const basketConfig = await pieProgram.state.getBasketConfig({
+        basketId,
+      });
+
+      const platformFeeAmount = programState.platformFeeBp
+        .mul(new BN(depositAmount))
+        .div(new BN(BASIS_POINTS))
+        .toNumber();
+      const creatorFeeAmount = basketConfig.creatorFeeBp
+        .mul(new BN(depositAmount))
+        .div(new BN(BASIS_POINTS))
+        .toNumber();
+
+      const userBalanceBeforeDeposit = await connection.getBalance(
+        admin.publicKey
+      );
+      const platformFeeWalletBalanceBeforeDeposit = await connection.getBalance(
+        platformFeeWallet.publicKey
+      );
+      const creatorFeeWalletBalanceBeforeDeposit = await connection.getBalance(
+        creator.publicKey
+      );
+
+      const depositTx = await pieProgram.user.depositWsol({
+        user: admin.publicKey,
+        basketId,
+        amount: depositAmount,
+      });
+
+      await sendAndConfirmTransaction(connection, depositTx, [admin]);
+
+      const userFund = await pieProgram.state.getUserFund({
+        user: admin.publicKey,
+        basketId,
+      });
+
+      assert.equal(
+        userFund.components[0].amount.toString(),
+        String(depositAmount)
+      );
+
+      const userBalanceAfterDeposit = await connection.getBalance(
+        admin.publicKey
+      );
+      const platformFeeWalletBalanceAfterDeposit = await connection.getBalance(
+        platformFeeWallet.publicKey
+      );
+      const creatorFeeWalletBalanceAfterDeposit = await connection.getBalance(
+        creator.publicKey
+      );
+
+      // Check user balance - allow for transaction fees
+      const expectedUserBalanceAfterDeposit =
+        userBalanceBeforeDeposit -
+        depositAmount -
+        platformFeeAmount -
+        creatorFeeAmount;
+
+      // Define a reasonable threshold for transaction fees (in lamports)
+      const MAX_TX_FEE_THRESHOLD = 10000000; // 0.01 SOL
+
+      assert.isAtMost(
+        expectedUserBalanceAfterDeposit - userBalanceAfterDeposit,
+        MAX_TX_FEE_THRESHOLD,
+        "User balance decreased more than expected (accounting for transaction fees)"
+      );
+
+      assert.equal(
+        platformFeeWalletBalanceAfterDeposit,
+        platformFeeWalletBalanceBeforeDeposit + platformFeeAmount
+      );
+      assert.equal(
+        creatorFeeWalletBalanceAfterDeposit,
+        creatorFeeWalletBalanceBeforeDeposit + creatorFeeAmount
+      );
+
+      const withdrawTx = await pieProgram.user.withdrawWsol({
+        user: admin.publicKey,
+        basketId,
+      });
+      try {
+        await sendAndConfirmTransaction(connection, withdrawTx, [admin]);
+      } catch (e) {
+        console.log(e);
+      }
+
+      const userFundAfterWithdraw = await pieProgram.state.getUserFund({
+        user: admin.publicKey,
+        basketId,
+      });
+      assert.equal(userFundAfterWithdraw, null);
+
+      const userBalanceAfterWithdraw = await connection.getBalance(
+        admin.publicKey
+      );
+      const platformFeeWalletBalanceAfterWithdraw = await connection.getBalance(
+        platformFeeWallet.publicKey
+      );
+      const creatorFeeWalletBalanceAfterWithdraw = await connection.getBalance(
+        creator.publicKey
+      );
+
+      // Check user balance after withdraw - allow for transaction fees
+      const expectedUserBalanceAfterWithdraw =
+        userBalanceBeforeDeposit - (platformFeeAmount + creatorFeeAmount) * 2;
+
+      assert.isAtMost(
+        expectedUserBalanceAfterWithdraw - userBalanceAfterWithdraw,
+        MAX_TX_FEE_THRESHOLD * 2, // Allow for fees from both deposit and withdraw
+        "User balance after withdraw decreased more than expected (accounting for transaction fees)"
+      );
+
+      assert.equal(
+        platformFeeWalletBalanceAfterWithdraw,
+        platformFeeWalletBalanceAfterDeposit + platformFeeAmount
+      );
+      assert.equal(
+        creatorFeeWalletBalanceAfterWithdraw,
+        creatorFeeWalletBalanceAfterDeposit + creatorFeeAmount
+      );
     });
 
     it("should deposit and withdraw components", async () => {

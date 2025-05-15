@@ -47,19 +47,13 @@ pub struct DepositWsolContext<'info> {
     )]
     pub vault_wsol_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(
-        mut,
-        associated_token::authority = program_state.platform_fee_wallet,
-        associated_token::mint = NATIVE_MINT,
-    )]
-    pub platform_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: Platform fee wallet that receives the fee
+    #[account(mut, address = program_state.platform_fee_wallet)]
+    pub platform_fee_wallet: AccountInfo<'info>,
 
-    #[account(
-        mut,
-        associated_token::authority = basket_config.creator,
-        associated_token::mint = NATIVE_MINT,
-    )]
-    pub creator_fee_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: Creator fee wallet that receives the fee
+    #[account(mut, address = basket_config.creator)]
+    pub creator_fee_wallet: AccountInfo<'info>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -91,15 +85,43 @@ pub fn deposit_wsol(ctx: Context<DepositWsolContext>, amount: u64) -> Result<()>
         amount,
     )?;
 
-    transfer_fees(
-        &ctx.accounts.user_wsol_account.to_account_info(),
-        &ctx.accounts.platform_fee_token_account.to_account_info(),
-        &ctx.accounts.creator_fee_token_account.to_account_info(),
-        &ctx.accounts.user.to_account_info(),
-        &ctx.accounts.token_program.to_account_info(),
-        platform_fee_amount,
-        creator_fee_amount,
-    )?;
+    if platform_fee_amount > 0 {
+        anchor_lang::system_program::transfer(
+            CpiContext::new(
+                ctx.accounts.system_program.to_account_info(),
+                anchor_lang::system_program::Transfer {
+                    from: ctx.accounts.user.to_account_info(),
+                    to: ctx.accounts.platform_fee_wallet.to_account_info(),
+                },
+            ),
+            platform_fee_amount,
+        )?;
+
+        msg!(
+            "Transferred {} lamports to platform fee wallet({})",
+            platform_fee_amount,
+            ctx.accounts.platform_fee_wallet.key()
+        );
+    }
+
+    if creator_fee_amount > 0 {
+        anchor_lang::system_program::transfer(
+            CpiContext::new(
+                ctx.accounts.system_program.to_account_info(),
+                anchor_lang::system_program::Transfer {
+                    from: ctx.accounts.user.to_account_info(),
+                    to: ctx.accounts.creator_fee_wallet.to_account_info(),
+                },
+            ),
+            creator_fee_amount,
+        )?;
+
+        msg!(
+            "Transferred {} lamports to creator fee wallet({})",
+            creator_fee_amount,
+            ctx.accounts.creator_fee_wallet.key()
+        );
+    }
 
     transfer_from_user_to_pool_vault(
         &ctx.accounts.user_wsol_account.to_account_info(),

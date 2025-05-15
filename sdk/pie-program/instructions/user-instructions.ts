@@ -9,10 +9,8 @@ import {
 } from "@solana/web3.js";
 import { ProgramStateManager } from "../state";
 import {
-  getTokenAccountWithTokenProgram,
   getTokenPriceAndDecimals,
   isValidTransaction,
-  unwrapSolIx,
   wrapSOLIx,
 } from "../../utils/helper";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
@@ -136,8 +134,8 @@ export class UserInstructions extends ProgramStateManager {
         basketConfig: basketConfigPDA,
         userWsolAccount,
         vaultWsolAccount,
-        creatorFeeTokenAccount,
-        platformFeeTokenAccount,
+        creatorFeeWallet: basketConfig.creator,
+        platformFeeWallet: programState.platformFeeWallet,
       })
       .transaction();
 
@@ -294,38 +292,6 @@ export class UserInstructions extends ProgramStateManager {
   }
 
   /**
-   * Buys a basket
-   *
-   *
-   */
-  async buyBasket({
-    user,
-    basketId,
-    amountInLamports,
-  }: {
-    user: PublicKey;
-    basketId: BN;
-    amountInLamports: number;
-  }): Promise<Transaction[]> {
-    const txs: Transaction[] = [];
-    const basketConfig = await this.getBasketConfig({ basketId });
-
-    const tx = new Transaction();
-
-    const tokenPriceAndDecimals = await Promise.all(
-      basketConfig.components.map((component) =>
-        getTokenPriceAndDecimals({
-          mint: component.mint,
-          connection: this.connection,
-          pieDotFunApiUrl: this.pieDotFunApiUrl,
-        })
-      )
-    );
-
-    return txs;
-  }
-
-  /**
    * Withdraws a WSOL from the basket.
    * @param user - The user account.
    * @param basketId - The basket ID.
@@ -340,7 +306,7 @@ export class UserInstructions extends ProgramStateManager {
   }): Promise<Transaction> {
     const basketConfigPDA = this.basketConfigPDA({ basketId });
     const basketConfig = await this.getBasketConfig({ basketId });
-
+    const programState = await this.getProgramState();
     const tx = new Transaction();
     const { tokenAccount: userWsolAccount, tx: createUserWsolAccountTx } =
       await getOrCreateTokenAccountTx(this.connection, NATIVE_MINT, user, user);
@@ -371,15 +337,12 @@ export class UserInstructions extends ProgramStateManager {
         userFund: this.userFundPDA({ user, basketId }),
         basketConfig: basketConfigPDA,
         userWsolAccount,
-        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorFeeTokenAccount,
+        platformFeeWallet: programState.platformFeeWallet,
+        creatorFeeWallet: basketConfig.creator,
       })
       .transaction();
 
     tx.add(withdrawWsolTx);
-
-    tx.add(unwrapSolIx(userWsolAccount, user, user));
-
     return tx;
   }
 
