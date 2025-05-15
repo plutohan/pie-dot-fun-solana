@@ -1,4 +1,3 @@
-import { BN } from "@coral-xyz/anchor";
 import { IdlAccounts, IdlEvents, IdlTypes } from "@coral-xyz/anchor";
 import { Pie } from "../../target/types/pie";
 import { PublicKey } from "@solana/web3.js";
@@ -12,6 +11,15 @@ export type UserBalance = IdlAccounts<Pie>["userBalance"];
 // Instruction Types
 export type BasketComponent = IdlTypes<Pie>["basketComponent"];
 export type CreateBasketArgs = IdlTypes<Pie>["createBasketArgs"];
+export type CreateBasketWithTokenWeightsArgs = Omit<
+  CreateBasketArgs,
+  "components"
+> & {
+  tokenWeights: {
+    mint: PublicKey;
+    weightInBp: number;
+  }[];
+};
 
 // Enum Types
 export type BasketState = IdlTypes<Pie>["basketState"];

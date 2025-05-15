@@ -1,6 +1,5 @@
 import { Connection, Commitment, PublicKey, Signer, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { BasketComponent, PieProgram } from "../pie-program";
 import { Table } from "console-table-printer";
 import { BuySwapData, TokenInfo, TokenBalance } from "../pie-program/types";
@@ -10,16 +9,11 @@ export declare function mintTokenTo(connection: Connection, tokenMint: PublicKey
 export declare function sendTokenTo(connection: Connection, tokenMint: PublicKey, owner: Signer, from: PublicKey, to: PublicKey, amount: number): Promise<String>;
 export declare function sleep(ms: any): Promise<void>;
 export declare function createBasketComponents(connection: Connection, creator: Signer, ratios: Array<number>): Promise<BasketComponent[]>;
-export declare function getRaydiumPoolAccounts(connection: Connection, raydium: Raydium, ammId: string, inputMint: PublicKey, user: PublicKey, amountIn: number): Promise<{
-    ixs: TransactionInstruction[];
-    tokenAccount: PublicKey;
-}>;
 export declare function getOrCreateTokenAccountIx(connection: Connection, mint: PublicKey, payer: PublicKey, owner: PublicKey): Promise<{
     tokenAccount: PublicKey;
     ixs: TransactionInstruction[];
 }>;
-export declare function buildClmmRemainingAccounts(tickArray: PublicKey[], exTickArrayBitmap?: PublicKey): Promise<any>;
-export declare function wrapSOLInstruction(recipient: PublicKey, amount: number): TransactionInstruction[];
+export declare function wrapSOLIx(recipient: PublicKey, amount: number): TransactionInstruction[];
 export declare function showBasketConfigTable(connection: Connection, pieProgram: PieProgram, basketId: BN): Promise<Table>;
 export declare function showUserFundTable(pieProgram: PieProgram, userPubkey: PublicKey, basketId: BN): Promise<Table>;
 export declare function showBasketVaultsTable(basketVaults: {
@@ -32,6 +26,10 @@ export declare function getOrCreateTokenAccountTx(connection: Connection, mint: 
     tokenProgram: PublicKey;
 }>;
 export declare function getTokenAccount(connection: Connection, mint: PublicKey, owner: PublicKey): Promise<PublicKey>;
+export declare function getTokenAccountWithTokenProgram(connection: Connection, mint: PublicKey, owner: PublicKey): Promise<{
+    tokenAccount: PublicKey;
+    tokenProgram: PublicKey;
+}>;
 export declare function isToken2022Mint(connection: Connection, mint: PublicKey): Promise<boolean>;
 export declare function unwrapSolIx(acc: PublicKey, destination: PublicKey, authority: PublicKey): TransactionInstruction;
 export declare function getOrCreateNativeMintATA(connection: Connection, payer: PublicKey, owner: PublicKey): Promise<{
@@ -100,4 +98,17 @@ export declare function getAllTokenAccountWithBalance({ connection, owner, }: {
     connection: Connection;
     owner: PublicKey;
 }): Promise<TokenBalance[]>;
+export declare function getBasketIdFromBasketMint(mint: PublicKey, pieProgram: PieProgram): Promise<BN>;
+export declare function getTokenPriceAndDecimals({ mint, connection, currency, }: {
+    mint: PublicKey;
+    connection: Connection;
+    currency?: "CURRENCY_SOL" | "CURRENCY_USDC";
+}): Promise<{
+    price: {
+        currency: string;
+        formattedAmount: string;
+        rawAmount: string;
+    };
+    decimals: number;
+}>;
 //# sourceMappingURL=helper.d.ts.map

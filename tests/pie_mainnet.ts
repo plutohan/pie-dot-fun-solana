@@ -20,6 +20,7 @@ import {
   PieProgram,
   BasketState,
   RebalanceType,
+  CreateBasketWithTokenWeightsArgs,
 } from "../sdk/pie-program";
 import { tokens } from "./fixtures/mainnet/token_test";
 import { rebalanceInfo } from "./fixtures/mainnet/token_rebalance_test";
@@ -54,7 +55,7 @@ describe("pie", () => {
   });
   const swapsPerBundle = 2;
   const slippage = 50;
-  const basketCreationFee = 0.01 * LAMPORTS_PER_SOL;
+  const basketCreationFee = 0.001 * LAMPORTS_PER_SOL;
 
   const sampleTokenMints = [
     {
@@ -226,7 +227,7 @@ describe("pie", () => {
     }
   });
 
-  it("Create Basket", async () => {
+  it.skip("Create Basket", async () => {
     const components: BasketComponent[] = sampleTokenMints.map((token) => ({
       mint: new PublicKey(token.mint),
       quantityInSysDecimal: new BN(1 * 10 ** 6),
@@ -269,6 +270,63 @@ describe("pie", () => {
     assert.equal(basket.creator.toBase58(), admin.publicKey.toBase58());
     assert.equal(basket.id.toString(), basketId.toString());
     assert.equal(basket.rebalancer.toString(), rebalancer.publicKey.toString());
+
+    const table = new Table({
+      columns: [
+        { name: "mint", alignment: "left", color: "cyan" },
+        { name: "quantity", alignment: "right", color: "green" },
+      ],
+    });
+
+    for (let i = 0; i < basket.components.length; i++) {
+      let component = basket.components[i];
+      table.addRow({
+        mint: component.mint.toBase58(),
+        quantity: component.quantityInSysDecimal.toString(),
+      });
+    }
+    table.printTable();
+  });
+
+  it("Create Basket with token weights", async () => {
+    const tokenWeights = sampleTokenMints.map((token) => ({
+      mint: new PublicKey(token.mint),
+      weightInBp: 5000,
+    }));
+
+    const createBasketArgs: CreateBasketWithTokenWeightsArgs = {
+      name: "50-50 Basket",
+      symbol: "50-50",
+      uri: "https://cdn.internal-pie.fun/basket/4zoamul/metadata",
+      tokenWeights,
+      rebalancer: rebalancer.publicKey,
+      rebalanceType: { dynamic: {} },
+      creatorFeeBp: new BN(50),
+    };
+
+    const programState = await pieProgram.state.getProgramState();
+    const basketId = programState.basketCounter;
+
+    console.log("creating basket...");
+
+    const createBasketTx =
+      await pieProgram.creator.createBasketWithTokenWeights({
+        creator: admin.publicKey,
+        args: createBasketArgs,
+      });
+
+    const createBasketTxResult = await sendAndConfirmTransaction(
+      connection,
+      createBasketTx,
+      [admin],
+      { skipPreflight: true, commitment: "confirmed" }
+    );
+
+    console.log(
+      `Basket created at tx: ${getExplorerUrl(createBasketTxResult, "mainnet")}`
+    );
+
+    const basket = await pieProgram.state.getBasketConfig({ basketId });
 
     const table = new Table({
       columns: [

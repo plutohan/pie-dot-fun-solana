@@ -10,15 +10,14 @@ exports.mintTokenTo = mintTokenTo;
 exports.sendTokenTo = sendTokenTo;
 exports.sleep = sleep;
 exports.createBasketComponents = createBasketComponents;
-exports.getRaydiumPoolAccounts = getRaydiumPoolAccounts;
 exports.getOrCreateTokenAccountIx = getOrCreateTokenAccountIx;
-exports.buildClmmRemainingAccounts = buildClmmRemainingAccounts;
-exports.wrapSOLInstruction = wrapSOLInstruction;
+exports.wrapSOLIx = wrapSOLIx;
 exports.showBasketConfigTable = showBasketConfigTable;
 exports.showUserFundTable = showUserFundTable;
 exports.showBasketVaultsTable = showBasketVaultsTable;
 exports.getOrCreateTokenAccountTx = getOrCreateTokenAccountTx;
 exports.getTokenAccount = getTokenAccount;
+exports.getTokenAccountWithTokenProgram = getTokenAccountWithTokenProgram;
 exports.isToken2022Mint = isToken2022Mint;
 exports.unwrapSolIx = unwrapSolIx;
 exports.getOrCreateNativeMintATA = getOrCreateNativeMintATA;
@@ -33,6 +32,8 @@ exports.simulateTransaction = simulateTransaction;
 exports.findDepositAndRemoveInPlace = findDepositAndRemoveInPlace;
 exports.getTokenBalance = getTokenBalance;
 exports.getAllTokenAccountWithBalance = getAllTokenAccountWithBalance;
+exports.getBasketIdFromBasketMint = getBasketIdFromBasketMint;
+exports.getTokenPriceAndDecimals = getTokenPriceAndDecimals;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const anchor_1 = require("@coral-xyz/anchor");
@@ -91,24 +92,6 @@ async function createBasketComponents(connection, creator, ratios) {
     }
     return components;
 }
-async function getRaydiumPoolAccounts(connection, raydium, ammId, inputMint, user, amountIn) {
-    const txInstructions = [];
-    const data = await raydium.liquidity.getPoolInfoFromRpc({
-        poolId: ammId,
-    });
-    const poolKeys = data.poolKeys;
-    const baseIn = inputMint.toString() === poolKeys.mintA.address;
-    const [mintIn, mintOut] = baseIn
-        ? [poolKeys.mintA.address, poolKeys.mintB.address]
-        : [poolKeys.mintB.address, poolKeys.mintA.address];
-    const inputTokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(new web3_js_1.PublicKey(mintIn), user, false);
-    const { tokenAccount: outputTokenAccount, ixs: outputIxs } = await getOrCreateTokenAccountIx(connection, new web3_js_1.PublicKey(mintOut), user, user);
-    if (inputMint.equals(spl_token_1.NATIVE_MINT)) {
-        const wrappedSolIx = wrapSOLInstruction(user, amountIn);
-        outputIxs.push(...wrappedSolIx);
-    }
-    return { ixs: outputIxs, tokenAccount: outputTokenAccount };
-}
 async function getOrCreateTokenAccountIx(connection, mint, payer, owner) {
     const tokenAccount = await (0, spl_token_1.getAssociatedTokenAddress)(mint, owner, true);
     let instructions = [];
@@ -120,16 +103,7 @@ async function getOrCreateTokenAccountIx(connection, mint, payer, owner) {
     }
     return { tokenAccount: tokenAccount, ixs: instructions };
 }
-async function buildClmmRemainingAccounts(tickArray, exTickArrayBitmap) {
-    const remainingAccounts = [
-        ...(exTickArrayBitmap
-            ? [{ pubkey: exTickArrayBitmap, isSigner: false, isWritable: true }]
-            : []),
-        ...tickArray.map((i) => ({ pubkey: i, isSigner: false, isWritable: true })),
-    ];
-    return remainingAccounts;
-}
-function wrapSOLInstruction(recipient, amount) {
+function wrapSOLIx(recipient, amount) {
     let ixs = [];
     const ata = (0, spl_token_1.getAssociatedTokenAddressSync)(spl_token_1.NATIVE_MINT, recipient);
     ixs.push(web3_js_1.SystemProgram.transfer({
@@ -233,6 +207,13 @@ async function getTokenAccount(connection, mint, owner) {
         : spl_token_1.TOKEN_PROGRAM_ID;
     const tokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(mint, owner, true, programId);
     return tokenAccount;
+}
+async function getTokenAccountWithTokenProgram(connection, mint, owner) {
+    const tokenProgram = (await isToken2022Mint(connection, mint))
+        ? spl_token_1.TOKEN_2022_PROGRAM_ID
+        : spl_token_1.TOKEN_PROGRAM_ID;
+    const tokenAccount = (0, spl_token_1.getAssociatedTokenAddressSync)(mint, owner, true, tokenProgram);
+    return { tokenAccount, tokenProgram };
 }
 async function isToken2022Mint(connection, mint) {
     const accountInfo = await connection.getAccountInfo(mint);
@@ -381,5 +362,39 @@ async function getAllTokenAccountWithBalance({ connection, owner, }) {
         pubkey: tokenAccount.pubkey,
         tokenAmount: tokenAccount.account.data.parsed.info.tokenAmount,
     }));
+}
+async function getBasketIdFromBasketMint(mint, pieProgram) {
+    const programState = await pieProgram.state.getProgramState();
+    const basketId = programState.basketCounter;
+    for (let i = 0; i < programState.basketCounter.toNumber() + 1; i++) {
+        const basketConfig = await pieProgram.state.getBasketConfig({
+            basketId: new anchor_1.BN(i),
+        });
+        if (!basketConfig) {
+            continue;
+        }
+        console.log(i, basketConfig.mint.toBase58(), mint.toBase58());
+        if (basketConfig.mint.equals(mint)) {
+            return new anchor_1.BN(i);
+        }
+    }
+    return null;
+}
+async function getTokenPriceAndDecimals({ mint, connection, currency = "CURRENCY_SOL", }) {
+    try {
+        const [token, market] = await Promise.all([
+            connection.getParsedAccountInfo(mint),
+            axios_1.default.get(`https://api.pie.fun/v1/fungibleTokens/SOLANA/${mint.toBase58()}/market?currency=${currency}`),
+        ]);
+        const decimals = "parsed" in token.value.data
+            ? token.value.data.parsed.info.decimals
+            : await (0, spl_token_1.getMint)(connection, mint).then((mint) => mint.decimals);
+        const price = market.data.price;
+        console.log({ price, decimals });
+        return { price, decimals };
+    }
+    catch (error) {
+        console.log(error);
+    }
 }
 //# sourceMappingURL=helper.js.map

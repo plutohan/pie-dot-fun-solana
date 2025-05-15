@@ -5,6 +5,7 @@ exports.createAndSendV0Tx = createAndSendV0Tx;
 exports.createLookupTable = createLookupTable;
 exports.addAddressesToTable = addAddressesToTable;
 exports.findAddressesInTable = findAddressesInTable;
+exports.getAddressLookupTableAccounts = getAddressLookupTableAccounts;
 const web3_js_1 = require("@solana/web3.js");
 const helper_1 = require("./helper");
 async function finalizeTransaction(connection, keyPair, transaction, lookupTables) {
@@ -16,7 +17,7 @@ async function finalizeTransaction(connection, keyPair, transaction, lookupTable
     }).compileToV0Message(lookupTables);
     const transactionV0 = new web3_js_1.VersionedTransaction(messageV0);
     transactionV0.sign([keyPair]);
-    console.log('tx len', transactionV0.serialize().length);
+    console.log("tx len", transactionV0.serialize().length);
     const txid = await connection.sendTransaction(transactionV0, {
         maxRetries: 5,
         skipPreflight: true,
@@ -83,5 +84,20 @@ async function findAddressesInTable(connection, lookupTableAddress) {
         return [];
     }
     return lookupTableAccount.value.state.addresses;
+}
+async function getAddressLookupTableAccounts(connection, addresses) {
+    const accounts = [];
+    for (const address of addresses) {
+        try {
+            const account = await connection.getAddressLookupTable(address);
+            if (account && account.value) {
+                accounts.push(account.value);
+            }
+        }
+        catch (error) {
+            console.error(`Error fetching lookup table account ${address.toString()}: ${error}`);
+        }
+    }
+    return accounts;
 }
 //# sourceMappingURL=lookupTable.js.map

@@ -684,3 +684,42 @@ export async function getBasketIdFromBasketMint(
 
   return null;
 }
+
+export async function getTokenPriceAndDecimals({
+  mint,
+  connection,
+  currency = "CURRENCY_SOL",
+}: {
+  mint: PublicKey;
+  connection: Connection;
+  currency?: "CURRENCY_SOL" | "CURRENCY_USDC";
+}): Promise<{
+  price: {
+    currency: string;
+    formattedAmount: string;
+    rawAmount: string;
+  };
+  decimals: number;
+}> {
+  try {
+    const [token, market] = await Promise.all([
+      connection.getParsedAccountInfo(mint),
+      axios.get(
+        `https://api.pie.fun/v1/fungibleTokens/SOLANA/${mint.toBase58()}/market?currency=${currency}`
+      ),
+    ]);
+
+    const decimals =
+      "parsed" in token.value.data
+        ? token.value.data.parsed.info.decimals
+        : await getMint(connection, mint).then((mint) => mint.decimals);
+
+    const price = market.data.price;
+
+    console.log({ price, decimals });
+
+    return { price, decimals };
+  } catch (error) {
+    console.log(error);
+  }
+}

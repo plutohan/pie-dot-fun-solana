@@ -775,6 +775,283 @@ export type Pie = {
             ];
         },
         {
+            "name": "buyComponentJupiter";
+            "discriminator": [
+                219,
+                34,
+                152,
+                225,
+                123,
+                3,
+                165,
+                207
+            ];
+            "accounts": [
+                {
+                    "name": "user";
+                    "writable": true;
+                    "signer": true;
+                },
+                {
+                    "name": "userFund";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    117,
+                                    115,
+                                    101,
+                                    114,
+                                    95,
+                                    102,
+                                    117,
+                                    110,
+                                    100
+                                ];
+                            },
+                            {
+                                "kind": "account";
+                                "path": "user";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "basket_config.id";
+                                "account": "basketConfig";
+                            }
+                        ];
+                    };
+                },
+                {
+                    "name": "basketConfig";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    98,
+                                    97,
+                                    115,
+                                    107,
+                                    101,
+                                    116,
+                                    95,
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ];
+                            },
+                            {
+                                "kind": "account";
+                                "path": "basket_config.id";
+                                "account": "basketConfig";
+                            }
+                        ];
+                    };
+                },
+                {
+                    "name": "vaultTokenSource";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "account";
+                                "path": "basketConfig";
+                            },
+                            {
+                                "kind": "const";
+                                "value": [
+                                    6,
+                                    221,
+                                    246,
+                                    225,
+                                    215,
+                                    101,
+                                    161,
+                                    147,
+                                    217,
+                                    203,
+                                    225,
+                                    70,
+                                    206,
+                                    235,
+                                    121,
+                                    172,
+                                    28,
+                                    180,
+                                    133,
+                                    237,
+                                    95,
+                                    91,
+                                    55,
+                                    145,
+                                    58,
+                                    140,
+                                    245,
+                                    133,
+                                    126,
+                                    255,
+                                    0,
+                                    169
+                                ];
+                            },
+                            {
+                                "kind": "const";
+                                "value": [
+                                    6,
+                                    155,
+                                    136,
+                                    87,
+                                    254,
+                                    171,
+                                    129,
+                                    132,
+                                    251,
+                                    104,
+                                    127,
+                                    99,
+                                    70,
+                                    24,
+                                    192,
+                                    53,
+                                    218,
+                                    196,
+                                    57,
+                                    220,
+                                    26,
+                                    235,
+                                    59,
+                                    85,
+                                    152,
+                                    160,
+                                    240,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    1
+                                ];
+                            }
+                        ];
+                        "program": {
+                            "kind": "const";
+                            "value": [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89
+                            ];
+                        };
+                    };
+                },
+                {
+                    "name": "vaultTokenDestination";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "account";
+                                "path": "basketConfig";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "outputTokenProgram";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "vault_token_destination.mint";
+                            }
+                        ];
+                        "program": {
+                            "kind": "const";
+                            "value": [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89
+                            ];
+                        };
+                    };
+                },
+                {
+                    "name": "outputTokenProgram";
+                    "docs": [
+                        "SPL program for output token transfers"
+                    ];
+                },
+                {
+                    "name": "jupiterProgram";
+                }
+            ];
+            "args": [
+                {
+                    "name": "data";
+                    "type": "bytes";
+                }
+            ];
+        },
+        {
             "name": "createBasket";
             "discriminator": [
                 47,
@@ -877,6 +1154,9 @@ export type Pie = {
                             }
                         ];
                     };
+                },
+                {
+                    "name": "platformFeeWallet";
                 },
                 {
                     "name": "metadataAccount";
@@ -1368,10 +1648,250 @@ export type Pie = {
                 {
                     "name": "platformFeeTokenAccount";
                     "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "account";
+                                "path": "program_state.platform_fee_wallet";
+                                "account": "programState";
+                            },
+                            {
+                                "kind": "const";
+                                "value": [
+                                    6,
+                                    221,
+                                    246,
+                                    225,
+                                    215,
+                                    101,
+                                    161,
+                                    147,
+                                    217,
+                                    203,
+                                    225,
+                                    70,
+                                    206,
+                                    235,
+                                    121,
+                                    172,
+                                    28,
+                                    180,
+                                    133,
+                                    237,
+                                    95,
+                                    91,
+                                    55,
+                                    145,
+                                    58,
+                                    140,
+                                    245,
+                                    133,
+                                    126,
+                                    255,
+                                    0,
+                                    169
+                                ];
+                            },
+                            {
+                                "kind": "const";
+                                "value": [
+                                    6,
+                                    155,
+                                    136,
+                                    87,
+                                    254,
+                                    171,
+                                    129,
+                                    132,
+                                    251,
+                                    104,
+                                    127,
+                                    99,
+                                    70,
+                                    24,
+                                    192,
+                                    53,
+                                    218,
+                                    196,
+                                    57,
+                                    220,
+                                    26,
+                                    235,
+                                    59,
+                                    85,
+                                    152,
+                                    160,
+                                    240,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    1
+                                ];
+                            }
+                        ];
+                        "program": {
+                            "kind": "const";
+                            "value": [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89
+                            ];
+                        };
+                    };
                 },
                 {
-                    "name": "creatorTokenAccount";
+                    "name": "creatorFeeTokenAccount";
                     "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "account";
+                                "path": "basket_config.creator";
+                                "account": "basketConfig";
+                            },
+                            {
+                                "kind": "const";
+                                "value": [
+                                    6,
+                                    221,
+                                    246,
+                                    225,
+                                    215,
+                                    101,
+                                    161,
+                                    147,
+                                    217,
+                                    203,
+                                    225,
+                                    70,
+                                    206,
+                                    235,
+                                    121,
+                                    172,
+                                    28,
+                                    180,
+                                    133,
+                                    237,
+                                    95,
+                                    91,
+                                    55,
+                                    145,
+                                    58,
+                                    140,
+                                    245,
+                                    133,
+                                    126,
+                                    255,
+                                    0,
+                                    169
+                                ];
+                            },
+                            {
+                                "kind": "const";
+                                "value": [
+                                    6,
+                                    155,
+                                    136,
+                                    87,
+                                    254,
+                                    171,
+                                    129,
+                                    132,
+                                    251,
+                                    104,
+                                    127,
+                                    99,
+                                    70,
+                                    24,
+                                    192,
+                                    53,
+                                    218,
+                                    196,
+                                    57,
+                                    220,
+                                    26,
+                                    235,
+                                    59,
+                                    85,
+                                    152,
+                                    160,
+                                    240,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    1
+                                ];
+                            }
+                        ];
+                        "program": {
+                            "kind": "const";
+                            "value": [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89
+                            ];
+                        };
+                    };
                 },
                 {
                     "name": "tokenProgram";
@@ -2227,6 +2747,261 @@ export type Pie = {
             ];
         },
         {
+            "name": "executeRebalancingJupiter";
+            "discriminator": [
+                125,
+                141,
+                12,
+                197,
+                38,
+                236,
+                193,
+                185
+            ];
+            "accounts": [
+                {
+                    "name": "rebalancer";
+                    "writable": true;
+                    "signer": true;
+                },
+                {
+                    "name": "basketConfig";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    98,
+                                    97,
+                                    115,
+                                    107,
+                                    101,
+                                    116,
+                                    95,
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ];
+                            },
+                            {
+                                "kind": "account";
+                                "path": "basket_config.id";
+                                "account": "basketConfig";
+                            }
+                        ];
+                    };
+                },
+                {
+                    "name": "basketMint";
+                    "writable": true;
+                },
+                {
+                    "name": "vaultTokenSourceMint";
+                },
+                {
+                    "name": "vaultTokenSource";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "account";
+                                "path": "basketConfig";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "inputTokenProgram";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "vaultTokenSourceMint";
+                            }
+                        ];
+                        "program": {
+                            "kind": "const";
+                            "value": [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89
+                            ];
+                        };
+                    };
+                },
+                {
+                    "name": "vaultTokenDestinationMint";
+                },
+                {
+                    "name": "vaultTokenDestination";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "account";
+                                "path": "basketConfig";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "outputTokenProgram";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "vaultTokenDestinationMint";
+                            }
+                        ];
+                        "program": {
+                            "kind": "const";
+                            "value": [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89
+                            ];
+                        };
+                    };
+                },
+                {
+                    "name": "inputTokenProgram";
+                    "docs": [
+                        "SPL program for input token transfers"
+                    ];
+                },
+                {
+                    "name": "outputTokenProgram";
+                    "docs": [
+                        "SPL program for output token transfers"
+                    ];
+                },
+                {
+                    "name": "jupiterProgram";
+                },
+                {
+                    "name": "systemProgram";
+                    "address": "11111111111111111111111111111111";
+                },
+                {
+                    "name": "associatedTokenProgram";
+                    "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+                }
+            ];
+            "args": [
+                {
+                    "name": "data";
+                    "type": "bytes";
+                }
+            ];
+        },
+        {
+            "name": "inactivateBasket";
+            "discriminator": [
+                85,
+                179,
+                134,
+                148,
+                161,
+                7,
+                17,
+                243
+            ];
+            "accounts": [
+                {
+                    "name": "creator";
+                    "writable": true;
+                    "signer": true;
+                },
+                {
+                    "name": "basketConfig";
+                    "writable": true;
+                },
+                {
+                    "name": "programState";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    112,
+                                    114,
+                                    111,
+                                    103,
+                                    114,
+                                    97,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    101
+                                ];
+                            }
+                        ];
+                    };
+                }
+            ];
+            "args": [];
+        },
+        {
             "name": "initialize";
             "discriminator": [
                 175,
@@ -2281,18 +3056,127 @@ export type Pie = {
                     "type": "pubkey";
                 },
                 {
-                    "name": "initialCreator";
-                    "type": "pubkey";
-                },
-                {
                     "name": "initialPlatformFeeWallet";
                     "type": "pubkey";
                 },
                 {
-                    "name": "initialPlatformFeePercentage";
+                    "name": "initialPlatformFeeBp";
+                    "type": "u64";
+                },
+                {
+                    "name": "initialBasketCreationFee";
                     "type": "u64";
                 }
             ];
+        },
+        {
+            "name": "initializeUserBalance";
+            "discriminator": [
+                65,
+                60,
+                31,
+                85,
+                143,
+                18,
+                45,
+                58
+            ];
+            "accounts": [
+                {
+                    "name": "user";
+                    "writable": true;
+                    "signer": true;
+                },
+                {
+                    "name": "userBalance";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    117,
+                                    115,
+                                    101,
+                                    114,
+                                    95,
+                                    98,
+                                    97,
+                                    108,
+                                    97,
+                                    110,
+                                    99,
+                                    101
+                                ];
+                            },
+                            {
+                                "kind": "account";
+                                "path": "user";
+                            }
+                        ];
+                    };
+                },
+                {
+                    "name": "systemProgram";
+                    "address": "11111111111111111111111111111111";
+                }
+            ];
+            "args": [];
+        },
+        {
+            "name": "migrateBasket";
+            "discriminator": [
+                175,
+                192,
+                1,
+                69,
+                202,
+                121,
+                115,
+                124
+            ];
+            "accounts": [
+                {
+                    "name": "admin";
+                    "writable": true;
+                    "signer": true;
+                },
+                {
+                    "name": "programState";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    112,
+                                    114,
+                                    111,
+                                    103,
+                                    114,
+                                    97,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    101
+                                ];
+                            }
+                        ];
+                    };
+                },
+                {
+                    "name": "basketConfig";
+                    "writable": true;
+                },
+                {
+                    "name": "systemProgram";
+                    "address": "11111111111111111111111111111111";
+                }
+            ];
+            "args": [];
         },
         {
             "name": "mintBasketToken";
@@ -2404,6 +3288,35 @@ export type Pie = {
                     };
                 },
                 {
+                    "name": "userBalance";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    117,
+                                    115,
+                                    101,
+                                    114,
+                                    95,
+                                    98,
+                                    97,
+                                    108,
+                                    97,
+                                    110,
+                                    99,
+                                    101
+                                ];
+                            },
+                            {
+                                "kind": "account";
+                                "path": "user";
+                            }
+                        ];
+                    };
+                },
+                {
                     "name": "userBasketTokenAccount";
                     "writable": true;
                 },
@@ -2416,12 +3329,7 @@ export type Pie = {
                     "address": "11111111111111111111111111111111";
                 }
             ];
-            "args": [
-                {
-                    "name": "amount";
-                    "type": "u64";
-                }
-            ];
+            "args": [];
         },
         {
             "name": "redeemBasketToken";
@@ -3256,6 +4164,283 @@ export type Pie = {
             ];
         },
         {
+            "name": "sellComponentJupiter";
+            "discriminator": [
+                223,
+                84,
+                61,
+                14,
+                128,
+                120,
+                219,
+                200
+            ];
+            "accounts": [
+                {
+                    "name": "user";
+                    "writable": true;
+                    "signer": true;
+                },
+                {
+                    "name": "userFund";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    117,
+                                    115,
+                                    101,
+                                    114,
+                                    95,
+                                    102,
+                                    117,
+                                    110,
+                                    100
+                                ];
+                            },
+                            {
+                                "kind": "account";
+                                "path": "user";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "basket_config.id";
+                                "account": "basketConfig";
+                            }
+                        ];
+                    };
+                },
+                {
+                    "name": "basketConfig";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    98,
+                                    97,
+                                    115,
+                                    107,
+                                    101,
+                                    116,
+                                    95,
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ];
+                            },
+                            {
+                                "kind": "account";
+                                "path": "basket_config.id";
+                                "account": "basketConfig";
+                            }
+                        ];
+                    };
+                },
+                {
+                    "name": "vaultTokenSource";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "account";
+                                "path": "basketConfig";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "inputTokenProgram";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "vault_token_source.mint";
+                            }
+                        ];
+                        "program": {
+                            "kind": "const";
+                            "value": [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89
+                            ];
+                        };
+                    };
+                },
+                {
+                    "name": "inputTokenProgram";
+                    "docs": [
+                        "SPL program for input token transfers"
+                    ];
+                },
+                {
+                    "name": "vaultTokenDestination";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "account";
+                                "path": "basketConfig";
+                            },
+                            {
+                                "kind": "const";
+                                "value": [
+                                    6,
+                                    221,
+                                    246,
+                                    225,
+                                    215,
+                                    101,
+                                    161,
+                                    147,
+                                    217,
+                                    203,
+                                    225,
+                                    70,
+                                    206,
+                                    235,
+                                    121,
+                                    172,
+                                    28,
+                                    180,
+                                    133,
+                                    237,
+                                    95,
+                                    91,
+                                    55,
+                                    145,
+                                    58,
+                                    140,
+                                    245,
+                                    133,
+                                    126,
+                                    255,
+                                    0,
+                                    169
+                                ];
+                            },
+                            {
+                                "kind": "const";
+                                "value": [
+                                    6,
+                                    155,
+                                    136,
+                                    87,
+                                    254,
+                                    171,
+                                    129,
+                                    132,
+                                    251,
+                                    104,
+                                    127,
+                                    99,
+                                    70,
+                                    24,
+                                    192,
+                                    53,
+                                    218,
+                                    196,
+                                    57,
+                                    220,
+                                    26,
+                                    235,
+                                    59,
+                                    85,
+                                    152,
+                                    160,
+                                    240,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    1
+                                ];
+                            }
+                        ];
+                        "program": {
+                            "kind": "const";
+                            "value": [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89
+                            ];
+                        };
+                    };
+                },
+                {
+                    "name": "jupiterProgram";
+                }
+            ];
+            "args": [
+                {
+                    "name": "data";
+                    "type": "bytes";
+                }
+            ];
+        },
+        {
             "name": "startRebalancing";
             "discriminator": [
                 146,
@@ -3406,10 +4591,6 @@ export type Pie = {
                             }
                         ];
                     };
-                },
-                {
-                    "name": "systemProgram";
-                    "address": "11111111111111111111111111111111";
                 }
             ];
             "args": [
@@ -3522,11 +4703,11 @@ export type Pie = {
             ];
             "args": [
                 {
-                    "name": "newCreatorFeePercentage";
+                    "name": "newBasketCreationFee";
                     "type": "u64";
                 },
                 {
-                    "name": "newPlatformFeePercentage";
+                    "name": "newPlatformFeeBp";
                     "type": "u64";
                 }
             ];
@@ -3861,6 +5042,172 @@ export type Pie = {
             ];
         },
         {
+            "name": "withdrawUserBalance";
+            "discriminator": [
+                176,
+                213,
+                146,
+                154,
+                155,
+                196,
+                171,
+                166
+            ];
+            "accounts": [
+                {
+                    "name": "user";
+                    "writable": true;
+                    "signer": true;
+                },
+                {
+                    "name": "userBalance";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    117,
+                                    115,
+                                    101,
+                                    114,
+                                    95,
+                                    98,
+                                    97,
+                                    108,
+                                    97,
+                                    110,
+                                    99,
+                                    101
+                                ];
+                            },
+                            {
+                                "kind": "account";
+                                "path": "user";
+                            }
+                        ];
+                    };
+                },
+                {
+                    "name": "basketConfig";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const";
+                                "value": [
+                                    98,
+                                    97,
+                                    115,
+                                    107,
+                                    101,
+                                    116,
+                                    95,
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ];
+                            },
+                            {
+                                "kind": "account";
+                                "path": "basket_config.id";
+                                "account": "basketConfig";
+                            }
+                        ];
+                    };
+                },
+                {
+                    "name": "vaultTokenSourceMint";
+                },
+                {
+                    "name": "vaultTokenSource";
+                    "writable": true;
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "account";
+                                "path": "basketConfig";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "inputTokenProgram";
+                            },
+                            {
+                                "kind": "account";
+                                "path": "vaultTokenSourceMint";
+                            }
+                        ];
+                        "program": {
+                            "kind": "const";
+                            "value": [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89
+                            ];
+                        };
+                    };
+                },
+                {
+                    "name": "inputTokenProgram";
+                    "docs": [
+                        "SPL program for input token transfers"
+                    ];
+                },
+                {
+                    "name": "userWsolAccount";
+                    "writable": true;
+                },
+                {
+                    "name": "jupiterProgram";
+                },
+                {
+                    "name": "tokenProgram";
+                },
+                {
+                    "name": "systemProgram";
+                    "address": "11111111111111111111111111111111";
+                }
+            ];
+            "args": [
+                {
+                    "name": "data";
+                    "type": "bytes";
+                }
+            ];
+        },
+        {
             "name": "withdrawWsol";
             "discriminator": [
                 120,
@@ -4098,24 +5445,15 @@ export type Pie = {
                     "writable": true;
                 },
                 {
-                    "name": "creatorTokenAccount";
+                    "name": "creatorFeeTokenAccount";
                     "writable": true;
                 },
                 {
                     "name": "tokenProgram";
                     "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-                },
-                {
-                    "name": "systemProgram";
-                    "address": "11111111111111111111111111111111";
                 }
             ];
-            "args": [
-                {
-                    "name": "amount";
-                    "type": "u64";
-                }
-            ];
+            "args": [];
         }
     ];
     "accounts": [
@@ -4185,6 +5523,19 @@ export type Pie = {
             ];
         },
         {
+            "name": "userBalance";
+            "discriminator": [
+                187,
+                237,
+                208,
+                146,
+                86,
+                132,
+                29,
+                191
+            ];
+        },
+        {
             "name": "userFund";
             "discriminator": [
                 11,
@@ -4210,6 +5561,19 @@ export type Pie = {
                 188,
                 216,
                 61
+            ];
+        },
+        {
+            "name": "buyComponentJupiterEvent";
+            "discriminator": [
+                40,
+                237,
+                255,
+                224,
+                107,
+                223,
+                137,
+                127
             ];
         },
         {
@@ -4265,6 +5629,19 @@ export type Pie = {
             ];
         },
         {
+            "name": "inactivateBasketEvent";
+            "discriminator": [
+                92,
+                132,
+                132,
+                53,
+                162,
+                32,
+                88,
+                138
+            ];
+        },
+        {
             "name": "mintBasketTokenEvent";
             "discriminator": [
                 169,
@@ -4301,6 +5678,19 @@ export type Pie = {
                 76,
                 229,
                 226
+            ];
+        },
+        {
+            "name": "sellComponentJupiterEvent";
+            "discriminator": [
+                162,
+                252,
+                101,
+                213,
+                15,
+                66,
+                37,
+                208
             ];
         },
         {
@@ -4444,83 +5834,118 @@ export type Pie = {
         },
         {
             "code": 6004;
+            "name": "maxBalancesExceeded";
+            "msg": "Max balances exceeded";
+        },
+        {
+            "code": 6005;
             "name": "insufficientBalance";
             "msg": "Insufficient Balance";
         },
         {
-            "code": 6005;
+            "code": 6006;
             "name": "invalidBasket";
             "msg": "Invalid Basket";
         },
         {
-            "code": 6006;
+            "code": 6007;
             "name": "invalidAmount";
             "msg": "Invalid Amount";
         },
         {
-            "code": 6007;
+            "code": 6008;
+            "name": "invalidBasketId";
+            "msg": "Invalid Basket Id";
+        },
+        {
+            "code": 6009;
             "name": "componentNotFound";
             "msg": "Component not found";
         },
         {
-            "code": 6008;
+            "code": 6010;
             "name": "notInRebalancing";
             "msg": "Not in rebalancing";
         },
         {
-            "code": 6009;
+            "code": 6011;
             "name": "alreadyRebalancing";
             "msg": "Already rebalancing";
         },
         {
-            "code": 6010;
+            "code": 6012;
             "name": "conversionFailure";
             "msg": "Conversion to u64 failed with an overflow or underflow";
         },
         {
-            "code": 6011;
+            "code": 6013;
             "name": "invalidBasketMint";
             "msg": "Invalid basket mint";
         },
         {
-            "code": 6012;
+            "code": 6014;
             "name": "duplicateComponent";
             "msg": "Duplicate component";
         },
         {
-            "code": 6013;
+            "code": 6015;
             "name": "invalidMint";
             "msg": "Invalid mint";
         },
         {
-            "code": 6014;
+            "code": 6016;
             "name": "invalidComponentQuantity";
             "msg": "Invalid component quantity";
         },
         {
-            "code": 6015;
+            "code": 6017;
             "name": "invalidQuantity";
             "msg": "Invalid quantity";
         },
         {
-            "code": 6016;
+            "code": 6018;
             "name": "rebalancingInProgress";
             "msg": "Rebalancing in process";
         },
         {
-            "code": 6017;
+            "code": 6019;
+            "name": "onlyDefaultState";
+            "msg": "Only default state";
+        },
+        {
+            "code": 6020;
             "name": "invalidComponent";
             "msg": "Invalid component";
         },
         {
-            "code": 6018;
+            "code": 6021;
             "name": "maxWhitelistedCreatorsExceeded";
             "msg": "Max whitelisted creators exceeded";
         },
         {
-            "code": 6019;
+            "code": 6022;
             "name": "invalidTokenProgram";
             "msg": "Invalid token program";
+        },
+        {
+            "code": 6023;
+            "name": "invalidJupiterProgram";
+            "msg": "Invalid Jupiter program";
+        },
+        {
+            "code": 6024;
+            "name": "invalidSwapResult";
+            "msg": "Invalid swap result";
+        },
+        {
+            "code": 6025;
+            "name": "rebalanceNotAllowedBasket";
+            "msg": "Rebalance not allowed basket";
+        },
+        {
+            "code": 6026;
+            "name": "componentChangeNotAllowedBasket";
+            "msg": "Component change not allowed basket";
         }
     ];
     "types": [
@@ -4611,6 +6036,26 @@ export type Pie = {
             };
         },
         {
+            "name": "balance";
+            "type": {
+                "kind": "struct";
+                "fields": [
+                    {
+                        "name": "basketId";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "mint";
+                        "type": "pubkey";
+                    },
+                    {
+                        "name": "amount";
+                        "type": "u64";
+                    }
+                ];
+            };
+        },
+        {
             "name": "basketComponent";
             "type": {
                 "kind": "struct";
@@ -4640,6 +6085,14 @@ export type Pie = {
                         "type": "u64";
                     },
                     {
+                        "name": "version";
+                        "type": "u8";
+                    },
+                    {
+                        "name": "mint";
+                        "type": "pubkey";
+                    },
+                    {
                         "name": "creator";
                         "type": "pubkey";
                     },
@@ -4648,12 +6101,24 @@ export type Pie = {
                         "type": "pubkey";
                     },
                     {
-                        "name": "mint";
-                        "type": "pubkey";
+                        "name": "state";
+                        "type": {
+                            "defined": {
+                                "name": "basketState";
+                            };
+                        };
                     },
                     {
-                        "name": "isRebalancing";
-                        "type": "bool";
+                        "name": "rebalanceType";
+                        "type": {
+                            "defined": {
+                                "name": "rebalanceType";
+                            };
+                        };
+                    },
+                    {
+                        "name": "creatorFeeBp";
+                        "type": "u64";
                     },
                     {
                         "name": "components";
@@ -4664,6 +6129,32 @@ export type Pie = {
                                 };
                             };
                         };
+                    },
+                    {
+                        "name": "reserved";
+                        "type": {
+                            "array": [
+                                "u64",
+                                10
+                            ];
+                        };
+                    }
+                ];
+            };
+        },
+        {
+            "name": "basketState";
+            "type": {
+                "kind": "enum";
+                "variants": [
+                    {
+                        "name": "active";
+                    },
+                    {
+                        "name": "rebalancing";
+                    },
+                    {
+                        "name": "inactive";
                     }
                 ];
             };
@@ -4701,6 +6192,34 @@ export type Pie = {
             };
         },
         {
+            "name": "buyComponentJupiterEvent";
+            "type": {
+                "kind": "struct";
+                "fields": [
+                    {
+                        "name": "basketId";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "user";
+                        "type": "pubkey";
+                    },
+                    {
+                        "name": "mint";
+                        "type": "pubkey";
+                    },
+                    {
+                        "name": "amountSwapped";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "amountReceived";
+                        "type": "u64";
+                    }
+                ];
+            };
+        },
+        {
             "name": "createBasketArgs";
             "type": {
                 "kind": "struct";
@@ -4730,6 +6249,18 @@ export type Pie = {
                     {
                         "name": "rebalancer";
                         "type": "pubkey";
+                    },
+                    {
+                        "name": "rebalanceType";
+                        "type": {
+                            "defined": {
+                                "name": "rebalanceType";
+                            };
+                        };
+                    },
+                    {
+                        "name": "creatorFeeBp";
+                        "type": "u64";
                     }
                 ];
             };
@@ -4772,6 +6303,18 @@ export type Pie = {
                                 };
                             };
                         };
+                    },
+                    {
+                        "name": "rebalanceType";
+                        "type": {
+                            "defined": {
+                                "name": "rebalanceType";
+                            };
+                        };
+                    },
+                    {
+                        "name": "creatorFeeBp";
+                        "type": "u64";
                     }
                 ];
             };
@@ -4810,11 +6353,23 @@ export type Pie = {
                         "type": "u64";
                     },
                     {
+                        "name": "basketMint";
+                        "type": "pubkey";
+                    },
+                    {
                         "name": "user";
                         "type": "pubkey";
                     },
                     {
                         "name": "amount";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "creatorFee";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "platformFee";
                         "type": "u64";
                     }
                 ];
@@ -4860,6 +6415,22 @@ export type Pie = {
                     {
                         "name": "finalAvailableDestinationBalance";
                         "type": "u64";
+                    }
+                ];
+            };
+        },
+        {
+            "name": "inactivateBasketEvent";
+            "type": {
+                "kind": "struct";
+                "fields": [
+                    {
+                        "name": "basketId";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "basketMint";
+                        "type": "pubkey";
                     }
                 ];
             };
@@ -5164,16 +6735,33 @@ export type Pie = {
                         "type": "u64";
                     },
                     {
-                        "name": "creatorFeePercentage";
+                        "name": "basketCreationFee";
                         "type": "u64";
                     },
                     {
-                        "name": "platformFeePercentage";
+                        "name": "platformFeeBp";
                         "type": "u64";
                     },
                     {
                         "name": "isInitialized";
                         "type": "bool";
+                    }
+                ];
+            };
+        },
+        {
+            "name": "rebalanceType";
+            "type": {
+                "kind": "enum";
+                "variants": [
+                    {
+                        "name": "dynamic";
+                    },
+                    {
+                        "name": "fixed";
+                    },
+                    {
+                        "name": "disabled";
                     }
                 ];
             };
@@ -5229,6 +6817,34 @@ export type Pie = {
                     },
                     {
                         "name": "platformFee";
+                        "type": "u64";
+                    }
+                ];
+            };
+        },
+        {
+            "name": "sellComponentJupiterEvent";
+            "type": {
+                "kind": "struct";
+                "fields": [
+                    {
+                        "name": "basketId";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "user";
+                        "type": "pubkey";
+                    },
+                    {
+                        "name": "mint";
+                        "type": "pubkey";
+                    },
+                    {
+                        "name": "amountSwapped";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "amountReceived";
                         "type": "u64";
                     }
                 ];
@@ -5330,11 +6946,11 @@ export type Pie = {
                 "kind": "struct";
                 "fields": [
                     {
-                        "name": "newCreatorFeePercentage";
+                        "name": "newBasketCreationFee";
                         "type": "u64";
                     },
                     {
-                        "name": "newPlatformFeePercentage";
+                        "name": "newPlatformFeeBp";
                         "type": "u64";
                     }
                 ];
@@ -5368,6 +6984,28 @@ export type Pie = {
                     {
                         "name": "newRebalancer";
                         "type": "pubkey";
+                    }
+                ];
+            };
+        },
+        {
+            "name": "userBalance";
+            "type": {
+                "kind": "struct";
+                "fields": [
+                    {
+                        "name": "bump";
+                        "type": "u8";
+                    },
+                    {
+                        "name": "balances";
+                        "type": {
+                            "vec": {
+                                "defined": {
+                                    "name": "balance";
+                                };
+                            };
+                        };
                     }
                 ];
             };
@@ -5444,11 +7082,23 @@ export type Pie = {
                         "type": "u64";
                     },
                     {
+                        "name": "basketMint";
+                        "type": "pubkey";
+                    },
+                    {
                         "name": "user";
                         "type": "pubkey";
                     },
                     {
                         "name": "amount";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "creatorFee";
+                        "type": "u64";
+                    },
+                    {
+                        "name": "platformFee";
                         "type": "u64";
                     }
                 ];
