@@ -9,9 +9,8 @@ import {
 } from "@solana/web3.js";
 import { ProgramStateManager } from "../state";
 import {
-  getTokenAccountWithTokenProgram,
+  getTokenPriceAndDecimals,
   isValidTransaction,
-  unwrapSolIx,
   wrapSOLIx,
 } from "../../utils/helper";
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
@@ -23,7 +22,11 @@ import { JUPITER_PROGRAM_ID } from "../../constants";
  * Class for handling buy-related instructions
  */
 export class UserInstructions extends ProgramStateManager {
-  constructor(readonly connection: Connection, readonly programId: PublicKey) {
+  constructor(
+    readonly connection: Connection,
+    readonly programId: PublicKey,
+    readonly pieDotFunApiUrl: string
+  ) {
     super(programId, connection);
   }
 
@@ -38,6 +41,11 @@ export class UserInstructions extends ProgramStateManager {
     user: PublicKey;
   }): Promise<Transaction> {
     const tx = new Transaction();
+
+    if (await this.getUserBalance({ user })) {
+      return tx;
+    }
+
     const initializeUserBalanceTx = await this.program.methods
       .initializeUserBalance()
       .accountsPartial({ user })
@@ -126,8 +134,8 @@ export class UserInstructions extends ProgramStateManager {
         basketConfig: basketConfigPDA,
         userWsolAccount,
         vaultWsolAccount,
-        creatorFeeTokenAccount,
-        platformFeeTokenAccount,
+        creatorFeeWallet: basketConfig.creator,
+        platformFeeWallet: programState.platformFeeWallet,
       })
       .transaction();
 
@@ -298,7 +306,7 @@ export class UserInstructions extends ProgramStateManager {
   }): Promise<Transaction> {
     const basketConfigPDA = this.basketConfigPDA({ basketId });
     const basketConfig = await this.getBasketConfig({ basketId });
-
+    const programState = await this.getProgramState();
     const tx = new Transaction();
     const { tokenAccount: userWsolAccount, tx: createUserWsolAccountTx } =
       await getOrCreateTokenAccountTx(this.connection, NATIVE_MINT, user, user);
@@ -329,15 +337,12 @@ export class UserInstructions extends ProgramStateManager {
         userFund: this.userFundPDA({ user, basketId }),
         basketConfig: basketConfigPDA,
         userWsolAccount,
-        platformFeeTokenAccount: await this.getPlatformFeeTokenAccount(),
-        creatorFeeTokenAccount,
+        platformFeeWallet: programState.platformFeeWallet,
+        creatorFeeWallet: basketConfig.creator,
       })
       .transaction();
 
     tx.add(withdrawWsolTx);
-
-    tx.add(unwrapSolIx(userWsolAccount, user, user));
-
     return tx;
   }
 

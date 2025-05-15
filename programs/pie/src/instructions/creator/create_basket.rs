@@ -46,7 +46,7 @@ pub struct CreateBasketContext<'info> {
     pub basket_mint: Account<'info, Mint>,
 
     /// CHECK: Platform fee wallet that receives the creation fee
-    #[account(address = program_state.platform_fee_wallet)]
+    #[account(mut, address = program_state.platform_fee_wallet)]
     pub platform_fee_wallet: AccountInfo<'info>,
 
     /// Metadata account to store Metaplex metadata
