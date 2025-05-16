@@ -9,6 +9,7 @@ import {
   Transaction,
   TransactionInstruction,
   VersionedTransaction,
+  SendTransactionError,
 } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -519,7 +520,7 @@ export function isValidTransaction(tx: Transaction) {
   return tx.instructions.length > 0;
 }
 
-export function caculateTotalAmountWithFee(
+export function calculateTotalAmountWithFee(
   amount: number,
   feePercentageInBasisPoints: number
 ) {
@@ -724,4 +725,31 @@ export async function getTokenPriceAndDecimals({
   } catch (error) {
     console.log(error);
   }
+}
+
+export async function sendAndConfirmVersionedTransaction(connection: Connection, tx: VersionedTransaction): Promise<string> {
+  let sig: string;
+  try {
+    sig = await connection.sendTransaction(tx, {
+      skipPreflight: true,
+      preflightCommitment: "confirmed",
+    });
+  } catch (err) {
+    if (err instanceof SendTransactionError) {
+      console.log(err);
+    }
+    throw err;
+  }
+
+  const latestBlockhash = await connection.getLatestBlockhash();
+  const confirmation = await connection.confirmTransaction({
+    signature: sig,
+    ...latestBlockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  });
+
+  if (confirmation.value.err) {
+    throw confirmation.value.err
+  }
+  return sig;
 }
