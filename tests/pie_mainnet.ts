@@ -49,6 +49,7 @@ import {
   getAddressLookupTableAccounts,
 } from "../sdk/utils/lookupTable";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
+import { SYS_DECIMALS } from "../sdk";
 
 describe("pie", () => {
   const admin = Keypair.fromSecretKey(new Uint8Array(qaAdmin));
@@ -488,11 +489,23 @@ describe("pie", () => {
     const basketConfig = await pieProgram.state.getBasketConfig({
       basketId,
     });
-    const basketConfigPDA = pieProgram.state.basketConfigPDA({ basketId });
 
     const init = await pieProgram.user.initializeUserBalance({
       user: admin.publicKey,
     });
+
+    if (init) {
+      console.log("initializing user balance...");
+      const signature = await sendAndConfirmTransaction(connection, init, [
+        admin,
+      ]);
+      console.log(
+        `User balance initialized at tx: ${getExplorerUrl(
+          signature,
+          "mainnet"
+        )}`
+      );
+    }
 
     // @TODO: apply default LUT
 
@@ -504,6 +517,8 @@ describe("pie", () => {
     //   basketConfigPDA,
     //   true
     // );
+
+    // const basketConfigPDA = pieProgram.state.basketConfigPDA({ basketId });
 
     // const addresses: PublicKey[] = [
     //   new PublicKey(pieProgram.state.programStatePDA()),
@@ -520,19 +535,6 @@ describe("pie", () => {
     //   connection,
     //   [new PublicKey("4PNbj8brsGFG94rzPZBevKJw6Vfqigc4kChNqH7zc7UP")]
     // );
-
-    if (init.instructions.length > 0) {
-      console.log("initializing user balance...");
-      const signature = await sendAndConfirmTransaction(connection, init, [
-        admin,
-      ]);
-      console.log(
-        `User balance initialized at tx: ${getExplorerUrl(
-          signature,
-          "mainnet"
-        )}`
-      );
-    }
 
     console.log(JSON.stringify(basketConfig, null, 2));
 
@@ -595,6 +597,89 @@ describe("pie", () => {
     console.log(JSON.stringify({ userBalance, userFund }));
   });
 
+  it("Redeem basket token, sell components and withdraw wsol using SDK", async () => {
+    const programState = await pieProgram.state.getProgramState();
+    const basketId = programState.basketCounter.sub(new BN(1));
+    const basketConfig = await pieProgram.state.getBasketConfig({
+      basketId,
+    });
+
+    const basketTokenBalanceBefore = await getTokenBalance({
+      connection,
+      mint: basketConfig.mint,
+      owner: admin.publicKey,
+    });
+
+    console.log({ basketTokenBalanceBefore });
+
+    const sellAmount = Math.floor(basketTokenBalanceBefore / 5);
+
+    console.log({ sellAmount });
+
+    const serializedTxs = await pieProgram.user.sellBasketJitoTxs({
+      user: admin.publicKey,
+      basketId,
+      amountInRawDecimal: sellAmount,
+      dynamicSlippage: true,
+    });
+
+    const serializedSignedTxs: string[] = [];
+
+    for (const serializedTx of serializedTxs) {
+      const signedTx = pieProgram.jito.signSerializedTransaction(
+        serializedTx,
+        admin
+      );
+      serializedSignedTxs.push(signedTx);
+    }
+
+    console.log("start simulating bundle...");
+    const bundleSimluationResult = await pieProgram.jito.simulateBundle({
+      encodedTransactions: serializedSignedTxs,
+    });
+
+    console.log(
+      `bundle simulation result: ${JSON.stringify(
+        bundleSimluationResult.value
+      )}`
+    );
+
+    if (bundleSimluationResult.value.summary !== "succeeded") {
+      for (const serializedSignedTx of serializedSignedTxs) {
+        await simulateTransaction(connection, serializedSignedTx);
+      }
+      throw new Error("bundle simulation failed");
+    }
+    console.log("start sending bundles..!!");
+    const bundleId = await pieProgram.jito.sendBundle(serializedSignedTxs);
+    await startPollingJitoBundle(bundleId);
+    console.log(`basket ${basketId.toString()} data:`);
+    const basketMintTable = await showBasketConfigTable(
+      connection,
+      pieProgram,
+      basketId
+    );
+    basketMintTable.printTable();
+
+    const basketTokenBalanceAfter = await getTokenBalance({
+      connection,
+      mint: basketConfig.mint,
+      owner: admin.publicKey,
+    });
+
+    console.log({ basketTokenBalanceAfter });
+
+    const userBalance = await pieProgram.state.getUserBalance({
+      user: admin.publicKey,
+    });
+
+    const userFund = await pieProgram.state.getUserFund({
+      user: admin.publicKey,
+      basketId,
+    });
+
+    console.log(JSON.stringify({ userBalance, userFund }));
+  });
   it("Rebalance basket using executeRebalancingJupiterIx", async () => {
     const programState = await pieProgram.state.getProgramState();
     const basketId = programState.basketCounter.sub(new BN(1));

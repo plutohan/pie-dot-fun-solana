@@ -11,6 +11,7 @@ import {
 } from "@solana/web3.js";
 import { ProgramStateManager } from "../state";
 import {
+  getTokenAccountWithTokenProgram,
   getTokenPriceAndDecimals,
   isValidTransaction,
   wrapSOLIx,
@@ -18,7 +19,7 @@ import {
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import { getOrCreateTokenAccountTx } from "../../utils/helper";
 import { createJupiterSwapIx } from "../../utils/jupiter";
-import { JUPITER_PROGRAM_ID } from "../../constants";
+import { JUPITER_PROGRAM_ID, SYS_DECIMALS } from "../../constants";
 import { Jito } from "../../jito";
 
 /**
@@ -43,11 +44,11 @@ export class UserInstructions extends ProgramStateManager {
     user,
   }: {
     user: PublicKey;
-  }): Promise<Transaction> {
+  }): Promise<Transaction | null> {
     const tx = new Transaction();
 
     if (await this.getUserBalance({ user })) {
-      return tx;
+      return null;
     }
 
     const initializeUserBalanceTx = await this.program.methods
@@ -124,8 +125,13 @@ export class UserInstructions extends ProgramStateManager {
    * Buys a component using Jupiter.
    * @param user - The user account.
    * @param basketId - The basket ID.
+   * @param outputMint - The mint of the component to buy.
    * @param amount - The amount of component to buy.
-   * @returns A promise that resolves to a transaction.
+   * @param swapMode - The swap mode.
+   * @param maxAccounts - The maximum number of accounts to use.
+   * @param slippageBps - The slippage in basis points.
+   * @param dynamicSlippage - Whether to use dynamic slippage.
+   * @returns A promise that resolves to transaction information.
    */
   async buyComponentJupiter({
     user,
@@ -412,7 +418,7 @@ export class UserInstructions extends ProgramStateManager {
           transaction: tx,
           lookupTables: lookupTableAccounts,
           jitoTipAccount: new PublicKey(jitoTipAccount),
-          jitoTipAmountInLamports: jitoTipAmountInLamports.toNumber(),
+          jitoTipAmountInLamports: jitoTipAmountInLamports?.toNumber(),
         });
         serializedTxs.push(serializedTx);
       }
@@ -494,12 +500,13 @@ export class UserInstructions extends ProgramStateManager {
   }): Promise<Transaction> {
     const basketMint = this.basketMintPDA({ basketId });
     const basketConfig = this.basketConfigPDA({ basketId });
+    console.log(basketMint.toBase58());
     const userBasketTokenAccount = getAssociatedTokenAddressSync(
       basketMint,
       user,
       false
     );
-    const burnBasketTokenTx = await this.program.methods
+    const redeemBasketTokenTx = await this.program.methods
       .redeemBasketToken(new BN(amount))
       .accountsPartial({
         programState: this.programStatePDA(),
@@ -510,7 +517,7 @@ export class UserInstructions extends ProgramStateManager {
         userBasketTokenAccount: userBasketTokenAccount,
       })
       .transaction();
-    return burnBasketTokenTx;
+    return redeemBasketTokenTx;
   }
 
   ///////////////////////////////
@@ -626,5 +633,268 @@ export class UserInstructions extends ProgramStateManager {
     tx.add(withdrawComponentTx);
 
     return tx;
+  }
+
+  /**
+   * Sells a component using Jupiter.
+   * @param user - The user account.
+   * @param basketId - The basket ID.
+   * @param inputMint - The mint of token to sell.
+   * @param outputMint - The mint of token to receive.
+   * @param swapMode - The swap mode.
+   * @returns A promise that resolves to transaction information.
+   */
+  async sellComponentJupiter({
+    user,
+    basketId,
+    inputMint,
+    outputMint,
+    amount,
+    swapMode,
+    maxAccounts,
+    slippageBps,
+    dynamicSlippage,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    inputMint: PublicKey;
+    outputMint: PublicKey;
+    amount: number;
+    swapMode: "ExactIn" | "ExactOut";
+    maxAccounts?: number;
+    slippageBps?: number;
+    dynamicSlippage?: boolean;
+  }): Promise<{
+    sellComponentJupiterTx: Transaction;
+    addressLookupTableAccounts: AddressLookupTableAccount[];
+    txLength: number;
+  }> {
+    const tx = new Transaction();
+    const basketConfigPDA = this.basketConfigPDA({ basketId });
+    const userFundPDA = this.userFundPDA({ user, basketId });
+    const { swapInstructions, addressLookupTableAccounts } =
+      await createJupiterSwapIx({
+        connection: this.connection,
+        inputMint,
+        outputMint,
+        amount,
+        fromAccount: basketConfigPDA,
+        swapMode,
+        maxAccounts,
+        slippageBps,
+        dynamicSlippage,
+      });
+
+    const { tokenAccount: vaultTokenSource, tokenProgram: inputTokenProgram } =
+      await getTokenAccountWithTokenProgram(
+        this.connection,
+        inputMint,
+        basketConfigPDA
+      );
+
+    const vaultTokenDestination = getAssociatedTokenAddressSync(
+      NATIVE_MINT,
+      basketConfigPDA,
+      true
+    );
+
+    const sellComponentJupiterIx = await this.program.methods
+      .sellComponentJupiter(
+        Buffer.from(swapInstructions.swapInstruction.data, "base64")
+      )
+      .accountsPartial({
+        user,
+        userFund: userFundPDA,
+        basketConfig: basketConfigPDA,
+        vaultTokenSource,
+        vaultTokenDestination,
+        inputTokenProgram,
+        jupiterProgram: new PublicKey(JUPITER_PROGRAM_ID),
+      })
+      .remainingAccounts(
+        swapInstructions.swapInstruction.accounts.map((acc) => ({
+          pubkey: new PublicKey(acc.pubkey),
+          isSigner: false,
+          isWritable: acc.isWritable,
+        }))
+      )
+      .instruction();
+
+    tx.add(sellComponentJupiterIx);
+
+    // Calculate tx length
+    const message = new TransactionMessage({
+      payerKey: user,
+      recentBlockhash: (await this.connection.getLatestBlockhash()).blockhash,
+      instructions: [sellComponentJupiterIx],
+    }).compileToV0Message(addressLookupTableAccounts);
+    const versionedTx = new VersionedTransaction(message);
+    const serializedTx = versionedTx.serialize();
+
+    return {
+      sellComponentJupiterTx: tx,
+      addressLookupTableAccounts,
+      txLength: serializedTx.length,
+    };
+  }
+
+  /**
+   * Sells a basket
+   * This function performs the reverse of buyBasketJitoTxs:
+   * 1. Redeem basket token
+   * 2. Sell components for WSOL
+   * 3. Withdraw WSOL
+   */
+  async sellBasketJitoTxs({
+    user,
+    basketId,
+    amountInRawDecimal,
+    jitoTipAmountInLamports,
+    slippageBps,
+    dynamicSlippage,
+    maxAccounts = 20,
+  }: {
+    user: PublicKey;
+    basketId: BN;
+    amountInRawDecimal: number;
+    jitoTipAmountInLamports?: BN;
+    slippageBps?: number;
+    dynamicSlippage?: boolean;
+    maxAccounts?: number;
+  }): Promise<string[]> {
+    const basketConfig = await this.getBasketConfig({ basketId });
+
+    // Get current components in the basket
+    const components = basketConfig.components;
+
+    const amounts = components.map((component) =>
+      component.quantityInSysDecimal
+        .mul(new BN(amountInRawDecimal))
+        .div(new BN(SYS_DECIMALS))
+    );
+
+    // Prepare to sell each component for WSOL using Jupiter
+    const jupiterSellTxs = await Promise.all(
+      components.map((component, index) =>
+        this.sellComponentJupiter({
+          user,
+          basketId,
+          inputMint: component.mint,
+          outputMint: NATIVE_MINT,
+          amount: amounts[index].toNumber(),
+          swapMode: "ExactIn",
+          maxAccounts,
+          dynamicSlippage,
+          slippageBps,
+        })
+      )
+    );
+
+    // Sort transactions by size to optimize batching
+    const jupiterSellTxsOrdered = jupiterSellTxs.sort(
+      (a, b) => a.txLength - b.txLength
+    );
+
+    const recentBlockhash = (await this.connection.getLatestBlockhash())
+      .blockhash;
+    const jitoTipAccounts = await this.jito.getTipAccounts();
+    const randomIndex = Math.floor(Math.random() * jitoTipAccounts.length);
+    const jitoTipAccount = jitoTipAccounts[randomIndex];
+
+    const serializedTxs: string[] = [];
+
+    // 1. Redeem basket token
+    // 2. Sell components for WSOL
+    // 3. Withdraw WSOL
+
+    // First transaction includes redeeming basket token
+
+    while (jupiterSellTxsOrdered.length > 0) {
+      console.log("building tx..");
+      const tx = new Transaction();
+      const lookupTableAccounts = [];
+      // @TODO: optimize
+      tx.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: 1_000_000,
+        })
+      );
+      let swap1;
+      let swap2;
+      if (serializedTxs.length === 0) {
+        tx.add(
+          await this.redeemBasketToken({
+            user,
+            basketId,
+            amount: amountInRawDecimal,
+          })
+        );
+      }
+      swap1 = jupiterSellTxsOrdered.shift();
+      swap2 = jupiterSellTxsOrdered.pop();
+
+      if (swap1) {
+        tx.add(swap1.sellComponentJupiterTx);
+        lookupTableAccounts.push(...swap1.addressLookupTableAccounts);
+      }
+      if (swap2) {
+        tx.add(swap2.sellComponentJupiterTx);
+        lookupTableAccounts.push(...swap2.addressLookupTableAccounts);
+      }
+
+      if (jupiterSellTxsOrdered.length > 0) {
+        const serializedTx = await this.jito.serializeJitoTransaction({
+          recentBlockhash,
+          signer: user,
+          transaction: tx,
+          lookupTables: lookupTableAccounts,
+        });
+        serializedTxs.push(serializedTx);
+      } else {
+        // the last tx
+        if (serializedTxs.length < 5) {
+          // @TODO: optimize with lut
+          // make separate txs for withdraw wsol
+          const serializedTx1 = await this.jito.serializeJitoTransaction({
+            recentBlockhash,
+            signer: user,
+            transaction: tx,
+            lookupTables: lookupTableAccounts,
+          });
+          serializedTxs.push(serializedTx1);
+
+          const serializedTx2 = await this.jito.serializeJitoTransaction({
+            recentBlockhash,
+            signer: user,
+            transaction: await this.withdrawWsol({
+              user,
+              basketId,
+            }),
+            lookupTables: lookupTableAccounts,
+            jitoTipAccount: new PublicKey(jitoTipAccount),
+            jitoTipAmountInLamports: jitoTipAmountInLamports?.toNumber(),
+          });
+          serializedTxs.push(serializedTx2);
+        } else {
+          tx.add(
+            await this.withdrawWsol({
+              user,
+              basketId,
+            })
+          );
+          const serializedTx = await this.jito.serializeJitoTransaction({
+            recentBlockhash,
+            signer: user,
+            transaction: tx,
+            lookupTables: lookupTableAccounts,
+            jitoTipAccount: new PublicKey(jitoTipAccount),
+            jitoTipAmountInLamports: jitoTipAmountInLamports?.toNumber(),
+          });
+          serializedTxs.push(serializedTx);
+        }
+      }
+    }
+
+    return serializedTxs;
   }
 }
