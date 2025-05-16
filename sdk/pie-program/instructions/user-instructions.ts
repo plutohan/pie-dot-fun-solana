@@ -363,6 +363,7 @@ export class UserInstructions extends ProgramStateManager {
       let swap1;
       let swap2;
       if (serializedTxs.length === 0) {
+        tx.add(await this.initializeUserBalance({ user }));
         tx.add(
           await this.depositWsol({
             user,
