@@ -99,10 +99,11 @@ export declare function getAllTokenAccountWithBalance({ connection, owner, }: {
     owner: PublicKey;
 }): Promise<TokenBalance[]>;
 export declare function getBasketIdFromBasketMint(mint: PublicKey, pieProgram: PieProgram): Promise<BN>;
-export declare function getTokenPriceAndDecimals({ mint, connection, currency, }: {
+export declare function getTokenPriceAndDecimals({ mint, connection, currency, pieDotFunApiUrl, }: {
     mint: PublicKey;
     connection: Connection;
     currency?: "CURRENCY_SOL" | "CURRENCY_USDC";
+    pieDotFunApiUrl: string;
 }): Promise<{
     price: {
         currency: string;

@@ -228,20 +228,20 @@ export class Jito {
     transaction,
     lookupTables,
     jitoTipAccount,
-    amountInLamports,
+    jitoTipAmountInLamports,
   }: {
     recentBlockhash: string;
     signer: PublicKey;
     transaction: Transaction;
     lookupTables: any;
     jitoTipAccount?: PublicKey;
-    amountInLamports?: number;
+    jitoTipAmountInLamports?: number;
   }) {
     if (jitoTipAccount) {
       const transferInstruction = SystemProgram.transfer({
         fromPubkey: signer,
         toPubkey: new PublicKey(jitoTipAccount),
-        lamports: amountInLamports || JITO_TIP_AMOUNT,
+        lamports: jitoTipAmountInLamports || JITO_TIP_AMOUNT,
       });
       transaction.add(transferInstruction);
     }

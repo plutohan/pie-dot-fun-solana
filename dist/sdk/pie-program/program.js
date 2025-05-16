@@ -44,6 +44,7 @@ const rebalancer_instructions_1 = require("./instructions/rebalancer-instruction
 const jito_1 = require("../jito");
 const events_1 = require("./events");
 const PieIDL = __importStar(require("../../target/idl/pie.json"));
+const constants_1 = require("../constants");
 /**
  * Main PieProgram class that serves as the entry point to the SDK
  *
@@ -65,17 +66,16 @@ class PieProgram {
      */
     constructor(config) {
         this._idl = Object.assign({}, PieIDL);
-        const { connection, cluster, jitoRpcUrl, programId = PieIDL.address, commitment = "confirmed", } = config;
+        const { connection, cluster, jitoRpcUrl, programId = PieIDL.address, commitment = "confirmed", pieDotFunApiUrl = constants_1.PIE_DOT_FUN_API_URL, } = config;
         this.programId = new web3_js_1.PublicKey(programId);
         this.jito = new jito_1.Jito(jitoRpcUrl);
         this._programStateManager = new program_state_1.ProgramStateManager(this.programId, connection);
         this.program = this._programStateManager.program;
         this.eventParser = new anchor_1.EventParser(this.programId, this.program.coder);
-        // Initialize instructions with null raydium - will be set in init()
         this._instructions = {
             admin: new admin_instructions_1.AdminInstructions(connection, this.programId),
-            user: new user_instructions_1.UserInstructions(connection, this.programId),
-            creator: new creator_instructions_1.CreatorInstructions(connection, this.programId),
+            user: new user_instructions_1.UserInstructions(connection, this.programId, pieDotFunApiUrl, this.jito),
+            creator: new creator_instructions_1.CreatorInstructions(connection, this.programId, pieDotFunApiUrl),
             rebalancer: new rebalancer_instructions_1.RebalancerInstructions(connection, this.programId),
         };
         this.admin = this._instructions.admin;

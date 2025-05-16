@@ -90,7 +90,12 @@ export class PieProgram {
 
     this._instructions = {
       admin: new AdminInstructions(connection, this.programId),
-      user: new UserInstructions(connection, this.programId, pieDotFunApiUrl),
+      user: new UserInstructions(
+        connection,
+        this.programId,
+        pieDotFunApiUrl,
+        this.jito
+      ),
       creator: new CreatorInstructions(
         connection,
         this.programId,

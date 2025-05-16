@@ -18,6 +18,7 @@ export interface PieProgramConfig {
     programId?: string;
     sharedLookupTable?: string;
     commitment?: Commitment;
+    pieDotFunApiUrl?: string;
 }
 /**
  * Main PieProgram class that serves as the entry point to the SDK
@@ -49,6 +50,7 @@ export declare class PieProgram {
     readonly creator: CreatorInstructions;
     readonly rebalancer: RebalancerInstructions;
     readonly state: ProgramStateManager;
+    readonly pieDotFunApiUrl: string;
     /**
      * Creates a new instance of PieProgram
      * @param config Configuration options for the program

@@ -380,11 +380,11 @@ async function getBasketIdFromBasketMint(mint, pieProgram) {
     }
     return null;
 }
-async function getTokenPriceAndDecimals({ mint, connection, currency = "CURRENCY_SOL", }) {
+async function getTokenPriceAndDecimals({ mint, connection, currency = "CURRENCY_SOL", pieDotFunApiUrl, }) {
     try {
         const [token, market] = await Promise.all([
             connection.getParsedAccountInfo(mint),
-            axios_1.default.get(`https://api.pie.fun/v1/fungibleTokens/SOLANA/${mint.toBase58()}/market?currency=${currency}`),
+            axios_1.default.get(`${pieDotFunApiUrl}/v1/fungibleTokens/SOLANA/${mint.toBase58()}/market?currency=${currency}`),
         ]);
         const decimals = "parsed" in token.value.data
             ? token.value.data.parsed.info.decimals
