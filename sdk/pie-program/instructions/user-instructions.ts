@@ -276,6 +276,7 @@ export class UserInstructions extends ProgramStateManager {
     user,
     basketId,
     amountInLamports,
+    jitoTipAmountInLamports,
     slippageBps,
     dynamicSlippage,
     maxAccounts = 20,
@@ -283,6 +284,7 @@ export class UserInstructions extends ProgramStateManager {
     user: PublicKey;
     basketId: BN;
     amountInLamports: number;
+    jitoTipAmountInLamports?: BN;
     slippageBps?: number;
     dynamicSlippage?: boolean;
     maxAccounts?: number;
@@ -401,18 +403,15 @@ export class UserInstructions extends ProgramStateManager {
           })
         );
         const jitoTipAccounts = await this.jito.getTipAccounts();
-        const jitoTipAccount = jitoTipAccounts[0];
-        const jitoTipAmount = await this.jito.getTipInformation();
-        console.log({ jitoTipAccount, jitoTipAmount });
+        const randomIndex = Math.floor(Math.random() * jitoTipAccounts.length);
+        const jitoTipAccount = jitoTipAccounts[randomIndex];
         const serializedTx = await this.jito.serializeJitoTransaction({
           recentBlockhash,
           signer: user,
           transaction: tx,
           lookupTables: lookupTableAccounts,
           jitoTipAccount: new PublicKey(jitoTipAccount),
-          amountInLamports: Math.floor(
-            jitoTipAmount.landed_tips_50th_percentile * LAMPORTS_PER_SOL
-          ),
+          jitoTipAmountInLamports: jitoTipAmountInLamports.toNumber(),
         });
         serializedTxs.push(serializedTx);
       }
