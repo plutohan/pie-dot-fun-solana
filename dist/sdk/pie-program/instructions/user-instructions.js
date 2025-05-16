@@ -169,7 +169,7 @@ class UserInstructions extends state_1.ProgramStateManager {
      *
      *
      */
-    async buyBasketJitoTxs({ user, basketId, amountInLamports, slippageBps, dynamicSlippage, maxAccounts = 20, }) {
+    async buyBasketJitoTxs({ user, basketId, amountInLamports, jitoTipAmountInLamports, slippageBps, dynamicSlippage, maxAccounts = 20, }) {
         const basketConfig = await this.getBasketConfig({ basketId });
         const tokenPriceAndDecimals = await Promise.all(basketConfig.components.map((component) => (0, helper_1.getTokenPriceAndDecimals)({
             mint: component.mint,
@@ -254,16 +254,15 @@ class UserInstructions extends state_1.ProgramStateManager {
                     basketId,
                 }));
                 const jitoTipAccounts = await this.jito.getTipAccounts();
-                const jitoTipAccount = jitoTipAccounts[0];
-                const jitoTipAmount = await this.jito.getTipInformation();
-                console.log({ jitoTipAccount, jitoTipAmount });
+                const randomIndex = Math.floor(Math.random() * jitoTipAccounts.length);
+                const jitoTipAccount = jitoTipAccounts[randomIndex];
                 const serializedTx = await this.jito.serializeJitoTransaction({
                     recentBlockhash,
                     signer: user,
                     transaction: tx,
                     lookupTables: lookupTableAccounts,
                     jitoTipAccount: new web3_js_1.PublicKey(jitoTipAccount),
-                    amountInLamports: Math.floor(jitoTipAmount.landed_tips_50th_percentile * web3_js_1.LAMPORTS_PER_SOL),
+                    jitoTipAmountInLamports: jitoTipAmountInLamports.toNumber(),
                 });
                 serializedTxs.push(serializedTx);
             }

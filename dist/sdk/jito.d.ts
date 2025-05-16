@@ -82,13 +82,13 @@ export declare class Jito {
         skipSigVerify?: boolean;
         replaceRecentBlockhash?: boolean;
     }): Promise<SimulateBundleResponse | null>;
-    serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, amountInLamports, }: {
+    serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, jitoTipAmountInLamports, }: {
         recentBlockhash: string;
         signer: PublicKey;
         transaction: Transaction;
         lookupTables: any;
         jitoTipAccount?: PublicKey;
-        amountInLamports?: number;
+        jitoTipAmountInLamports?: number;
     }): string;
     signSerializedTransaction(serializedTransaction: string, signer: Keypair): string;
 }

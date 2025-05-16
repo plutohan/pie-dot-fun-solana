@@ -118,12 +118,12 @@ class Jito {
             return res.data.result;
         }
     }
-    serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, amountInLamports, }) {
+    serializeJitoTransaction({ recentBlockhash, signer, transaction, lookupTables, jitoTipAccount, jitoTipAmountInLamports, }) {
         if (jitoTipAccount) {
             const transferInstruction = web3_js_2.SystemProgram.transfer({
                 fromPubkey: signer,
                 toPubkey: new web3_js_3.PublicKey(jitoTipAccount),
-                lamports: amountInLamports || constants_1.JITO_TIP_AMOUNT,
+                lamports: jitoTipAmountInLamports || constants_1.JITO_TIP_AMOUNT,
             });
             transaction.add(transferInstruction);
         }

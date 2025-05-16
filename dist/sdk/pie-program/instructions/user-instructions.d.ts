@@ -67,10 +67,11 @@ export declare class UserInstructions extends ProgramStateManager {
      *
      *
      */
-    buyBasketJitoTxs({ user, basketId, amountInLamports, slippageBps, dynamicSlippage, maxAccounts, }: {
+    buyBasketJitoTxs({ user, basketId, amountInLamports, jitoTipAmountInLamports, slippageBps, dynamicSlippage, maxAccounts, }: {
         user: PublicKey;
         basketId: BN;
         amountInLamports: number;
+        jitoTipAmountInLamports?: BN;
         slippageBps?: number;
         dynamicSlippage?: boolean;
         maxAccounts?: number;
