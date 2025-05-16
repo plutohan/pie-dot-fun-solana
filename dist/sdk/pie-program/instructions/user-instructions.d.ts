@@ -18,7 +18,7 @@ export declare class UserInstructions extends ProgramStateManager {
      */
     initializeUserBalance({ user, }: {
         user: PublicKey;
-    }): Promise<Transaction>;
+    }): Promise<Transaction | null>;
     /**
      * Deposits WSOL into the basket.
      * @param user - The user account.
@@ -35,8 +35,13 @@ export declare class UserInstructions extends ProgramStateManager {
      * Buys a component using Jupiter.
      * @param user - The user account.
      * @param basketId - The basket ID.
+     * @param outputMint - The mint of the component to buy.
      * @param amount - The amount of component to buy.
-     * @returns A promise that resolves to a transaction.
+     * @param swapMode - The swap mode.
+     * @param maxAccounts - The maximum number of accounts to use.
+     * @param slippageBps - The slippage in basis points.
+     * @param dynamicSlippage - Whether to use dynamic slippage.
+     * @returns A promise that resolves to transaction information.
      */
     buyComponentJupiter({ user, basketId, outputMint, amount, swapMode, maxAccounts, slippageBps, dynamicSlippage, }: {
         user: PublicKey;
@@ -126,5 +131,45 @@ export declare class UserInstructions extends ProgramStateManager {
         amount: string;
         mint: PublicKey;
     }): Promise<Transaction>;
+    /**
+     * Sells a component using Jupiter.
+     * @param user - The user account.
+     * @param basketId - The basket ID.
+     * @param inputMint - The mint of token to sell.
+     * @param outputMint - The mint of token to receive.
+     * @param swapMode - The swap mode.
+     * @returns A promise that resolves to transaction information.
+     */
+    sellComponentJupiter({ user, basketId, inputMint, outputMint, amount, swapMode, maxAccounts, slippageBps, dynamicSlippage, }: {
+        user: PublicKey;
+        basketId: BN;
+        inputMint: PublicKey;
+        outputMint: PublicKey;
+        amount: number;
+        swapMode: "ExactIn" | "ExactOut";
+        maxAccounts?: number;
+        slippageBps?: number;
+        dynamicSlippage?: boolean;
+    }): Promise<{
+        sellComponentJupiterTx: Transaction;
+        addressLookupTableAccounts: AddressLookupTableAccount[];
+        txLength: number;
+    }>;
+    /**
+     * Sells a basket
+     * This function performs the reverse of buyBasketJitoTxs:
+     * 1. Redeem basket token
+     * 2. Sell components for WSOL
+     * 3. Withdraw WSOL
+     */
+    sellBasketJitoTxs({ user, basketId, amountInRawDecimal, jitoTipAmountInLamports, slippageBps, dynamicSlippage, maxAccounts, }: {
+        user: PublicKey;
+        basketId: BN;
+        amountInRawDecimal: number;
+        jitoTipAmountInLamports?: BN;
+        slippageBps?: number;
+        dynamicSlippage?: boolean;
+        maxAccounts?: number;
+    }): Promise<string[]>;
 }
 //# sourceMappingURL=user-instructions.d.ts.map
