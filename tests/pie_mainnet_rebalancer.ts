@@ -123,7 +123,7 @@ describe("pie rebalancer", () => {
         wantComponents,
       },
       option: swapOption,
-      executionContext: "",
+      serializedRebalanceContext: "",
       signedTxs: [],
     };
     let result = null;
@@ -143,7 +143,7 @@ describe("pie rebalancer", () => {
         result.toSignTxs[i].sign([rebalancer]);
       }
       buildTxArgs.signedTxs = result.toSignTxs;
-      buildTxArgs.executionContext = result.sessionContext;
+      buildTxArgs.serializedRebalanceContext = result.sessionContext;
     } while (result.toSignTxs.length > 0);
 
     assert.equal(result.result.status(), RebalanceStatus.SUCCESS);

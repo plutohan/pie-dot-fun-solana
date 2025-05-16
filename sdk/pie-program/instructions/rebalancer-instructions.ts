@@ -298,8 +298,8 @@ export class RebalancerInstructions extends ProgramStateManager {
     rebalancer: PublicKey;
     command: RebalanceCommand;
     option?: RebalanceOption;
-    serializedRebalanceContext?: string;
-    signedTxs?: VersionedTransaction[];
+    serializedRebalanceContext: string;
+    signedTxs: VersionedTransaction[];
   }): Promise<{
     sessionContext: string;
     result: RebalanceResult;
@@ -478,7 +478,7 @@ export class RebalanceContext {
   }
 
   static deserialize(v: string): RebalanceContext {
-    if (!v) {
+    if (!v || v.trim() === '') {
       return new RebalanceContext();
     }
     const deserialized = JSON.parse(v);
