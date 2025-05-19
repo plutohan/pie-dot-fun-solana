@@ -677,7 +677,7 @@ export async function getBasketIdFromBasketMint(
       continue;
     }
 
-    console.log(i, basketConfig.mint.toBase58(), mint.toBase58());
+    console.debug(i, basketConfig.mint.toBase58(), mint.toBase58());
     if (basketConfig.mint.equals(mint)) {
       return new BN(i);
     }
