@@ -1,22 +1,33 @@
 import { BN } from "@coral-xyz/anchor";
 import {
-  Transaction,
-  PublicKey,
-  Connection,
-  TransactionInstruction,
   AddressLookupTableAccount,
   ComputeBudgetProgram,
-  VersionedTransaction,
+  Connection,
+  PublicKey,
+  SendTransactionError,
+  Transaction,
+  TransactionInstruction,
   TransactionMessage,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import { ProgramStateManager } from "../state";
-import { getBasketIdFromBasketMint, getTokenAccountWithTokenProgram } from "../../utils/helper";
+import {
+  getTokenAccountWithTokenProgram,
+  sendAndConfirmVersionedTransaction,
+} from "../../utils/helper";
 import { createJupiterSwapIx, getPrice } from "../../utils/jupiter";
 import { JUPITER_PROGRAM_ID, SYS_DECIMALS } from "../../constants";
-import { SwapInstructionsResponse } from "@jup-ag/api";
-import { PieProgram } from "../program";
-import { BasketConfig, BasketState } from "../types";
+import { ResponseError, SwapInstructionsResponse } from "@jup-ag/api";
+import { BasketConfig } from "../types";
 import { NATIVE_MINT } from "@solana/spl-token";
+import { 
+  deserializeErrorFromString, 
+  RebalanceExecutionError, 
+  RebalanceSendTransactionError,
+  RebalanceControlTxBuildError,
+  RebalanceSwapTxBuildError,
+  BatchTransactionProcessingError
+} from "./rebalance-execution-error";
 
 /**
  * Class for handling rebalancer-related instructions
@@ -185,7 +196,7 @@ export class RebalancerInstructions extends ProgramStateManager {
    * @param maxAccounts - The maximum number of accounts.
    * @returns A promise that resolves to a versioned transaction.
    */
-async executeRebalancingJupiterTx({
+  async executeRebalancingJupiterTx({
     connection,
     rebalancer,
     basketId,
@@ -246,8 +257,9 @@ async executeRebalancingJupiterTx({
     console.log(simulation.value.logs, "simulation.value.logs");
 
     if (simulation.value.err) {
+      // TODO: throw simulation error with logs
       console.log(simulation.value.err, "simulation.value.err");
-      throw new Error("simulation failed");
+      throw simulation.value.err;
     }
 
     // Build final transaction
@@ -261,80 +273,75 @@ async executeRebalancingJupiterTx({
       instructions: [cuIx, executeRebalancingJupiterIx],
     }).compileToV0Message(addressLookupTableAccounts);
 
-    const tx = new VersionedTransaction(message);
-
-    return tx;
+    return new VersionedTransaction(message);
   }
 
   /**
    * Builds the next rebalance step transaction.
    * @param basketId - The basket ID in BN format
    * @param rebalancer - The rebalancer public key
-   * @param command - Rebalancing command with optional wantComponents
+   * @param command - Rebalancing command with wantComponents
    * @param option - Additional options like maxSlippageBps
-   * @param executionContext - Context from previous step execution
-   * @param serializedTxs - Previously generated transactions
-   * @param txHistories - Transaction history
+   * @param serializedRebalanceContext - Context string from previous step execution
+   * @param signedTxs - Previously generated transactions to be processed
    * @returns Next step transactions and execution context
    */
   async buildNextRebalanceStepTx({
-    basketMint,
+    basketId,
     rebalancer,
     command,
     option,
-    executionContext,
+    serializedRebalanceContext,
     signedTxs,
   }: {
-    basketMint: PublicKey;
+    basketId: BN;
     rebalancer: PublicKey;
-    command: {
-      wantComponents?: {
-        fungibleToken: PublicKey;
-        quantityInSysDecimal: BN;
-      }[];
-    };
-    option?: {
-      maxSlippageBps?: number;
-    };
-    executionContext?: string;
-    signedTxs?: VersionedTransaction[];
-    txHistories?: string[];
+    command: RebalanceCommand;
+    option?: RebalanceOption;
+    serializedRebalanceContext: string;
+    signedTxs: VersionedTransaction[];
   }): Promise<{
     sessionContext: string;
     result: RebalanceResult;
     toSignTxs: VersionedTransaction[];
   }> {
-    // Get basket configuration
-    const pieProgram = new PieProgram(
-      {
-        connection: this.connection,
-        cluster: "mainnet-beta",
-        jitoRpcUrl: "" // does not use in this function.
-      }
-    )
+    const basketMint = this.basketMintPDA({ basketId });
+    const context = RebalanceContext.deserialize(serializedRebalanceContext);
 
-    const basketId = await getBasketIdFromBasketMint(basketMint, pieProgram);
-    if (!basketId) {
-      throw new Error("Basket not found");
-    }
-
-    const context = RebalanceContext.deserialize(executionContext);
-    
     const executor = new RebalanceExecutor(
       this,
       rebalancer,
+      basketId,
       basketMint,
       context,
       signedTxs,
       command.wantComponents,
-      option,
+      option
     );
-    const {ctx, result, toSignTxs} = await executor.buildNextTx();
+    const { ctx, result, toSignTxs } = await executor.buildNextTx();
     return {
       sessionContext: ctx.serialize(),
       result,
       toSignTxs,
-    }
+    };
+  }
+}
+
+export interface RebalanceCommand {
+  wantComponents: Component[];
+}
+
+export interface RebalanceOption {
+  maxSlippageBps?: number;
+}
+
+export class Component {
+  mint: PublicKey;
+  quantityInSystem: BN;
+
+  constructor(mint: PublicKey, quantity: BN) {
+    this.mint = mint;
+    this.quantityInSystem = quantity;
   }
 }
 
@@ -347,29 +354,8 @@ export enum RebalanceStage {
   BUY = "BUY",
   CLEANUP_BUY = "CLEANUP_BUY",
   STOP = "STOP",
-  SEND_STOP_TX = "SEND_STOP_TX",
-  END = "END"
-}
-
-function nextStage(stage: RebalanceStage): RebalanceStage {
-  switch (stage) {
-    // case RebalanceStage.INIT:
-    //   return RebalanceStage.START;
-    case RebalanceStage.START:
-      return RebalanceStage.SELL;
-    case RebalanceStage.SELL:
-      return RebalanceStage.BUY;
-    case RebalanceStage.BUY:
-      return RebalanceStage.CLEANUP_BUY;
-    case RebalanceStage.CLEANUP_BUY:
-      return RebalanceStage.STOP;
-    case RebalanceStage.STOP:
-      return RebalanceStage.SEND_STOP_TX;
-    case RebalanceStage.SEND_STOP_TX:
-      return RebalanceStage.END;
-    default:
-      throw new Error("Invalid stage"); // TODO: detailed Exception.
-  }
+  SEND_STOP = "SEND_STOP",
+  DONE = "DONE",
 }
 
 export class SwapSigStatus {
@@ -377,6 +363,30 @@ export class SwapSigStatus {
   signature: string;
   status: TxStatus;
   errorReason: RebalanceErrorReason;
+}
+
+export class SwapPlan {
+  mint: PublicKey;
+  beforeAmount: BN;
+  targetAmount: BN;
+
+  constructor(mint: PublicKey, currentAmount: BN, targetAmount: BN) {
+    this.mint = mint;
+    this.beforeAmount = currentAmount;
+    this.targetAmount = targetAmount;
+  }
+
+  isSell(): boolean {
+    return this.targetAmount.lt(this.beforeAmount);
+  }
+
+  swapAmount(): BN {
+    if (this.isSell()) {
+      return this.beforeAmount.sub(this.targetAmount);
+    } else {
+      return this.targetAmount.sub(this.beforeAmount);
+    }
+  }
 }
 
 export class RebalanceContext {
@@ -387,8 +397,8 @@ export class RebalanceContext {
   failedTxs: VersionedTransaction[];
   errors: Error[];
 
-  componentsToSell: { mint: PublicKey; currentAmount: BN; targetAmount: BN }[];
-  componentsToBuy: { mint: PublicKey; currentAmount: BN; targetAmount: BN }[];
+  componentsToSell: SwapPlan[];
+  componentsToBuy: SwapPlan[];
 
   startSig?: string;
   sellSigs: SwapSigStatus[];
@@ -396,90 +406,124 @@ export class RebalanceContext {
   cleanupBuySig?: string;
   stopSig?: string;
   needCleanUp: boolean;
-  
+
   constructor() {
-    // this.stage = RebalanceStage.INIT;
     this.stage = RebalanceStage.START;
     this.step = 0;
 
-    this.componentsToSell = [];
-    this.componentsToBuy = [];
     this.successTxs = [];
     this.failedTxs = [];
     this.errors = [];
+
+    this.componentsToSell = [];
+    this.componentsToBuy = [];
+    this.startSig = undefined;
+    this.sellSigs = [];
+    this.buySigs = [];
+    this.cleanupBuySig = undefined;
+    this.stopSig = undefined;
     this.needCleanUp = false;
   }
-  
+
   serialize(): string {
     const serialized = {
       stage: this.stage,
       step: this.step,
-      componentsToSell: this.componentsToSell.map(item => ({
+      componentsToSell: this.componentsToSell.map((item) => ({
         mint: item.mint.toBase58(),
-        currentAmount: item.currentAmount.toString(),
-        targetAmount: item.targetAmount.toString()
+        currentAmount: item.beforeAmount.toString(),
+        targetAmount: item.targetAmount.toString(),
       })),
-      componentsToBuy: this.componentsToBuy.map(item => ({
+      componentsToBuy: this.componentsToBuy.map((item) => ({
         mint: item.mint.toBase58(),
-        currentAmount: item.currentAmount.toString(),
-        targetAmount: item.targetAmount.toString()
+        currentAmount: item.beforeAmount.toString(),
+        targetAmount: item.targetAmount.toString(),
       })),
-      successTxs: this.successTxs.map(tx => Buffer.from(tx.serialize()).toString("base64")),
-      failedTxs: this.failedTxs.map(tx => Buffer.from(tx.serialize()).toString("base64")),
-      errors: this.errors.map(err => err.message),
+      successTxs: this.successTxs.map((tx) =>
+        Buffer.from(tx.serialize()).toString("base64")
+      ),
+      failedTxs: this.failedTxs.map((tx) =>
+        Buffer.from(tx.serialize()).toString("base64")
+      ),
+      errors: this.errors.map((err) => {
+        if (err instanceof RebalanceExecutionError) {
+          return err.serialize();
+        }
+        return JSON.stringify({
+          errorType: "GenericError",
+          name: err.name,
+          message: err.message,
+          stack: err.stack,
+        });
+      }),
 
       startSig: this.startSig,
-      sellSigs: this.sellSigs.map(sig => ({
+      sellSigs: this.sellSigs.map((sig) => ({
         mint: sig.mint.toBase58(),
         signature: sig.signature,
         status: sig.status,
-        errorReason: sig.errorReason
+        errorReason: sig.errorReason,
       })),
-      buySigs: this.buySigs.map(sig => ({
+      buySigs: this.buySigs.map((sig) => ({
         mint: sig.mint.toBase58(),
         signature: sig.signature,
         status: sig.status,
-        errorReason: sig.errorReason
+        errorReason: sig.errorReason,
       })),
       cleanupBuySig: this.cleanupBuySig,
       stopSig: this.stopSig,
-      needCleanUp: this.needCleanUp
+      needCleanUp: this.needCleanUp,
     };
     return JSON.stringify(serialized);
   }
-  
+
   static deserialize(v: string): RebalanceContext {
+    if (!v || v.trim() === '') {
+      return new RebalanceContext();
+    }
     const deserialized = JSON.parse(v);
 
     const ctx = new RebalanceContext();
-    
+
     ctx.stage = deserialized.stage || RebalanceStage.START;
     ctx.step = deserialized.step || 0;
-    ctx.componentsToSell = (deserialized.componentsToSell || []).map(item => ({
-      mint: new PublicKey(item.mint),
-      currentAmount: new BN(item.currentAmount),
-      targetAmount: new BN(item.targetAmount)
-    }));
-    ctx.componentsToBuy = (deserialized.componentsToBuy || []).map(item => ({
-      mint: new PublicKey(item.mint),
-      currentAmount: new BN(item.currentAmount),
-      targetAmount: new BN(item.targetAmount)
-    }));
-    ctx.successTxs = (deserialized.successTxs || []).map(tx =>  VersionedTransaction.deserialize(Buffer.from(tx, "base64")));
-    ctx.failedTxs = (deserialized.failedTxs || []).map(tx => VersionedTransaction.deserialize(Buffer.from(tx, "base64")));
-    ctx.errors = (deserialized.errors || []).map(err => new Error(err));
+    ctx.componentsToSell = (deserialized.componentsToSell || []).map(
+      (item) =>
+        new SwapPlan(
+          new PublicKey(item.mint),
+          new BN(item.currentAmount),
+          new BN(item.targetAmount)
+        )
+    );
+    ctx.componentsToBuy = (deserialized.componentsToBuy || []).map(
+      (item) =>
+        new SwapPlan(
+          new PublicKey(item.mint),
+          new BN(item.currentAmount),
+          new BN(item.targetAmount)
+        )
+    );
+    ctx.successTxs = (deserialized.successTxs || []).map((tx) =>
+      VersionedTransaction.deserialize(Buffer.from(tx, "base64"))
+    );
+    ctx.failedTxs = (deserialized.failedTxs || []).map((tx) =>
+      VersionedTransaction.deserialize(Buffer.from(tx, "base64"))
+    );
+    ctx.errors = (deserialized.errors || []).map((serializedErrorString: string) => {
+      return deserializeErrorFromString(serializedErrorString);
+    });
     ctx.startSig = deserialized.startSig;
-    ctx.sellSigs = (deserialized.sellSigs || []).map(sig => ({
+    ctx.sellSigs = (deserialized.sellSigs || []).map((sig) => ({
       mint: new PublicKey(sig.mint),
       signature: sig.signature,
       status: sig.status,
-      errorReason: sig.errorReason
+      errorReason: sig.errorReason,
     }));
-    ctx.buySigs = (deserialized.buySigs || []).map(sig => ({
+    ctx.buySigs = (deserialized.buySigs || []).map((sig) => ({
       mint: new PublicKey(sig.mint),
       signature: sig.signature,
       status: sig.status,
-      errorReason: sig.errorReason
+      errorReason: sig.errorReason,
     }));
     ctx.cleanupBuySig = deserialized.cleanupBuySig;
     ctx.stopSig = deserialized.stopSig;
@@ -487,56 +531,45 @@ export class RebalanceContext {
 
     return ctx;
   }
+
   clone(): RebalanceContext {
     const ctx = new RebalanceContext();
     ctx.stage = this.stage;
     ctx.step = this.step;
-    ctx.successTxs = this.successTxs.map(tx => tx);
-    ctx.failedTxs = this.failedTxs.map(tx => tx);
-    ctx.errors = this.errors.map(err => new Error(err.message));
+    ctx.successTxs = this.successTxs.map((tx) => tx);
+    ctx.failedTxs = this.failedTxs.map((tx) => tx);
+    ctx.errors = this.errors.map((err) => new Error(err.message));
     ctx.startSig = this.startSig;
-    ctx.sellSigs = this.sellSigs.map(sig => ({
+    ctx.sellSigs = this.sellSigs.map((sig) => ({
       mint: sig.mint,
       signature: sig.signature,
       status: sig.status,
-      errorReason: sig.errorReason
+      errorReason: sig.errorReason,
     }));
-    ctx.buySigs = this.buySigs.map(sig => ({
+    ctx.buySigs = this.buySigs.map((sig) => ({
       mint: sig.mint,
       signature: sig.signature,
       status: sig.status,
-      errorReason: sig.errorReason
+      errorReason: sig.errorReason,
     }));
     ctx.cleanupBuySig = this.cleanupBuySig;
     ctx.stopSig = this.stopSig;
     ctx.needCleanUp = this.needCleanUp;
-    ctx.componentsToSell = this.componentsToSell.map(item => ({
-      mint: item.mint,
-      currentAmount: item.currentAmount,
-      targetAmount: item.targetAmount
-    }));
-    ctx.componentsToBuy = this.componentsToBuy.map(item => ({
-      mint: item.mint,
-      currentAmount: item.currentAmount,
-      targetAmount: item.targetAmount
-    }));
+    ctx.componentsToSell = this.componentsToSell.map((item) => item);
+    ctx.componentsToBuy = this.componentsToBuy.map((item) => item);
     return ctx;
   }
 
-  componentsToSellWithoutNative(): {
-    mint: PublicKey;
-    currentAmount: BN;
-    targetAmount: BN;
-  }[] {
-    return this.componentsToSell.filter(item => !item.mint.equals(new PublicKey(NATIVE_MINT)));
+  componentsToSellWithoutNative(): SwapPlan[] {
+    return this.componentsToSell.filter(
+      (item) => !item.mint.equals(new PublicKey(NATIVE_MINT))
+    );
   }
 
-  componentsToBuyWithoutNative(): {
-    mint: PublicKey;
-    currentAmount: BN;
-    targetAmount: BN;
-  }[] {
-    return this.componentsToBuy.filter(item => !item.mint.equals(new PublicKey(NATIVE_MINT)));
+  componentsToBuyWithoutNative(): SwapPlan[] {
+    return this.componentsToBuy.filter(
+      (item) => !item.mint.equals(new PublicKey(NATIVE_MINT))
+    );
   }
 }
 
@@ -544,19 +577,19 @@ export class RebalanceContext {
  * Status enum for rebalance execution result
  */
 export enum RebalanceStatus {
-  STATUS_UNSPECIFIED = 0,
-  IN_PROGRESS = 1,
-  SUCCESS = 2,
-  FAILED = 3
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  IN_PROGRESS = "IN_PROGRESS",
+  SUCCESS = "SUCCESS",
+  FAILED = "FAILED",
 }
 
 /**
  * Error reason enum for rebalance execution result
  */
 export enum RebalanceErrorReason {
-  ERROR_REASON_UNSPECIFIED = 0,
-  TX_FAILED_UNKNOWN = 1,
-  INSUFFICIENT_FEE = 2
+  ERROR_REASON_UNSPECIFIED = "ERROR_REASON_UNSPECIFIED",
+  TX_FAILED_UNKNOWN = "TX_FAILED_UNKNOWN",
+  INSUFFICIENT_FEE = "INSUFFICIENT_FEE",
 }
 
 /**
@@ -565,7 +598,7 @@ export enum RebalanceErrorReason {
 export enum TxStatus {
   STATUS_UNSPECIFIED = 0,
   SUCCESS = 1,
-  FAILED = 2
+  FAILED = 2,
 }
 
 /**
@@ -589,45 +622,35 @@ export class RebalanceExecutor {
   private rebalancer: PublicKey;
   private basketId: BN;
   private basketMint: PublicKey;
-  private basketConfig: BasketConfig;
   private prevCtx: RebalanceContext;
   private curCtx: RebalanceContext;
   private instructor: RebalancerInstructions;
 
   private nextTxs: VersionedTransaction[] = [];
 
-
-  private wantComponents: {
-    fungibleToken: PublicKey;
-    quantityInSysDecimal: BN;
-  }[];
+  private wantComponents: Component[];
   // option
   private maxSlippageBps: number;
 
   private signedTxs: VersionedTransaction[];
 
-  /**
-   * Constructor
-   * @param connection - Solana connection
-   * @param basketConfig - Basket configuration
-   * @param executionContext - Previous execution context
-   */
+  private readonly SWAP_MAX_ACCOUNTS = 50; // default value is 64
+
   constructor(
     instructor: RebalancerInstructions,
     rebalancer: PublicKey,
+    basketId: BN,
     basketMint: PublicKey,
     prevContext: RebalanceContext,
     signedTxs: VersionedTransaction[],
-    wantComponents: {
-      fungibleToken: PublicKey;
-      quantityInSysDecimal: BN;
-    }[],
+    wantComponents: Component[],
     option?: {
       maxSlippageBps?: number;
-    },
+    }
   ) {
     this.instructor = instructor;
     this.connection = this.instructor.connection;
+    this.basketId = basketId;
     this.basketMint = basketMint;
     this.rebalancer = rebalancer;
 
@@ -648,81 +671,88 @@ export class RebalanceExecutor {
   }
 
   result(): RebalanceResult {
-    return new RebalanceResult(this.prevCtx);
+    return new RebalanceResult(this.curCtx);
   }
-
-  /**
-   * Build transactions for the next rebalance step
-   * @param rebalancer - The rebalancer public key
-   * @param basketId - The basket ID
-   * @param command - Rebalancing command
-   * @param createStartTx - Function to create start rebalancing tx
-   * @param createStopTx - Function to create stop rebalancing tx
-   * @param createSwapTx - Function to create swap instruction
-   * @returns Promise resolved to transactions and updated context
-   */
 
   async buildNextTx(): Promise<{
     ctx: RebalanceContext;
     result: RebalanceResult;
     toSignTxs: VersionedTransaction[];
   }> {
-    if (this.curCtx.componentsToSell.length === 0 || this.curCtx.componentsToBuy.length === 0) {
-      const [componentsToSell, componentsToBuy] = await Promise.all([
-        this.componentsToSell(),
-        this.componentsToBuy()
-      ]);
-      this.curCtx.componentsToSell = componentsToSell;
-      this.curCtx.componentsToBuy = componentsToBuy;
-    }
-    this.basketConfig = await this.instructor.getBasketConfig({ basketId: this.basketId });
-    if (!this.basketConfig) {
-      throw new Error("Basket config not found");
-    }
+    try {
+      await this.fetchBasketConfig();
 
-    let iterate = 0;
-    while (this.nextTxs.length === 0) {
-      if (iterate > Object.keys(RebalanceStage).length) {
-        throw new Error("Max iterate reached");
+      let iterate = 0;
+      while (this.nextTxs.length === 0) {
+        if (iterate > Object.keys(RebalanceStage).length) {
+          throw new Error("Max iterate reached");
+        }
+        iterate += 1;
+
+        switch (this.stage()) {
+          case RebalanceStage.START:
+            await this.handleStartStage();
+            break;
+
+          case RebalanceStage.SELL:
+            await this.handleSellStage();
+            break;
+
+          case RebalanceStage.BUY:
+            await this.handleBuyStage();
+            break;
+
+          case RebalanceStage.CLEANUP_BUY:
+            await this.handleCleanUpBuyStage();
+            break;
+
+          case RebalanceStage.STOP:
+            await this.handleStopStage();
+            break;
+
+          case RebalanceStage.SEND_STOP:
+            await this.handleSendStopStage();
+            break;
+
+          case RebalanceStage.DONE:
+            break;
+
+          default:
+            throw new Error(`Invalid stage: ${this.curCtx.stage}`);
+        }
+
+        if (this.curCtx.stage === RebalanceStage.DONE) {
+          break;
+        }
+        if (this.curCtx.errors.length > 0) {
+          if (
+            this.curCtx.stage !== RebalanceStage.SEND_STOP &&
+            this.curCtx.stage !== RebalanceStage.STOP
+          ) {
+            await this.abnormalStop();
+            this.curCtx.stage = RebalanceStage.SEND_STOP;
+          }
+
+          break;
+        }
+
+        this.curCtx.stage = nextStage(this.curCtx.stage);
       }
-      iterate += 1; 
-      
-      switch (this.stage()) {
-        case RebalanceStage.START:
-          await this.handleStartStage();
-          break;
-        
-        case RebalanceStage.SELL:
-          await this.handleSellStage();
-          break;
-        
-        case RebalanceStage.BUY:
-          await this.handleBuyStage();
-          break;
-        
-        case RebalanceStage.CLEANUP_BUY:
-          await this.handleCleanUpBuyStage();
-          break;
-        
-        case RebalanceStage.STOP:
-          await this.handleStopStage();
-          break;
-        
-        case RebalanceStage.END:
-          this.handleEndStage();
-          break;
-        
-        default:
-          throw new Error(`Invalid stage: ${this.curCtx.stage}`);
-      }
-      if (this.curCtx.stage === RebalanceStage.END) {
-        break;
-      }
-      if (this.curCtx.errors.length > 0) {
-        break
+    } catch (error) {
+      console.error("error in buildNextTx", error);
+      let errors = [];
+      if (error instanceof BatchTransactionProcessingError) {
+        errors = error.innerErrors
+      } else {
+        errors = [error];
       }
 
-      this.curCtx.stage = nextStage(this.curCtx.stage);
+      for (const err of errors) {
+        this.curCtx.errors.push(err);
+        if (err instanceof RebalanceSendTransactionError && err.tx) {
+          this.curCtx.failedTxs.push(err.tx);
+        }
+      }
     }
 
     return {
@@ -732,243 +762,264 @@ export class RebalanceExecutor {
     };
   }
 
-  /**
-   * Handle START stage
-   * @private
-   */
-  private async handleStartStage(): Promise<void> {
-    if (this.basketConfig.state.rebalancing) {
-      return;
-    }
-
-    const startRebalanceTx = await this.instructor.startRebalancing({
-      rebalancer: this.rebalancer,
-      basketId: this.basketId,
-    });
-
-    const vtxMessage = new TransactionMessage({
-      payerKey: startRebalanceTx.feePayer,
-      recentBlockhash: startRebalanceTx.recentBlockhash,
-      instructions: startRebalanceTx.instructions,
-    });
-    const tx = new VersionedTransaction(vtxMessage.compileToV0Message());
-    this.nextTxs.push(tx);
-    return
-  }
-
-  private wantComponentQtyMap(): Map<PublicKey, BN> {
-    const out = new Map<PublicKey, BN>();
+  private wantComponentQtyInSysMap(): Map<string, BN> {
+    const out = new Map<string, BN>();
     for (const wc of this.wantComponents) {
-      out.set(wc.fungibleToken, wc.quantityInSysDecimal);
+      out.set(wc.mint.toString(), wc.quantityInSystem);
     }
     return out;
   }
 
-  private currentComponentQtyMap(): Map<PublicKey, BN> {
-    const out = new Map<PublicKey, BN>();
-    for (const component of this.basketConfig.components) {
-      out.set(component.mint, component.quantityInSysDecimal);
+  private async currentComponentQtyInSysMap(): Promise<Map<string, BN>> {
+    const out = new Map<string, BN>();
+
+    const basketCfg = await this.fetchBasketConfig();
+    for (const component of basketCfg.components) {
+      out.set(component.mint.toString(), component.quantityInSysDecimal);
     }
     return out;
   }
 
   private async basketTotalSupply(): Promise<BN> {
-    const totalSupplyResp = await this.connection.getTokenSupply(this.basketMint);
+    const totalSupplyResp = await this.connection.getTokenSupply(
+      this.basketMint
+    );
     return new BN(totalSupplyResp.value.amount);
   }
 
-  private async componentsToSell(): Promise<{ mint: PublicKey; currentAmount: BN; targetAmount: BN }[]> {
+  private async componentsToSell(): Promise<SwapPlan[]> {
     const out = [];
     const totalSupply = await this.basketTotalSupply();
-    const wantComponentMap = this.wantComponentQtyMap();
+    const wantComponentMap = this.wantComponentQtyInSysMap();
+    const curComponentQtyInSysMap = await this.currentComponentQtyInSysMap();
 
-    for (const [mint, curSysQty] of this.currentComponentQtyMap()) {
-      const wantQty = wantComponentMap.get(mint);
+    for (const [mintString, curSysQty] of curComponentQtyInSysMap) {
+      const wantQtyInSys = wantComponentMap.get(mintString) || new BN(0);
 
-      let sellQtyInSysDecimal = curSysQty;
-      if (wantQty) {
-        if (curSysQty.lte(wantQty)) {
+      let sellQtyInSys = curSysQty;
+      if (wantQtyInSys) {
+        if (curSysQty.lte(wantQtyInSys)) {
           continue;
         }
-        sellQtyInSysDecimal = curSysQty.sub(wantQty);
+        sellQtyInSys = curSysQty.sub(wantQtyInSys);
       }
 
-      const sellAmount = sellQtyInSysDecimal.
-        mul(new BN(SYS_DECIMALS)).
-        mul(totalSupply)
+      const sellAmount = sellQtyInSys.mul(totalSupply).divn(SYS_DECIMALS);
 
-      const currentAmount = new BN(curSysQty).
-        mul(new BN(SYS_DECIMALS)).
-        mul(totalSupply);
+      const currentAmount = new BN(curSysQty)
+        .mul(totalSupply)
+        .divn(SYS_DECIMALS);
 
-      out.push({
-        mint,
-        currentAmount: currentAmount,
-        targetAmount: sellAmount.sub(currentAmount),
-      });
+      out.push(
+        new SwapPlan(
+          new PublicKey(mintString),
+          currentAmount,
+          currentAmount.sub(sellAmount)
+        )
+      );
     }
     out.sort((a, b) => a.mint.toBase58().localeCompare(b.mint.toBase58()));
     return out;
   }
 
-  private async componentsToBuy(): Promise<{ mint: PublicKey; currentAmount: BN; targetAmount: BN }[]> {
-    const out = [];
+  private async componentsToBuy(): Promise<SwapPlan[]> {
+    const out: SwapPlan[] = [];
     const totalSupply = await this.basketTotalSupply();
-    const wantComponentMap = this.wantComponentQtyMap();
+    const wantComponentMap = this.wantComponentQtyInSysMap();
 
-    const sellComponentSet = new Set<PublicKey>();
+    const sellComponentSet = new Set<string>();
     for (const sellComponent of await this.componentsToSell()) {
-      sellComponentSet.add(sellComponent.mint);
+      sellComponentSet.add(sellComponent.mint.toString());
     }
 
-    for (const [mint, curSysQty] of this.currentComponentQtyMap()) {
-      if (sellComponentSet.has(mint)) {
+    const currentComponentQtyInSysMap =
+      await this.currentComponentQtyInSysMap();
+
+    for (const [mintString, curSysQty] of currentComponentQtyInSysMap) {
+      if (sellComponentSet.has(mintString)) {
         continue;
       }
 
-      let buyQtyInSysDecimal = new BN(0);
+      let buyQtyInSys = new BN(0);
 
-      const wantQty = wantComponentMap.get(mint);
-      if (!wantQty) {
+      const wantQtyInSys = wantComponentMap.get(mintString.toString());
+      if (!wantQtyInSys) {
         continue;
       }
 
-      if (curSysQty.gte(wantQty)) {
+      if (curSysQty.gte(wantQtyInSys)) {
         continue;
       }
 
-      buyQtyInSysDecimal = wantQty.sub(curSysQty);
+      buyQtyInSys = wantQtyInSys.sub(curSysQty);
+      const buyAmount = buyQtyInSys.mul(totalSupply).divn(SYS_DECIMALS);
 
-      const buyAmount = buyQtyInSysDecimal.
-        mul(new BN(10).pow(new BN(6))).
-        mul(totalSupply);
+      const currentAmount = new BN(curSysQty)
+        .mul(totalSupply)
+        .divn(SYS_DECIMALS);
 
-      const currentAmount = new BN(curSysQty).
-        mul(new BN(10).pow(new BN(6))).
-        mul(totalSupply);
-
-      out.push({
-        mint,
-        currentAmount: currentAmount,
-        targetAmount: currentAmount.add(buyAmount),
-      });
+      out.push(
+        new SwapPlan(
+          new PublicKey(mintString),
+          currentAmount,
+          currentAmount.add(buyAmount)
+        )
+      );
     }
 
-    for (const [mint, wantQty] of this.wantComponentQtyMap()) {
-      const curSysQty = this.currentComponentQtyMap().get(mint);
+    for (const [mintString, wantQtyInSys] of this.wantComponentQtyInSysMap()) {
+      const curSysQty = currentComponentQtyInSysMap.get(mintString);
       if (curSysQty) {
         continue;
       }
 
-      const buyAmount = wantQty.
-        mul(new BN(10).pow(new BN(6))).
-        mul(totalSupply);
-      
-      out.push({
-        mint,
-        currentAmount: new BN(0),
-        targetAmount: buyAmount,
-      });
+      const buyAmount = wantQtyInSys.mul(totalSupply).divn(SYS_DECIMALS);
+      out.push(new SwapPlan(new PublicKey(mintString), new BN(0), buyAmount));
     }
     out.sort((a, b) => a.mint.toBase58().localeCompare(b.mint.toBase58()));
     return out;
   }
 
+  private async handleStartStage(): Promise<void> {
+    const basketCfg = await this.fetchBasketConfig();
+    if (basketCfg.state.rebalancing) {
+      return;
+    }
+
+    try {
+      const startTx = await this.instructor.startRebalancing({
+        rebalancer: this.rebalancer,
+        basketId: this.basketId,
+      });
+
+      const recentBlockhash = (await this.connection.getLatestBlockhash("confirmed")).blockhash;
+      const vtxMessage = new TransactionMessage({
+        payerKey: this.rebalancer,
+        recentBlockhash,
+        instructions: startTx.instructions,
+      });
+      const tx = new VersionedTransaction(vtxMessage.compileToV0Message());
+      this.nextTxs.push(tx);
+    } catch (error) {
+      throw new RebalanceControlTxBuildError(
+        "Failed to build startRebalancing transaction",
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
+    return;
+  }
+
   private async handleSellStage(): Promise<void> {
-    
-    if (this.signedTxs.length > 0) {
-      // Send StartTx
+    if (this.signedTxs.length > 0) { // Send StartTx
       if (this.signedTxs.length > 1) {
-        throw new Error("Sell stage can only have one tx");
+        throw new Error("Sell stage can only have one start tx signed");
       }
 
       const tx = this.signedTxs[0];
 
       try {
-        const sig = await sendAndConfirmTransaction(this.connection, tx);
+        const sig = await sendAndConfirmVersionedTransaction(
+          this.connection,
+          tx
+        );
         this.curCtx.successTxs.push(tx);
         this.curCtx.startSig = sig;
       } catch (err) {
-        this.curCtx.failedTxs.push(tx);
-        this.curCtx.errors.push(err);
+        throw new RebalanceSendTransactionError(
+          err instanceof Error ? err.message : String(err),
+          err instanceof Error ? err : undefined, // cause
+          tx
+        );
       }
+      this.signedTxs = [];
     }
 
-    if (this.curCtx.failedTxs.length > 0) {
-      return;
-    }
+    // Update Components
+    const [componentsToSell, componentsToBuy] = await Promise.all([
+      this.componentsToSell(),
+      this.componentsToBuy(),
+    ]);
+    this.curCtx.componentsToSell = componentsToSell;
+    this.curCtx.componentsToBuy = componentsToBuy;
 
-    // Create sell txs
-    try{
-      const componentsToSell = await this.componentsToSell();
-      const txPromises = componentsToSell.
-        filter(c => !c.mint.equals(new PublicKey(NATIVE_MINT))).
-        map(async ({ mint, currentAmount, targetAmount }) => {
-          return await this.instructor.executeRebalancingJupiterTx({
-            connection: this.connection,
-            rebalancer: this.rebalancer,
-            basketId: this.basketId,
-            inputMint: mint,
-            outputMint: NATIVE_MINT,
-            amount: targetAmount.sub(currentAmount).toNumber(),
-            swapMode: "ExactIn",
-            slippageBps: this.maxSlippageBps,
-          });
+    try { // Build Sell Txs
+      const swapPlans = this.curCtx.componentsToSellWithoutNative();
+      const txPromises = swapPlans.map(async (swapPlan) => {
+        return await this.instructor.executeRebalancingJupiterTx({
+          connection: this.connection,
+          rebalancer: this.rebalancer,
+          basketId: this.basketId,
+          inputMint: swapPlan.mint,
+          outputMint: NATIVE_MINT,
+          amount: swapPlan.swapAmount().toNumber(),
+          swapMode: "ExactIn",
+          maxAccounts: this.SWAP_MAX_ACCOUNTS,
+          slippageBps: this.maxSlippageBps,
         });
-    
+      });
+
       const results = await Promise.all(txPromises);
       this.nextTxs.push(...results);
     } catch (error) {
-      // TODO: Parse error
-      this.curCtx.errors.push(error);
+      throw new RebalanceSwapTxBuildError(
+        "Failed to create sell transactions for sell stage", 
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
   private async handleBuyStage(): Promise<void> {
-  
     if (this.signedTxs.length > 0) {
-      const results = await Promise.all(
-        this.signedTxs.map(async (tx, i) => {
-          const mint = this.curCtx.componentsToSellWithoutNative()[i].mint;
+      const sellPromises = this.signedTxs.map(async (tx, i) => {
+        const componentsToSell = this.curCtx.componentsToSellWithoutNative();
+        if (componentsToSell.length <= i) {
+          throw new Error(`Unknown mint. ${i} ${componentsToSell.length}`);
+        }
+        const mint = componentsToSell[i].mint
+
+        try {
+          const sig = await sendAndConfirmVersionedTransaction(this.connection, tx);
+          return {mint, signature: sig, tx, error: null};
+        } catch (err) {
+          return {mint, signature: null, tx, error: err};
+        }
+      });
+
+      const results = await Promise.allSettled(sellPromises);
+      const collectedErrors: RebalanceSendTransactionError[] = [];
       
-          let status = TxStatus.STATUS_UNSPECIFIED;
-          let errorReason = RebalanceErrorReason.ERROR_REASON_UNSPECIFIED;
-          let sig = '';
-          try {
-            sig = await sendAndConfirmTransaction(this.connection, tx);
-            status = TxStatus.SUCCESS;
+      results.forEach(result => {
+        if (result.status === 'fulfilled') {
+          const { mint, signature , tx, error } = result.value;
+          if (error === null) {
+            this.curCtx.sellSigs.push({ mint, signature, status: TxStatus.SUCCESS, errorReason: RebalanceErrorReason.ERROR_REASON_UNSPECIFIED});
             this.curCtx.successTxs.push(tx);
-          } catch (err) {
-            status = TxStatus.FAILED;
-            errorReason = RebalanceErrorReason.TX_FAILED_UNKNOWN;
-            this.curCtx.failedTxs.push(tx);
-            this.curCtx.errors.push(err);
+          } else {
+            // TODO: ParseError 
+            this.curCtx.sellSigs.push({ mint, signature: null, status: TxStatus.FAILED, errorReason: RebalanceErrorReason.TX_FAILED_UNKNOWN});
+            collectedErrors.push(new RebalanceSendTransactionError(error.message, error, tx));
           }
-      
-          return {
-            mint,
-            signature: sig,
-            status,
-            errorReason,
-          };
-        })
-      );
-      
-      this.curCtx.sellSigs.push(...results);
+        } else { // result.status === 'rejected'
+          const error = result.reason;
+          collectedErrors.push(new RebalanceExecutionError("unknown error in handleBuyStage", error));
+        }
+      });
+      if (collectedErrors.length > 0) {
+        throw new BatchTransactionProcessingError("Errors occurred during sell transaction settlement in handleBuyStage", collectedErrors);
+      }
+      this.signedTxs = [];
     }
-    if (this.curCtx.failedTxs.length > 0) {
-      return;
-    }
-    
-    const { currentNativeTokenAmount, wantNativeTokenAmount } = await this.nativeTokenAmounts();
 
-    const needCleanUp = (
-      wantNativeTokenAmount.eq(new BN(0)) 
-      && this.curCtx.componentsToBuyWithoutNative().length > 1
+    const { currentNativeTokenAmount, wantNativeTokenAmount } =
+      await this.nativeTokenAmounts();
+
+    this.curCtx.needCleanUp =
+      wantNativeTokenAmount.eq(new BN(0)) &&
+      this.curCtx.componentsToBuyWithoutNative().length > 0;
+
+    const availableNativeTokenAmount = currentNativeTokenAmount.sub(
+      wantNativeTokenAmount
     );
-    this.curCtx.needCleanUp = needCleanUp;
-
-    const availableNativeTokenAmount = currentNativeTokenAmount.sub(wantNativeTokenAmount);
     console.log(`Available native token amount: ${availableNativeTokenAmount.toString()}`);
 
     if (availableNativeTokenAmount.lte(new BN(0))) {
@@ -978,125 +1029,130 @@ export class RebalanceExecutor {
       return;
     }
 
-    try {  
-      let buyPlans: { mint: PublicKey; inputAmount: BN }[];
+    const tmpBuyPlanPromises = this.curCtx
+        .componentsToBuyWithoutNative()
+        .filter((swapPlan) => swapPlan.swapAmount().gt(new BN(0)))
+        .map(async (swapPlan) => {
+          const estimatedNativeNeeded = await getPrice(
+            swapPlan.mint,
+            swapPlan.swapAmount().toNumber(),
+            this.maxSlippageBps
+          );
+          return {
+            mint: swapPlan.mint,
+            estimatedNativeNeeded,
+          };
+        });
+      const tmpBuyPlans = (await Promise.all(tmpBuyPlanPromises));
 
-      if (this.curCtx.componentsToBuyWithoutNative().length === 1) {
-        buyPlans = [{
-          mint: this.curCtx.componentsToBuyWithoutNative()[0].mint,
-          inputAmount: availableNativeTokenAmount,
-        }]
-      } else {
-        
-        const tmpBuyPlanPromises = this.curCtx.componentsToBuy.
-          map(async (component) => {
-              const { mint, currentAmount, targetAmount } = component;
-              
-              const neededAmount = targetAmount.sub(currentAmount);
-              if (neededAmount.lte(new BN(0))) {
-                return null; // Already have enough
-              }
-              
-              let price = new BN(1);
-              if (!mint.equals(new PublicKey(NATIVE_MINT))) {
-                price = await getPrice(mint, NATIVE_MINT);
-              }
-              const estimatedNativeNeeded = neededAmount.mul(price);
-              return {
-                mint,
-                estimatedNativeNeeded,
-              };
-          })
-        const tmpBuyPlans = (await Promise.all(tmpBuyPlanPromises)).filter(plan => plan !== null);
-  
-        let totalNativeNeeded = new BN(0);
-        for (const plan of tmpBuyPlans) {
-          totalNativeNeeded = totalNativeNeeded.add(plan.estimatedNativeNeeded);
-        }
-  
-        // Distribute available native tokens proportionally to each component
-        buyPlans = tmpBuyPlans.
-          filter(plan => !plan.mint.equals(new PublicKey(NATIVE_MINT))).
-          map(plan => {
-            const ratio = plan.estimatedNativeNeeded.div(totalNativeNeeded);
-            const allocatedNative = availableNativeTokenAmount.mul(ratio);
-            
-            return {
-              mint: plan.mint,
-              inputAmount: allocatedNative,
-            };
-          })
+      let totalNativeNeeded = new BN(0);
+      for (const plan of tmpBuyPlans) {
+        totalNativeNeeded = totalNativeNeeded.add(plan.estimatedNativeNeeded);
+      }
+      if (tmpBuyPlans.length > 0 && totalNativeNeeded.lte(new BN(0))) {
+        throw new Error("No native token needed for buy");
       }
 
-      console.log(`Generated ${buyPlans.length} buy plans`);
+      // Distribute available native tokens proportionally to each component
+      const buyPlans = tmpBuyPlans
+        .filter((plan) => plan.estimatedNativeNeeded.gt(new BN(0)))
+        .map((plan) => {
+          const ratio =
+            plan.estimatedNativeNeeded.toNumber() /
+            totalNativeNeeded.toNumber();
+          const allocatedNative = new BN(
+            availableNativeTokenAmount.toNumber() * ratio
+          );
 
-      if (this.curCtx.needCleanUp) {
-        buyPlans.pop(); // buy in CLEANUP_BUY stage
-        console.log("Need to clean up, so one buy plan is removed");
-      }
-      
-      const txPromises = buyPlans.map(async (plan) => {  
-        try {
-          const tx = await this.instructor.executeRebalancingJupiterTx({
+          return {
+            mint: plan.mint,
+            swapAmount: allocatedNative,
+          };
+        });
+
+    console.log(`Generated ${buyPlans.length} buy plans`);
+
+    if (this.curCtx.needCleanUp) {
+      buyPlans.pop(); // buy in CLEANUP_BUY stage
+      console.log("Need to clean up, so one buy plan is removed");
+    }
+    try {
+      const txPromises = buyPlans
+        .filter((plan): Boolean => {
+          if (plan.swapAmount.toNumber() < 100 && this.curCtx.needCleanUp) {
+            return false;
+          }
+          return true;
+        })
+        .map(async (plan) => {
+          return this.instructor.executeRebalancingJupiterTx({
             connection: this.connection,
             rebalancer: this.rebalancer,
             basketId: this.basketId,
             inputMint: new PublicKey(NATIVE_MINT),
             outputMint: plan.mint,
-            amount: plan.inputAmount.toNumber(),
+            amount: plan.swapAmount.toNumber(),
             swapMode: "ExactIn",
+            maxAccounts: this.SWAP_MAX_ACCOUNTS,
             slippageBps: this.maxSlippageBps,
           });
-          return tx;
-        } catch (error) {
-          console.error(`Error creating swap tx for ${plan.mint.toBase58()}: ${error}`);
-          return null;
-        }
-      });
-      
+        });
+
       const txs = await Promise.all(txPromises);
-      this.nextTxs.push(...txs.filter(tx => tx !== null));
-      
+      this.nextTxs.push(...txs.filter((tx) => tx !== null));
     } catch (error) {
-      // TODO: Parse error
-      console.error("Error in handleBuyStage:", error);
-      this.curCtx.errors.push(error);
+      throw new RebalanceSwapTxBuildError(
+        `Failed to create buy transaction`,
+        error instanceof Error ? error : new Error(String(error)) // cause
+      );
     }
   }
 
   private async handleCleanUpBuyStage(): Promise<void> {
     if (this.signedTxs.length > 0) {
-      const results = await Promise.all(
-        this.signedTxs.map(async (tx, i) => {
-          const mint = this.curCtx.componentsToBuyWithoutNative()[i].mint;
-      
-          let status = TxStatus.STATUS_UNSPECIFIED;
-          let errorReason = RebalanceErrorReason.ERROR_REASON_UNSPECIFIED;
-          let sig = '';
-          try {
-            sig = await sendAndConfirmTransaction(this.connection, tx);
-            status = TxStatus.SUCCESS;
+      const collectedErrors: RebalanceExecutionError[] = [];
+
+      const buyPromises = this.signedTxs.map(async (tx, i) => {
+        const componentsToBuy = this.curCtx.componentsToBuyWithoutNative();
+        if (componentsToBuy.length <= i) {
+          throw new Error(`Index out of bounds for componentsToBuy in handleCleanUpBuyStage. Index: ${i}, Length: ${componentsToBuy.length}`);
+        }
+        const mint = componentsToBuy[i].mint;
+
+        try {
+          const sig = await sendAndConfirmVersionedTransaction(this.connection, tx);
+          return { mint, signature: sig, tx, error: null, };
+        } catch (err) {
+          return { mint, signature: null, tx, error: err};
+        }
+      });
+
+      const results = await Promise.allSettled(buyPromises);
+
+      results.forEach(result => {
+        if (result.status === 'fulfilled') {
+          const { mint, signature, tx, error } = result.value;
+          if (error === null) { // Successful transaction
+            this.curCtx.buySigs.push({ mint, signature, status: TxStatus.SUCCESS, errorReason: RebalanceErrorReason.ERROR_REASON_UNSPECIFIED });
             this.curCtx.successTxs.push(tx);
-          } catch (err) {
-            status = TxStatus.FAILED;
-            errorReason = RebalanceErrorReason.TX_FAILED_UNKNOWN;
-            this.curCtx.failedTxs.push(tx);
-            this.curCtx.errors.push(err);
+          } else {
+            // TODO: ParseError 
+            this.curCtx.buySigs.push({ mint, signature: null, status: TxStatus.FAILED, errorReason: RebalanceErrorReason.TX_FAILED_UNKNOWN });
+            collectedErrors.push(new RebalanceSendTransactionError(error.message, error, tx));
           }
-      
-          return {
-            mint,
-            signature: sig,
-            status,
-            errorReason,
-          };
-        })
-      );
-      
-      this.curCtx.buySigs.push(...results);
-    }
-    if (this.curCtx.failedTxs.length > 0) {
-      return;
+        } else {
+          const reason = result.reason;
+          collectedErrors.push(new RebalanceExecutionError("unknown error in handleCleanUpBuyStage", reason));
+        }
+      });
+
+      if (collectedErrors.length > 0) {
+        throw new BatchTransactionProcessingError(
+          "Errors occurred during buy transaction settlement in handleCleanUpBuyStage",
+          collectedErrors
+        );
+      }
+      this.signedTxs = [];
     }
 
     // Create Clean Up buy Tx
@@ -1109,17 +1165,24 @@ export class RebalanceExecutor {
     }
     const componentToBuy = this.curCtx.componentsToBuyWithoutNative().pop();
 
-    const { currentNativeTokenAmount, wantNativeTokenAmount } = await this.nativeTokenAmounts();
+    const { currentNativeTokenAmount, wantNativeTokenAmount } =
+      await this.nativeTokenAmounts();
 
     if (currentNativeTokenAmount.lte(wantNativeTokenAmount)) {
-      console.log(`No remaining native token amount for cleanup . current: ${currentNativeTokenAmount.toString()}, want: ${wantNativeTokenAmount.toString()}`);
+      console.log(
+        `No remaining native token amount for cleanup . current: ${currentNativeTokenAmount.toString()}, want: ${wantNativeTokenAmount.toString()}`
+      );
       return;
     }
-    
+
     // Get remaining native tokens after previous BUY transactions
-    const remainingNativeTokenAmount = currentNativeTokenAmount.sub(wantNativeTokenAmount);
-    console.log(`Remaining native token amount for cleanup: ${remainingNativeTokenAmount.toString()}`);
-    
+    const remainingNativeTokenAmount = currentNativeTokenAmount.sub(
+      wantNativeTokenAmount
+    );
+    console.log(
+      `Remaining native token amount for cleanup: ${remainingNativeTokenAmount.toString()}`
+    );
+
     try {
       const cleanupTx = await this.instructor.executeRebalancingJupiterTx({
         connection: this.connection,
@@ -1129,39 +1192,51 @@ export class RebalanceExecutor {
         outputMint: componentToBuy.mint,
         amount: remainingNativeTokenAmount.toNumber(),
         swapMode: "ExactIn",
+        maxAccounts: this.SWAP_MAX_ACCOUNTS,
         slippageBps: this.maxSlippageBps,
       });
-      
+
       this.nextTxs.push(cleanupTx);
-      console.log(`Created cleanup swap transaction for ${componentToBuy.mint.toBase58()}`);
+      console.log(
+        `Created cleanup swap transaction for ${componentToBuy.mint.toBase58()}`
+      );
     } catch (error) {
-      console.error(`Error creating cleanup swap tx: ${error}`);
-      this.curCtx.errors.push(error);
+      console.log("error in handleCleanUpBuyStage");
+      throw new RebalanceSwapTxBuildError(
+        `Failed to create cleanup buy transaction for ${componentToBuy.mint.toBase58()}`,
+        error instanceof Error ? error : new Error(String(error)) // cause
+      );
     }
   }
 
   private async handleStopStage(): Promise<void> {
-    if (this.signedTxs.length > 0) { // Send Clean Up Buy Tx
+    if (this.signedTxs.length > 0) {
+      // Send Clean Up Buy Tx
       if (this.signedTxs.length > 1) {
-        throw new Error("Stop stage can maximum 1 tx");
+        throw new RebalanceExecutionError("Stop stage can receive maximum 1 signed tx (for cleanup buy)");
       }
 
       const tx = this.signedTxs[0];
 
       try {
-        const sig = await sendAndConfirmTransaction(this.connection, tx);
+        const sig = await sendAndConfirmVersionedTransaction(
+          this.connection,
+          tx
+        );
         this.curCtx.successTxs.push(tx);
         this.curCtx.cleanupBuySig = sig;
       } catch (err) {
-        this.curCtx.failedTxs.push(tx);
-        this.curCtx.errors.push(err);
+        throw new RebalanceSendTransactionError(
+          `Failed to send cleanup buy transaction in StopStage: ${err instanceof Error ? err.message : String(err)}`,
+          err instanceof Error ? err : undefined,
+          tx
+        );
       }
-    }
-    if (this.curCtx.failedTxs.length > 0) {
-      return;
+      this.signedTxs = [];
     }
 
-    if (!this.basketConfig.state.rebalancing) {
+    const basketCfg = await this.fetchBasketConfig();
+    if (!basketCfg.state.rebalancing) {
       return;
     }
 
@@ -1170,81 +1245,119 @@ export class RebalanceExecutor {
         rebalancer: this.rebalancer,
         basketId: this.basketId,
       });
-      
-      // Convert to versioned transaction
-      const recentBlockhash = (await this.connection.getLatestBlockhash("confirmed")).blockhash;
+
+      const recentBlockhash = (
+        await this.connection.getLatestBlockhash("confirmed")
+      ).blockhash;
       const vtxMessage = new TransactionMessage({
         payerKey: this.rebalancer,
         recentBlockhash,
         instructions: stopTx.instructions,
       });
-      
+
       const vtx = new VersionedTransaction(vtxMessage.compileToV0Message());
       this.nextTxs.push(vtx);
     } catch (error) {
-      console.error("Error creating stop rebalancing tx:", error);
-      this.curCtx.errors.push(error);
+      throw new RebalanceControlTxBuildError(
+        "Failed to build stopRebalancing transaction",
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
-  private async handleEndStage(): Promise<void> {
-    // send stop tx
-    if (this.signedTxs.length === 0 ) {
-      return;
-    }
+  private async abnormalStop() {
+    try {
+      const stopTx = await this.instructor.stopRebalancing({
+        rebalancer: this.rebalancer,
+        basketId: this.basketId,
+      });
 
+      const recentBlockhash = (
+        await this.connection.getLatestBlockhash("confirmed")
+      ).blockhash;
+      const vtxMessage = new TransactionMessage({
+        payerKey: this.rebalancer,
+        recentBlockhash,
+        instructions: stopTx.instructions,
+      });
+
+      const vtx = new VersionedTransaction(vtxMessage.compileToV0Message());
+      this.nextTxs = [vtx];
+    } catch (error) {
+      throw new RebalanceControlTxBuildError(
+        "Failed to build stopRebalancing transaction in abnormalStop",
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
+  }
+
+  private async handleSendStopStage(): Promise<void> {
+    if (this.signedTxs.length === 0) { // send stop tx
+      return; 
+    }
     if (this.signedTxs.length > 1) {
       throw new Error("End stage can maximum 1 tx");
     }
 
     const tx = this.signedTxs[0];
-
     try {
-      const sig = await sendAndConfirmTransaction(this.connection, tx);
+      const sig = await sendAndConfirmVersionedTransaction(this.connection, tx);
       this.curCtx.successTxs.push(tx);
       this.curCtx.stopSig = sig;
     } catch (err) {
       this.curCtx.failedTxs.push(tx);
       this.curCtx.errors.push(err);
     }
-    return
+    return;
   }
 
   private async nativeTokenAmounts(): Promise<{
     currentNativeTokenAmount: BN;
     wantNativeTokenAmount: BN;
   }> {
-    const totalSupply = await this.basketTotalSupply();
-    
-    // Get current native token amount from basket config
+    const [basketCfg, totalSupply] = await Promise.all([
+      this.fetchBasketConfig(),
+      this.basketTotalSupply(),
+    ]);
+
     let currentNativeTokenAmount = new BN(0);
-    for (const component of this.basketConfig.components) {
+    for (const component of basketCfg.components) {
       if (component.mint.equals(new PublicKey(NATIVE_MINT))) {
-        currentNativeTokenAmount = component.quantityInSysDecimal.
-          mul(new BN(SYS_DECIMALS)).
-          mul(totalSupply);
+        currentNativeTokenAmount = component.quantityInSysDecimal
+          .mul(totalSupply)
+          .divn(SYS_DECIMALS);
         break;
       }
     }
 
     let wantNativeTokenAmount = new BN(0);
-    for (const [mint, qty] of this.wantComponentQtyMap().entries()) {
-      if (mint.equals(new PublicKey(NATIVE_MINT))) {
-        wantNativeTokenAmount = qty.
-          mul(new BN(SYS_DECIMALS)).
-          mul(totalSupply);
+    for (const [
+      mintString,
+      qtyInSys,
+    ] of this.wantComponentQtyInSysMap().entries()) {
+      if (mintString === NATIVE_MINT.toString()) {
+        wantNativeTokenAmount = qtyInSys.mul(totalSupply).divn(SYS_DECIMALS);
         break;
       }
     }
     return {
       currentNativeTokenAmount,
       wantNativeTokenAmount,
-    }
+    };
   }
-} 
+
+  private async fetchBasketConfig(): Promise<BasketConfig> {
+    const basketCfg = await this.instructor.getBasketConfig({
+      basketId: this.basketId,
+    });
+    if (!basketCfg) {
+      throw new Error("Basket config not found");
+    }
+    return basketCfg;
+  }
+}
 
 export class RebalanceResult {
-
   ctx: RebalanceContext;
 
   constructor(ctx: RebalanceContext) {
@@ -1258,17 +1371,17 @@ export class RebalanceResult {
     if (this.ctx.failedTxs.length > 0) {
       return RebalanceStatus.FAILED;
     }
-    if (this.ctx.stage === RebalanceStage.END) {
+    if (this.ctx.stage === RebalanceStage.DONE) {
       return RebalanceStatus.SUCCESS;
     }
     return RebalanceStatus.IN_PROGRESS;
   }
 
-  errorReason(): RebalanceErrorReason{
+  errorReason(): RebalanceErrorReason {
     if (this.ctx.errors.length === 0) {
       return RebalanceErrorReason.ERROR_REASON_UNSPECIFIED;
     }
-    const err = this.ctx.errors[0];
+    // const err = this.ctx.errors[0];
     // TODO: parse error
     return RebalanceErrorReason.TX_FAILED_UNKNOWN;
   }
@@ -1307,8 +1420,7 @@ export class RebalanceResult {
     const buys = this.ctx.componentsToBuy;
 
     sells.forEach((sell, index) => {
-
-      let sig = '';
+      let sig = "";
       let status = TxStatus.STATUS_UNSPECIFIED;
       let errorReason = RebalanceErrorReason.ERROR_REASON_UNSPECIFIED;
 
@@ -1320,15 +1432,15 @@ export class RebalanceResult {
       out.push({
         fungibleTokenAddress: sell.mint.toBase58(),
         isBuy: false,
-        inAmount: sell.currentAmount,
+        inAmount: sell.beforeAmount,
         outAmount: sell.targetAmount,
         txSignature: sig,
         status: status,
         errorReason: errorReason,
-      })
-    })
+      });
+    });
     buys.forEach((buy, index) => {
-      let sig = '';
+      let sig = "";
       let status = TxStatus.STATUS_UNSPECIFIED;
       let errorReason = RebalanceErrorReason.ERROR_REASON_UNSPECIFIED;
 
@@ -1341,33 +1453,32 @@ export class RebalanceResult {
       out.push({
         fungibleTokenAddress: buy.mint.toBase58(),
         isBuy: true,
-        inAmount: buy.currentAmount,
+        inAmount: buy.beforeAmount,
         outAmount: buy.targetAmount,
         txSignature: sig,
         status: status,
         errorReason: errorReason,
-      })
-    })
+      });
+    });
     return out;
   }
-} 
+}
 
-async function sendAndConfirmTransaction(connection: Connection, tx: VersionedTransaction): Promise<string> {
-  const sig = await connection.sendTransaction(tx, {
-    skipPreflight: true,
-    preflightCommitment: "confirmed",
-  });
-
-  const latestBlockhash = await connection.getLatestBlockhash();
-  const confirmation = await connection.confirmTransaction({
-    signature: sig,
-    ...latestBlockhash,
-    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-  });
-
-  if (confirmation.value.err) {
-    // TODO: parse error
-    throw new Error(confirmation.value.err.toString());
+function nextStage(stage: RebalanceStage): RebalanceStage {
+  switch (stage) {
+    case RebalanceStage.START:
+      return RebalanceStage.SELL;
+    case RebalanceStage.SELL:
+      return RebalanceStage.BUY;
+    case RebalanceStage.BUY:
+      return RebalanceStage.CLEANUP_BUY;
+    case RebalanceStage.CLEANUP_BUY:
+      return RebalanceStage.STOP;
+    case RebalanceStage.STOP:
+      return RebalanceStage.SEND_STOP;
+    case RebalanceStage.SEND_STOP:
+      return RebalanceStage.DONE;
+    default:
+      throw new Error(`Invalid rebalance stage: ${stage}.`);
   }
-  return sig;
 }
