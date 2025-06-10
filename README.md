@@ -1,32 +1,123 @@
-## Pie dot fun
-A meme index fund protocol on Solana
+# Pie dot fun
 
-## Installation and running guide
+A decentralized index fund protocol on Solana that allows users to create, manage, and trade token baskets with dynamic rebalancing capabilities.
 
-## Requirements
+## Documentation
 
-Create a new deployer wallet via below command:
-```
-deployer/create
-deployer/airdrop/local
-deployer/airdrop/devnet
+For detailed documentation, visit our [GitBook](https://pie-fun.gitbook.io/pie.fun).
+
+## Features
+
+- Create custom token baskets with configurable weights
+- Buy and sell underlying components using Jupiter API
+- Mint and redeem basket tokens
+- Dynamic rebalancing of basket components
+- Fee management system
+
+## Prerequisites
+
+- Node.js (v23 or higher)
+- Rust and Cargo
+- Solana CLI tools
+- Anchor Framework
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ao-labs/pie-dot-fun-solana.git
+cd pie-dot-fun-solana
 ```
 
-### How to build
-Please ensure that you create deployer's wallet before deploy it
-```
-make build
-```
-
-### How to deploy
-Please ensure that you build program before deploy it
-```
-make deploy/[devnet|mainnet]
+2. Install dependencies:
+```bash
+yarn install
 ```
 
-### How to test
-We will redeploy the new program each time the test happen.
-Please ensure that your deployer's wallet always have enough SOL for tx fees.
+3. Create deployer wallet:
+```bash
+make deployer/create
 ```
-make test/devnet
+
+4. Airdrop SOL to deployer (for testing):
+```bash
+# For local testing
+make deployer/airdrop/local
+
+# For devnet testing
+make deployer/airdrop/devnet
+```
+
+## Building
+
+Build the program:
+```bash
+anchor build
+```
+
+## Deployment
+
+Deploy to different networks:
+```bash
+# Deploy to devnet
+yarn deploy-devnet
+
+# Deploy to mainnet
+yarn deploy-mainnet
+```
+
+## Testing
+
+Run tests on different networks:
+```bash
+# Run specific test suites
+yarn test    # local test
+yarn test-devnet   # devnet test
+yarn test-mainnet   # mainnet test
+```
+
+## Project Structure
+
+```
+├── programs/           # Solana program source code
+│   └── pie/
+│       ├── src/
+│       │   ├── instructions/  # Program instructions
+│       │   ├── states/       # Program state definitions
+│       │   └── utils/        # Utility functions
+├── sdk/               # TypeScript SDK
+├── tests/            # Test suites
+└── scripts/          # Deployment and utility scripts
+```
+
+## SDK Usage
+
+The project provides a TypeScript SDK for interacting with the protocol:
+
+```typescript
+import { PieProgram } from '@ao-labs/pie-dot-fun-solana';
+
+// Initialize the program
+const pieProgram = new PieProgram({
+  connection,
+  cluster: "mainnet-beta",
+  jitoRpcUrl: QUICKNODE_RPC_URL,
+});
+
+// Create a new basket
+const createBasketArgs = {
+  name: "My Basket",
+  symbol: "MBKT",
+  components: [...],
+  rebalancer: rebalancer.publicKey,
+  rebalanceType: { dynamic: {} },
+  creatorFeeBp: new BN(50),
+};
+
+// Create basket transaction
+const createBasketTx = await pieProgram.creator.createBasket({
+  creator: admin.publicKey,
+  args: createBasketArgs,
+  basketId,
+});
 ```
